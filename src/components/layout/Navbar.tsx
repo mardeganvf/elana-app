@@ -18,8 +18,7 @@ import {
   Type,
   X,
   Send,
-  Lock,
-  BarChart3
+  Lock
 } from 'lucide-react';
 import logoElana from '../../assets/logo-elana.png';
 
@@ -469,9 +468,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               <div className="w-14 h-14 rounded-full bg-[#E66795]/20 border border-[#E66795]/40 text-[#E66795] flex items-center justify-center mx-auto text-2xl shadow-inner">
                 💖
               </div>
-              <div className="inline-flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-[#FFD166]">
-                <BarChart3 className="w-3.5 h-3.5" /> Últimas 4 Semanas
-              </div>
               <h3 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                 Seu Diário de Emoções
               </h3>
@@ -481,27 +477,22 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             </div>
 
             {/* 1. Resumo Quantitativo por Sentimento (Emotion Breakdown Chips) */}
-            <div className="space-y-2.5 text-left">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">
-                  Resumo das Últimas 4 Semanas:
-                </span>
-                <span className="text-[10px] text-[#FFD166] font-bold bg-[#FFD166]/10 px-2.5 py-0.5 rounded-full border border-[#FFD166]/20">
-                  28 Dias de Acompanhamento
-                </span>
-              </div>
+            <div className="space-y-3 text-left">
+              <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                Resumo das Últimas 4 Semanas:
+              </span>
               
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {emotionalSummary.map((item, idx) => (
                   <div 
                     key={idx} 
-                    className={`flex items-center justify-between p-2.5 rounded-2xl border text-xs font-bold ${item.color}`}
+                    className={`flex items-center justify-between p-3 rounded-2xl border text-xs font-bold transition-all ${item.color}`}
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-base">{item.emoji}</span>
-                      <span className="truncate text-[11px]">{item.label}</span>
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <span className="text-xl shrink-0">{item.emoji}</span>
+                      <span className="truncate text-xs font-bold text-white">{item.label}</span>
                     </div>
-                    <span className="bg-black/40 px-2 py-0.5 rounded-full text-[10px] font-black text-white shrink-0">
+                    <span className="bg-black/50 px-3 py-1 rounded-full text-xs font-black text-white shrink-0 ml-2">
                       {item.count}x
                     </span>
                   </div>
