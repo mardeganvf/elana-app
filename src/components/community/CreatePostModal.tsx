@@ -48,7 +48,18 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const getLocationName = () => {
     if (postType === 'jornada') {
       const j = JOURNEYS_DATA.find(item => item.id === selectedJourneyId);
-      return j ? j.title : 'Jornada';
+      const baseTitle = j ? j.title : 'Jornada';
+      if (activeSelection?.type === 'jornada') {
+        const subLabels: Record<string, string> = {
+          ajuda: 'Preciso de Ajuda',
+          celebrar: 'Vamos Celebrar',
+          desabafar: 'Preciso Desabafar'
+        };
+        if (activeSelection.subOption && subLabels[activeSelection.subOption]) {
+          return `${baseTitle} - ${subLabels[activeSelection.subOption]}`;
+        }
+      }
+      return baseTitle;
     }
     if (postType === 'transversal') {
       const r = TRANSVERSAL_ROOMS.find(item => item.id === selectedTransversalId);
@@ -101,9 +112,10 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer shrink-0 ml-2"
+            className="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-colors cursor-pointer shrink-0 ml-2"
+            title="Fechar"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
