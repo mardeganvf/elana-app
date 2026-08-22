@@ -176,7 +176,11 @@ const AppContent: React.FC = () => {
       {/* Complete Profile Invitation Modal */}
       <ProfileCompletionInviteModal
         isOpen={isProfileInviteOpen}
-        onClose={() => setIsProfileInviteOpen(false)}
+        onClose={() => {
+          setIsProfileInviteOpen(false);
+          setActiveTab('home');
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        }}
         onGoToProfile={() => {
           setActiveTab('dashboard');
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' });

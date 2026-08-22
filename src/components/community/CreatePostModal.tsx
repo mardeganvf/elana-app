@@ -3,7 +3,7 @@ import { useCommunity } from '../../context/CommunityContext';
 import { JOURNEYS_DATA } from '../../data/journeysData';
 import { TRANSVERSAL_ROOMS, AGE_BRACKET_ROOMS, EMOTIONAL_INTENTIONS } from '../../data/communityData';
 import { EmotionalIntention } from '../../types';
-import { X, Send, Sparkles, ShieldCheck, EyeOff } from 'lucide-react';
+import { X, Send, Lock, EyeOff } from 'lucide-react';
 
 interface CreatePostModalProps {
   onClose: () => void;
@@ -28,23 +28,35 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [selectedTransversalId, setSelectedTransversalId] = useState<string>(defaultRoomId);
   const [selectedAgeId, setSelectedAgeId] = useState<string>('0-2');
   const [emotionalIntention, setEmotionalIntention] = useState<EmotionalIntention>('desabafar');
-  const [moduleTopic] = useState<string>('Geral');
   
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isAnonymous, setIsAnonymous] = useState<boolean>(postType === 'transversal' && selectedTransversalId === 'confessionario');
 
-  const selectedTransversalRoom = TRANSVERSAL_ROOMS.find(r => r.id === selectedTransversalId);
   const isConfessionario = postType === 'transversal' && selectedTransversalId === 'confessionario';
 
-  const handleTransversalChange = (roomId: string) => {
-    setSelectedTransversalId(roomId);
-    if (roomId === 'confessionario') {
-      setIsAnonymous(true);
-    } else {
+  const handleLocationSelect = (value: string) => {
+    if (value.startsWith('jornada-')) {
+      setPostType('jornada');
+      setSelectedJourneyId(value.replace('jornada-', ''));
+      setIsAnonymous(false);
+    } else if (value.startsWith('transversal-')) {
+      const roomId = value.replace('transversal-', '');
+      setPostType('transversal');
+      setSelectedTransversalId(roomId);
+      setIsAnonymous(roomId === 'confessionario');
+    } else if (value.startsWith('idade-')) {
+      setPostType('idade');
+      setSelectedAgeId(value.replace('idade-', ''));
       setIsAnonymous(false);
     }
   };
+
+  const currentSelectValue = postType === 'jornada' 
+    ? `jornada-${selectedJourneyId}`
+    : postType === 'transversal'
+    ? `transversal-${selectedTransversalId}`
+    : `idade-${selectedAgeId}`;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +67,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       transversalRoomId: postType === 'transversal' ? selectedTransversalId : undefined,
       ageBracketId: postType === 'idade' ? selectedAgeId : undefined,
       emotionalIntention: postType === 'jornada' ? emotionalIntention : undefined,
-      moduleTopic: postType === 'jornada' ? moduleTopic : undefined,
+      moduleTopic: 'Geral',
       title: title.trim(),
       content: content.trim(),
       isAnonymous: isConfessionario || isAnonymous
@@ -65,201 +77,121 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
-      <div className="bg-[#101B1E] rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-white/10 relative text-white my-8">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white overflow-y-auto">
+      <div className="bg-[#101B1E] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-white my-auto space-y-5">
         
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
+        {/* Clean Header */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] text-white flex items-center justify-center font-black shadow-lg">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] text-white flex items-center justify-center text-xl shadow-md">
               💬
             </div>
             <div>
-              <h3 className="font-bold text-lg text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                Criar Novo Tópico na Comunidade
+              <h3 className="font-extrabold text-xl text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                Criar Novo Tópico
               </h3>
-              <p className="text-xs text-slate-400">Tom acolhedor • Empatia antes de solução</p>
+              <p className="text-xs text-slate-400">Espaço seguro de troca, acolhimento e empatia.</p>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            className="bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-colors"
+            className="text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Brandbook Guidelines Banner */}
-        <div className="bg-[#003B46]/40 border border-[#003B46] p-3.5 rounded-2xl mb-5 text-xs text-slate-200 space-y-1">
-          <span className="font-bold text-[#FFD166] flex items-center gap-1.5 uppercase text-[10px] tracking-wider">
-            <ShieldCheck className="w-4 h-4 text-[#8A9A5B]" /> Diretrizes de Convivência Elana:
-          </span>
-          <p className="text-[11px] leading-relaxed">
-            Perguntar, não interrogar • Validar o sentimento antes de orientar • Sem julgamentos ou tons de autoridade ("você deve").
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           
-          {/* Post Location Selector */}
-          <div>
-            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-              1. Onde deseja publicar?
+          {/* Streamlined Category Dropdown */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+              Onde deseja publicar?
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setPostType('jornada')}
-                className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
-                  postType === 'jornada'
-                    ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
-                    : 'bg-[#070D0F] text-slate-400 border-white/10 hover:bg-white/5'
-                }`}
-              >
-                Jornadas (6)
-              </button>
-              <button
-                type="button"
-                onClick={() => setPostType('transversal')}
-                className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
-                  postType === 'transversal'
-                    ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
-                    : 'bg-[#070D0F] text-slate-400 border-white/10 hover:bg-white/5'
-                }`}
-              >
-                Salas Transversais
-              </button>
-              <button
-                type="button"
-                onClick={() => setPostType('idade')}
-                className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
-                  postType === 'idade'
-                    ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
-                    : 'bg-[#070D0F] text-slate-400 border-white/10 hover:bg-white/5'
-                }`}
-              >
-                Por Idade
-              </button>
-            </div>
+            <select
+              value={currentSelectValue}
+              onChange={(e) => handleLocationSelect(e.target.value)}
+              className="w-full p-3 rounded-2xl border border-white/15 text-xs bg-[#070D0F] text-white focus:outline-none focus:border-[#FF7F5B] transition-all cursor-pointer"
+            >
+              <optgroup label="Jornadas de Aprendizado">
+                {JOURNEYS_DATA.map(j => (
+                  <option key={`jornada-${j.id}`} value={`jornada-${j.id}`}>
+                    Jornada: {j.title}
+                  </option>
+                ))}
+              </optgroup>
+
+              <optgroup label="Salas de Acolhimento & Transversais">
+                {TRANSVERSAL_ROOMS.map(r => (
+                  <option key={`transversal-${r.id}`} value={`transversal-${r.id}`}>
+                    {r.emoji} Sala: {r.name} {r.isAnonymous ? '(100% Anônima)' : ''}
+                  </option>
+                ))}
+              </optgroup>
+
+              <optgroup label="Por Faixa Etária">
+                {AGE_BRACKET_ROOMS.map(a => (
+                  <option key={`idade-${a.id}`} value={`idade-${a.id}`}>
+                    Faixa Etária: {a.name} ({a.range})
+                  </option>
+                ))}
+              </optgroup>
+            </select>
           </div>
 
-          {/* Sub-selectors based on Post Location */}
+          {/* Emotional Intention Pills (Only for Journeys) */}
           {postType === 'jornada' && (
-            <div className="space-y-3 bg-[#070D0F] p-4 rounded-2xl border border-white/10">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  Selecione a Jornada:
-                </label>
-                <select
-                  value={selectedJourneyId}
-                  onChange={(e) => setSelectedJourneyId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-white/10 text-xs bg-[#101B1E] text-white focus:outline-none focus:border-[#FF7F5B]"
-                >
-                  {JOURNEYS_DATA.map(j => (
-                    <option key={j.id} value={j.id}>
-                      {j.title} ({j.targetAudience})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  Intenção Emocional da Postagem:
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {EMOTIONAL_INTENTIONS.map(ei => (
-                    <button
-                      key={ei.id}
-                      type="button"
-                      onClick={() => setEmotionalIntention(ei.id as EmotionalIntention)}
-                      className={`p-2 rounded-xl border text-[11px] font-bold text-left transition-all ${
-                        emotionalIntention === ei.id
-                          ? 'border-[#FF7F5B] bg-[#FF7F5B]/20 text-white shadow-sm'
-                          : 'border-white/10 bg-[#101B1E] text-slate-400 hover:bg-white/5'
-                      }`}
-                    >
-                      <div>{ei.badge}</div>
-                    </button>
-                  ))}
-                </div>
+            <div className="space-y-1.5 pt-1">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                Intenção da Postagem:
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {EMOTIONAL_INTENTIONS.map(ei => (
+                  <button
+                    key={ei.id}
+                    type="button"
+                    onClick={() => setEmotionalIntention(ei.id as EmotionalIntention)}
+                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold transition-all text-center cursor-pointer ${
+                      emotionalIntention === ei.id
+                        ? 'border-[#FF7F5B] bg-[#FF7F5B]/20 text-white shadow-md font-extrabold'
+                        : 'border-white/10 bg-[#070D0F] text-slate-400 hover:bg-white/5'
+                    }`}
+                  >
+                    {ei.badge}
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
-          {postType === 'transversal' && (
-            <div className="bg-[#070D0F] p-4 rounded-2xl border border-white/10">
-              <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                Selecione a Sala Transversal:
-              </label>
-              <select
-                value={selectedTransversalId}
-                onChange={(e) => handleTransversalChange(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-white/10 text-xs bg-[#101B1E] text-white focus:outline-none focus:border-[#FF7F5B]"
-              >
-                {TRANSVERSAL_ROOMS.map(r => (
-                  <option key={r.id} value={r.id}>
-                    {r.emoji} {r.name} {r.isAnonymous ? '(100% Anônima)' : ''}
-                  </option>
-                ))}
-              </select>
-              {selectedTransversalRoom && (
-                <p className="text-[11px] text-slate-400 mt-2 italic">
-                  "{selectedTransversalRoom.description}"
-                </p>
-              )}
-            </div>
-          )}
-
-          {postType === 'idade' && (
-            <div className="bg-[#070D0F] p-4 rounded-2xl border border-white/10">
-              <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                Selecione a Faixa Etária do Filho:
-              </label>
-              <select
-                value={selectedAgeId}
-                onChange={(e) => setSelectedAgeId(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-white/10 text-xs bg-[#101B1E] text-white focus:outline-none focus:border-[#FF7F5B]"
-              >
-                {AGE_BRACKET_ROOMS.map(a => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} — {a.range}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Anonymous Option Indicator for Confessionario */}
+          {/* Confessionario Anonymous Callout */}
           {isConfessionario && (
-            <div className="bg-purple-900/30 border border-purple-500/40 p-3 rounded-2xl flex items-center gap-2.5 text-xs text-purple-200">
-              <EyeOff className="w-5 h-5 text-purple-300 shrink-0" />
-              <div>
-                <strong className="block text-white">Sala Confessionário — Pseudônimo Automático:</strong>
-                <span>Sua postagem será assinada publicamente como "Luz em Aprendizado #XXX" para preservar seu anonimato.</span>
-              </div>
+            <div className="bg-purple-500/10 border border-purple-500/30 p-3 rounded-2xl flex items-center gap-2.5 text-xs text-purple-200">
+              <EyeOff className="w-4 h-4 text-purple-300 shrink-0" />
+              <span>Postagem 100% anônima (assinada como <em>Luz em Aprendizado #XXX</em>).</span>
             </div>
           )}
 
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+          {/* Title Input */}
+          <div className="space-y-1.5 pt-1">
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
               Título do Tópico:
             </label>
             <input
               type="text"
               required
-              placeholder="Ex: Como encontrar oxigênio emocional em dias de exaustão?"
+              placeholder="Ex: Como encontrar oxigênio emocional em dias difíceis?"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-3 rounded-xl border border-white/10 text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B]"
+              className="w-full p-3 rounded-2xl border border-white/15 text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B] transition-all"
             />
           </div>
 
-          {/* Content */}
-          <div>
-            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-              Seu Relato ou Pergunta:
+          {/* Content Textarea */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+              Sua Mensagem:
             </label>
             <textarea
               required
@@ -267,37 +199,33 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               placeholder="Escreva com o coração... Lembre-se que este é um espaço seguro de acolhimento mútuo."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full p-3 rounded-xl border border-white/10 text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B] resize-none"
+              className="w-full p-3 rounded-2xl border border-white/15 text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B] transition-all resize-none"
             />
           </div>
 
-          {/* Elanas Reward Banner */}
-          <div className="bg-[#FFD166]/10 p-3 rounded-xl border border-[#FFD166]/30 flex items-center justify-between text-xs text-white">
-            <span className="flex items-center gap-1.5 font-bold">
-              <Sparkles className="w-4 h-4 text-[#FFD166] fill-current" />
-              Recompensa por Compartilhar:
-            </span>
-            <span className="font-extrabold text-[#FF7F5B] bg-[#070D0F] px-2.5 py-0.5 rounded-full border border-[#FF7F5B]/30">
-              +20 pontos
-            </span>
-          </div>
+          {/* Clean Footer Actions */}
+          <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
+              <Lock className="w-3.5 h-3.5 text-[#8A9A5B]" />
+              <span>Espaço seguro e acolhedor</span>
+            </div>
 
-          {/* Action Buttons */}
-          <div className="pt-2 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:bg-white/5"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg transition-all"
-            >
-              <Send className="w-3.5 h-3.5" />
-              Publicar Tópico
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all cursor-pointer transform hover:scale-105 active:scale-95"
+              >
+                <Send className="w-3.5 h-3.5" />
+                Publicar Tópico
+              </button>
+            </div>
           </div>
 
         </form>
