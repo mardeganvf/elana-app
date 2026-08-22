@@ -963,7 +963,7 @@ export const CommunityPage: React.FC = () => {
 
                               {post.isAnonymous && (
                                 <span className="text-[9px] font-bold bg-purple-500/20 text-purple-300 border border-purple-400/30 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                  <EyeOff className="w-3 h-3" /> Pseudônimo Confessionário
+                                  <EyeOff className="w-3 h-3" /> Confessionário
                                 </span>
                               )}
                             </div>
