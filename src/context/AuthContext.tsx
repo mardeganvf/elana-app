@@ -24,11 +24,14 @@ export const isAdminUser = (user: UserProfile | null): boolean => {
   return ADMIN_EMAILS.includes(emailLower) || user.role === 'admin' || emailLower.includes('admin');
 };
 
+export const GENERIC_DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23101B1E'/><circle cx='60' cy='45' r='22' fill='%23FF7F5B'/><path d='M25 105 C 25 75, 95 75, 95 105 Z' fill='%23FF7F5B'/></svg>";
+
 interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
   login: (email: string, name?: string) => void;
   logout: () => void;
+  updateUser: (updates: Partial<UserProfile>) => void;
   purchaseJourney: (journeyId: string) => void;
   completeLesson: (lessonId: string, xpReward?: number) => void;
   saveLessonNote: (lessonId: string, note: string) => void;
@@ -56,7 +59,7 @@ const DEFAULT_USER: UserProfile = {
   levelTitle: 'Semente',
   streakDays: 1,
   lastActiveDate: new Date().toISOString(),
-  badges: [ALL_BADGES[0]] // Only "Semente Plantada" badge (25 XP)
+  badges: [ALL_BADGES[0]] // Demo Helena badge
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -67,12 +70,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Force cleanup of old cached session if xp was 50
-        if (parsed.xp !== 25 && parsed.badges?.length === 1) {
-          parsed.xp = 25;
-          parsed.level = 1;
-          parsed.levelTitle = 'Semente';
-        }
         return parsed;
       } catch (e) {
         console.error('Error parsing stored session', e);
@@ -104,19 +101,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = (email: string, name?: string) => {
     const defaultName = name || email.split('@')[0];
-    const newUser: UserProfile = {
+    const isDemoHelena = email.toLowerCase() === 'helena@elana.com.br';
+
+    const newUser: UserProfile = isDemoHelena ? {
       ...DEFAULT_USER,
       email,
+      name: defaultName
+    } : {
+      id: `user-${Date.now()}`,
+      email,
       name: defaultName,
-      xp: 25,
+      avatar: GENERIC_DEFAULT_AVATAR,
+      role: 'Membro da Aldeia',
+      familyTag: 'Mãe / Pai de 1ª viagem',
+      purchasedJourneyIds: ['pais-recem-nascidos'],
+      completedLessonIds: [],
+      lessonNotes: {},
+      xp: 0,
       level: 1,
       levelTitle: 'Semente',
-      badges: [ALL_BADGES[0]],
-      completedLessonIds: [],
-      lessonNotes: {}
+      streakDays: 1,
+      lastActiveDate: new Date().toISOString(),
+      badges: []
     };
+
+    // Remove spotlight tour flag so tutorial runs for new user
+    localStorage.removeItem(`elana_spotlight_done_${email}`);
+
     setUser(newUser);
     localStorage.setItem('elana_user_session', JSON.stringify(newUser));
+
+    // Upsert new profile into Supabase 'profiles' table!
+    try {
+      supabase.from('profiles').upsert({
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+        avatar: newUser.avatar,
+        role: newUser.role,
+        family_tag: newUser.familyTag,
+        xp: newUser.xp,
+        level: newUser.level,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'email' }).then(({ error }) => {
+        if (error) console.log('Supabase profiles sync note:', error.message);
+      });
+    } catch (e) {
+      console.error('Supabase profiles sync error:', e);
+    }
+  };
+
+  const updateUser = (updates: Partial<UserProfile>) => {
+    if (!user) return;
+    const updatedUser: UserProfile = {
+      ...user,
+      ...updates
+    };
+    setUser(updatedUser);
+    localStorage.setItem('elana_user_session', JSON.stringify(updatedUser));
+
+    // Sync profile updates to Supabase 'profiles' table!
+    try {
+      supabase.from('profiles').upsert({
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        avatar: updatedUser.avatar,
+        role: updatedUser.role,
+        family_tag: updatedUser.familyTag,
+        xp: updatedUser.xp,
+        level: updatedUser.level,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'email' }).then(({ error }) => {
+        if (error) console.log('Supabase profile update note:', error.message);
+      });
+    } catch (e) {
+      console.error('Supabase profile update error:', e);
+    }
   };
 
   const logout = () => {
@@ -252,6 +313,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         login,
         logout,
+        updateUser,
         purchaseJourney,
         completeLesson,
         saveLessonNote,

@@ -16,7 +16,15 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
+
+  const handleProfileAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && updateUser) {
+      const imageUrl = URL.createObjectURL(file);
+      updateUser({ avatar: imageUrl });
+    }
+  };
   
   const [selectedFollowedProfile, setSelectedFollowedProfile] = useState<PublicUserProfile | null>(null);
   const [isLevelsModalOpen, setIsLevelsModalOpen] = useState(false);
@@ -209,15 +217,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
       <section className="bg-[#101B1E] rounded-3xl p-8 border border-white/10 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
         
         <div className="flex items-center gap-5">
-          <div className="relative">
+          <div className="relative group cursor-pointer">
             <img
               src={user.avatar}
               alt={user.name}
               className="w-20 h-20 rounded-full object-cover border-4 border-[#E66795] shadow-lg"
             />
+            {/* Camera Overlay Button to Change Profile Photo */}
+            <label 
+              className="absolute inset-0 rounded-full bg-black/65 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-opacity text-[10px] font-extrabold z-10"
+              title="Alterar Foto de Perfil"
+            >
+              <Camera className="w-5 h-5 text-white mb-0.5" />
+              <span>Editar</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleProfileAvatarChange}
+                className="hidden"
+              />
+            </label>
             <div 
-              onClick={() => setIsLevelsModalOpen(true)}
-              className="absolute -bottom-1 -right-1 bg-[#101B1E] text-white p-1 rounded-full border-2 border-[#101B1E] text-sm cursor-pointer hover:scale-110 transition-transform" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsLevelsModalOpen(true);
+              }}
+              className="absolute -bottom-1 -right-1 bg-[#101B1E] text-white p-1 rounded-full border-2 border-[#101B1E] text-sm cursor-pointer hover:scale-110 transition-transform z-20" 
               title={`Clique para ver os 15 Níveis de Evolução (${userLevelInfo.title})`}
             >
               {userLevelInfo.icon}

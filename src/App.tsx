@@ -57,12 +57,10 @@ const AppContent: React.FC = () => {
   if (!user || activeTab === 'login') {
     return (
       <LoginPage
-        onSuccess={(isHelenaDemo) => {
-          setActiveTab('dashboard');
+        onSuccess={() => {
+          setActiveTab('home');
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-          if (isHelenaDemo) {
-            setIsSpotlightTourOpen(true);
-          }
+          setIsSpotlightTourOpen(true);
         }}
       />
     );
