@@ -647,15 +647,6 @@ export const CommunityPage: React.FC = () => {
             <span>Respiro de 60 Segundos</span>
           </button>
 
-          {/* Button Criar Tópico Above Sidebar Menu */}
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="w-full flex items-center justify-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-bold text-xs uppercase tracking-wider py-3.5 px-4 rounded-2xl shadow-lg transition-all active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            Criar Tópico
-          </button>
-
           {/* Menu de Salas Panel */}
           <div className="bg-[#101B1E] rounded-3xl p-5 border border-white/10 shadow-xl space-y-6">
             
@@ -890,24 +881,34 @@ export const CommunityPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Text Search Bar (Positioned between Header Card & Posts Feed - Sem reticências) */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por palavras-chave, assuntos ou autores nesta sala"
-              className="w-full pl-11 pr-16 py-3.5 rounded-2xl bg-[#101B1E] border border-white/10 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#FF7F5B] transition-colors shadow-md"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs bg-white/10 px-2.5 py-1 rounded-lg"
-              >
-                Limpar
-              </button>
-            )}
+          {/* Text Search Bar & Criar Tópico Button Side-by-Side */}
+          <div className="flex items-center gap-3 w-full">
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar por palavras-chave, assuntos ou autores nesta sala"
+                className="w-full pl-11 pr-16 py-3.5 rounded-2xl bg-[#101B1E] border border-white/10 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#FF7F5B] transition-colors shadow-md"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs bg-white/10 px-2.5 py-1 rounded-lg"
+                >
+                  Limpar
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 px-5 rounded-2xl shadow-lg transition-all active:scale-95 shrink-0 whitespace-nowrap cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Criar Tópico</span>
+            </button>
           </div>
 
           {/* Feed of Posts */}
@@ -1181,9 +1182,7 @@ export const CommunityPage: React.FC = () => {
       {isCreateModalOpen && (
         <CreatePostModal 
           onClose={() => setIsCreateModalOpen(false)} 
-          defaultTab={activeSelection && activeSelection.type === 'geral' ? 'transversais' : activeSelection && activeSelection.type === 'idade' ? 'idades' : 'jornadas'}
-          defaultJourneyId={activeSelection && activeSelection.type === 'jornada' ? activeSelection.journeyId : 'pais-recem-nascidos'}
-          defaultRoomId={activeSelection && activeSelection.type === 'geral' ? activeSelection.roomId : 'confessionario'}
+          activeSelection={activeSelection}
         />
       )}
 

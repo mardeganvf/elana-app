@@ -5,58 +5,61 @@ import { TRANSVERSAL_ROOMS, AGE_BRACKET_ROOMS, EMOTIONAL_INTENTIONS } from '../.
 import { EmotionalIntention } from '../../types';
 import { X, Send, Lock, EyeOff } from 'lucide-react';
 
+export type ActiveSelection = 
+  | { type: 'jornada'; journeyId: string; subOption: 'ajuda' | 'celebrar' | 'desabafar' | 'abertas' }
+  | { type: 'geral'; roomId: string }
+  | { type: 'idade'; ageId: string }
+  | null;
+
 interface CreatePostModalProps {
   onClose: () => void;
-  defaultTab?: 'jornadas' | 'transversais' | 'idades';
-  defaultJourneyId?: string;
-  defaultRoomId?: string;
+  activeSelection?: ActiveSelection;
 }
 
 export const CreatePostModal: React.FC<CreatePostModalProps> = ({ 
   onClose,
-  defaultTab = 'jornadas',
-  defaultJourneyId = 'pais-recem-nascidos',
-  defaultRoomId = 'confessionario'
+  activeSelection
 }) => {
   const { createPost } = useCommunity();
 
-  const [postType, setPostType] = useState<'jornada' | 'transversal' | 'idade'>(
-    defaultTab === 'transversais' ? 'transversal' : defaultTab === 'idades' ? 'idade' : 'jornada'
-  );
-  
-  const [selectedJourneyId, setSelectedJourneyId] = useState<string>(defaultJourneyId);
-  const [selectedTransversalId, setSelectedTransversalId] = useState<string>(defaultRoomId);
-  const [selectedAgeId, setSelectedAgeId] = useState<string>('0-2');
-  const [emotionalIntention, setEmotionalIntention] = useState<EmotionalIntention>('desabafar');
-  
+  // Resolve current active room context
+  const postType: 'jornada' | 'transversal' | 'idade' = activeSelection?.type === 'geral' 
+    ? 'transversal' 
+    : activeSelection?.type === 'idade' 
+    ? 'idade' 
+    : 'jornada';
+
+  const selectedJourneyId = activeSelection?.type === 'jornada' ? activeSelection.journeyId : 'pais-recem-nascidos';
+  const selectedTransversalId = activeSelection?.type === 'geral' ? activeSelection.roomId : 'confessionario';
+  const selectedAgeId = activeSelection?.type === 'idade' ? activeSelection.ageId : '0-2';
+
+  // Compute default emotional intention if in journey
+  const initialIntention: EmotionalIntention = activeSelection?.type === 'jornada'
+    ? (activeSelection.subOption === 'ajuda' ? 'ajuda' : activeSelection.subOption === 'celebrar' ? 'celebrar' : 'desabafar')
+    : 'desabafar';
+
+  const [emotionalIntention, setEmotionalIntention] = useState<EmotionalIntention>(initialIntention);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [isAnonymous, setIsAnonymous] = useState<boolean>(postType === 'transversal' && selectedTransversalId === 'confessionario');
 
   const isConfessionario = postType === 'transversal' && selectedTransversalId === 'confessionario';
 
-  const handleLocationSelect = (value: string) => {
-    if (value.startsWith('jornada-')) {
-      setPostType('jornada');
-      setSelectedJourneyId(value.replace('jornada-', ''));
-      setIsAnonymous(false);
-    } else if (value.startsWith('transversal-')) {
-      const roomId = value.replace('transversal-', '');
-      setPostType('transversal');
-      setSelectedTransversalId(roomId);
-      setIsAnonymous(roomId === 'confessionario');
-    } else if (value.startsWith('idade-')) {
-      setPostType('idade');
-      setSelectedAgeId(value.replace('idade-', ''));
-      setIsAnonymous(false);
+  // Compute location name for the header badge
+  const getLocationName = () => {
+    if (postType === 'jornada') {
+      const j = JOURNEYS_DATA.find(item => item.id === selectedJourneyId);
+      return j ? `Jornada: ${j.title}` : 'Jornada Oficial';
     }
+    if (postType === 'transversal') {
+      const r = TRANSVERSAL_ROOMS.find(item => item.id === selectedTransversalId);
+      return r ? `Sala: ${r.name}` : 'Sala Transversal';
+    }
+    if (postType === 'idade') {
+      const a = AGE_BRACKET_ROOMS.find(item => item.id === selectedAgeId);
+      return a ? `Faixa Etária: ${a.name} (${a.range})` : 'Faixa Etária';
+    }
+    return 'Comunidade Elana';
   };
-
-  const currentSelectValue = postType === 'jornada' 
-    ? `jornada-${selectedJourneyId}`
-    : postType === 'transversal'
-    ? `transversal-${selectedTransversalId}`
-    : `idade-${selectedAgeId}`;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +73,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       moduleTopic: 'Geral',
       title: title.trim(),
       content: content.trim(),
-      isAnonymous: isConfessionario || isAnonymous
+      isAnonymous: isConfessionario
     });
 
     onClose();
@@ -90,7 +93,9 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               <h3 className="font-extrabold text-xl text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                 Criar Novo Tópico
               </h3>
-              <p className="text-xs text-slate-400">Espaço seguro de troca, acolhimento e empatia.</p>
+              <span className="inline-block text-[11px] font-bold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-0.5 rounded-full border border-[#FF7F5B]/20 mt-0.5">
+                {getLocationName()}
+              </span>
             </div>
           </div>
 
@@ -104,45 +109,9 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           
-          {/* Streamlined Category Dropdown */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
-              Onde deseja publicar?
-            </label>
-            <select
-              value={currentSelectValue}
-              onChange={(e) => handleLocationSelect(e.target.value)}
-              className="w-full p-3 rounded-2xl border border-white/15 text-xs bg-[#070D0F] text-white focus:outline-none focus:border-[#FF7F5B] transition-all cursor-pointer"
-            >
-              <optgroup label="Jornadas de Aprendizado">
-                {JOURNEYS_DATA.map(j => (
-                  <option key={`jornada-${j.id}`} value={`jornada-${j.id}`}>
-                    Jornada: {j.title}
-                  </option>
-                ))}
-              </optgroup>
-
-              <optgroup label="Salas de Acolhimento & Transversais">
-                {TRANSVERSAL_ROOMS.map(r => (
-                  <option key={`transversal-${r.id}`} value={`transversal-${r.id}`}>
-                    {r.emoji} Sala: {r.name} {r.isAnonymous ? '(100% Anônima)' : ''}
-                  </option>
-                ))}
-              </optgroup>
-
-              <optgroup label="Por Faixa Etária">
-                {AGE_BRACKET_ROOMS.map(a => (
-                  <option key={`idade-${a.id}`} value={`idade-${a.id}`}>
-                    Faixa Etária: {a.name} ({a.range})
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-          </div>
-
           {/* Emotional Intention Pills (Only for Journeys) */}
           {postType === 'jornada' && (
-            <div className="space-y-1.5 pt-1">
+            <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
                 Intenção da Postagem:
               </label>
@@ -174,9 +143,9 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           )}
 
           {/* Title Input */}
-          <div className="space-y-1.5 pt-1">
+          <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
-              Título do Tópico:
+              Assunto:
             </label>
             <input
               type="text"
@@ -191,12 +160,12 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           {/* Content Textarea */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
-              Sua Mensagem:
+              Mensagem:
             </label>
             <textarea
               required
               rows={4}
-              placeholder="Escreva com o coração... Lembre-se que este é um espaço seguro de acolhimento mútuo."
+              placeholder="Escreva com o coração... Este é um espaço seguro de acolhimento mútuo."
               value={content}
               onChange={(e) => setContent(e.target.value)}
               className="w-full p-3 rounded-2xl border border-white/15 text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B] transition-all resize-none"
