@@ -53,7 +53,8 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
         const subLabels: Record<string, string> = {
           ajuda: 'Preciso de Ajuda',
           celebrar: 'Vamos Celebrar',
-          desabafar: 'Preciso Desabafar'
+          desabafar: 'Preciso Desabafar',
+          abertas: 'Abertas pela Comunidade'
         };
         if (activeSelection.subOption && subLabels[activeSelection.subOption]) {
           return `${baseTitle} - ${subLabels[activeSelection.subOption]}`;
@@ -105,7 +106,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                 Criar Novo Tópico
               </h3>
               <p className="text-sm font-medium text-slate-300 mt-0.5">
-                Compartilhando em: <span className="text-[#FF7F5B] font-bold">{getLocationName()}</span>
+                em: <span className="text-[#FF7F5B] font-bold">{getLocationName()}</span>
               </p>
             </div>
           </div>
