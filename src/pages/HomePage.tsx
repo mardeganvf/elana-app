@@ -1,68 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { JOURNEYS_DATA } from '../data/journeysData';
 import { STORIES_DATA } from '../data/storiesData';
 import { Journey, Lesson, CourseModule } from '../types';
+import { JourneyCard } from '../components/catalog/JourneyCard';
 import { StoryViewerModal } from '../components/stories/StoryViewerModal';
 import { useAuth } from '../context/AuthContext';
-import { Play, CheckCircle2, Lock, Sparkles, X, HelpCircle, Quote } from 'lucide-react';
+import { Play, Flame, CheckCircle2, ChevronDown, Lock, Sparkles, Instagram } from 'lucide-react';
 
 interface HomePageProps {
   onSelectJourney: (journey: Journey) => void;
   onStartLearning: (journey: Journey) => void;
 }
-
-// 10 Random Supportive Phrases per Emotion
-const EMOTIONAL_PHRASES: Record<string, string[]> = {
-  sem_energia: [
-    "Está tudo bem parar. Você não precisa dar conta de tudo hoje. Respire.",
-    "O cansaço também é parte do caminho. Acolha seu ritmo sem se cobrar.",
-    "Dias pesados exigem passos leves. Faça só o possível e descanse.",
-    "Cuidar de você é o primeiro passo para conseguir cuidar de quem você ama.",
-    "Ninguém é forte o tempo todo. Permitir-se desacelerar é um ato de coragem.",
-    "Silencie as cobranças externas. Hoje, o seu melhor é simplesmente descansar.",
-    "A bateria acabou? Lembre-se que você não é uma máquina, é um ser humano.",
-    "Respire fundo. Essa fase passa e sua energia vai voltar no tempo dela.",
-    "Troque a culpa pelo descanso. Sua família precisa de você inteira, não perfeita.",
-    "Dê a si mesma a gentileza e o colo que você tão generosamente dá aos outros."
-  ],
-  com_esperanca: [
-    "Que bonito ver esse brilho no seu peito! Que a leveza acompanhe seu dia.",
-    "A esperança ilumina a rotina da casa. Guarde esse quentinho no coração.",
-    "Cada pequeno passo constrói uma caminhada sólida e cheia de paz.",
-    "Confie no processo. Você está construindo memórias preciosas na sua casa.",
-    "A leveza é contagiosa. Espalhe essa energia boa pra quem tá ao seu redor.",
-    "Olhe para trás e veja o quanto você já aprendeu e evoluiu até aqui!",
-    "Dias luminosos renovam nossas forças para continuar com amor e presença.",
-    "Que a paciência e a alegria guiem cada conversa e gesto do seu dia.",
-    "Você é o porto seguro da sua família. Sinta o orgulho da sua trajetória.",
-    "Ame o presente. As pequenas certezas de hoje são os frutos de amanhã."
-  ],
-  celebrando: [
-    "Conquista pequena também é vitória gigante! Comemore cada detalhe!",
-    "Que alegria! Toda conquista na rotina familiar merece festa no coração.",
-    "Celebre seu esforço! Educar e cuidar é uma arte de pequenos milagres diários.",
-    "Você conseguiu! Guarde essa sensação gostosa de dever cumprido.",
-    "Sorria! O dia a dia é feito de pequenos grandes momentos como esse.",
-    "Festa na rotina! Que essa vitória te dê ainda mais confiança para seguir.",
-    "Reconhecer seu próprio progresso é um gesto lindo de autocompaixão.",
-    "Comemore! Você se dedicou e os frutos da sua presença estão aparecendo.",
-    "Que gostoso ver as coisas fluindo. Aproveite cada segundo desse momento!",
-    "Brinde à sua dedicação! Você está fazendo um trabalho maravilhoso."
-  ],
-  precisando_luz: [
-    "Respire fundo. O dia tá pesado? Lembre que você não está sozinha nessa.",
-    "Quando tudo parecer confuso, dê um passo de cada vez. A tempestade passa.",
-    "Pedir colo e buscar apoio é sinal de sabedoria, não de fraqueza.",
-    "Se o peso estiver grande, divida com a nossa comunidade ou no Canal SOS.",
-    "Não guarde a dor só para você. Abra espaço para ser acolhida com carinho.",
-    "Mesmo nas noites mais escuras, a luz sempre volta a nascer. Aguente firme.",
-    "Abrace sua vulnerabilidade. Ninguém precisa atravessar os desafios a sós.",
-    "Coloque a mão no peito, sinta sua respiração e lembre: isso também passa.",
-    "Gentileza com você mesma agora. Você está fazendo o melhor que pode.",
-    "Estamos aqui com você. Uma palavra de afeto pode mudar o tom do seu dia."
-  ]
-};
 
 export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLearning }) => {
   const { user } = useAuth();
@@ -73,41 +21,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [selectedStoryFilter, setSelectedStoryFilter] = useState<string>('all');
 
-  // Daily Check-in Popup & Random Quote Modal State
-  const [isDailyCheckInOpen, setIsDailyCheckInOpen] = useState(false);
-  const [selectedEmotionId, setSelectedEmotionId] = useState<string | null>(null);
-  const [randomPhrase, setRandomPhrase] = useState<string | null>(null);
-
-  // Check if daily check-in popup has been shown today
-  useEffect(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const userEmail = user?.email || 'guest';
-    const hasDoneToday = localStorage.getItem(`elana_daily_checkin_${userEmail}_${todayStr}`);
-    if (!hasDoneToday) {
-      setIsDailyCheckInOpen(true);
-    }
-  }, [user?.email]);
-
-  const handleSelectDailyEmotion = (optionId: string) => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const userEmail = user?.email || 'guest';
-    localStorage.setItem(`elana_daily_checkin_${userEmail}_${todayStr}`, optionId);
-    
-    // Pick 1 of the 10 random phrases for the selected emotion
-    const phrases = EMOTIONAL_PHRASES[optionId] || EMOTIONAL_PHRASES['com_esperanca'];
-    const randomIndex = Math.floor(Math.random() * phrases.length);
-    const chosenPhrase = phrases[randomIndex];
-
-    setSelectedEmotionId(optionId);
-    setRandomPhrase(chosenPhrase);
-  };
-
-  const handleCloseCheckInModal = () => {
-    setIsDailyCheckInOpen(false);
-    setSelectedEmotionId(null);
-    setRandomPhrase(null);
-  };
-
   // Filtered stories list
   const filteredStories = STORIES_DATA.filter(story => {
     if (selectedStoryFilter === 'all') return true;
@@ -115,7 +28,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
     return targetJourney ? story.category === targetJourney.title : true;
   });
 
-  // Selected module index state for each journey
+  // Selected module index state for each journey (e.g., { 'pais-recem-nascidos': 0, 'construindo-pontes': 0 })
   const [selectedModuleMap, setSelectedModuleMap] = useState<Record<string, number>>({});
 
   // Background posters matched for each slide
@@ -126,6 +39,47 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
     'amor-escolhido': 'https://images.unsplash.com/photo-1543269664-76bc3997d9ea?w=1600&auto=format&fit=crop&q=80',
     'novos-caminhos': 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=1600&auto=format&fit=crop&q=80',
     'depois-do-silencio': 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=1600&auto=format&fit=crop&q=80'
+  };
+
+  // Lesson thumbnails mapping
+  const LESSON_THUMBS: Record<string, string> = {
+    'prn-1-1': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
+    'prn-1-2': 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=500&auto=format&fit=crop&q=80',
+    'prn-1-3': 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=500&auto=format&fit=crop&q=80',
+    'prn-1-4': 'https://images.unsplash.com/photo-1543269664-76bc3997d9ea?w=500&auto=format&fit=crop&q=80',
+    'prn-1-5': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80',
+    'prn-1-6': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80',
+    'prn-1-7': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+    'prn-1-8': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=80',
+    'prn-1-9': 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500&auto=format&fit=crop&q=80',
+    'prn-1-10': 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=500&auto=format&fit=crop&q=80',
+    'prn-1-11': 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=500&auto=format&fit=crop&q=80',
+    'prn-1-12': 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=500&auto=format&fit=crop&q=80',
+    'prn-1-13': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
+    'prn-1-14': 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=500&auto=format&fit=crop&q=80',
+    'prn-1-15': 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=500&auto=format&fit=crop&q=80',
+    'prn-1-16': 'https://images.unsplash.com/photo-1543269664-76bc3997d9ea?w=500&auto=format&fit=crop&q=80',
+    'prn-1-17': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80',
+
+    'prn-2-1': 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=500&auto=format&fit=crop&q=80',
+    'prn-2-2': 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=500&auto=format&fit=crop&q=80',
+    'prn-2-3': 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=500&auto=format&fit=crop&q=80',
+
+    'cp-1-1': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80',
+    'cp-1-2': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80',
+    'cp-1-3': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
+
+    'sing-1-1': 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=500&auto=format&fit=crop&q=80',
+    'sing-1-2': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
+
+    'ae-1-1': 'https://images.unsplash.com/photo-1543269664-76bc3997d9ea?w=500&auto=format&fit=crop&q=80',
+    'ae-2-1': 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=500&auto=format&fit=crop&q=80',
+
+    'nc-1-1': 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=500&auto=format&fit=crop&q=80',
+    'nc-2-1': 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=500&auto=format&fit=crop&q=80',
+
+    'dds-1-1': 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=500&auto=format&fit=crop&q=80',
+    'dds-2-1': 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=500&auto=format&fit=crop&q=80'
   };
 
   // Auto-advance hero slider every 6 seconds unless user hovers
@@ -139,7 +93,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
   const activeJourney = JOURNEYS_DATA[currentSlideIndex];
 
-  // Helper for Sentence Case formatting
+
+
+  const purchasedJourneys = JOURNEYS_DATA.filter(j => user?.purchasedJourneyIds.includes(j.id));
+
+  // Helper for Sentence Case formatting (Capitalize first letter only)
   const toSentenceCase = (str: string, addPeriod = false) => {
     if (!str) return '';
     const trimmed = str.trim();
@@ -153,7 +111,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
     return result;
   };
 
-  // Helper to split subgroup and lesson title
+  // Helper to split subgroup (UPPERCASE) and lesson title (Sentence Case with period)
   const formatLessonText = (module: CourseModule, lesson: Lesson) => {
     let subgroup = module.title;
     let videoName = lesson.title;
@@ -165,10 +123,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
     }
 
     return {
-      subgroup: subgroup.toUpperCase(),
-      videoName: toSentenceCase(videoName, true)
+      subgroup: subgroup.toUpperCase(), // UPPER CASE for Subgroup Box Title
+      videoName: toSentenceCase(videoName, true) // Sentence case with period for video name
     };
   };
+
+
 
   return (
     <div className="space-y-14 pb-24 animate-fade-in">
@@ -220,156 +180,224 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
             </p>
           </div>
 
-          <div className="pt-2 flex items-center gap-4">
-            <button
-              onClick={() => onStartLearning(activeJourney)}
-              className="bg-[#FF7F5B] hover:bg-[#e06847] text-white font-extrabold text-xs sm:text-sm px-6 py-3.5 rounded-2xl shadow-xl flex items-center gap-2.5 transition-all transform hover:scale-105 active:scale-95 uppercase tracking-wider"
-            >
-              <Play className="w-4 h-4 fill-current" />
-              <span>Ver Trilha do Curso</span>
-            </button>
-          </div>
-
         </div>
 
-        {/* Slider Indicator Dots */}
-        <div className="absolute bottom-6 right-6 sm:bottom-8 sm:right-10 z-20 flex items-center gap-2 bg-black/40 backdrop-blur-md px-3.5 py-2 rounded-full border border-white/10">
-          {JOURNEYS_DATA.map((j, idx) => (
-            <button
-              key={j.id}
-              onClick={() => setCurrentSlideIndex(idx)}
-              className={`h-2 rounded-full transition-all ${
-                idx === currentSlideIndex ? 'w-6 bg-[#FF7F5B]' : 'w-2 bg-white/40 hover:bg-white/70'
-              }`}
-              title={j.title}
-            />
-          ))}
+        {/* 6 Slider Dots / Indicators */}
+        <div className="absolute bottom-4 right-6 z-20 flex items-center gap-2 bg-black/50 backdrop-blur-md px-3.5 py-2 rounded-full border border-white/10">
+          {JOURNEYS_DATA.map((journey, idx) => {
+            const isActive = idx === currentSlideIndex;
+            return (
+              <button
+                key={journey.id}
+                onClick={() => setCurrentSlideIndex(idx)}
+                className={`h-2.5 rounded-full transition-all duration-300 ${
+                  isActive ? 'w-8 bg-[#FF7F5B]' : 'w-2.5 bg-white/40 hover:bg-white/70'
+                }`}
+                title={journey.title}
+              />
+            );
+          })}
         </div>
 
       </section>
 
-      {/* Stories Carousel Header Section */}
-      <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <span className="text-xs font-extrabold text-[#FF7F5B] uppercase tracking-wider block">
-              Pílulas de Conhecimento
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-              Gotas de Respiro & Reflexão
+      {/* Row: Continuar Assistindo (If user has purchased journeys) */}
+      {purchasedJourneys.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
+              <Flame className="w-5 h-5 text-[#FF7F5B] fill-current" />
+              Continuar Assistindo ({purchasedJourneys.length})
             </h2>
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full no-scrollbar">
-            <button
-              onClick={() => setSelectedStoryFilter('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
-                selectedStoryFilter === 'all'
-                  ? 'bg-white text-slate-900 border-white shadow-md'
-                  : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
-              }`}
-            >
-              Todas
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {purchasedJourneys.map(journey => (
+              <JourneyCard
+                key={journey.id}
+                journey={journey}
+                onSelect={onSelectJourney}
+                onStartLearning={onStartLearning}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
-            {JOURNEYS_DATA.map(j => (
+      {/* NEW SECTION: Stories em Vídeo Vertical (Posicionado entre Continuar Assistindo e PRN) */}
+      <section className="space-y-4 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 
+            className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none flex items-center gap-2.5 uppercase"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] p-[2px] flex items-center justify-center shadow-lg">
+              <Instagram className="w-4 h-4 text-white" />
+            </div>
+            <span>Destaques</span>
+          </h2>
+        </div>
+
+        {/* Filter Pills Bar for Stories by Journey */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
+          <button
+            onClick={() => setSelectedStoryFilter('all')}
+            className={`px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 ${
+              selectedStoryFilter === 'all'
+                ? 'bg-[#FF7F5B] text-white shadow-md'
+                : 'bg-[#162327] text-slate-300 hover:bg-[#1f3137] border border-white/10'
+            }`}
+          >
+            Todas as Jornadas ({STORIES_DATA.length})
+          </button>
+
+          {JOURNEYS_DATA.map(j => {
+            const count = STORIES_DATA.filter(s => s.category === j.title).length;
+            if (count === 0) return null;
+            return (
               <button
                 key={j.id}
                 onClick={() => setSelectedStoryFilter(j.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
+                className={`px-3.5 py-1.5 rounded-full font-bold shrink-0 transition-all ${
                   selectedStoryFilter === j.id
-                    ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
-                    : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+                    ? 'bg-[#FF7F5B] text-white shadow-md'
+                    : 'bg-[#162327] text-slate-300 hover:bg-[#1f3137] border border-white/10'
                 }`}
               >
-                {j.title}
+                {j.title} ({count})
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
-        {/* Stories Cards Circle Row */}
-        <div className="flex items-center gap-4 overflow-x-auto py-3 no-scrollbar">
-          {filteredStories.map((story, idx) => (
-            <div
-              key={story.id}
-              onClick={() => setActiveStoryIndex(idx)}
-              className="flex flex-col items-center gap-2 group cursor-pointer shrink-0"
-            >
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 border-2 border-[#FF7F5B] group-hover:scale-105 transition-all shadow-lg relative bg-gradient-to-tr from-[#FF7F5B] to-[#FFD166]">
+        {/* Stories Horizontal Carousel of Vertical 9:16 Custom Cover Art Cards */}
+        <div 
+          id="carousel-destaques"
+          className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 custom-scrollbar scroll-smooth"
+        >
+          {filteredStories.map((story) => {
+            const originalIndex = STORIES_DATA.findIndex(s => s.id === story.id);
+            return (
+              <div
+                key={story.id}
+                onClick={() => setActiveStoryIndex(originalIndex !== -1 ? originalIndex : 0)}
+                className="group flex-none w-36 sm:w-44 aspect-[9/16] rounded-2xl overflow-hidden relative cursor-pointer border border-white/15 shadow-xl hover:border-[#FF7F5B] transition-all duration-300 hover:-translate-y-1.5"
+              >
+                {/* Vertical Poster Image (Full Custom Cover Art) */}
                 <img
                   src={story.posterUrl}
                   alt={story.title}
-                  className="w-full h-full rounded-full object-cover border-2 border-[#070D0F]"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 rounded-full bg-black/20 group-hover:bg-transparent transition-colors flex items-center justify-center">
-                  <Play className="w-5 h-5 text-white fill-current opacity-90 group-hover:scale-110 transition-transform" />
+
+                {/* Vignette Overlay for Avatar */}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/30 pointer-events-none"></div>
+
+                {/* Top Author Avatar with Instagram Ring */}
+                <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] shadow-md group-hover:scale-110 transition-transform">
+                    <img
+                      src={story.authorAvatar}
+                      alt={story.authorName}
+                      className="w-full h-full object-cover rounded-full border border-black"
+                    />
+                  </div>
                 </div>
+
+                {/* Hover Play Button */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 backdrop-blur-[1px]">
+                  <div className="w-11 h-11 rounded-full bg-[#FF7F5B] text-white flex items-center justify-center shadow-xl transform group-hover:scale-110 transition-transform">
+                    <Play className="w-5 h-5 fill-current translate-x-0.5" />
+                  </div>
+                </div>
+
               </div>
-              <span className="text-[11px] font-bold text-slate-300 group-hover:text-white truncate max-w-[90px] text-center">
-                {story.title}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
-      {/* Journeys Modules & Horizontal Slide Carousel List */}
+      {/* 06 Blocks: One Block for Each Journey with Horizontal Scrollable Lesson Thumbs */}
       {JOURNEYS_DATA.map((journey) => {
         const isPurchased = user?.purchasedJourneyIds.includes(journey.id);
-        const selectedModuleIdx = selectedModuleMap[journey.id] || 0;
+        const hasMultipleModules = journey.modules.length > 1;
+
+        // Current selected module index (default to 0)
+        const selectedModuleIdx = selectedModuleMap[journey.id] ?? 0;
         const currentModule = journey.modules[selectedModuleIdx] || journey.modules[0];
+        const displayLessons = currentModule.lessons;
+        const carouselId = `carousel-journey-${journey.id}`;
 
         return (
-          <section key={journey.id} className="space-y-4 pt-4 border-t border-white/10">
+          <section key={journey.id} className="space-y-4">
             
-            {/* Journey Row Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span 
-                    className="w-3 h-3 rounded-full inline-block"
-                    style={{ backgroundColor: journey.themeColor }}
-                  />
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                    Jornada Oficial
-                  </span>
-                </div>
-                <h3 
-                  onClick={() => onSelectJourney(journey)}
-                  className="text-2xl sm:text-3xl font-black text-white hover:text-[#FF7F5B] transition-colors cursor-pointer"
-                  style={{ fontFamily: 'var(--font-heading)' }}
+            {/* Journey Header Bar (3-Line Clean Layout) */}
+            <div className="border-b border-white/10 pb-4 space-y-2">
+              
+              {/* Line 1: Nome da Jornada */}
+              <div className="flex items-center justify-between">
+                <div 
+                  className="flex items-center gap-3 cursor-pointer group/title"
+                  onClick={() => isPurchased ? onStartLearning(journey) : onSelectJourney(journey)}
                 >
-                  {journey.title}
-                </h3>
+                  <div 
+                    className="w-3.5 h-8 rounded-full shrink-0" 
+                    style={{ backgroundColor: journey.themeColor }}
+                  ></div>
+                  <h2 
+                    className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none group-hover/title:text-[#FF7F5B] transition-colors"
+                    style={{ fontFamily: 'var(--font-heading)' }}
+                  >
+                    {journey.title}
+                  </h2>
+                </div>
               </div>
 
-              {/* Module Dropdown Tabs */}
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                {journey.modules.map((mod, modIdx) => (
-                  <button
-                    key={mod.id}
-                    onClick={() => setSelectedModuleMap(prev => ({ ...prev, [journey.id]: modIdx }))}
-                    className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all border whitespace-nowrap ${
-                      selectedModuleIdx === modIdx
-                        ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md font-extrabold'
-                        : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
-                    }`}
-                  >
-                    Módulo {mod.number}: {mod.title}
-                  </button>
-                ))}
-              </div>
+              {/* Line 2: Texto de Apoio entre aspas */}
+              <p className="text-xs sm:text-sm text-slate-300 italic pl-6 leading-relaxed">
+                "{journey.tagline}"
+              </p>
+
+              {/* Line 3: Seletor do Módulo Embaixo (Apenas se tiver mais de 1 módulo: PRN e PON) */}
+              {hasMultipleModules && (
+                <div className="pl-6 pt-1">
+                  <div className="relative inline-flex items-center">
+                    <select
+                      value={selectedModuleIdx}
+                      onChange={(e) => {
+                        const newIdx = Number(e.target.value);
+                        setSelectedModuleMap(prev => ({ ...prev, [journey.id]: newIdx }));
+                      }}
+                      className="appearance-none bg-[#162327] hover:bg-[#1f3137] text-white font-bold text-xs px-3.5 py-2 pr-8 rounded-xl border border-white/20 focus:outline-none focus:border-[#FF7F5B] cursor-pointer shadow-md transition-colors"
+                    >
+                      {journey.modules.map((mod, idx) => (
+                        <option key={mod.id} value={idx} className="bg-[#101B1E] text-white py-1">
+                          Módulo 0{mod.number}: {mod.title} ({mod.lessons.length} conteúdos)
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+                  </div>
+                </div>
+              )}
+
             </div>
 
             {/* Horizontal Scrollable Carousel of Lessons for Selected Module */}
-            <div className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 custom-scrollbar scroll-smooth">
-              {currentModule.lessons.map((lesson, lessonIndex) => {
+            <div 
+              id={carouselId}
+              className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 custom-scrollbar scroll-smooth"
+            >
+              {displayLessons.map((lesson, lessonIndex) => {
+                const { subgroup, videoName } = formatLessonText(currentModule, lesson);
+                const thumb = LESSON_THUMBS[lesson.id] || SLIDE_POSTERS[journey.id];
                 const isCompleted = user?.completedLessonIds.includes(lesson.id);
+
+                // Lock rule:
+                // If journey is purchased: All lessons unlocked.
+                // If journey is NOT purchased: 1st video (lessonIndex === 0 && selectedModuleIdx === 0) is FREE preview ("Assista agora"), remaining are LOCKED.
                 const isFirstVideo = lessonIndex === 0 && selectedModuleIdx === 0;
                 const isUnlocked = isPurchased || isFirstVideo;
-                const { subgroup, videoName } = formatLessonText(currentModule, lesson);
 
                 return (
                   <div
@@ -382,7 +410,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                     {/* Video Thumbnail */}
                     <div className="relative aspect-[16/9] overflow-hidden bg-slate-900">
                       <img
-                        src="https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=500&auto=format&fit=crop&q=80"
+                        src={thumb}
                         alt={lesson.title}
                         className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
                           !isUnlocked ? 'opacity-50 grayscale-[30%]' : isCompleted ? 'opacity-65 group-hover:opacity-85' : 'opacity-85 group-hover:opacity-100'
@@ -398,7 +426,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                         </div>
                       )}
 
-                      {/* Top-Left 'Assista agora' Badge */}
+                      {/* Top-Left 'Assista agora' Badge for 1st video of unpurchased journeys */}
                       {!isPurchased && isFirstVideo && !isCompleted && (
                         <div className="absolute top-2 left-2 z-10 bg-emerald-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-md shadow-md backdrop-blur-md flex items-center gap-1">
                           <Sparkles className="w-3 h-3 fill-current" />
@@ -406,7 +434,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                         </div>
                       )}
 
-                      {/* Top-Right ONLY Lock Icon Badge */}
+                      {/* Top-Right ONLY Lock Icon Badge for locked videos (without text) */}
                       {!isUnlocked && (
                         <div className="absolute top-2 right-2 z-10 bg-black/80 text-amber-400 p-1.5 rounded-md border border-amber-500/30 backdrop-blur-md flex items-center justify-center shadow-md">
                           <Lock className="w-3.5 h-3.5 text-amber-400" />
@@ -440,9 +468,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                       </span>
                     </div>
 
-                    {/* Lesson Text Below Thumbnail */}
+                    {/* Lesson Text Below Thumbnail (Fixed h-[142px] for uniform card height with 2-line description) */}
                     <div className="p-4 bg-[#101B1E] h-[142px] flex flex-col justify-between space-y-1.5">
                       <div className="space-y-0.5">
+                        {/* Fixed h-4 slot for 'Já assistido' / 'Assista agora' / 'Conteúdo exclusivo' line so height never changes */}
                         <div className="h-4 flex items-center">
                           {isCompleted ? (
                             <span className="text-[10px] font-bold text-[#8A9A5B] flex items-center gap-1 tracking-wide">
@@ -478,7 +507,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                         </h4>
                       </div>
 
-                      {/* Descrição curta do vídeo */}
+                      {/* Descrição curta do vídeo: Sem título, sem negrito, máx 2 linhas (...) e tooltip no hover */}
                       <p 
                         className="text-xs font-normal text-slate-400 leading-relaxed line-clamp-2 cursor-pointer hover:text-slate-200 transition-colors pt-1 border-t border-white/5"
                         title={lesson.description}
@@ -503,118 +532,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
           initialIndex={activeStoryIndex}
           onClose={() => setActiveStoryIndex(null)}
         />
-      )}
-
-      {/* DAILY CHECK-IN POPUP MODAL + RANDOM WELCOMING PHRASE POPUP */}
-      {isDailyCheckInOpen && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
-          <div className="bg-[#0D1518] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-center space-y-6 m-auto">
-            
-            {/* Close Modal Button */}
-            <button
-              onClick={handleCloseCheckInModal}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
-              title="Fechar"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            {!selectedEmotionId ? (
-              /* Step 1: Select Today's Feeling */
-              <>
-                {/* Header Icon */}
-                <div className="w-14 h-14 rounded-2xl bg-[#FFD166]/15 border border-[#FFD166]/30 text-[#FFD166] flex items-center justify-center mx-auto shadow-inner">
-                  <Sparkles className="w-7 h-7" />
-                </div>
-
-                {/* Title & Subtitle */}
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-[#FFD166]">
-                    <span>CHECK-IN EMOCIONAL DIÁRIO</span>
-                    <div title="Registre como está se sentindo hoje para acompanhar sua evolução emocional no diário.">
-                      <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
-                    </div>
-                  </div>
-                  <h3 className="text-2xl sm:text-3xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                    Como você está se sentindo hoje?
-                  </h3>
-                </div>
-
-                {/* 4 Official Options Grid */}
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <button
-                    onClick={() => handleSelectDailyEmotion('sem_energia')}
-                    className="flex items-center gap-3 p-4 rounded-2xl bg-[#132024] hover:bg-[#1b2b30] border border-white/10 transition-all cursor-pointer text-left group hover:scale-102"
-                  >
-                    <span className="text-2xl">🪫</span>
-                    <span className="text-sm font-bold text-white group-hover:text-[#FF7F5B] transition-colors">
-                      Sem Energia
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => handleSelectDailyEmotion('com_esperanca')}
-                    className="flex items-center gap-3 p-4 rounded-2xl bg-[#132024] hover:bg-[#1b2b30] border border-white/10 transition-all cursor-pointer text-left group hover:scale-102"
-                  >
-                    <span className="text-2xl">☀️</span>
-                    <span className="text-sm font-bold text-white group-hover:text-[#FFD166] transition-colors">
-                      Com Esperança
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => handleSelectDailyEmotion('celebrando')}
-                    className="flex items-center gap-3 p-4 rounded-2xl bg-[#132024] hover:bg-[#1b2b30] border border-white/10 transition-all cursor-pointer text-left group hover:scale-102"
-                  >
-                    <span className="text-2xl">🎉</span>
-                    <span className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
-                      Celebrando
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => handleSelectDailyEmotion('precisando_luz')}
-                    className="flex items-center gap-3 p-4 rounded-2xl bg-[#132024] hover:bg-[#1b2b30] border border-white/10 transition-all cursor-pointer text-left group hover:scale-102"
-                  >
-                    <span className="text-2xl">🆘</span>
-                    <span className="text-sm font-bold text-white group-hover:text-rose-300 transition-colors">
-                      Precisando de Luz
-                    </span>
-                  </button>
-                </div>
-              </>
-            ) : (
-              /* Step 2: Random Welcoming Supportive Phrase Popup */
-              <div className="space-y-6 py-2 animate-fade-in">
-                <div className="w-16 h-16 rounded-full bg-[#E66795]/20 border border-[#E66795]/40 text-[#E66795] flex items-center justify-center mx-auto text-3xl shadow-lg animate-pulse">
-                  💖
-                </div>
-
-                <div className="space-y-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-[#FFD166] block">
-                    Mensagem de Acolhimento do Dia
-                  </span>
-                  
-                  <div className="bg-[#132024] p-6 rounded-3xl border border-white/15 shadow-inner relative space-y-3">
-                    <Quote className="w-6 h-6 text-[#FF7F5B] opacity-60 mx-auto mb-1" />
-                    <p className="text-base sm:text-lg font-bold text-white leading-relaxed italic">
-                      "{randomPhrase}"
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleCloseCheckInModal}
-                  className="w-full bg-[#FF7F5B] hover:bg-[#e06847] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-xl transition-all cursor-pointer transform hover:scale-105 active:scale-95"
-                >
-                  Guardar no Coração 💖
-                </button>
-              </div>
-            )}
-
-          </div>
-        </div>,
-        document.body
       )}
 
     </div>
