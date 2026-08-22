@@ -315,14 +315,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
         </div>
       </section>
 
-      {/* Journeys Modules & Lessons List */}
+      {/* Journeys Modules & Horizontal Slide Carousel List */}
       {JOURNEYS_DATA.map((journey) => {
         const isPurchased = user?.purchasedJourneyIds.includes(journey.id);
         const selectedModuleIdx = selectedModuleMap[journey.id] || 0;
         const currentModule = journey.modules[selectedModuleIdx] || journey.modules[0];
 
         return (
-          <section key={journey.id} className="space-y-6 pt-4 border-t border-white/10">
+          <section key={journey.id} className="space-y-4 pt-4 border-t border-white/10">
             
             {/* Journey Row Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -363,68 +363,103 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
               </div>
             </div>
 
-            {/* Lessons Grid for Selected Module */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {currentModule.lessons.map((lesson, lIdx) => {
+            {/* Horizontal Scrollable Carousel of Lessons for Selected Module */}
+            <div className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 custom-scrollbar scroll-smooth">
+              {currentModule.lessons.map((lesson, lessonIndex) => {
                 const isCompleted = user?.completedLessonIds.includes(lesson.id);
-                const isFirstVideo = lIdx === 0 && selectedModuleIdx === 0;
+                const isFirstVideo = lessonIndex === 0 && selectedModuleIdx === 0;
                 const isUnlocked = isPurchased || isFirstVideo;
                 const { subgroup, videoName } = formatLessonText(currentModule, lesson);
 
                 return (
                   <div
                     key={lesson.id}
-                    onClick={() => {
-                      if (isUnlocked) {
-                        onStartLearning(journey);
-                      }
-                    }}
-                    className={`group bg-[#101B1E] rounded-3xl overflow-hidden border border-white/10 transition-all hover:border-[#FF7F5B]/50 hover:shadow-2xl flex flex-col justify-between ${
-                      isUnlocked ? 'cursor-pointer' : 'opacity-85'
+                    onClick={() => isUnlocked ? onStartLearning(journey) : onSelectJourney(journey)}
+                    className={`group flex-none w-64 sm:w-72 bg-[#101B1E] rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer flex flex-col justify-between hover:-translate-y-1 ${
+                      isCompleted ? 'border-[#8A9A5B]/40 bg-[#101B1E]/90' : 'border-white/10 hover:border-white/20'
                     }`}
                   >
-                    {/* Thumbnail Box */}
-                    <div className="relative aspect-video overflow-hidden bg-black/40">
+                    {/* Video Thumbnail */}
+                    <div className="relative aspect-[16/9] overflow-hidden bg-slate-900">
                       <img
-                        src="https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=800&auto=format&fit=crop&q=80"
+                        src="https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=500&auto=format&fit=crop&q=80"
                         alt={lesson.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
+                          !isUnlocked ? 'opacity-50 grayscale-[30%]' : isCompleted ? 'opacity-65 group-hover:opacity-85' : 'opacity-85 group-hover:opacity-100'
+                        }`}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#101B1E] via-transparent to-black/30" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#101B1E] via-transparent to-transparent"></div>
 
-                      {/* Play Overlay Icon */}
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-[#FF7F5B] text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                          <Play className="w-5 h-5 fill-current ml-0.5" />
+                      {/* Top-Left 'Já Assistido' Badge */}
+                      {isCompleted && (
+                        <div className="absolute top-2 left-2 z-10 bg-[#8A9A5B] text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-md backdrop-blur-md flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 fill-current" />
+                          <span>Já Assistido</span>
                         </div>
+                      )}
+
+                      {/* Top-Left 'Assista agora' Badge */}
+                      {!isPurchased && isFirstVideo && !isCompleted && (
+                        <div className="absolute top-2 left-2 z-10 bg-emerald-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-md shadow-md backdrop-blur-md flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 fill-current" />
+                          <span>Assista agora</span>
+                        </div>
+                      )}
+
+                      {/* Top-Right ONLY Lock Icon Badge */}
+                      {!isUnlocked && (
+                        <div className="absolute top-2 right-2 z-10 bg-black/80 text-amber-400 p-1.5 rounded-md border border-amber-500/30 backdrop-blur-md flex items-center justify-center shadow-md">
+                          <Lock className="w-3.5 h-3.5 text-amber-400" />
+                        </div>
+                      )}
+
+                      {/* Play or Lock Overlay on hover */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
+                        {isUnlocked ? (
+                          <div 
+                            className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-xl transform group-hover:scale-110 transition-transform"
+                            style={{ backgroundColor: journey.themeColor }}
+                          >
+                            <Play className="w-5 h-5 fill-current translate-x-0.5" />
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1.5 text-white">
+                            <div className="w-12 h-12 rounded-full bg-amber-500/90 flex items-center justify-center text-white shadow-2xl transform group-hover:scale-110 transition-transform">
+                              <Lock className="w-5 h-5" />
+                            </div>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-black/80 text-amber-300 px-3 py-1 rounded-md shadow-md border border-amber-500/30">
+                              Quero fazer parte!
+                            </span>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Duration Tag */}
-                      <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-xl text-[10px] font-bold text-white border border-white/10">
+                      {/* Duration badge */}
+                      <span className="absolute bottom-2 right-2 text-[10px] font-bold bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-white border border-white/10">
                         {lesson.duration}
-                      </div>
+                      </span>
                     </div>
 
-                    {/* Lesson Content Text Box */}
-                    <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
-                      <div className="space-y-1.5">
-                        
-                        {/* Status Label */}
-                        <div className="flex items-center justify-between min-h-[18px]">
+                    {/* Lesson Text Below Thumbnail */}
+                    <div className="p-4 bg-[#101B1E] h-[142px] flex flex-col justify-between space-y-1.5">
+                      <div className="space-y-0.5">
+                        <div className="h-4 flex items-center">
                           {isCompleted ? (
-                            <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5 fill-current" /> Concluída
+                            <span className="text-[10px] font-bold text-[#8A9A5B] flex items-center gap-1 tracking-wide">
+                              <CheckCircle2 className="w-3 h-3 shrink-0" /> Já assistido
                             </span>
                           ) : !isPurchased && isFirstVideo ? (
-                            <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
-                              <Sparkles className="w-3.5 h-3.5 fill-current" /> Assista agora
+                            <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 tracking-wide">
+                              <Sparkles className="w-3 h-3 shrink-0 fill-current" /> Assista agora
                             </span>
                           ) : !isUnlocked ? (
-                            <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1">
-                              <Lock className="w-3.5 h-3.5" /> Conteúdo exclusivo
+                            <span className="text-[10px] font-bold text-amber-400/90 flex items-center gap-1 tracking-wide">
+                              <Lock className="w-3 h-3 shrink-0" /> Conteúdo exclusivo
                             </span>
                           ) : (
-                            <span className="text-[10px] opacity-0 select-none pointer-events-none">•</span>
+                            <span className="text-[10px] opacity-0 select-none flex items-center gap-1 pointer-events-none" aria-hidden="true">
+                              <CheckCircle2 className="w-3 h-3 shrink-0" /> Placeholder
+                            </span>
                           )}
                         </div>
 
@@ -445,7 +480,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
                       {/* Descrição curta do vídeo */}
                       <p 
-                        className="text-xs font-normal text-slate-400 leading-relaxed line-clamp-2 pt-1 border-t border-white/5"
+                        className="text-xs font-normal text-slate-400 leading-relaxed line-clamp-2 cursor-pointer hover:text-slate-200 transition-colors pt-1 border-t border-white/5"
                         title={lesson.description}
                       >
                         {lesson.description}
