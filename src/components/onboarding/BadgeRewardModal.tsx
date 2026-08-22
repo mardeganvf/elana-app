@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles, ArrowRight, Heart, Award } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { ALL_BADGES, getLevelFromXP } from '../../data/gamificationData';
 
 interface BadgeRewardModalProps {
   isOpen: boolean;
@@ -8,11 +9,31 @@ interface BadgeRewardModalProps {
 }
 
 export const BadgeRewardModal: React.FC<BadgeRewardModalProps> = ({ isOpen, onClose }) => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
 
   if (!isOpen || !user) return null;
 
-  const firstName = user.name.split(' ')[0] || 'Helena';
+  const firstName = user.name.split(' ')[0] || 'Membro';
+
+  const handleClaimReward = () => {
+    // Award 25 XP and unlock "Semente Plantada" badge
+    const sementeBadge = ALL_BADGES[0];
+    const hasBadge = user.badges.some(b => b.id === sementeBadge.id);
+    const updatedBadges = hasBadge ? user.badges : [...user.badges, sementeBadge];
+    const newXP = user.xp < 25 ? 25 : user.xp;
+    const levelInfo = getLevelFromXP(newXP);
+
+    if (updateUser) {
+      updateUser({
+        xp: newXP,
+        level: levelInfo.level,
+        levelTitle: levelInfo.title,
+        badges: updatedBadges
+      });
+    }
+
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 select-none overflow-hidden">
@@ -20,7 +41,7 @@ export const BadgeRewardModal: React.FC<BadgeRewardModalProps> = ({ isOpen, onCl
       {/* Dark Blurred Backdrop */}
       <div 
         className="absolute inset-0 bg-[#03070A]/90 backdrop-blur-xl animate-fade-in"
-        onClick={onClose}
+        onClick={handleClaimReward}
       />
 
       {/* Radial Glow Rays in Background */}
@@ -67,7 +88,7 @@ export const BadgeRewardModal: React.FC<BadgeRewardModalProps> = ({ isOpen, onCl
           </p>
         </div>
 
-        {/* VOCÊ GANHOU 25 PONTOS! (Moved after Parabéns Box) */}
+        {/* VOCÊ GANHOU 25 PONTOS! */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FF7F5B]/20 border border-[#FF7F5B]/50 text-[#FF7F5B] text-xs sm:text-sm font-black uppercase tracking-wider shadow-inner">
           <Award className="w-4 h-4 text-[#FF7F5B]" />
           <span>VOCÊ GANHOU 25 PONTOS!</span>
@@ -81,8 +102,8 @@ export const BadgeRewardModal: React.FC<BadgeRewardModalProps> = ({ isOpen, onCl
 
         {/* Claim / Action Button */}
         <button
-          onClick={onClose}
-          className="w-full bg-gradient-to-r from-[#E66795] via-[#FF7F5B] to-[#FF7F5B] hover:opacity-95 text-white font-extrabold text-sm py-4 px-6 rounded-2xl shadow-[0_10px_30px_rgba(255,127,91,0.4)] transition-all flex items-center justify-center gap-2 uppercase tracking-wider group transform hover:-translate-y-0.5 active:translate-y-0"
+          onClick={handleClaimReward}
+          className="w-full bg-gradient-to-r from-[#E66795] via-[#FF7F5B] to-[#FF7F5B] hover:opacity-95 text-white font-extrabold text-sm py-4 px-6 rounded-2xl shadow-[0_10px_30px_rgba(255,127,91,0.4)] transition-all flex items-center justify-center gap-2 uppercase tracking-wider group transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
         >
           <span>Começar Minha Jornada ✨</span>
           <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
