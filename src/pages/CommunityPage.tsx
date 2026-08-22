@@ -247,10 +247,10 @@ export const CommunityPage: React.FC = () => {
     setVisibleCount(15);
   }, [activeSelection, selectedEmotionId, searchQuery]);
 
-  // Ensure scroll to top of viewport when page mounts or modal opens
+  // Ensure scroll to top of viewport when page mounts or when user clicks any room/subgroup
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-  }, []);
+  }, [activeSelection]);
 
   useEffect(() => {
     if (isDailyCheckinModalOpen || isBreathingModalOpen) {

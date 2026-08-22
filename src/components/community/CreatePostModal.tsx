@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useCommunity } from '../../context/CommunityContext';
 import { JOURNEYS_DATA } from '../../data/journeysData';
-import { TRANSVERSAL_ROOMS, AGE_BRACKET_ROOMS, EMOTIONAL_INTENTIONS } from '../../data/communityData';
+import { TRANSVERSAL_ROOMS, AGE_BRACKET_ROOMS } from '../../data/communityData';
 import { EmotionalIntention } from '../../types';
 import { X, Send, Lock, EyeOff } from 'lucide-react';
 
@@ -39,16 +39,12 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     ? (activeSelection.subOption === 'ajuda' ? 'ajuda' : activeSelection.subOption === 'celebrar' ? 'celebrar' : 'desabafar')
     : 'desabafar';
 
-  // Only show intention pills if posting in a journey AND not inside a specific subOption already
-  const showIntentionSelector = postType === 'jornada' && (!activeSelection || (activeSelection.type === 'jornada' && activeSelection.subOption === 'abertas'));
-
-  const [emotionalIntention, setEmotionalIntention] = useState<EmotionalIntention>(initialIntention);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
   const isConfessionario = postType === 'transversal' && selectedTransversalId === 'confessionario';
 
-  // Compute location name for the header badge
+  // Compute location name for the subtitle
   const getLocationName = () => {
     if (postType === 'jornada') {
       const j = JOURNEYS_DATA.find(item => item.id === selectedJourneyId);
@@ -73,7 +69,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       journeyId: postType === 'jornada' ? selectedJourneyId : undefined,
       transversalRoomId: postType === 'transversal' ? selectedTransversalId : undefined,
       ageBracketId: postType === 'idade' ? selectedAgeId : undefined,
-      emotionalIntention: postType === 'jornada' ? emotionalIntention : undefined,
+      emotionalIntention: postType === 'jornada' ? initialIntention : undefined,
       moduleTopic: 'Geral',
       title: title.trim(),
       content: content.trim(),
@@ -87,19 +83,19 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
       <div className="bg-[#101B1E] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-white m-auto space-y-5 max-h-[90vh] overflow-y-auto">
         
-        {/* Clean Header with Balanced Forum Badge to the Right */}
+        {/* Clean Header with Subtitle Text Below Title */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] text-white flex items-center justify-center text-lg shadow-md shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] text-white flex items-center justify-center text-xl shadow-md shrink-0">
               💬
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-extrabold text-lg text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+            <div>
+              <h3 className="font-extrabold text-xl text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                 Criar Novo Tópico
               </h3>
-              <span className="text-[10px] font-bold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2 py-0.5 rounded-full border border-[#FF7F5B]/20 shrink-0 self-center">
-                {getLocationName()}
-              </span>
+              <p className="text-sm font-medium text-slate-300 mt-0.5">
+                Publicando em: <span className="text-[#FF7F5B] font-bold">{getLocationName()}</span>
+              </p>
             </div>
           </div>
 
@@ -112,37 +108,12 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
-          
-          {/* Emotional Intention Pills (Only if in Journey & on Abertas subOption) */}
-          {showIntentionSelector && (
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
-                Intenção da Postagem:
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {EMOTIONAL_INTENTIONS.map(ei => (
-                  <button
-                    key={ei.id}
-                    type="button"
-                    onClick={() => setEmotionalIntention(ei.id as EmotionalIntention)}
-                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold transition-all text-center cursor-pointer ${
-                      emotionalIntention === ei.id
-                        ? 'border-[#FF7F5B] bg-[#FF7F5B]/20 text-white shadow-md font-extrabold'
-                        : 'border-white/10 bg-[#070D0F] text-slate-400 hover:bg-white/5'
-                    }`}
-                  >
-                    {ei.badge}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Confessionario Anonymous Callout */}
           {isConfessionario && (
             <div className="bg-purple-500/10 border border-purple-500/30 p-3 rounded-2xl flex items-center gap-2.5 text-xs text-purple-200">
               <EyeOff className="w-4 h-4 text-purple-300 shrink-0" />
-              <span>Postagem 100% anônima com pseudônimo espontâneo (ex: <em>Coração Sereno #482</em>).</span>
+              <span>Postagem 100% anônima com apelido aleatório.</span>
             </div>
           )}
 
