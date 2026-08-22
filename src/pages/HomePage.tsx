@@ -5,12 +5,64 @@ import { STORIES_DATA } from '../data/storiesData';
 import { Journey, Lesson, CourseModule } from '../types';
 import { StoryViewerModal } from '../components/stories/StoryViewerModal';
 import { useAuth } from '../context/AuthContext';
-import { Play, CheckCircle2, Lock, Sparkles, X, HelpCircle } from 'lucide-react';
+import { Play, CheckCircle2, Lock, Sparkles, X, HelpCircle, Quote } from 'lucide-react';
 
 interface HomePageProps {
   onSelectJourney: (journey: Journey) => void;
   onStartLearning: (journey: Journey) => void;
 }
+
+// 10 Random Supportive Phrases per Emotion
+const EMOTIONAL_PHRASES: Record<string, string[]> = {
+  sem_energia: [
+    "Está tudo bem parar. Você não precisa dar conta de tudo hoje. Respire.",
+    "O cansaço também é parte do caminho. Acolha seu ritmo sem se cobrar.",
+    "Dias pesados exigem passos leves. Faça só o possível e descanse.",
+    "Cuidar de você é o primeiro passo para conseguir cuidar de quem você ama.",
+    "Ninguém é forte o tempo todo. Permitir-se desacelerar é um ato de coragem.",
+    "Silencie as cobranças externas. Hoje, o seu melhor é simplesmente descansar.",
+    "A bateria acabou? Lembre-se que você não é uma máquina, é um ser humano.",
+    "Respire fundo. Essa fase passa e sua energia vai voltar no tempo dela.",
+    "Troque a culpa pelo descanso. Sua família precisa de você inteira, não perfeita.",
+    "Dê a si mesma a gentileza e o colo que você tão generosamente dá aos outros."
+  ],
+  com_esperanca: [
+    "Que bonito ver esse brilho no seu peito! Que a leveza acompanhe seu dia.",
+    "A esperança ilumina a rotina da casa. Guarde esse quentinho no coração.",
+    "Cada pequeno passo constrói uma caminhada sólida e cheia de paz.",
+    "Confie no processo. Você está construindo memórias preciosas na sua casa.",
+    "A leveza é contagiosa. Espalhe essa energia boa pra quem tá ao seu redor.",
+    "Olhe para trás e veja o quanto você já aprendeu e evoluiu até aqui!",
+    "Dias luminosos renovam nossas forças para continuar com amor e presença.",
+    "Que a paciência e a alegria guiem cada conversa e gesto do seu dia.",
+    "Você é o porto seguro da sua família. Sinta o orgulho da sua trajetória.",
+    "Ame o presente. As pequenas certezas de hoje são os frutos de amanhã."
+  ],
+  celebrando: [
+    "Conquista pequena também é vitória gigante! Comemore cada detalhe!",
+    "Que alegria! Toda conquista na rotina familiar merece festa no coração.",
+    "Celebre seu esforço! Educar e cuidar é uma arte de pequenos milagres diários.",
+    "Você conseguiu! Guarde essa sensação gostosa de dever cumprido.",
+    "Sorria! O dia a dia é feito de pequenos grandes momentos como esse.",
+    "Festa na rotina! Que essa vitória te dê ainda mais confiança para seguir.",
+    "Reconhecer seu próprio progresso é um gesto lindo de autocompaixão.",
+    "Comemore! Você se dedicou e os frutos da sua presença estão aparecendo.",
+    "Que gostoso ver as coisas fluindo. Aproveite cada segundo desse momento!",
+    "Brinde à sua dedicação! Você está fazendo um trabalho maravilhoso."
+  ],
+  precisando_luz: [
+    "Respire fundo. O dia tá pesado? Lembre que você não está sozinha nessa.",
+    "Quando tudo parecer confuso, dê um passo de cada vez. A tempestade passa.",
+    "Pedir colo e buscar apoio é sinal de sabedoria, não de fraqueza.",
+    "Se o peso estiver grande, divida com a nossa comunidade ou no Canal SOS.",
+    "Não guarde a dor só para você. Abra espaço para ser acolhida com carinho.",
+    "Mesmo nas noites mais escuras, a luz sempre volta a nascer. Aguente firme.",
+    "Abrace sua vulnerabilidade. Ninguém precisa atravessar os desafios a sós.",
+    "Coloque a mão no peito, sinta sua respiração e lembre: isso também passa.",
+    "Gentileza com você mesma agora. Você está fazendo o melhor que pode.",
+    "Estamos aqui com você. Uma palavra de afeto pode mudar o tom do seu dia."
+  ]
+};
 
 export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLearning }) => {
   const { user } = useAuth();
@@ -21,8 +73,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [selectedStoryFilter, setSelectedStoryFilter] = useState<string>('all');
 
-  // Daily Check-in Popup State (Appears on first visit of the day)
+  // Daily Check-in Popup & Random Quote Modal State
   const [isDailyCheckInOpen, setIsDailyCheckInOpen] = useState(false);
+  const [selectedEmotionId, setSelectedEmotionId] = useState<string | null>(null);
+  const [randomPhrase, setRandomPhrase] = useState<string | null>(null);
 
   // Check if daily check-in popup has been shown today
   useEffect(() => {
@@ -38,7 +92,20 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
     const todayStr = new Date().toISOString().split('T')[0];
     const userEmail = user?.email || 'guest';
     localStorage.setItem(`elana_daily_checkin_${userEmail}_${todayStr}`, optionId);
+    
+    // Pick 1 of the 10 random phrases for the selected emotion
+    const phrases = EMOTIONAL_PHRASES[optionId] || EMOTIONAL_PHRASES['com_esperanca'];
+    const randomIndex = Math.floor(Math.random() * phrases.length);
+    const chosenPhrase = phrases[randomIndex];
+
+    setSelectedEmotionId(optionId);
+    setRandomPhrase(chosenPhrase);
+  };
+
+  const handleCloseCheckInModal = () => {
     setIsDailyCheckInOpen(false);
+    setSelectedEmotionId(null);
+    setRandomPhrase(null);
   };
 
   // Filtered stories list
@@ -403,80 +470,112 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
         />
       )}
 
-      {/* DAILY CHECK-IN POPUP MODAL (Appears on first visit of the day matching exact design) */}
+      {/* DAILY CHECK-IN POPUP MODAL + RANDOM WELCOMING PHRASE POPUP */}
       {isDailyCheckInOpen && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
           <div className="bg-[#0D1518] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-center space-y-6 m-auto">
             
             {/* Close Modal Button */}
             <button
-              onClick={() => setIsDailyCheckInOpen(false)}
+              onClick={handleCloseCheckInModal}
               className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
               title="Fechar"
             >
               <X className="w-4 h-4" />
             </button>
 
-            {/* Header Icon */}
-            <div className="w-14 h-14 rounded-2xl bg-[#FFD166]/15 border border-[#FFD166]/30 text-[#FFD166] flex items-center justify-center mx-auto shadow-inner">
-              <Sparkles className="w-7 h-7" />
-            </div>
-
-            {/* Title & Subtitle */}
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-[#FFD166]">
-                <span>CHECK-IN EMOCIONAL DIÁRIO</span>
-                <div title="Registre como está se sentindo hoje para acompanhar sua evolução emocional no diário.">
-                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+            {!selectedEmotionId ? (
+              /* Step 1: Select Today's Feeling */
+              <>
+                {/* Header Icon */}
+                <div className="w-14 h-14 rounded-2xl bg-[#FFD166]/15 border border-[#FFD166]/30 text-[#FFD166] flex items-center justify-center mx-auto shadow-inner">
+                  <Sparkles className="w-7 h-7" />
                 </div>
+
+                {/* Title & Subtitle */}
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-[#FFD166]">
+                    <span>CHECK-IN EMOCIONAL DIÁRIO</span>
+                    <div title="Registre como está se sentindo hoje para acompanhar sua evolução emocional no diário.">
+                      <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Como você está se sentindo hoje?
+                  </h3>
+                </div>
+
+                {/* 4 Official Options Grid */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    onClick={() => handleSelectDailyEmotion('sem_energia')}
+                    className="flex items-center gap-3 p-4 rounded-2xl bg-[#132024] hover:bg-[#1b2b30] border border-white/10 transition-all cursor-pointer text-left group hover:scale-102"
+                  >
+                    <span className="text-2xl">🪫</span>
+                    <span className="text-sm font-bold text-white group-hover:text-[#FF7F5B] transition-colors">
+                      Sem Energia
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => handleSelectDailyEmotion('com_esperanca')}
+                    className="flex items-center gap-3 p-4 rounded-2xl bg-[#132024] hover:bg-[#1b2b30] border border-white/10 transition-all cursor-pointer text-left group hover:scale-102"
+                  >
+                    <span className="text-2xl">☀️</span>
+                    <span className="text-sm font-bold text-white group-hover:text-[#FFD166] transition-colors">
+                      Com Esperança
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => handleSelectDailyEmotion('celebrando')}
+                    className="flex items-center gap-3 p-4 rounded-2xl bg-[#132024] hover:bg-[#1b2b30] border border-white/10 transition-all cursor-pointer text-left group hover:scale-102"
+                  >
+                    <span className="text-2xl">🎉</span>
+                    <span className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
+                      Celebrando
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => handleSelectDailyEmotion('precisando_luz')}
+                    className="flex items-center gap-3 p-4 rounded-2xl bg-[#132024] hover:bg-[#1b2b30] border border-white/10 transition-all cursor-pointer text-left group hover:scale-102"
+                  >
+                    <span className="text-2xl">🆘</span>
+                    <span className="text-sm font-bold text-white group-hover:text-rose-300 transition-colors">
+                      Precisando de Luz
+                    </span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Step 2: Random Welcoming Supportive Phrase Popup */
+              <div className="space-y-6 py-2 animate-fade-in">
+                <div className="w-16 h-16 rounded-full bg-[#E66795]/20 border border-[#E66795]/40 text-[#E66795] flex items-center justify-center mx-auto text-3xl shadow-lg animate-pulse">
+                  💖
+                </div>
+
+                <div className="space-y-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#FFD166] block">
+                    Mensagem de Acolhimento do Dia
+                  </span>
+                  
+                  <div className="bg-[#132024] p-6 rounded-3xl border border-white/15 shadow-inner relative space-y-3">
+                    <Quote className="w-6 h-6 text-[#FF7F5B] opacity-60 mx-auto mb-1" />
+                    <p className="text-base sm:text-lg font-bold text-white leading-relaxed italic">
+                      "{randomPhrase}"
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleCloseCheckInModal}
+                  className="w-full bg-[#FF7F5B] hover:bg-[#e06847] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-xl transition-all cursor-pointer transform hover:scale-105 active:scale-95"
+                >
+                  Guardar no Coração 💖
+                </button>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                Como você está se sentindo hoje?
-              </h3>
-            </div>
-
-            {/* 4 Official Options Grid (Matching exact screenshot layout) */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                onClick={() => handleSelectDailyEmotion('sem_energia')}
-                className="flex items-center gap-3 p-4 rounded-2xl bg-[#132024] hover:bg-[#1b2b30] border border-white/10 transition-all cursor-pointer text-left group hover:scale-102"
-              >
-                <span className="text-2xl">🪫</span>
-                <span className="text-sm font-bold text-white group-hover:text-[#FF7F5B] transition-colors">
-                  Sem Energia
-                </span>
-              </button>
-
-              <button
-                onClick={() => handleSelectDailyEmotion('com_esperanca')}
-                className="flex items-center gap-3 p-4 rounded-2xl bg-[#132024] hover:bg-[#1b2b30] border border-white/10 transition-all cursor-pointer text-left group hover:scale-102"
-              >
-                <span className="text-2xl">☀️</span>
-                <span className="text-sm font-bold text-white group-hover:text-[#FFD166] transition-colors">
-                  Com Esperança
-                </span>
-              </button>
-
-              <button
-                onClick={() => handleSelectDailyEmotion('celebrando')}
-                className="flex items-center gap-3 p-4 rounded-2xl bg-[#132024] hover:bg-[#1b2b30] border border-white/10 transition-all cursor-pointer text-left group hover:scale-102"
-              >
-                <span className="text-2xl">🎉</span>
-                <span className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
-                  Celebrando
-                </span>
-              </button>
-
-              <button
-                onClick={() => handleSelectDailyEmotion('precisando_luz')}
-                className="flex items-center gap-3 p-4 rounded-2xl bg-[#132024] hover:bg-[#1b2b30] border border-white/10 transition-all cursor-pointer text-left group hover:scale-102"
-              >
-                <span className="text-2xl">🆘</span>
-                <span className="text-sm font-bold text-white group-hover:text-rose-300 transition-colors">
-                  Precisando de Luz
-                </span>
-              </button>
-            </div>
+            )}
 
           </div>
         </div>,
