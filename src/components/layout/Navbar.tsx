@@ -472,7 +472,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                 Seu Diário de Emoções
               </h3>
               <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-                Acompanhe a frequência dos seus sentimentos nos últimos 28 dias e acolha seu momento sem julgamentos.
+                Acompanhe como você tem se sentido nos últimos dias e respeite cada fase, com carinho e sem culpa.
               </p>
             </div>
 
