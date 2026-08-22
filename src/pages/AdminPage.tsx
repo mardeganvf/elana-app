@@ -15,8 +15,7 @@ import {
   Inbox,
   Trash2,
   RotateCcw,
-  Search,
-  Sparkles
+  Search
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -226,10 +225,6 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  const handleApplyQuickTemplate = (templateText: string) => {
-    setSosReplyText(templateText);
-  };
-
   // Moderation Handlers
   const handleModerateItem = (id: string, newStatus: 'aprovado' | 'rejeitado') => {
     setModItems(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
@@ -400,42 +395,42 @@ export const AdminPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Urgency Filter Pills */}
+            {/* Urgency Filter Pills (Without 'Triagem IA' title) */}
             <div className="flex items-center gap-1.5 bg-[#070D0F] p-1.5 rounded-2xl border border-white/10 self-start sm:self-center">
-              <span className="text-[10px] font-bold text-slate-400 px-2 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-[#FF7F5B]" /> Triagem IA:
-              </span>
               <button
                 onClick={() => setSosUrgencyFilter('todos')}
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all ${
-                  sosUrgencyFilter === 'todos' ? 'bg-[#FF7F5B] text-slate-950' : 'text-slate-400 hover:text-white'
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
+                  sosUrgencyFilter === 'todos' ? 'bg-[#FF7F5B] text-slate-950 font-extrabold' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Todas
               </button>
               <button
                 onClick={() => setSosUrgencyFilter('alta')}
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all ${
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
                   sosUrgencyFilter === 'alta' ? 'bg-red-500 text-white' : 'text-red-400 hover:bg-red-500/10'
                 }`}
+                title="Filtrar Urgência Alta"
               >
-                🔴 Alta
+                🔴
               </button>
               <button
                 onClick={() => setSosUrgencyFilter('media')}
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all ${
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
                   sosUrgencyFilter === 'media' ? 'bg-amber-500 text-slate-950' : 'text-amber-400 hover:bg-amber-500/10'
                 }`}
+                title="Filtrar Urgência Média"
               >
-                🟡 Média
+                🟡
               </button>
               <button
                 onClick={() => setSosUrgencyFilter('baixa')}
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all ${
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
                   sosUrgencyFilter === 'baixa' ? 'bg-emerald-500 text-slate-950' : 'text-emerald-400 hover:bg-emerald-500/10'
                 }`}
+                title="Filtrar Urgência Baixa"
               >
-                🟢 Baixa
+                🟢
               </button>
             </div>
           </div>
@@ -445,13 +440,13 @@ export const AdminPage: React.FC = () => {
             
             {/* Left Sub-Folder Navigation (3 cols) */}
             <div className="lg:col-span-3 space-y-2">
-              <div className="bg-[#070D0F] p-3 rounded-2xl border border-white/10 space-y-1">
+              <div className="bg-[#070D0F] p-3 rounded-2xl border border-white/10 space-y-1 text-left">
                 <button
                   onClick={() => {
                     setSosFolder('inbox');
                     setSelectedSosTicket(null);
                   }}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs transition-all ${
+                  className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs transition-all text-left cursor-pointer ${
                     sosFolder === 'inbox'
                       ? 'bg-[#FF7F5B] text-slate-950 shadow-md font-black'
                       : 'text-slate-300 hover:bg-white/5 hover:text-white'
@@ -475,7 +470,7 @@ export const AdminPage: React.FC = () => {
                     setSosFolder('completed');
                     setSelectedSosTicket(null);
                   }}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs transition-all ${
+                  className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs transition-all text-left cursor-pointer ${
                     sosFolder === 'completed'
                       ? 'bg-emerald-500 text-slate-950 shadow-md font-black'
                       : 'text-slate-300 hover:bg-white/5 hover:text-white'
@@ -483,7 +478,7 @@ export const AdminPage: React.FC = () => {
                 >
                   <div className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Atendimentos Finalizados</span>
+                    <span>Finalizados</span>
                   </div>
                   <span className="text-[10px] font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded-full">
                     {completedCount}
@@ -495,7 +490,7 @@ export const AdminPage: React.FC = () => {
                     setSosFolder('trash');
                     setSelectedSosTicket(null);
                   }}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs transition-all ${
+                  className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs transition-all text-left cursor-pointer ${
                     sosFolder === 'trash'
                       ? 'bg-rose-500 text-white shadow-md font-black'
                       : 'text-slate-300 hover:bg-white/5 hover:text-white'
@@ -503,7 +498,7 @@ export const AdminPage: React.FC = () => {
                 >
                   <div className="flex items-center gap-2.5">
                     <Trash2 className="w-4 h-4 text-slate-400" />
-                    <span>Deletados (Lixeira)</span>
+                    <span>Lixeira</span>
                   </div>
                   <span className="text-[10px] font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded-full">
                     {trashCount}
@@ -536,7 +531,7 @@ export const AdminPage: React.FC = () => {
                   <div
                     key={ticket.id}
                     onClick={() => setSelectedSosTicket(ticket)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2 text-left relative ${
+                    className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1.5 text-left relative ${
                       selectedSosTicket?.id === ticket.id
                         ? 'bg-[#162327] border-[#FF7F5B] shadow-xl'
                         : 'bg-[#070D0F] border-white/10 hover:border-white/20'
@@ -544,35 +539,24 @@ export const AdminPage: React.FC = () => {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <img src={ticket.userAvatar} alt={ticket.userName} className="w-8 h-8 rounded-full object-cover shrink-0 border border-white/10" />
+                        <img src={ticket.userAvatar} alt={ticket.userName} className="w-7 h-7 rounded-full object-cover shrink-0 border border-white/10" />
                         <h4 className="text-xs font-bold text-white truncate">{ticket.userName}</h4>
                       </div>
 
-                      {/* AI Urgency Badge */}
-                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
-                        ticket.urgency === 'alta' 
-                          ? 'bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse' 
-                          : ticket.urgency === 'media'
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      }`}>
-                        {ticket.urgency === 'alta' ? '🔴 Urgência Alta' : ticket.urgency === 'media' ? '🟡 Média' : '🟢 Baixa'}
-                      </span>
+                      {/* Colored Urgency Dot Indicator Only */}
+                      <span 
+                        className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                          ticket.urgency === 'alta' 
+                            ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse' 
+                            : ticket.urgency === 'media'
+                            ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]'
+                            : 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]'
+                        }`} 
+                        title={ticket.urgency === 'alta' ? 'Urgência Alta' : ticket.urgency === 'media' ? 'Urgência Média' : 'Urgência Baixa'}
+                      />
                     </div>
 
-                    <div className="space-y-0.5">
-                      <h5 className="text-xs font-bold text-slate-200 truncate">{ticket.subject}</h5>
-                      <p className="text-[11px] text-slate-400 line-clamp-2 leading-tight">
-                        {ticket.message}
-                      </p>
-                    </div>
-
-                    <div className="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-white/5">
-                      <span>{ticket.createdAt}</span>
-                      <span className={ticket.status === 'atendido' ? 'text-emerald-400 font-bold' : ticket.status === 'deletado' ? 'text-rose-400' : 'text-amber-400 font-bold'}>
-                        {ticket.status === 'atendido' ? '✓ Atendido' : ticket.status === 'deletado' ? '🗑️ Lixeira' : '⏱️ Aguardando'}
-                      </span>
-                    </div>
+                    <h5 className="text-xs font-medium text-slate-300 truncate leading-snug">{ticket.subject}</h5>
                   </div>
                 ))
               )}
@@ -626,19 +610,6 @@ export const AdminPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* AI Classification Info Pill */}
-                  <div className="flex items-center justify-between text-xs bg-[#101B1E] p-3 rounded-xl border border-white/5">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-[#FF7F5B]" />
-                      <span className="text-[11px] text-slate-300 font-bold">Classificação IA:</span>
-                    </div>
-                    <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                      selectedSosTicket.urgency === 'alta' ? 'bg-red-500/20 text-red-300 border border-red-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                    }`}>
-                      {selectedSosTicket.urgency === 'alta' ? '🔴 Urgência Alta' : '🟡 Média'}
-                    </span>
-                  </div>
-
                   {/* Email Body Message */}
                   <div className="bg-[#101B1E] p-4 rounded-xl border border-white/10 space-y-2">
                     <div className="flex justify-between items-center border-b border-white/5 pb-2">
@@ -664,24 +635,6 @@ export const AdminPage: React.FC = () => {
                   {/* Reply Form (If not deleted) */}
                   {selectedSosTicket.status !== 'deletado' && (
                     <div className="space-y-3 pt-2 border-t border-white/10">
-                      <span className="text-[10px] font-bold text-[#FF7F5B] uppercase tracking-wider block">
-                        Respostas Acolhedoras Pré-Aprovadas:
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() => handleApplyQuickTemplate('Olá querida! Respira fundo. Você não está sozinha nessa. Estamos aqui com você!')}
-                          className="text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 px-2.5 py-1 rounded-lg text-slate-300 cursor-pointer"
-                        >
-                          💖 Respiro e Acolhimento
-                        </button>
-                        <button
-                          onClick={() => handleApplyQuickTemplate('Oi! Entendo perfeitamente esse cansaço extremo. Que tal pausar 5 minutos e tomarmos uma água juntas?')}
-                          className="text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 px-2.5 py-1 rounded-lg text-slate-300 cursor-pointer"
-                        >
-                          ☕ Convite para Pausa
-                        </button>
-                      </div>
-
                       <textarea
                         value={sosReplyText}
                         onChange={(e) => setSosReplyText(e.target.value)}
