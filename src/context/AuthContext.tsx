@@ -11,6 +11,19 @@ export interface SOSTicketResponse {
   isRead: boolean;
 }
 
+export const ADMIN_EMAILS = [
+  'admin@elana.com.br',
+  'mariana@elana.com.br',
+  'vitor@elana.com.br',
+  'helena@elana.com.br'
+];
+
+export const isAdminUser = (user: UserProfile | null): boolean => {
+  if (!user || !user.email) return false;
+  const emailLower = user.email.toLowerCase();
+  return ADMIN_EMAILS.includes(emailLower) || user.role === 'admin' || emailLower.includes('admin');
+};
+
 interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
