@@ -902,13 +902,16 @@ export const CommunityPage: React.FC = () => {
               )}
             </div>
 
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 px-5 rounded-2xl shadow-lg transition-all active:scale-95 shrink-0 whitespace-nowrap cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Criar Tópico</span>
-            </button>
+            {/* Only show Criar Tópico button when user is inside a specific room/journey (activeSelection !== null) */}
+            {activeSelection && (
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 px-5 rounded-2xl shadow-lg transition-all active:scale-95 shrink-0 whitespace-nowrap cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Criar Tópico</span>
+              </button>
+            )}
           </div>
 
           {/* Feed of Posts */}

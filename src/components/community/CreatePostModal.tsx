@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useCommunity } from '../../context/CommunityContext';
 import { JOURNEYS_DATA } from '../../data/journeysData';
 import { TRANSVERSAL_ROOMS, AGE_BRACKET_ROOMS, EMOTIONAL_INTENTIONS } from '../../data/communityData';
@@ -79,9 +80,9 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white overflow-y-auto">
-      <div className="bg-[#101B1E] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-white my-auto space-y-5">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
+      <div className="bg-[#101B1E] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-white m-auto space-y-5 max-h-[90vh] overflow-y-auto">
         
         {/* Clean Header */}
         <div className="flex items-center justify-between">
@@ -200,6 +201,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
         </form>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
