@@ -19,7 +19,7 @@ import {
   X,
   Send,
   Lock,
-  CheckCircle2
+  BarChart3
 } from 'lucide-react';
 import logoElana from '../../assets/logo-elana.png';
 
@@ -30,7 +30,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenAuthModal }) => {
-  const { user, isAuthenticated, logout, sosResponse, sendSosTicket, markSosResponseRead, addXP } = useAuth();
+  const { user, isAuthenticated, logout, sosResponse, sendSosTicket, markSosResponseRead } = useAuth();
   const { fontSize, setFontSize } = useFontSize();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMamadaMode, setIsMamadaMode] = useState(false);
@@ -39,10 +39,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
   // Modals State for Emoções and SOS
   const [isEmotionalHistoryOpen, setIsEmotionalHistoryOpen] = useState(false);
   const [isEmergencyOpen, setIsEmergencyOpen] = useState(false);
-  
-  // Today's Check-in State
-  const [todayEmotion, setTodayEmotion] = useState<string | null>(null);
-  const [showRewardNotification, setShowRewardNotification] = useState(false);
 
   // SOS Private Message State
   const [sosMessage, setSosMessage] = useState('');
@@ -78,14 +74,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Official 4 Check-in Options matching the exact design
-  const CHECKIN_OPTIONS = [
-    { id: 'sem_energia', label: 'Sem Energia', emoji: '🪫', color: 'bg-rose-500/10 border-rose-500/30 text-rose-300' },
-    { id: 'com_esperanca', label: 'Com Esperança', emoji: '☀️', color: 'bg-[#FFD166]/10 border-[#FFD166]/30 text-[#FFD166]' },
-    { id: 'celebrando', label: 'Celebrando', emoji: '🎉', color: 'bg-purple-500/10 border-purple-500/30 text-purple-300' },
-    { id: 'precisando_luz', label: 'Precisando de Luz', emoji: '🆘', color: 'bg-rose-600/20 border-rose-500/40 text-rose-300' },
-  ];
 
   // 4-Week Emotional Summary (Last 28 Days) aligned strictly with the 4 official options
   const emotionalSummary = [
@@ -127,17 +115,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     { day: 19, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
     { day: 20, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
     { day: 21, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-    { day: 22, month: 'Ago', emoji: todayEmotion ? CHECKIN_OPTIONS.find(o => o.id === todayEmotion)?.emoji || '☀️' : '☀️', label: 'Hoje', isToday: true },
+    { day: 22, month: 'Ago', emoji: '☀️', label: 'Com Esperança', isToday: true },
   ];
-
-  const handleSelectEmotion = (optionId: string) => {
-    setTodayEmotion(optionId);
-    setShowRewardNotification(true);
-    addXP(10); // Reward check-in badge XP
-    setTimeout(() => {
-      setShowRewardNotification(false);
-    }, 4000);
-  };
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -190,7 +169,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         {/* Center: Functional Action Shortcuts (Suas Emoções & SOS) */}
         <div className="hidden lg:flex items-center gap-3 shrink-0">
           
-          {/* Suas Emoções (Abre o Check-in Emocional e Diário de 4 Semanas) */}
+          {/* Suas Emoções (Abre o Diário de Emoções das Últimas 4 Semanas) */}
           <button
             onClick={() => {
               setIsEmotionalHistoryOpen(true);
@@ -198,7 +177,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             }}
             data-tour="emotions-button"
             className="bg-white/10 hover:bg-white/20 text-white border border-white/15 font-bold text-xs px-3.5 py-2 rounded-full flex items-center gap-2 transition-all whitespace-nowrap active:scale-95 cursor-pointer"
-            title="Suas Emoções - Check-in e Resumo de 4 Semanas"
+            title="Suas Emoções - Resumo de 4 Semanas"
           >
             <HeartHandshake className="w-4 h-4 text-[#E66795] shrink-0" />
             <span>Suas Emoções</span>
@@ -474,67 +453,35 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         </button>
       </div>
 
-      {/* Feature 1 Modal: Check-in Emocional Diário + Resumo de 4 Semanas */}
+      {/* Feature 1 Modal: Diário de Emoções (Resumo de 4 Semanas e Calendário) */}
       {isEmotionalHistoryOpen && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
           <div className="bg-[#101B1E] rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-center space-y-6 m-auto max-h-[90vh] overflow-y-auto">
             
             <button
               onClick={() => setIsEmotionalHistoryOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
-            {/* 1. Bloco Principal: Check-in Emocional Diário (4 Botões Oficiais) */}
-            <div className="bg-[#070D0F] p-5 sm:p-6 rounded-3xl border border-white/10 space-y-5">
-              
-              <div className="w-12 h-12 rounded-2xl bg-[#FFD166]/10 border border-[#FFD166]/30 text-[#FFD166] flex items-center justify-center mx-auto shadow-inner">
-                <Sparkles className="w-6 h-6" />
+            <div className="space-y-2">
+              <div className="w-14 h-14 rounded-full bg-[#E66795]/20 border border-[#E66795]/40 text-[#E66795] flex items-center justify-center mx-auto text-2xl shadow-inner">
+                💖
               </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#FFD166] block">
-                  Check-In Emocional Diário
-                </span>
-                <h3 className="text-xl sm:text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Como você está se sentindo hoje?
-                </h3>
+              <div className="inline-flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-[#FFD166]">
+                <BarChart3 className="w-3.5 h-3.5" /> Últimas 4 Semanas
               </div>
-
-              {/* 4 Official Options Grid */}
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                {CHECKIN_OPTIONS.map((opt) => {
-                  const isSelected = todayEmotion === opt.id;
-
-                  return (
-                    <button
-                      key={opt.id}
-                      onClick={() => handleSelectEmotion(opt.id)}
-                      className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-all cursor-pointer font-bold text-xs ${
-                        isSelected
-                          ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-xl scale-105 ring-2 ring-white/30'
-                          : 'bg-[#101B1E] hover:bg-white/10 text-white border-white/15'
-                      }`}
-                    >
-                      <span className="text-xl">{opt.emoji}</span>
-                      <span className="text-left leading-tight">{opt.label}</span>
-                      {isSelected && <CheckCircle2 className="w-4 h-4 ml-auto text-slate-950 shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {showRewardNotification && (
-                <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-3 rounded-2xl text-xs font-bold animate-bounce text-center flex items-center justify-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
-                  <span>Check-in registrado com sucesso! (+10 pts) 💖</span>
-                </div>
-              )}
+              <h3 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                Seu Diário de Emoções
+              </h3>
+              <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                Acompanhe a frequência dos seus sentimentos nos últimos 28 dias e acolha seu momento sem julgamentos.
+              </p>
             </div>
 
-            {/* 2. Resumo das Últimas 4 Semanas (Soma das 4 Emoções) */}
-            <div className="space-y-2.5 text-left pt-2">
+            {/* 1. Resumo Quantitativo por Sentimento (Emotion Breakdown Chips) */}
+            <div className="space-y-2.5 text-left">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">
                   Resumo das Últimas 4 Semanas:
@@ -562,7 +509,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               </div>
             </div>
 
-            {/* 3. Calendário das Últimas 4 Semanas (28 Dias) */}
+            {/* 2. Calendário das Últimas 4 Semanas (28 Dias) */}
             <div className="bg-[#070D0F] p-4 sm:p-5 rounded-3xl border border-white/10 space-y-4 text-left">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-white uppercase tracking-wider">
@@ -605,7 +552,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               onClick={() => setIsEmotionalHistoryOpen(false)}
               className="w-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all cursor-pointer"
             >
-              Concluir e Fechar
+              Fechar Histórico
             </button>
 
           </div>
@@ -620,7 +567,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             
             <button
               onClick={() => setIsEmergencyOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
