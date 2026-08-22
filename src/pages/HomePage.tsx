@@ -228,7 +228,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
       <section className="space-y-4 pt-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 
-            className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none flex items-center gap-2.5 uppercase"
+            className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none flex items-center gap-2.5"
             style={{ fontFamily: 'var(--font-heading)' }}
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] p-[2px] flex items-center justify-center shadow-lg">
