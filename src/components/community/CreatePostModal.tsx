@@ -94,7 +94,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                 Criar Novo Tópico
               </h3>
               <p className="text-sm font-medium text-slate-300 mt-0.5">
-                Publicando em: <span className="text-[#FF7F5B] font-bold">{getLocationName()}</span>
+                Compartilhando em: <span className="text-[#FF7F5B] font-bold">{getLocationName()}</span>
               </p>
             </div>
           </div>
