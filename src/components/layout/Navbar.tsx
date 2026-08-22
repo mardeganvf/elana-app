@@ -18,7 +18,8 @@ import {
   Type,
   X,
   Send,
-  Lock
+  Lock,
+  BarChart3
 } from 'lucide-react';
 import logoElana from '../../assets/logo-elana.png';
 
@@ -74,24 +75,49 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Mock emotional check-ins data for the current month
-  const mockEmotions: Record<number, { emoji: string; label: string }> = {
-    1: { emoji: '💖', label: 'Acolhida' },
-    2: { emoji: '😴', label: 'Cansada' },
-    3: { emoji: '✨', label: 'Esperançosa' },
-    4: { emoji: '🌧️', label: 'Sobrecarregada' },
-    5: { emoji: '☕', label: 'Em Paz' },
-    7: { emoji: '💖', label: 'Grata' },
-    8: { emoji: '😴', label: 'Sono Acumulado' },
-    9: { emoji: '✨', label: 'Leve' },
-    11: { emoji: '💪', label: 'Firme' },
-    12: { emoji: '💖', label: 'Abençoada' },
-    14: { emoji: '🧘', label: 'Centrada' },
-    15: { emoji: '☕', label: 'Tranquila' },
-    18: { emoji: '💖', label: 'Acolhida' },
-    20: { emoji: '✨', label: 'Esperançosa' },
-    21: { emoji: '💖', label: 'Amada' },
-  };
+  // Emotional history data for the LAST 4 WEEKS (28 Days)
+  const emotionalSummary = [
+    { emoji: '💖', label: 'Acolhida / Amada', count: 6, color: 'text-rose-400 bg-rose-500/10 border-rose-500/30' },
+    { emoji: '✨', label: 'Esperançosa / Leve', count: 4, color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
+    { emoji: '😴', label: 'Cansada / Sono', count: 3, color: 'text-sky-400 bg-sky-500/10 border-sky-500/30' },
+    { emoji: '☕', label: 'Em Paz / Tranquila', count: 2, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
+    { emoji: '🌧️', label: 'Sobrecarregada', count: 1, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30' },
+  ];
+
+  // 28 days array for the last 4 weeks
+  const last4WeeksDays = [
+    { day: 26, month: 'Jul', emoji: '💖', label: 'Acolhida' },
+    { day: 27, month: 'Jul', emoji: '😴', label: 'Cansada' },
+    { day: 28, month: 'Jul', emoji: '✨', label: 'Esperançosa' },
+    { day: 29, month: 'Jul', emoji: '🌧️', label: 'Sobrecarregada' },
+    { day: 30, month: 'Jul', emoji: '☕', label: 'Em Paz' },
+    { day: 31, month: 'Jul', emoji: '💖', label: 'Amada' },
+    { day: 1, month: 'Ago', emoji: '💖', label: 'Grata' },
+
+    { day: 2, month: 'Ago', emoji: '😴', label: 'Sono' },
+    { day: 3, month: 'Ago', emoji: '✨', label: 'Leve' },
+    { day: 4, month: 'Ago', emoji: '💪', label: 'Firme' },
+    { day: 5, month: 'Ago', emoji: '💖', label: 'Abençoada' },
+    { day: 6, month: 'Ago', emoji: null, label: 'Sem registro' },
+    { day: 7, month: 'Ago', emoji: '🧘', label: 'Centrada' },
+    { day: 8, month: 'Ago', emoji: '☕', label: 'Tranquila' },
+
+    { day: 9, month: 'Ago', emoji: '💖', label: 'Acolhida' },
+    { day: 10, month: 'Ago', emoji: '✨', label: 'Esperançosa' },
+    { day: 11, month: 'Ago', emoji: '💖', label: 'Amada' },
+    { day: 12, month: 'Ago', emoji: '😴', label: 'Cansada' },
+    { day: 13, month: 'Ago', emoji: '✨', label: 'Leve' },
+    { day: 14, month: 'Ago', emoji: '☕', label: 'Tranquila' },
+    { day: 15, month: 'Ago', emoji: null, label: 'Sem registro' },
+
+    { day: 16, month: 'Ago', emoji: '💖', label: 'Grata' },
+    { day: 17, month: 'Ago', emoji: '✨', label: 'Esperançosa' },
+    { day: 18, month: 'Ago', emoji: '💖', label: 'Acolhida' },
+    { day: 19, month: 'Ago', emoji: '☕', label: 'Em Paz' },
+    { day: 20, month: 'Ago', emoji: '💖', label: 'Amada' },
+    { day: 21, month: 'Ago', emoji: '✨', label: 'Radiante' },
+    { day: 22, month: 'Ago', emoji: '💖', label: 'Acolhida', isToday: true },
+  ];
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -152,7 +178,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             }}
             data-tour="emotions-button"
             className="bg-white/10 hover:bg-white/20 text-white border border-white/15 font-bold text-xs px-3.5 py-2 rounded-full flex items-center gap-2 transition-all whitespace-nowrap active:scale-95 cursor-pointer"
-            title="Suas Emoções - Histórico de Check-ins"
+            title="Suas Emoções - Resumo das Últimas 4 Semanas"
           >
             <HeartHandshake className="w-4 h-4 text-[#E66795] shrink-0" />
             <span>Suas Emoções</span>
@@ -428,10 +454,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         </button>
       </div>
 
-      {/* Feature 1 Modal: Histórico de Check-ins Emocionais ("Suas Emoções") */}
+      {/* Feature 1 Modal: Histórico de Check-ins Emocionais ("Suas Emoções" - Últimas 4 Semanas) */}
       {isEmotionalHistoryOpen && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
-          <div className="bg-[#101B1E] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-center space-y-6 m-auto max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#101B1E] rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-center space-y-6 m-auto max-h-[90vh] overflow-y-auto">
             
             <button
               onClick={() => setIsEmotionalHistoryOpen(false)}
@@ -441,57 +467,78 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             </button>
 
             <div className="space-y-2">
-              <div className="w-14 h-14 rounded-full bg-[#E66795]/20 border border-[#E66795]/40 text-[#E66795] flex items-center justify-center mx-auto text-2xl">
+              <div className="w-14 h-14 rounded-full bg-[#E66795]/20 border border-[#E66795]/40 text-[#E66795] flex items-center justify-center mx-auto text-2xl shadow-inner">
                 💖
+              </div>
+              <div className="inline-flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-[#FFD166]">
+                <BarChart3 className="w-3.5 h-3.5" /> Últimas 4 Semanas
               </div>
               <h3 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                 Seu Diário de Emoções
               </h3>
-              <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed">
-                Olhar para o seu sentir com carinho é o primeiro passo para um autocuidado leve e sem cobranças.
+              <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                Acompanhe a frequência dos seus sentimentos nos últimos 28 dias e acolha seu momento sem julgamentos.
               </p>
             </div>
 
-            {/* Monthly Emotion Calendar Grid */}
+            {/* 1. Resumo Quantitativo por Sentimento (Emotion Breakdown Chips) */}
+            <div className="space-y-2.5 text-left">
+              <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                Resumo dos Sentimentos (Últimos 28 dias):
+              </span>
+              
+              <div className="flex flex-wrap gap-2">
+                {emotionalSummary.map((item, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl border text-xs font-bold ${item.color}`}
+                  >
+                    <span className="text-base">{item.emoji}</span>
+                    <span>{item.label}</span>
+                    <span className="ml-1 bg-black/30 px-2 py-0.5 rounded-full text-[10px] font-black">
+                      {item.count}x
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Calendário das Últimas 4 Semanas (28 Dias) */}
             <div className="bg-[#070D0F] p-4 sm:p-5 rounded-3xl border border-white/10 space-y-4 text-left">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-white uppercase tracking-wider">Agosto / 2026</span>
+                <span className="text-xs font-black text-white uppercase tracking-wider">
+                  Histórico Diário (4 Semanas)
+                </span>
                 <span className="text-[10px] text-[#FF7F5B] font-bold bg-[#FF7F5B]/10 px-2.5 py-1 rounded-full border border-[#FF7F5B]/20">
-                  15 Check-ins este mês 🌟
+                  16 Check-ins registrados 🌟
                 </span>
               </div>
 
               <div className="grid grid-cols-7 gap-2 pt-1 text-center">
-                {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => (
+                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => (
                   <span key={i} className="text-[10px] font-extrabold text-slate-500 uppercase">{d}</span>
                 ))}
 
-                {Array.from({ length: 31 }).map((_, idx) => {
-                  const dayNum = idx + 1;
-                  const emotion = mockEmotions[dayNum];
-                  const isToday = dayNum === 22;
-
-                  return (
-                    <div
-                      key={dayNum}
-                      className={`aspect-square rounded-2xl border flex flex-col items-center justify-center p-1 transition-all ${
-                        isToday
-                          ? 'bg-[#FF7F5B]/20 border-[#FF7F5B] text-white shadow-lg'
-                          : emotion
-                          ? 'bg-white/5 border-white/15 hover:border-white/30'
-                          : 'bg-[#070D0F] border-white/10 hover:border-white/20'
-                      }`}
-                      title={`${dayNum}/08: ${emotion ? emotion.label : 'Sem registro'}`}
-                    >
-                      <span className={`text-[9px] font-bold ${isToday ? 'text-[#FF7F5B]' : 'text-slate-400'}`}>
-                        {dayNum}
-                      </span>
-                      <span className="text-sm my-0.5 select-none">
-                        {emotion ? emotion.emoji : <span className="text-slate-600 font-extrabold">•</span>}
-                      </span>
-                    </div>
-                  );
-                })}
+                {last4WeeksDays.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className={`aspect-square rounded-2xl border flex flex-col items-center justify-center p-1 transition-all ${
+                      item.isToday
+                        ? 'bg-[#FF7F5B]/20 border-[#FF7F5B] text-white shadow-lg ring-2 ring-[#FF7F5B]/40'
+                        : item.emoji
+                        ? 'bg-white/5 border-white/15 hover:border-white/30'
+                        : 'bg-[#070D0F] border-white/10 hover:border-white/20'
+                    }`}
+                    title={`${item.day} de ${item.month}: ${item.label}`}
+                  >
+                    <span className={`text-[9px] font-bold ${item.isToday ? 'text-[#FF7F5B]' : 'text-slate-400'}`}>
+                      {item.day}
+                    </span>
+                    <span className="text-sm my-0.5 select-none">
+                      {item.emoji ? item.emoji : <span className="text-slate-600 font-extrabold">•</span>}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -610,7 +657,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                   <h3 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                     Respire fundo. Você não está só!
                   </h3>
-                  <p className="text-xs text-slate-300 leading-relaxed bg-[#070D0F] p-4 rounded-2xl border border-white/10 text-center">
+                  <p className="text-xs text-slate-[#300] leading-relaxed bg-[#070D0F] p-4 rounded-2xl border border-white/10 text-center">
                     Nossa rede de apoio já recebeu sua mensagem e entrará em contato em breve. 💖
                   </p>
                 </div>
