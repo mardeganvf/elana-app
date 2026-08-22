@@ -961,13 +961,6 @@ export const CommunityPage: React.FC = () => {
                                 {post.authorName}
                               </span>
 
-                              {/* Feature 4: Tag de Identificação de Perfil */}
-                              {!post.isAnonymous && (
-                                <span className="text-[10px] font-bold bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 px-2.5 py-0.5 rounded-full shadow-sm">
-                                  {post.authorTag || (post.authorRole === 'guia' ? 'Guia & Mentor(a)' : post.authorRole === 'curadoria' ? 'Curadoria Oficial' : 'Mãe de 1ª viagem')}
-                                </span>
-                              )}
-                              
                               {post.isAnonymous && (
                                 <span className="text-[9px] font-bold bg-purple-500/20 text-purple-300 border border-purple-400/30 px-2 py-0.5 rounded-md flex items-center gap-1">
                                   <EyeOff className="w-3 h-3" /> Pseudônimo Confessionário
@@ -1077,11 +1070,6 @@ export const CommunityPage: React.FC = () => {
                                         className={`flex items-center gap-2 ${(c.isAnonymous || post.isAnonymous) ? '' : 'cursor-pointer group'}`}
                                       >
                                         <span className={`font-bold text-xs text-white ${(c.isAnonymous || post.isAnonymous) ? '' : 'group-hover:text-[#FF7F5B] transition-colors'}`}>{c.authorName}</span>
-                                        {c.authorRole === 'guia' && (
-                                          <span className="text-[9px] font-extrabold bg-[#8A9A5B]/20 text-[#8A9A5B] px-1.5 py-0.5 rounded-md">
-                                            Guia
-                                          </span>
-                                        )}
                                       </div>
                                       <span className="text-[10px] text-slate-400">{c.createdAt}</span>
                                     </div>
