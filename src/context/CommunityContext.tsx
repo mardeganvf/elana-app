@@ -38,6 +38,28 @@ export const checkAntiShaming = (text: string): { isFlagged: boolean; matchedWor
   return { isFlagged: false };
 };
 
+const ANON_PREFIXES = [
+  'Coração', 'Alma', 'Respiro', 'Farol', 'Brisa', 'Semente', 'Horizonte', 'Abraço',
+  'Luz', 'Gota', 'Vento', 'Sol', 'Refúgio', 'Estrela', 'Flor', 'Ninho', 'Porto',
+  'Caminho', 'Sorriso', 'Sonho', 'Garoa', 'Jardim', 'Faísca', 'Oásis', 'Sombra',
+  'Paz', 'Orvalho', 'Aconchego', 'Aurora', 'Espaço'
+];
+
+const ANON_DESCRIPTORS = [
+  'Leve', 'Curioso', 'Sereno', 'Genuíno', 'Atento', 'Acolhedor', 'Corajoso',
+  'Esperançoso', 'Tranquilo', 'Poético', 'Sincero', 'Profundo', 'Sensível',
+  'Radiante', 'Luminoso', 'Resiliente', 'Inspirado', 'Espontâneo', 'Cativante',
+  'Gentil', 'Vibrante', 'Constante', 'Presente', 'Verdadeiro', 'Paciente',
+  'Humilde', 'Discreto', 'Afetivo', 'Iluminado', 'Singular'
+];
+
+export const getRandomAnonymousName = () => {
+  const p = ANON_PREFIXES[Math.floor(Math.random() * ANON_PREFIXES.length)];
+  const d = ANON_DESCRIPTORS[Math.floor(Math.random() * ANON_DESCRIPTORS.length)];
+  const num = Math.floor(Math.random() * 900) + 100;
+  return `${p} ${d} #${num}`;
+};
+
 interface CommunityContextType {
   posts: CommunityPost[];
   createPost: (payload: CreatePostPayload) => void;
@@ -161,8 +183,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const isConfessionRoom = payload.transversalRoomId === 'confessionario';
     const isAnonymous = isConfessionRoom;
 
-    const randomAnonNumber = Math.floor(Math.random() * 900) + 100;
-    const authorName = isAnonymous ? `Luz em Aprendizado #${randomAnonNumber}` : user.name;
+    const authorName = isAnonymous ? getRandomAnonymousName() : user.name;
     const authorAvatar = isAnonymous 
       ? 'https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=150&auto=format&fit=crop&q=80' 
       : user.avatar;

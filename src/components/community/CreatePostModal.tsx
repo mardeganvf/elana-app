@@ -39,6 +39,9 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     ? (activeSelection.subOption === 'ajuda' ? 'ajuda' : activeSelection.subOption === 'celebrar' ? 'celebrar' : 'desabafar')
     : 'desabafar';
 
+  // Only show intention pills if posting in a journey AND not inside a specific subOption already
+  const showIntentionSelector = postType === 'jornada' && (!activeSelection || (activeSelection.type === 'jornada' && activeSelection.subOption === 'abertas'));
+
   const [emotionalIntention, setEmotionalIntention] = useState<EmotionalIntention>(initialIntention);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -49,15 +52,15 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const getLocationName = () => {
     if (postType === 'jornada') {
       const j = JOURNEYS_DATA.find(item => item.id === selectedJourneyId);
-      return j ? `Jornada: ${j.title}` : 'Jornada Oficial';
+      return j ? j.title : 'Jornada';
     }
     if (postType === 'transversal') {
       const r = TRANSVERSAL_ROOMS.find(item => item.id === selectedTransversalId);
-      return r ? `Sala: ${r.name}` : 'Sala Transversal';
+      return r ? r.name : 'Sala Transversal';
     }
     if (postType === 'idade') {
       const a = AGE_BRACKET_ROOMS.find(item => item.id === selectedAgeId);
-      return a ? `Faixa Etária: ${a.name} (${a.range})` : 'Faixa Etária';
+      return a ? a.name : '0–2 anos';
     }
     return 'Comunidade Elana';
   };
@@ -84,17 +87,17 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
       <div className="bg-[#101B1E] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-white m-auto space-y-5 max-h-[90vh] overflow-y-auto">
         
-        {/* Clean Header with Forum Badge to the Right */}
+        {/* Clean Header with Balanced Forum Badge to the Right */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] text-white flex items-center justify-center text-xl shadow-md shrink-0">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] text-white flex items-center justify-center text-lg shadow-md shrink-0">
               💬
             </div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h3 className="font-extrabold text-xl text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-extrabold text-lg text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                 Criar Novo Tópico
               </h3>
-              <span className="text-[11px] font-bold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-0.5 rounded-full border border-[#FF7F5B]/20">
+              <span className="text-[10px] font-bold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2 py-0.5 rounded-full border border-[#FF7F5B]/20 shrink-0 self-center">
                 {getLocationName()}
               </span>
             </div>
@@ -110,8 +113,8 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           
-          {/* Emotional Intention Pills (Only for Journeys) */}
-          {postType === 'jornada' && (
+          {/* Emotional Intention Pills (Only if in Journey & on Abertas subOption) */}
+          {showIntentionSelector && (
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
                 Intenção da Postagem:
@@ -139,7 +142,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           {isConfessionario && (
             <div className="bg-purple-500/10 border border-purple-500/30 p-3 rounded-2xl flex items-center gap-2.5 text-xs text-purple-200">
               <EyeOff className="w-4 h-4 text-purple-300 shrink-0" />
-              <span>Postagem 100% anônima (assinada como <em>Luz em Aprendizado #XXX</em>).</span>
+              <span>Postagem 100% anônima com pseudônimo espontâneo (ex: <em>Coração Sereno #482</em>).</span>
             </div>
           )}
 
@@ -151,7 +154,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
             <input
               type="text"
               required
-              placeholder="Ex: Como encontrar oxigênio emocional em dias difíceis?"
+              placeholder="Ex: Meu bebê falou a primeira palavra hoje."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full p-3 rounded-2xl border border-white/15 text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B] transition-all"

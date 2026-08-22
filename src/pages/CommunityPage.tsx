@@ -438,7 +438,7 @@ export const CommunityPage: React.FC = () => {
       const a = AGE_BRACKET_ROOMS.find(item => item.id === activeSelection.ageId);
       return {
         categoryLabel: 'Idades',
-        mainTitle: a ? `${a.name} (${a.range})` : 'Idades',
+        mainTitle: a ? a.name : 'Idades',
         themeColor: '#0EA5E9' // Light Blue / Sky Blue (distinct from journeys)
       };
     }
