@@ -84,17 +84,17 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
       <div className="bg-[#101B1E] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-white m-auto space-y-5 max-h-[90vh] overflow-y-auto">
         
-        {/* Clean Header */}
-        <div className="flex items-center justify-between">
+        {/* Clean Header with Forum Badge to the Right */}
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] text-white flex items-center justify-center text-xl shadow-md">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] text-white flex items-center justify-center text-xl shadow-md shrink-0">
               💬
             </div>
-            <div>
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h3 className="font-extrabold text-xl text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                 Criar Novo Tópico
               </h3>
-              <span className="inline-block text-[11px] font-bold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-0.5 rounded-full border border-[#FF7F5B]/20 mt-0.5">
+              <span className="text-[11px] font-bold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-0.5 rounded-full border border-[#FF7F5B]/20">
                 {getLocationName()}
               </span>
             </div>
@@ -102,7 +102,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
+            className="text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer shrink-0 ml-2"
           >
             <X className="w-4 h-4" />
           </button>
@@ -166,7 +166,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
             <textarea
               required
               rows={4}
-              placeholder="Escreva com o coração... Este é um espaço seguro de acolhimento mútuo."
+              placeholder="Escreva com o coração. Este é um espaço de acolhimento mútuo."
               value={content}
               onChange={(e) => setContent(e.target.value)}
               className="w-full p-3 rounded-2xl border border-white/15 text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B] transition-all resize-none"
@@ -177,7 +177,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           <div className="pt-3 border-t border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
               <Lock className="w-3.5 h-3.5 text-[#8A9A5B]" />
-              <span>Espaço seguro e acolhedor</span>
+              <span>Sua segurança importa.</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -193,7 +193,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                 className="flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all cursor-pointer transform hover:scale-105 active:scale-95"
               >
                 <Send className="w-3.5 h-3.5" />
-                Publicar Tópico
+                DIVIDIR COM A COMUNIDADE
               </button>
             </div>
           </div>
