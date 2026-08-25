@@ -29,7 +29,7 @@ export const GENERIC_DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http:
 interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
-  login: (email: string, name?: string) => void;
+  login: (email: string, name?: string, customId?: string) => void;
   logout: () => void;
   updateUser: (updates: Partial<UserProfile>) => void;
   purchaseJourney: (journeyId: string) => void;
@@ -99,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user]);
 
-  const login = (email: string, name?: string) => {
+  const login = (email: string, name?: string, customId?: string) => {
     const defaultName = name || email.split('@')[0];
     const isDemoHelena = email.toLowerCase() === 'helena@elana.com.br';
 
@@ -108,7 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       name: defaultName
     } : {
-      id: `user-${Date.now()}`,
+      id: customId || `user-${Date.now()}`,
       email,
       name: defaultName,
       avatar: GENERIC_DEFAULT_AVATAR,
@@ -143,11 +143,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         xp: newUser.xp,
         level: newUser.level,
         updated_at: new Date().toISOString()
-      }, { onConflict: 'email' }).then(({ error }) => {
-        if (error) console.log('Supabase profiles sync note:', error.message);
+      }, { onConflict: 'email' }).then(({ error, data }) => {
+        if (error) {
+          console.error('Supabase profiles insert error:', error.message, error.details);
+        } else {
+          console.log('Supabase profiles successfully synced:', data);
+        }
       });
     } catch (e) {
-      console.error('Supabase profiles sync error:', e);
+      console.error('Supabase profiles sync exception:', e);
     }
   };
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { RefreshCw, X, KeyRound, ArrowLeft } from 'lucide-react';
+import { GENERIC_DEFAULT_AVATAR } from '../../context/AuthContext';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -146,14 +147,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
     setLoading(true);
     try {
-      await supabase.auth.signUp({
-        email: email.trim(),
+      const inputVal = email.trim();
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: inputVal,
         password,
         options: { data: { name: name.trim() } }
       });
 
+      if (authError) {
+        console.error('Supabase Auth SignUp Error:', authError.message);
+      }
+
+      const supabaseUserId = authData?.user?.id;
+
+      // Direct explicit upsert to Supabase 'profiles' table
+      const profilePayload = {
+        id: supabaseUserId || `user-${Date.now()}`,
+        email: inputVal,
+        name: name.trim(),
+        avatar: GENERIC_DEFAULT_AVATAR,
+        role: 'Membro da Aldeia',
+        family_tag: 'Mãe / Pai de 1ª viagem',
+        xp: 0,
+        level: 1,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert(profilePayload, { onConflict: 'email' });
+
+      if (profileError) {
+        console.error('Supabase Profiles Table Insert Error:', profileError.message);
+      }
+
       setSuccessMessage('Conta validada com sucesso! Entrando...');
-      onSuccess({ email: email.trim(), name: name.trim() });
+      onSuccess({ email: inputVal, name: name.trim() });
       onClose();
     } catch (err: any) {
       onSuccess({ email: email.trim(), name: name.trim() });

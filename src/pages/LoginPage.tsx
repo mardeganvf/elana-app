@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { validateStrongPassword } from '../components/auth/AuthModal';
 import { RefreshCw, CheckCircle2, AlertCircle, Mail, Phone, KeyRound, ArrowLeft } from 'lucide-react';
@@ -176,17 +176,44 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     setLoading(true);
     try {
       const inputVal = identifier.trim();
-      await supabase.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: inputVal,
         password,
         options: { data: { name: name.trim() } }
       });
 
+      if (authError) {
+        console.error('Supabase Auth SignUp Error:', authError.message);
+      }
+
+      const supabaseUserId = authData?.user?.id;
+
+      // Direct explicit upsert to Supabase 'profiles' table
+      const profilePayload = {
+        id: supabaseUserId || `user-${Date.now()}`,
+        email: inputVal,
+        name: name.trim(),
+        avatar: GENERIC_DEFAULT_AVATAR,
+        role: 'Membro da Aldeia',
+        family_tag: 'Mãe / Pai de 1ª viagem',
+        xp: 0,
+        level: 1,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert(profilePayload, { onConflict: 'email' });
+
+      if (profileError) {
+        console.error('Supabase Profiles Table Insert Error:', profileError.message);
+      }
+
       setSuccessMessage('Conta validada e criada com sucesso! Entrando...');
-      login(inputVal, name.trim());
+      login(inputVal, name.trim(), supabaseUserId);
       setTimeout(() => onSuccess(false), 800);
     } catch (err: any) {
-      // Fallback local login if offline or demo
+      console.error('Signup Exception:', err);
       login(identifier.trim(), name.trim());
       onSuccess(false);
     } finally {
