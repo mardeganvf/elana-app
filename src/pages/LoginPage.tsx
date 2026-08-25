@@ -564,7 +564,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
               Opa, parece que você já tem um cadastro.
             </h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Você pode fazer login direto com seu e-mail e senha para continuar sua jornada na Aldeia.
+              Você pode fazer login direto ou recuperar sua senha para acessar Elana.
             </p>
             <button
               onClick={() => {
