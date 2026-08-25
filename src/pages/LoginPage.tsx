@@ -343,23 +343,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             <div className="bg-[#101B1E] p-4 rounded-2xl border border-purple-500/30 space-y-2 text-center">
               <KeyRound className="w-8 h-8 text-[#FF7F5B] mx-auto animate-pulse" />
               <label className="block text-xs font-bold text-slate-200 leading-relaxed">
-                Digite aqui o código de 06 dígitos<br />
+                Digite aqui o código de 08 dígitos<br />
                 que enviamos para o seu e-mail.
               </label>
               <input
                 type="text"
                 required
-                maxLength={6}
+                maxLength={8}
                 value={inputCode}
                 onChange={(e) => setInputCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="000000"
+                placeholder="00000000"
                 className="w-full bg-[#070D0F] border border-white/20 rounded-xl px-4 py-3 text-center text-lg font-black tracking-widest text-[#FF7F5B] focus:outline-none focus:border-[#FF7F5B]"
               />
             </div>
 
             <button
               type="submit"
-              disabled={loading || inputCode.length < 6}
+              disabled={loading || inputCode.length < 8}
               className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#E66795] via-[#FF7F5B] to-[#FF7F5B] text-white font-extrabold text-xs uppercase tracking-wider shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {loading && <RefreshCw className="w-4 h-4 animate-spin" />}

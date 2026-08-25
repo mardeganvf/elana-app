@@ -99,50 +99,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const [newPhotoUrl, setNewPhotoUrl] = useState('');
 
   // Followed Members state
-  const [followedMembers] = useState<PublicUserProfile[]>([
-    {
-      id: 'm1',
-      name: 'Mariana Santos',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      role: 'guia',
-      tag: 'Guia & Mentora',
-      levelName: 'Oliveira',
-      levelIcon: '🫒',
-      levelNumber: 10,
-      xp: 3900,
-      streakDays: 42,
-      joinedDate: 'Janeiro/2026',
-      bio: 'Enfermeira obstétrica e mãe de 2. Acolho mães na jornada do desmame respeitoso e livre de culpa.'
-    },
-    {
-      id: 'm2',
-      name: 'Camila Rodrigues',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-      role: 'membro',
-      tag: 'Mãe de 1ª viagem',
-      levelName: 'Raiz Firme',
-      levelIcon: '🪵',
-      levelNumber: 4,
-      xp: 650,
-      streakDays: 8,
-      joinedDate: 'Fevereiro/2026',
-      bio: 'Vivendo um dia de cada vez, aprendendo sobre paciência, amor e sono infantil.'
-    },
-    {
-      id: 'm3',
-      name: 'Dr. Roberto Mendonça',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      role: 'guia',
-      tag: 'Curadoria Médica',
-      levelName: 'Sequóia',
-      levelIcon: '👑✨',
-      levelNumber: 25,
-      xp: 15400,
-      streakDays: 120,
-      joinedDate: 'Janeiro/2026',
-      bio: 'Pediatra humanizado, focado na rotina fisiológica e no bem-estar emocional da família.'
-    }
-  ]);
+  const [followedMembers] = useState<PublicUserProfile[]>([]);
   
   // Photos state (up to 3 photos) - Start blank
   const [userPhotos, setUserPhotos] = useState<string[]>([]);
@@ -158,35 +115,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   }
 
   // Testimonials state (com moderação de aprovação/negação)
-  const [testimonials, setTestimonials] = useState<DashboardTestimonial[]>([
-    {
-      id: 't-pending-1',
-      authorName: 'Vanessa Lima',
-      authorAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-      content: 'Helena, você foi um anjo na minha semana! Muito obrigada pelas palavras de apoio no tópico de introdução alimentar da Cecília. Me acalmou demais! 💖✨',
-      createdAt: 'Há 3 horas',
-      likesCount: 1,
-      status: 'pendente'
-    },
-    {
-      id: 't1',
-      authorName: 'Mariana Santos',
-      authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      content: 'Uma mãezona incrível e super generosa! Suas postagens sempre acalmam meu coração nas madrugadas mais difíceis. Te admiro demais! ✨💖',
-      createdAt: 'Há 2 dias',
-      likesCount: 14,
-      status: 'aprovado'
-    },
-    {
-      id: 't2',
-      authorName: 'Camila Rodrigues',
-      authorAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-      content: 'Que sorte ter você na nossa rede de apoio da Elana! Sempre com conselhos cheios de carinho e empatia genuína. 🌿🌸',
-      createdAt: 'Há 1 semana',
-      likesCount: 9,
-      status: 'aprovado'
-    }
-  ]);
+  const [testimonials, setTestimonials] = useState<DashboardTestimonial[]>([]);
 
   if (!user) return null;
 

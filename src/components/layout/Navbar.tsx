@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, isAdminUser } from '../../context/AuthContext';
 import { useFontSize } from '../../context/FontSizeContext';
 import { 
   Flame, 
@@ -31,6 +31,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenAuthModal }) => {
   const { user, isAuthenticated, logout, sosResponse, sendSosTicket, markSosResponseRead } = useAuth();
+  const isAdmin = isAdminUser(user);
   const { fontSize, setFontSize } = useFontSize();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMamadaMode, setIsMamadaMode] = useState(false);
@@ -207,21 +208,23 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
           </button>
 
           {/* Painel do Administrador Shortcut */}
-          <button
-            onClick={() => {
-              setActiveTab('admin');
-              window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-            }}
-            className={`font-extrabold text-xs px-3.5 py-2 rounded-full flex items-center gap-1.5 shadow-md transition-all active:scale-95 whitespace-nowrap border cursor-pointer ${
-              activeTab === 'admin'
-                ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] font-black'
-                : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/15'
-            }`}
-            title="Painel do Administrador & Guardião"
-          >
-            <ShieldCheck className="w-4 h-4 text-[#FF7F5B] shrink-0" />
-            <span>Painel Admin</span>
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => {
+                setActiveTab('admin');
+                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+              }}
+              className={`font-extrabold text-xs px-3.5 py-2 rounded-full flex items-center gap-1.5 shadow-md transition-all active:scale-95 whitespace-nowrap border cursor-pointer ${
+                activeTab === 'admin'
+                  ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] font-black'
+                  : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/15'
+              }`}
+              title="Painel do Administrador & Guardião"
+            >
+              <ShieldCheck className="w-4 h-4 text-[#FF7F5B] shrink-0" />
+              <span>Painel Admin</span>
+            </button>
+          )}
 
         </div>
 
@@ -376,17 +379,19 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                         <span>Rever Tutorial de Boas-Vindas</span>
                       </button>
 
-                      <button
-                        onClick={() => {
-                          setIsProfileDropdownOpen(false);
-                          setActiveTab('admin');
-                          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                        }}
-                        className="w-full text-xs font-extrabold text-[#FF7F5B] hover:text-[#FFD166] p-2.5 rounded-xl bg-[#FF7F5B]/10 hover:bg-[#FF7F5B]/20 border border-[#FF7F5B]/30 flex items-center gap-2 transition-all text-left cursor-pointer"
-                      >
-                        <ShieldCheck className="w-4 h-4 text-[#FF7F5B]" />
-                        <span>Painel do Administrador</span>
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setIsProfileDropdownOpen(false);
+                            setActiveTab('admin');
+                            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                          }}
+                          className="w-full text-xs font-extrabold text-[#FF7F5B] hover:text-[#FFD166] p-2.5 rounded-xl bg-[#FF7F5B]/10 hover:bg-[#FF7F5B]/20 border border-[#FF7F5B]/30 flex items-center gap-2 transition-all text-left cursor-pointer"
+                        >
+                          <ShieldCheck className="w-4 h-4 text-[#FF7F5B]" />
+                          <span>Painel do Administrador</span>
+                        </button>
+                      )}
 
                       <button
                         onClick={() => {
