@@ -109,7 +109,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user_already_exists')) {
             setIsExistingUserModalOpen(true);
           } else {
-            setErrorMessage(`Erro ao enviar e-mail: ${authError.message}`);
+            setErrorMessage('Ops, parece que tivemos um problema. Tente de novo daqui a pouco.');
           }
           setLoading(false);
           return;
