@@ -229,7 +229,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           <h2 className="text-xl font-extrabold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
             {mode === 'login' && 'Entrar na Elana'}
             {mode === 'register' && 'Criar Nova Conta'}
-            {mode === 'verify_email' && 'Agora precisamos confirmar seu e-mail.'}
+            {mode === 'verify_email' && 'Vamos confirmar seu e-mail?'}
             {mode === 'recovery' && 'Recuperar Senha'}
           </h2>
           {mode !== 'verify_email' && (
@@ -268,7 +268,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 maxLength={6}
                 value={inputCode}
                 onChange={(e) => setInputCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="Ex: 123456"
+                placeholder="000000"
                 className="w-full bg-[#101B1E] border border-white/20 rounded-xl px-4 py-3 text-center text-lg font-black tracking-widest text-[#FF7F5B] focus:outline-none focus:border-[#FF7F5B]"
               />
             </div>

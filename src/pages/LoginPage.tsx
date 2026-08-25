@@ -285,7 +285,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
             {mode === 'login' && 'Que bom ter você aqui!'}
             {mode === 'register' && 'Criar Nova Conta'}
-            {mode === 'verify_email' && 'Agora precisamos confirmar seu e-mail.'}
+            {mode === 'verify_email' && 'Vamos confirmar seu e-mail?'}
             {mode === 'recovery' && 'Recuperar Senha'}
           </h1>
           {mode !== 'verify_email' && (
@@ -357,7 +357,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 maxLength={6}
                 value={inputCode}
                 onChange={(e) => setInputCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="Ex: 123456"
+                placeholder="000000"
                 className="w-full bg-[#070D0F] border border-white/20 rounded-xl px-4 py-3 text-center text-lg font-black tracking-widest text-[#FF7F5B] focus:outline-none focus:border-[#FF7F5B]"
               />
             </div>
