@@ -95,24 +95,38 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           }
 
           // Check if user already exists in Supabase profiles
-          try {
-            const { data: existingUser } = await supabase
-              .from('profiles')
-              .select('id, email')
-              .eq('email', inputVal.toLowerCase())
-              .maybeSingle();
+          const { data: existingUser } = await supabase
+            .from('profiles')
+            .select('id, email')
+            .eq('email', inputVal.toLowerCase())
+            .maybeSingle();
 
-            if (existingUser) {
+          if (existingUser) {
+            setIsExistingUserModalOpen(true);
+            setLoading(false);
+            return;
+          }
+
+          // Trigger real email dispatch via Supabase Auth + Resend SMTP!
+          const { error: authError } = await supabase.auth.signUp({
+            email: inputVal,
+            password,
+            options: { data: { name: name.trim() } }
+          });
+
+          if (authError) {
+            if (authError.message.toLowerCase().includes('already registered') || authError.message.toLowerCase().includes('already exists')) {
               setIsExistingUserModalOpen(true);
-              setLoading(false);
-              return;
+            } else {
+              setErrorMessage(authError.message);
             }
-          } catch (e) {
-            // Ignore error and proceed
+            setLoading(false);
+            return;
           }
 
           setInputCode('');
           setMode('verify_email');
+          setSuccessMessage(`Enviamos um e-mail para ${inputVal}. Verifique sua caixa de entrada!`);
           setLoading(false);
           return;
         } else {
