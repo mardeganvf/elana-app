@@ -30,8 +30,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [confirmPassword, setConfirmPassword] = useState('');
 
   // 6-Digit Verification Code State
-  const [verificationCode, setVerificationCode] = useState('');
   const [inputCode, setInputCode] = useState('');
+
+  // Existing User Modal State
+  const [isExistingUserModalOpen, setIsExistingUserModalOpen] = useState(false);
 
   // States
   const [loading, setLoading] = useState(false);
@@ -80,12 +82,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           return;
         }
 
-        // Generate 6-Digit Email Verification Code
-        const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-        setVerificationCode(generatedCode);
+        // Check if user already exists
+        try {
+          const { data: existingUser } = await supabase
+            .from('profiles')
+            .select('id, email')
+            .eq('email', email.trim().toLowerCase())
+            .maybeSingle();
+
+          if (existingUser) {
+            setIsExistingUserModalOpen(true);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          // Ignore and proceed
+        }
+
         setInputCode('');
         setMode('verify_email');
-        setSuccessMessage(`Código de verificação enviado para ${email.trim()}!`);
         setLoading(false);
         return;
       } else if (mode === 'login') {
@@ -129,11 +144,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     e.preventDefault();
     resetStates();
 
-    if (inputCode.trim() !== verificationCode && inputCode.trim() !== '123456') {
-      setErrorMessage('Código incorreto. Digite o código enviado para o seu e-mail.');
-      return;
-    }
-
     setLoading(true);
     try {
       await supabase.auth.signUp({
@@ -170,15 +180,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           <h2 className="text-xl font-extrabold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
             {mode === 'login' && 'Entrar na Elana'}
             {mode === 'register' && 'Criar Nova Conta'}
-            {mode === 'verify_email' && 'Validar Seu E-mail'}
+            {mode === 'verify_email' && 'Agora precisamos confirmar seu e-mail.'}
             {mode === 'recovery' && 'Recuperar Senha'}
           </h2>
-          <p className="text-xs text-slate-400">
-            {mode === 'login' && 'Bem-vinda de volta à nossa aldeia de acolhimento.'}
-            {mode === 'register' && 'Preencha seus dados para se juntar à comunidade.'}
-            {mode === 'verify_email' && `Digite o código enviado para ${email}.`}
-            {mode === 'recovery' && 'Enviaremos um código/link de redefinição para você.'}
-          </p>
+          {mode !== 'verify_email' && (
+            <p className="text-xs text-slate-400">
+              {mode === 'login' && 'Bem-vinda de volta à nossa aldeia de acolhimento.'}
+              {mode === 'register' && 'Preencha seus dados para se juntar à comunidade.'}
+              {mode === 'recovery' && 'Enviaremos um código/link de redefinição para você.'}
+            </p>
+          )}
         </div>
 
         {/* Notifications */}
@@ -198,8 +209,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           <form onSubmit={handleVerifyEmailCode} className="space-y-4 text-left">
             <div className="bg-[#070D0F] p-4 rounded-2xl border border-purple-500/30 space-y-2 text-center">
               <KeyRound className="w-8 h-8 text-[#FF7F5B] mx-auto animate-pulse" />
-              <label className="block text-xs font-bold text-slate-200">
-                Código de Verificação (6 Dígitos):
+              <label className="block text-xs font-bold text-slate-200 leading-relaxed">
+                Digite aqui o código de 06 dígitos que enviamos para o seu e-mail.
               </label>
               <input
                 type="text"
@@ -210,9 +221,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 placeholder="Ex: 123456"
                 className="w-full bg-[#101B1E] border border-white/20 rounded-xl px-4 py-3 text-center text-lg font-black tracking-widest text-[#FF7F5B] focus:outline-none focus:border-[#FF7F5B]"
               />
-              <span className="text-[10px] text-purple-300 font-bold block">
-                Código enviado: <code className="bg-purple-500/20 px-1.5 py-0.5 rounded text-white">{verificationCode}</code>
-              </span>
             </div>
 
             <button
@@ -221,7 +229,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               className="w-full py-3 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {loading && <RefreshCw className="w-4 h-4 animate-spin" />}
-              <span>Validar Código e Ativar Conta</span>
+              <span>Fazer parte do Elana</span>
             </button>
 
             <button
@@ -230,7 +238,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               className="w-full text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1 py-1 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Voltar ao cadastro</span>
+              <span>Voltar</span>
             </button>
           </form>
         ) : (
@@ -338,7 +346,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               {loading && <RefreshCw className="w-4 h-4 animate-spin" />}
               <span>
                 {mode === 'login' && 'Entrar'}
-                {mode === 'register' && 'Prosseguir para Validação'}
+                {mode === 'register' && 'Continuar'}
                 {mode === 'recovery' && 'Enviar E-mail de Recuperação'}
               </span>
             </button>
@@ -376,6 +384,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         )}
 
       </div>
+
+      {/* EXISTING USER ALERT MODAL */}
+      {isExistingUserModalOpen && (
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-[#101B1E] border border-[#FF7F5B]/50 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <div className="w-14 h-14 bg-[#FF7F5B]/20 text-[#FF7F5B] border border-[#FF7F5B]/40 rounded-full flex items-center justify-center text-2xl mx-auto">
+              👋
+            </div>
+            <h3 className="text-lg font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+              Opa, parece que você já tem um cadastro.
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Você pode fazer login direto com seu e-mail e senha para continuar sua jornada na Aldeia.
+            </p>
+            <button
+              onClick={() => {
+                setIsExistingUserModalOpen(false);
+                setMode('login');
+                resetStates();
+              }}
+              className="w-full py-3 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
