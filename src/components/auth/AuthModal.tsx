@@ -239,7 +239,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             <div className="bg-[#070D0F] p-4 rounded-2xl border border-purple-500/30 space-y-2 text-center">
               <KeyRound className="w-8 h-8 text-[#FF7F5B] mx-auto animate-pulse" />
               <label className="block text-xs font-bold text-slate-200 leading-relaxed">
-                Digite aqui o código de 06 dígitos que enviamos para o seu e-mail.
+                Digite aqui o código de 06 dígitos<br />
+                que enviamos para o seu e-mail.
               </label>
               <input
                 type="text"
