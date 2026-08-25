@@ -279,6 +279,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           setCodeError(false);
                           setIsVerifyingCode(true);
                         } else {
+                          if (updateUser) {
+                            updateUser({ name: userName.trim() });
+                          }
                           setIsEditingProfile(false);
                         }
                       }}

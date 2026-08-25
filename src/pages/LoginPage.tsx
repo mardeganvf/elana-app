@@ -474,6 +474,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
               <span>Continuar com o Google</span>
             </button>
 
+            {/* HELENA DEMO QUICK ACCESS BUTTON */}
+            {mode === 'login' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSuccessMessage('Login de demonstração da Helena realizado com sucesso!');
+                  login('helena@elana.com.br', 'Helena Ribeiro');
+                  setTimeout(() => onSuccess(true), 500);
+                }}
+                className="w-full py-2.5 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-amber-500/20 border border-purple-400/40 text-purple-200 hover:text-white font-black text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:border-purple-400"
+              >
+                <span>⚡ Entrar como Helena Ribeiro (Demo)</span>
+              </button>
+            )}
+
             {/* SWITCH BETWEEN LOGIN / REGISTER */}
             <div className="pt-2 text-center text-xs text-slate-400 border-t border-white/10">
               {mode === 'login' ? (

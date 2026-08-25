@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error parsing stored session', e);
       }
     }
-    return DEFAULT_USER;
+    return null;
   });
 
   const [unlockedBadgeModal, setUnlockedBadgeModal] = useState<Badge | null>(null);
