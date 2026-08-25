@@ -105,18 +105,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
         if (authError) {
           console.error('Supabase Auth SignUp Error:', authError.message);
-          if (authError.message.toLowerCase().includes('already registered') || authError.message.toLowerCase().includes('already exists')) {
+          const msg = authError.message.toLowerCase();
+          if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user_already_exists')) {
             setIsExistingUserModalOpen(true);
-            setLoading(false);
-            return;
-          } else if (authError.message.toLowerCase().includes('confirmation email') || authError.message.toLowerCase().includes('smtp')) {
-            // Custom SMTP warning
-            console.warn('SMTP configuration warning:', authError.message);
           } else {
-            setErrorMessage(authError.message);
-            setLoading(false);
-            return;
+            setErrorMessage(`Erro ao enviar e-mail: ${authError.message}`);
           }
+          setLoading(false);
+          return;
         }
 
         setInputCode('');
