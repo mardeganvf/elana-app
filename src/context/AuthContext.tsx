@@ -104,6 +104,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const defaultName = name || email.split('@')[0];
     const isDemoHelena = email.toLowerCase() === 'helena@elana.com.br';
     const validId = (customId && customId.length > 20) ? customId : crypto.randomUUID();
+
+    // Check if there is per-user saved profile state in localStorage
+    const savedDataRaw = localStorage.getItem(`elana_user_data_${email.toLowerCase()}`);
+    let savedData: Partial<UserProfile> = {};
+    if (savedDataRaw) {
+      try {
+        savedData = JSON.parse(savedDataRaw);
+      } catch (e) {}
+    }
+
     const newUser: UserProfile = isDemoHelena ? {
       ...DEFAULT_USER,
       id: validId,
@@ -124,7 +134,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       levelTitle: 'Semente',
       streakDays: 1,
       lastActiveDate: new Date().toISOString(),
-      badges: []
+      badges: [],
+      ...savedData
     };
 
     setUser(newUser);
@@ -160,6 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setUser(updatedUser);
     localStorage.setItem('elana_user_session', JSON.stringify(updatedUser));
+    localStorage.setItem(`elana_user_data_${updatedUser.email.toLowerCase()}`, JSON.stringify(updatedUser));
 
     // Sync profile updates to Supabase 'profiles' table!
     try {

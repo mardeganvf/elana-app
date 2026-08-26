@@ -167,7 +167,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
 
           const userName = data.user?.user_metadata?.name || inputVal.split('@')[0];
           setSuccessMessage('Login realizado com sucesso!');
-          login(inputVal, userName);
+          login(inputVal, userName, data.user?.id);
           setTimeout(() => onSuccess(false), 500);
         }
       } else if (mode === 'recovery') {
