@@ -272,7 +272,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
               )}
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleProfileAvatarChange}
                 disabled={isUploadingPhoto}
                 className="hidden"
@@ -804,7 +804,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                     <span className="text-[10px] font-bold">Adicionar</span>
                   </>
                 )}
-                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploadingPhoto} />
+                <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoUpload} disabled={isUploadingPhoto} />
               </label>
             )}
           </div>
