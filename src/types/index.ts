@@ -82,6 +82,16 @@ export interface UserProfile {
   streakDays: number;
   lastActiveDate: string;
   badges: Badge[];
+  bio?: string;
+  children?: {
+    id: string;
+    emoji: string;
+    name: string;
+    age: string;
+    birthdate?: string;
+    isPregnancy?: boolean;
+  }[];
+  photos?: string[];
 }
 
 export type EmotionalIntention = 'ajuda' | 'desabafar' | 'celebrar';

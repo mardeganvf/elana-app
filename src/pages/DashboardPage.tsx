@@ -21,8 +21,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const handleProfileAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && updateUser) {
-      const imageUrl = URL.createObjectURL(file);
-      updateUser({ avatar: imageUrl });
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          updateUser({ avatar: base64 });
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
   
@@ -32,7 +38,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
   // Bio state
   const [isEditingBio, setIsEditingBio] = useState(false);
-  const [bioText, setBioText] = useState('');
+  const [bioText, setBioText] = useState(user?.bio || '');
 
   // Profile info editing state & Email Code Verification
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -55,7 +61,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     birthdate?: string;
     isPregnancy?: boolean;
   }
-  const [childrenList, setChildrenList] = useState<ChildInfo[]>([]);
+  const [childrenList, setChildrenList] = useState<ChildInfo[]>(user?.children || []);
   const [isEditingChildren, setIsEditingChildren] = useState(false);
   const [newChildName, setNewChildName] = useState('');
   const [newChildBirthdate, setNewChildBirthdate] = useState('');
@@ -103,8 +109,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   // Followed Members state
   const [followedMembers] = useState<PublicUserProfile[]>([]);
   
-  // Photos state (up to 3 photos) - Start blank
-  const [userPhotos, setUserPhotos] = useState<string[]>([]);
+  // Photos state (up to 3 photos)
+  const [userPhotos, setUserPhotos] = useState<string[]>(user?.photos || []);
 
   interface DashboardTestimonial {
     id: string;
@@ -124,8 +130,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && userPhotos.length < 3) {
-      const imageUrl = URL.createObjectURL(file);
-      setUserPhotos(prev => [...prev, imageUrl]);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          setUserPhotos(prev => [...prev, base64]);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -158,6 +170,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
       }
     }
   }, [user, bioText, childrenList, userPhotos, awardBadge]);
+
+  // Sync bioText, childrenList and userPhotos to UserProfile when they change (but not aggressively typing for bio, only explicitly saved for bio)
+  useEffect(() => {
+    if (!user || !updateUser) return;
+    const isChildrenDiff = JSON.stringify(user.children || []) !== JSON.stringify(childrenList);
+    const isPhotosDiff = JSON.stringify(user.photos || []) !== JSON.stringify(userPhotos);
+    
+    if (isChildrenDiff || isPhotosDiff) {
+      updateUser({
+        children: childrenList,
+        photos: userPhotos
+      });
+    }
+  }, [childrenList, userPhotos, user, updateUser]);
 
   return (
     <div className="space-y-10 pb-20 animate-fade-in max-w-6xl mx-auto text-white -mt-4">
@@ -440,7 +466,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
               className="w-full p-3.5 bg-[#070D0F] border border-[#FF7F5B]/50 rounded-2xl text-xs text-white focus:outline-none transition-all resize-none"
             />
             <button
-              onClick={() => setIsEditingBio(false)}
+              onClick={() => {
+                setIsEditingBio(false);
+                if (updateUser) updateUser({ bio: bioText });
+              }}
               className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl shadow-md transition-all active:scale-95"
             >
               Salvar Alterações
