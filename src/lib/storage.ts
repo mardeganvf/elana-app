@@ -4,7 +4,7 @@ import { supabase } from './supabase';
  * Reduz e comprime uma imagem no navegador antes do upload para evitar travamentos
  * e garantir carregamento instantâneo.
  */
-function compressImage(file: File | Blob, maxWidth = 800, quality = 0.8): Promise<string> {
+function compressImage(file: File | Blob, maxWidth = 400, quality = 0.7): Promise<string> {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (e) => {

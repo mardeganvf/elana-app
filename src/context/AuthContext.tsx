@@ -96,9 +96,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Salvar no localStorage sempre que o estado user mudar
   useEffect(() => {
     if (user) {
-      localStorage.setItem('elana_user_session', JSON.stringify(user));
-      if (user.email) {
-        localStorage.setItem(`elana_user_data_${user.email.toLowerCase()}`, JSON.stringify(user));
+      try {
+        localStorage.setItem('elana_user_session', JSON.stringify(user));
+        if (user.email) {
+          localStorage.setItem(`elana_user_data_${user.email.toLowerCase()}`, JSON.stringify(user));
+        }
+      } catch (err) {
+        console.warn('localStorage quota exceeded, skipping local cache sync:', err);
       }
     } else {
       localStorage.removeItem('elana_user_session');
