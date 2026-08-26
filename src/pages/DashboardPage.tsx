@@ -905,16 +905,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             Minhas Jornadas ({purchasedJourneys.length})
           </h2>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                setIsNotebookOpen(true);
-                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-              }}
-              className="bg-[#FF7F5B]/20 hover:bg-[#FF7F5B]/30 text-[#FF7F5B] border border-[#FF7F5B]/40 text-xs font-extrabold px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-md"
-            >
-              <BookOpen className="w-4 h-4 text-[#FFD166]" />
-              <span>Minhas Anotações (PDF)</span>
-            </button>
+            {purchasedJourneys.length > 0 && (
+              <button
+                onClick={() => {
+                  setIsNotebookOpen(true);
+                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                }}
+                className="bg-[#FF7F5B]/20 hover:bg-[#FF7F5B]/30 text-[#FF7F5B] border border-[#FF7F5B]/40 text-xs font-extrabold px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-md"
+              >
+                <BookOpen className="w-4 h-4 text-[#FFD166]" />
+                <span>Minhas Anotações (PDF)</span>
+              </button>
+            )}
             <button
               onClick={onExploreCatalog}
               className="text-xs font-bold text-[#FF7F5B] hover:underline"
