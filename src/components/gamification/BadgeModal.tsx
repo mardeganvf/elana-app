@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge } from '../../types';
-import { X, Award, Sparkles, Flame, MessageCircle, TreePine } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface BadgeModalProps {
   badge: Badge | null;
@@ -11,15 +11,11 @@ export const BadgeModal: React.FC<BadgeModalProps> = ({ badge, onClose }) => {
   if (!badge) return null;
 
   const renderBadgeIcon = () => {
-    const props = { className: "w-12 h-12 text-white" };
-    switch (badge.icon) {
-      case 'Sparkles': return <Sparkles {...props} />;
-      case 'Flame': return <Flame {...props} />;
-      case 'MessageCircle': return <MessageCircle {...props} />;
-      case 'Award': return <Award {...props} />;
-      case 'TreePine': return <TreePine {...props} />;
-      default: return <Award {...props} />;
-    }
+    return (
+      <span className="text-5xl filter drop-shadow-md">
+        {badge.icon}
+      </span>
+    );
   };
 
   return (
@@ -34,8 +30,7 @@ export const BadgeModal: React.FC<BadgeModalProps> = ({ badge, onClose }) => {
         </button>
 
         <div 
-          className="w-24 h-24 mx-auto rounded-3xl flex items-center justify-center shadow-xl transform rotate-3 hover:rotate-0 transition-transform mb-6"
-          style={{ backgroundColor: badge.color }}
+          className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-[#FF7F5B]/20 to-[#E66795]/20 border border-[#FF7F5B]/30 flex items-center justify-center shadow-xl transform rotate-3 hover:rotate-0 transition-transform mb-6"
         >
           {renderBadgeIcon()}
         </div>
