@@ -421,7 +421,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
               className="text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-white/10 active:scale-95"
             >
               <Edit3 className="w-3.5 h-3.5" />
-              <span>{isEditingChildren ? 'Salvar' : 'Editar'}</span>
+              <span>{isEditingChildren ? 'Fechar' : 'Editar'}</span>
             </button>
           </div>
 
@@ -528,7 +528,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                     setNewChildName('');
                     setNewChildBirthdate('');
                   }}
-                  disabled={newChildEmoji !== '🤰' && (!newChildName.trim() || !newChildBirthdate)}
+                  disabled={
+                    (newChildEmoji === '🤰' && !pregnancyMonth) ||
+                    (newChildEmoji !== '🤰' && (!newChildName.trim() || newChildBirthdate.length < 10))
+                  }
                   className="w-full bg-[#FF7F5B] hover:bg-[#e06847] disabled:opacity-50 text-slate-950 font-bold text-xs uppercase tracking-wider py-2 rounded-xl transition-all"
                 >
                   Salvar
@@ -588,7 +591,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
               className="text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-white/10 active:scale-95"
             >
               <Edit3 className="w-3.5 h-3.5" />
-              <span>{isEditingPhotos ? 'Salvar' : 'Editar'}</span>
+              <span>{isEditingPhotos ? 'Fechar' : 'Editar'}</span>
             </button>
           </div>
 
