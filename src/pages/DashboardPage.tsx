@@ -232,6 +232,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             <img
               src={user.avatar}
               alt={user.name}
+              onError={(e) => {
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+              }}
               className="w-20 h-20 rounded-full object-cover border-4 border-[#E66795] shadow-lg"
             />
             {/* Camera Overlay Button to Change Profile Photo */}
