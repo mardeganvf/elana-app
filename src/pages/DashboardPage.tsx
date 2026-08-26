@@ -10,6 +10,7 @@ import { NotebookModal } from '../components/gamification/NotebookModal';
 import { getLevelFromXP, ALL_BADGES } from '../data/gamificationData';
 import { uploadImageToStorage } from '../lib/storage';
 import { supabase } from '../lib/supabase';
+import { GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
 
 interface DashboardPageProps {
   onStartLearning: (journey: Journey) => void;
@@ -20,12 +21,32 @@ interface DashboardPageProps {
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog }) => {
   const { user, logout, updateUser, awardBadge } = useAuth();
 
+  // Função centralizada para validar e conceder a badge Criando Raízes (b2)
+  const checkCriandoRaizes = (avatarToCheck?: string, photosToCheck?: string[]) => {
+    if (!user || user.badges.some(b => b.id === 'b2')) return;
+    
+    const currentAvatar = avatarToCheck || user.avatar;
+    const hasCustomAvatar = !!currentAvatar && currentAvatar !== GENERIC_DEFAULT_AVATAR;
+    const hasEmail = !!user.email;
+    const hasPhone = !!user.phone;
+    const hasName = !!user.name;
+    const hasBio = !!bioText.trim();
+    const hasFamilyMember = childrenList.length > 0;
+    const currentPhotos = photosToCheck || userPhotos;
+    const hasPhoto = currentPhotos.length > 0;
+
+    if (hasCustomAvatar && hasEmail && hasPhone && hasName && hasBio && hasFamilyMember && hasPhoto) {
+      awardBadge('b2');
+    }
+  };
+
   const handleProfileAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && updateUser) {
       const publicUrl = await uploadImageToStorage(file, 'avatars');
       if (publicUrl) {
-        updateUser({ avatar: publicUrl });
+        await updateUser({ avatar: publicUrl });
+        checkCriandoRaizes(publicUrl);
       }
     }
   };
@@ -167,16 +188,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
         }
 
         // Checar desbloqueio do badge Criando Raízes (b2)
-        if (user && !user.badges.some(b => b.id === 'b2')) {
-          const hasEmail = !!user.email;
-          const hasPhone = !!user.phone;
-          const hasName = !!user.name;
-          const hasBio = !!bioText.trim();
-          const hasFamilyMember = childrenList.length > 0;
-          if (hasEmail && hasPhone && hasName && hasBio && hasFamilyMember) {
-            awardBadge('b2');
-          }
-        }
+        checkCriandoRaizes(undefined, nextPhotos);
       }
     }
   };
@@ -516,9 +528,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
               className="w-full p-3.5 bg-[#070D0F] border border-[#FF7F5B]/50 rounded-2xl text-xs text-white focus:outline-none transition-all resize-none"
             />
             <button
-              onClick={() => {
+              onClick={async () => {
                 setIsEditingBio(false);
-                if (updateUser) updateUser({ bio: bioText });
+                if (updateUser) {
+                  await updateUser({ bio: bioText });
+                  checkCriandoRaizes();
+                }
               }}
               className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl shadow-md transition-all active:scale-95"
             >
