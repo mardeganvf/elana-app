@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CommunityProvider } from './context/CommunityContext';
 import { FontSizeProvider } from './context/FontSizeContext';
@@ -31,6 +31,16 @@ const AppContent: React.FC = () => {
   const [isBadgeRewardOpen, setIsBadgeRewardOpen] = useState(false);
   const [isProfileInviteOpen, setIsProfileInviteOpen] = useState(false);
 
+  useEffect(() => {
+    if (user && !localStorage.getItem(`elana_spotlight_done_${user.email}`)) {
+      // Small delay to ensure DOM is ready for the tour target selectors
+      const timer = setTimeout(() => {
+        setIsSpotlightTourOpen(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
+
   const handleSelectJourney = (journey: Journey) => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     if (user?.purchasedJourneyIds.includes(journey.id)) {
@@ -60,7 +70,6 @@ const AppContent: React.FC = () => {
         onSuccess={() => {
           setActiveTab('home');
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-          setIsSpotlightTourOpen(true);
         }}
       />
     );
@@ -155,9 +164,9 @@ const AppContent: React.FC = () => {
         }}
       />
 
-      {/* Interactive Guided Spotlight Tour (Only opens on Helena demo login) */}
+      {/* Interactive Guided Spotlight Tour */}
       <GuidedSpotlightTour
-        isOpen={isSpotlightTourOpen}
+        isOpen={isSpotlightTourOpen && user !== null && !localStorage.getItem(`elana_spotlight_done_${user.email}`)}
         onClose={() => setIsSpotlightTourOpen(false)}
         onComplete={() => setIsBadgeRewardOpen(true)}
       />
