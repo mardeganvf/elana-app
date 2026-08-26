@@ -192,12 +192,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     if (user.purchasedJourneyIds.includes(journeyId)) return;
 
-    setUser(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        purchasedJourneyIds: [...prev.purchasedJourneyIds, journeyId]
-      };
+    updateUser({
+      purchasedJourneyIds: [...user.purchasedJourneyIds, journeyId]
     });
   };
 
@@ -206,14 +202,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newXP = user.xp + amount;
     const levelInfo = getLevelFromXP(newXP);
     
-    setUser(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        xp: newXP,
-        level: levelInfo.level,
-        levelTitle: levelInfo.title
-      };
+    updateUser({
+      xp: newXP,
+      level: levelInfo.level,
+      levelTitle: levelInfo.title
     });
   };
 
@@ -221,8 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     if (user.completedLessonIds.includes(lessonId)) return;
 
-    const newXP = user.xp + xpReward;
-    const levelInfo = getLevelFromXP(newXP);
+    let newXP = user.xp + xpReward;
     
     // Check if new badge unlocked
     let newlyUnlockedBadge: Badge | null = null;
@@ -231,22 +222,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Demo check badge b4 on first lesson
     if (!currentBadgeIds.has('b4')) {
       newlyUnlockedBadge = ALL_BADGES.find(b => b.id === 'b4') || null;
+      if (newlyUnlockedBadge) {
+        newXP += newlyUnlockedBadge.rewardXp;
+      }
     }
+
+    const levelInfo = getLevelFromXP(newXP);
 
     const updatedBadges = newlyUnlockedBadge 
       ? [...user.badges, newlyUnlockedBadge] 
       : user.badges;
 
-    setUser(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        completedLessonIds: [...prev.completedLessonIds, lessonId],
-        xp: newXP,
-        level: levelInfo.level,
-        levelTitle: levelInfo.title,
-        badges: updatedBadges
-      };
+    updateUser({
+      completedLessonIds: [...user.completedLessonIds, lessonId],
+      xp: newXP,
+      level: levelInfo.level,
+      levelTitle: levelInfo.title,
+      badges: updatedBadges
     });
 
     if (newlyUnlockedBadge) {
@@ -267,12 +259,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const badgeToAward = ALL_BADGES.find(b => b.id === badgeId);
     if (!badgeToAward) return;
 
-    setUser(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        badges: [...prev.badges, badgeToAward]
-      };
+    updateUser({
+      badges: [...user.badges, badgeToAward],
+      xp: user.xp + (badgeToAward.rewardXp || 0)
     });
 
     setUnlockedBadgeModal(badgeToAward);
@@ -285,15 +274,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const saveLessonNote = (lessonId: string, note: string) => {
     if (!user) return;
-    setUser(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        lessonNotes: {
-          ...prev.lessonNotes,
-          [lessonId]: note
-        }
-      };
+    updateUser({
+      lessonNotes: {
+        ...user.lessonNotes,
+        [lessonId]: note
+      }
     });
   };
 
