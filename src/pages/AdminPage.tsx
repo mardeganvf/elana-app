@@ -150,7 +150,7 @@ export const AdminPage: React.FC = () => {
   useEffect(() => {
     const fetchRealProfiles = async () => {
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('profiles')
           .select('*')
           .order('created_at', { ascending: false });

@@ -131,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 1. Buscar Perfil Principal prioritariamente por e-mail
       let profile: any = null;
-      const { data: profileByEmail, error: emailFetchErr } = await supabase
+      const { data: profileByEmail } = await supabase
         .from('profiles')
         .select('*')
         .eq('email', emailClean)

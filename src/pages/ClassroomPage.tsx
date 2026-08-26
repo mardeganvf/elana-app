@@ -216,15 +216,16 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
               <div className="flex items-center gap-1 bg-[#070D0F] px-3 py-1.5 rounded-xl border border-white/10">
                 <span className="text-[10px] text-slate-400 font-bold uppercase">Velocidade:</span>
                 <select
-                value={playbackSpeed}
-                onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-                className="bg-transparent text-white font-bold focus:outline-none cursor-pointer"
-              >
-                <option value={1.0} className="bg-[#101B1E]">1.0x Normal</option>
-                <option value={1.25} className="bg-[#101B1E]">1.25x</option>
-                <option value={1.5} className="bg-[#101B1E]">1.5x</option>
-                <option value={2.0} className="bg-[#101B1E]">2.0x Rápido</option>
-              </select>
+                  value={playbackSpeed}
+                  onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
+                  className="bg-transparent text-white font-bold focus:outline-none cursor-pointer"
+                >
+                  <option value={1.0} className="bg-[#101B1E]">1.0x Normal</option>
+                  <option value={1.25} className="bg-[#101B1E]">1.25x</option>
+                  <option value={1.5} className="bg-[#101B1E]">1.5x</option>
+                  <option value={2.0} className="bg-[#101B1E]">2.0x Rápido</option>
+                </select>
+              </div>
             </div>
 
           </div>

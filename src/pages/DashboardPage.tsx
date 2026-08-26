@@ -169,7 +169,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     if (!user) return;
     const fetchTestimonials = async () => {
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('profile_testimonials')
           .select('*')
           .eq('recipient_profile_id', user.id)
@@ -501,7 +501,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 {user.badges.length === 1 ? 'Conquista' : 'Conquistas'}
               </span>
             </div>
-         {/* 📝 Um pouquinho sobre mim & 👶 Minha Família */}
+          </div>
+        </div>
+      </section>
+
+      {/* 📝 Um pouquinho sobre mim & 👶 Minha Família */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* 📝 Um pouquinho sobre mim... (Bio Card - Esquerda) */}
