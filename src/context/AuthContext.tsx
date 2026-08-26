@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { UserProfile, Badge } from '../types';
 import { ALL_BADGES, getLevelFromXP } from '../data/gamificationData';
 import { supabase } from '../lib/supabase';
@@ -79,6 +79,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     return null;
   });
+
+  const userRef = useRef<UserProfile | null>(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const [unlockedBadgeModal, setUnlockedBadgeModal] = useState<Badge | null>(null);
   const [sosResponse, setSosResponse] = useState<SOSTicketResponse | null>(() => {
@@ -326,12 +331,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateUser = async (updates: Partial<UserProfile>) => {
-    if (!user) return;
+    const baseUser = userRef.current || user;
+    if (!baseUser) return;
     const updatedUser: UserProfile = {
-      ...user,
+      ...baseUser,
       ...updates
     };
+    userRef.current = updatedUser;
     setUser(updatedUser);
+
+    try {
+      localStorage.setItem('elana_user_session', JSON.stringify(updatedUser));
+      if (updatedUser.email) {
+        localStorage.setItem(`elana_user_data_${updatedUser.email.toLowerCase()}`, JSON.stringify(updatedUser));
+      }
+    } catch (err) {
+      console.warn('LocalStorage error:', err);
+    }
 
     // Sincronizar dados no Supabase
     try {
@@ -393,21 +409,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    userRef.current = null;
     setUser(null);
     localStorage.removeItem('elana_user_session');
     supabase.auth.signOut();
   };
 
   const purchaseJourney = async (journeyId: string) => {
-    if (!user) return;
-    if (user.purchasedJourneyIds.includes(journeyId)) return;
+    const currentUser = userRef.current || user;
+    if (!currentUser) return;
+    if (currentUser.purchasedJourneyIds.includes(journeyId)) return;
 
-    const newPurchased = [...user.purchasedJourneyIds, journeyId];
+    const newPurchased = [...currentUser.purchasedJourneyIds, journeyId];
     await updateUser({ purchasedJourneyIds: newPurchased });
 
     try {
       await supabase.from('user_purchased_journeys').upsert({
-        profile_id: user.id,
+        profile_id: currentUser.id,
         journey_id: journeyId
       }, { onConflict: 'profile_id, journey_id' });
     } catch (e) {
@@ -416,8 +434,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addXP = async (amount: number) => {
-    if (!user) return;
-    const newXP = user.xp + amount;
+    const currentUser = userRef.current || user;
+    if (!currentUser) return;
+    const newXP = currentUser.xp + amount;
     const levelInfo = getLevelFromXP(newXP);
     
     await updateUser({
@@ -428,14 +447,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const completeLesson = async (lessonId: string, xpReward: number = 10) => {
-    if (!user) return;
-    if (user.completedLessonIds.includes(lessonId)) return;
+    const currentUser = userRef.current || user;
+    if (!currentUser) return;
+    if (currentUser.completedLessonIds.includes(lessonId)) return;
 
-    let newXP = user.xp + xpReward;
+    let newXP = currentUser.xp + xpReward;
     
     // Check if new badge unlocked (e.g. b4)
     let newlyUnlockedBadge: Badge | null = null;
-    const currentBadgeIds = new Set(user.badges.map(b => b.id));
+    const currentBadgeIds = new Set(currentUser.badges.map(b => b.id));
 
     if (!currentBadgeIds.has('b4')) {
       newlyUnlockedBadge = ALL_BADGES.find(b => b.id === 'b4') || null;
@@ -446,11 +466,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const levelInfo = getLevelFromXP(newXP);
     const updatedBadges = newlyUnlockedBadge 
-      ? [...user.badges, newlyUnlockedBadge] 
-      : user.badges;
+      ? [...currentUser.badges, newlyUnlockedBadge] 
+      : currentUser.badges;
 
     await updateUser({
-      completedLessonIds: [...user.completedLessonIds, lessonId],
+      completedLessonIds: [...currentUser.completedLessonIds, lessonId],
       xp: newXP,
       level: levelInfo.level,
       levelTitle: levelInfo.title,
@@ -460,14 +480,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Gravar aula concluída no Supabase
     try {
       await supabase.from('user_completed_lessons').upsert({
-        profile_id: user.id,
+        profile_id: currentUser.id,
         lesson_id: lessonId
       }, { onConflict: 'profile_id, lesson_id' });
 
       // Se desbloqueou badge b4, gravar badge no Supabase
       if (newlyUnlockedBadge) {
         await supabase.from('user_badges').upsert({
-          profile_id: user.id,
+          profile_id: currentUser.id,
           badge_id: newlyUnlockedBadge.id
         }, { onConflict: 'profile_id, badge_id' });
       }
@@ -486,22 +506,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const awardBadge = async (badgeId: string) => {
-    if (!user) return;
-    const currentBadgeIds = new Set(user.badges.map(b => b.id));
+    const currentUser = userRef.current || user;
+    if (!currentUser) return;
+    const currentBadgeIds = new Set(currentUser.badges.map(b => b.id));
     if (currentBadgeIds.has(badgeId)) return; // Already has it
 
     const badgeToAward = ALL_BADGES.find(b => b.id === badgeId);
     if (!badgeToAward) return;
 
+    const newXP = currentUser.xp + (badgeToAward.rewardXp || 0);
+    const levelInfo = getLevelFromXP(newXP);
+
     await updateUser({
-      badges: [...user.badges, badgeToAward],
-      xp: user.xp + (badgeToAward.rewardXp || 0)
+      badges: [...currentUser.badges, badgeToAward],
+      xp: newXP,
+      level: levelInfo.level,
+      levelTitle: levelInfo.title
     });
 
     // Gravar badge no Supabase
     try {
       await supabase.from('user_badges').upsert({
-        profile_id: user.id,
+        profile_id: currentUser.id,
         badge_id: badgeId
       }, { onConflict: 'profile_id, badge_id' });
     } catch (e) {
@@ -517,9 +543,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const saveLessonNote = async (lessonId: string, note: string) => {
-    if (!user) return;
+    const currentUser = userRef.current || user;
+    if (!currentUser) return;
     const newNotes = {
-      ...user.lessonNotes,
+      ...currentUser.lessonNotes,
       [lessonId]: note
     };
     
@@ -527,7 +554,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       await supabase.from('user_lesson_notes').upsert({
-        profile_id: user.id,
+        profile_id: currentUser.id,
         lesson_id: lessonId,
         note,
         updated_at: new Date().toISOString()

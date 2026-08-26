@@ -38,7 +38,7 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
       badge: 'Seu Perfil',
       titleLines: ['Um cantinho todinho sobre você!'],
       messageLines: [
-        'Aqui você conta sua história, monta o álbum da sua família, acessa sua evolução, conquistas, depoimentos e muito mais.'
+        'Aqui você conta sua história, cadastra sua família, acessa sua evolução, conquistas, depoimentos e muito mais.'
       ],
       tip: 'Clique na foto sempre que quiser ver o quanto já caminhou.',
       tipCenter: true
