@@ -139,8 +139,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
         // Special Helena Demo Bypass
         if (inputVal.toLowerCase() === 'helena@elana.com.br') {
           setSuccessMessage('Login de demonstração da Helena realizado com sucesso!');
-          login('helena@elana.com.br', 'Helena Ribeiro');
-          setTimeout(() => onSuccess(true), 500);
+          await login('helena@elana.com.br', 'Helena Ribeiro');
+          onSuccess(true);
           return;
         }
 
@@ -150,8 +150,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           const { error } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
           if (error) throw error;
           setSuccessMessage(`Código SMS enviado para ${formattedPhone}! Entrando...`);
-          login(`${cleanPhone}@elana.app`, name.trim() || 'Membro');
-          setTimeout(() => onSuccess(false), 800);
+          await login(`${cleanPhone}@elana.app`, name.trim() || 'Membro');
+          onSuccess(false);
         } else {
           const { data, error } = await supabase.auth.signInWithPassword({
             email: inputVal,
@@ -558,10 +558,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             {mode === 'login' && (
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   setSuccessMessage('Login de demonstração da Helena realizado com sucesso!');
-                  login('helena@elana.com.br', 'Helena Ribeiro');
-                  setTimeout(() => onSuccess(true), 500);
+                  await login('helena@elana.com.br', 'Helena Ribeiro');
+                  onSuccess(true);
                 }}
                 className="w-full py-2.5 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-amber-500/20 border border-purple-400/40 text-purple-200 hover:text-white font-black text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:border-purple-400"
               >

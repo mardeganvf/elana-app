@@ -466,9 +466,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
         <div className="flex flex-col items-end gap-3">
           {/* Notifications Toggle */}
           <button
-            onClick={() => {
-              setNotificationsEnabled(!notificationsEnabled);
-              if (!notificationsEnabled) {
+            onClick={async () => {
+              const nextVal = !notificationsEnabled;
+              setNotificationsEnabled(nextVal);
+              if (updateUser) {
+                await updateUser({ notificationsEnabled: nextVal });
+              }
+              if (nextVal) {
                 awardBadge('b3');
               }
             }}
