@@ -225,19 +225,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       // 6. Buscar Filhos / Membros da Família
-      const { data: familyData } = await supabase
-        .from('family_members')
-        .select('*')
-        .eq('profile_id', profileId);
+      let children: any[] = [];
+      try {
+        const { data: familyData } = await supabase
+          .from('family_members')
+          .select('*')
+          .eq('profile_id', profileId);
 
-      const children = (familyData || []).map(f => ({
-        id: f.id,
-        emoji: f.emoji || '👶',
-        name: f.name || '',
-        age: f.age || '',
-        birthdate: f.birthdate || undefined,
-        isPregnancy: !!f.is_pregnancy
-      }));
+        if (familyData && familyData.length > 0) {
+          children = familyData.map(f => ({
+            id: f.id,
+            emoji: f.emoji || '👶',
+            name: f.name || '',
+            age: f.age || '',
+            birthdate: f.birthdate || undefined,
+            isPregnancy: !!f.is_pregnancy
+          }));
+        }
+      } catch (err) {
+        console.warn('Error fetching family_members table:', err);
+      }
+
+      // Se family_members estiver vazio ou bloqueado, restaurar do backup persistido em family_tag
+      if (children.length === 0 && profile.family_tag && profile.family_tag.startsWith('JSON_CHILDREN:')) {
+        try {
+          children = JSON.parse(profile.family_tag.replace('JSON_CHILDREN:', ''));
+        } catch (e) {
+          console.warn('Error parsing children backup:', e);
+        }
+      }
 
       const xp = profile.xp || 0;
       const levelInfo = getLevelFromXP(xp);
@@ -355,6 +371,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const levelInfo = getLevelFromXP(updatedUser.xp);
 
         // 1. Atualizar Tabela profiles com colunas válidas
+        let familyTagPayload = updatedUser.familyTag || null;
+        if (updates.children) {
+          familyTagPayload = `JSON_CHILDREN:${JSON.stringify(updates.children)}`;
+        } else if (updatedUser.children && updatedUser.children.length > 0) {
+          familyTagPayload = `JSON_CHILDREN:${JSON.stringify(updatedUser.children)}`;
+        }
+
         const profilePayload: Record<string, any> = {
           id: updatedUser.id,
           email: updatedUser.email.toLowerCase().trim(),
@@ -362,8 +385,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           phone: updatedUser.phone || null,
           avatar: updatedUser.avatar,
           role: updatedUser.role,
-          family_tag: updatedUser.familyTag || null,
-          tag: (updatedUser.onboardingCompleted || updatedUser.xp >= 25) ? 'onboarded' : (updatedUser.familyTag || 'Membro da Aldeia'),
+          family_tag: familyTagPayload,
+          tag: (updatedUser.onboardingCompleted || updatedUser.xp >= 25) ? 'onboarded' : 'Membro da Aldeia',
           bio: updatedUser.bio || null,
           xp: updatedUser.xp,
           level_number: updatedUser.level || levelInfo.level,
@@ -385,21 +408,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // 2. Sincronizar Filhos na tabela family_members (se foram alterados)
         if (updates.children) {
-          await supabase.from('family_members').delete().eq('profile_id', updatedUser.id);
-          if (updates.children.length > 0) {
-            const familyRows = updates.children.map(c => ({
-              id: (c.id && c.id.length > 20) ? c.id : crypto.randomUUID(),
-              profile_id: updatedUser.id,
-              name: c.name,
-              age: c.age,
-              emoji: c.emoji || '👶',
-              birthdate: c.birthdate || null,
-              is_pregnancy: !!c.isPregnancy
-            }));
-            const { error: famErr } = await supabase.from('family_members').insert(familyRows);
-            if (famErr) {
-              console.error('Supabase family_members insert error:', famErr.message);
+          try {
+            await supabase.from('family_members').delete().eq('profile_id', updatedUser.id);
+            if (updates.children.length > 0) {
+              const familyRows = updates.children.map(c => {
+                const row: Record<string, any> = {
+                  profile_id: updatedUser.id,
+                  name: c.name,
+                  age: c.age,
+                  emoji: c.emoji || '👶',
+                  birthdate: c.birthdate || null,
+                  is_pregnancy: !!c.isPregnancy
+                };
+                if (c.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(c.id)) {
+                  row.id = c.id;
+                }
+                return row;
+              });
+              const { error: famErr } = await supabase.from('family_members').insert(familyRows);
+              if (famErr) {
+                console.warn('Supabase family_members insert notice:', famErr.message);
+              }
             }
+          } catch (famErr) {
+            console.warn('Supabase family_members sync notice:', famErr);
           }
         }
       }
