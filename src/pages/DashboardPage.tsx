@@ -349,23 +349,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             </div>
           ) : (
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-baseline gap-2.5 flex-wrap" style={{ fontFamily: 'var(--font-heading)' }}>
-                  <span>{userName}</span>
-                  <span className="text-xs font-normal text-slate-400 font-sans">({confirmedEmail})</span>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                  {userName}
                 </h1>
-                <button
-                  onClick={() => {
-                    setPendingEmail(confirmedEmail);
-                    setIsVerifyingCode(false);
-                    setIsEditingProfile(true);
-                  }}
-                  className="text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-lg border border-white/10 active:scale-95 shrink-0"
-                  title="Editar Nome e E-mail"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Editar</span>
-                </button>
+                
                 <button
                   onClick={() => {
                     setNotificationsEnabled(!notificationsEnabled);
@@ -385,14 +373,41 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 </button>
               </div>
 
-              <div className="mt-2">
+              <div className="mt-2 mb-4">
                 <button
                   onClick={() => setIsLevelsModalOpen(true)}
-                  className="bg-[#FF7F5B]/20 hover:bg-[#FF7F5B]/30 text-[#FF7F5B] text-xs font-bold px-3 py-1 rounded-xl border border-[#FF7F5B]/30 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-sm"
+                  className="bg-[#FF7F5B]/20 hover:bg-[#FF7F5B]/30 text-[#FF7F5B] text-xs font-bold px-3 py-1 rounded-xl border border-[#FF7F5B]/30 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-sm inline-flex"
                   title="Clique para ver os 15 Níveis de Evolução"
                 >
                   <span>{userLevelInfo.icon}</span>
                   <span>{userLevelInfo.title}</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">E-mail</span>
+                  <span className="text-sm font-medium text-slate-300">{confirmedEmail}</span>
+                </div>
+                
+                <div className="w-px h-8 bg-white/10 hidden sm:block"></div>
+                
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Celular</span>
+                  <span className="text-sm font-medium text-slate-300">{userPhone || 'Não informado'}</span>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setPendingEmail(confirmedEmail);
+                    setIsVerifyingCode(false);
+                    setIsEditingProfile(true);
+                  }}
+                  className="ml-0 sm:ml-2 mt-2 sm:mt-0 text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 active:scale-95 shrink-0"
+                  title="Editar Perfil"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Editar Perfil</span>
                 </button>
               </div>
             </div>
