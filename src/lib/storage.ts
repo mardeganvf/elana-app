@@ -70,7 +70,7 @@ function dataURLtoBlob(dataurl: string): Blob {
  */
 export async function uploadImageToStorage(
   file: File | Blob,
-  folder: 'avatars' | 'family-photos' | 'community' = 'avatars',
+  folder: 'avatars' | 'community' = 'avatars',
   customFileName?: string
 ): Promise<string> {
   try {

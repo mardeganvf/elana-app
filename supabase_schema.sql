@@ -184,7 +184,6 @@ ALTER TABLE public.sos_tickets ALTER COLUMN profile_id DROP NOT NULL;
 -- ========================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.family_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.emotional_checkins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.community_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.community_comments ENABLE ROW LEVEL SECURITY;

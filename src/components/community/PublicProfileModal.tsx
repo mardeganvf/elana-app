@@ -12,8 +12,6 @@ import {
   EyeOff,
   UserCheck,
   Baby,
-  Camera,
-  Plus,
   Quote,
   Smile,
   BookOpen
@@ -23,7 +21,6 @@ import { BadgeGallery } from '../gamification/BadgeGallery';
 import { UserLevelsModal } from '../gamification/UserLevelsModal';
 import { JOURNEYS_DATA } from '../../data/journeysData';
 import { getLevelFromXP } from '../../data/gamificationData';
-import { uploadImageToStorage } from '../../lib/storage';
 import { supabase } from '../../lib/supabase';
 
 export interface ChildInfo {
@@ -59,7 +56,6 @@ export interface PublicUserProfile {
   reactionsReceivedCount?: number;
   isAnonymous?: boolean;
   children?: ChildInfo[];
-  photos?: string[];
   testimonials?: ProfileTestimonial[];
   badges?: any[];
   recentPosts?: Array<{ id: string; title: string; createdAt: string; commentsCount: number }>;
@@ -80,13 +76,6 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
   const isOwnProfile = Boolean(user && (user.id === profile.id || profile.name === user.name));
   const [isFollowing, setIsFollowing] = useState(false);
   const [supportSent, setSupportSent] = useState(false);
-
-  // Photos state (up to 3 photos)
-  const [userPhotos, setUserPhotos] = useState<string[]>(profile.photos || [
-    'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1485546246426-74dc88dec4d9?w=600&auto=format&fit=crop&q=80',
-  ]);
 
   // Children info state
   const [childrenList] = useState<ChildInfo[]>(profile.children || [
@@ -126,16 +115,6 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
     setTimeout(() => {
       setSupportSent(false);
     }, 4000);
-  };
-
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && userPhotos.length < 3) {
-      const publicUrl = await uploadImageToStorage(file, 'family-photos');
-      if (publicUrl) {
-        setUserPhotos(prev => [...prev, publicUrl]);
-      }
-    }
   };
 
   const handleTestimonialSubmit = async (e: React.FormEvent) => {
@@ -279,76 +258,42 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
             </div>
           </div>
 
-          {/* 1. Bio (Sem título, só a descrição) */}
-          <p className="text-sm sm:text-base text-slate-200 leading-relaxed bg-[#070D0F] p-4 rounded-2xl border border-white/5 italic font-medium">
-            "{profile.bio || (profile.isAnonymous ? 'Espaço de confidencialidade e desabafo sem julgamentos.' : 'Vivendo um dia de cada vez, aprendendo sobre paciência, amor e criando memórias afetuosas com meus filhos.')}"
-          </p>
-
-          {/* 2. Minha Família (Título fora do contêiner, igual Álbum da Família) */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Baby className="w-4 h-4 text-[#FF7F5B]" />
-                Minha Família
-              </h4>
+          {/* Grade 2 Colunas: Bio na esquerda, Minha Família na direita */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+            {/* 1. Um pouquinho sobre mim... (Bio) */}
+            <div className="bg-[#070D0F] p-4 rounded-2xl border border-white/5 flex flex-col justify-between">
+              <div>
+                <h4 className="text-xs font-extrabold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <span>✨</span> Um pouquinho sobre mim...
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed italic font-medium">
+                  "{profile.bio || (profile.isAnonymous ? 'Espaço de confidencialidade e desabafo sem julgamentos.' : 'Vivendo um dia de cada vez, aprendendo sobre paciência, amor e criando memórias afetuosas com meus filhos.')}"
+                </p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Opção Gestante */}
-              <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/40 p-4 rounded-2xl flex items-center gap-3.5 shadow-md">
-                <div className="text-3xl shrink-0 p-2 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center">
-                  🤰
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-bold text-white truncate">Gestante</h4>
-                  <span className="text-xs text-purple-200 font-semibold block mt-0.5">6º mês</span>
-                </div>
+            {/* 2. Minha Família */}
+            <div className="bg-[#070D0F] p-4 rounded-2xl border border-white/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Baby className="w-4 h-4 text-[#FF7F5B]" />
+                  Minha Família
+                </h4>
               </div>
 
-              {childrenList.map((child, idx) => (
-                <div key={child.id || idx} className="bg-[#070D0F] border border-white/15 p-4 rounded-2xl flex items-center gap-3.5 shadow-md">
-                  <div className="text-3xl shrink-0 p-2 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center">
-                    👶
+              <div className="grid grid-cols-1 gap-2.5">
+                {childrenList.map((child, idx) => (
+                  <div key={child.id || idx} className="bg-[#101B1E] border border-white/10 p-2.5 rounded-xl flex items-center gap-3 shadow-sm">
+                    <div className="text-2xl shrink-0 p-1.5 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center">
+                      👶
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-xs font-bold text-white truncate">{child.name || 'Filho(a)'}</h4>
+                      <span className="text-[11px] text-slate-300 font-semibold block">{child.age}</span>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-sm font-bold text-white truncate">{child.name || 'Filho(a)'}</h4>
-                    <span className="text-xs text-slate-300 font-semibold block mt-0.5">{child.age}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 3. Álbum da Família */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Camera className="w-4 h-4 text-[#FF7F5B]" />
-                Álbum da Família ({userPhotos.length}/3 fotos)
-              </h4>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              {userPhotos.map((photo, idx) => (
-                <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-white/15 group shadow-md bg-[#070D0F]">
-                  <img 
-                    src={photo} 
-                    alt={`Momento ${idx + 1}`} 
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=600&auto=format&fit=crop&q=80';
-                    }}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                  />
-                </div>
-              ))}
-
-              {userPhotos.length < 3 && (
-                <label className="aspect-square rounded-2xl border-2 border-dashed border-white/20 hover:border-[#FF7F5B] bg-[#070D0F] hover:bg-white/5 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all text-slate-400 hover:text-white">
-                  <Plus className="w-5 h-5 text-[#FF7F5B]" />
-                  <span className="text-[10px] font-bold">Adicionar</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-                </label>
-              )}
+                ))}
+              </div>
             </div>
           </div>
 
