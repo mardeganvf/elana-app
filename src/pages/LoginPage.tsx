@@ -95,7 +95,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           }
 
           // Trigger real email dispatch via Supabase Auth + Resend SMTP!
-          const { error: authError } = await supabase.auth.signUp({
+          const { data: signUpData, error: authError } = await supabase.auth.signUp({
             email: inputVal.trim().toLowerCase(),
             password,
             options: { data: { name: name.trim() } }

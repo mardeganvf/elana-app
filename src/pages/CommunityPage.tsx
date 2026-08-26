@@ -139,7 +139,7 @@ const splitTextIntoTwoLines = (text: string) => {
 
 export const CommunityPage: React.FC = () => {
   const { posts, toggleReaction, toggleCommentReaction, addComment } = useCommunity();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   // Left Sidebar Drill-Down State (All collapsed and none selected by default)
   const [expandedJourneyId, setExpandedJourneyId] = useState<string | null>(null);
@@ -187,12 +187,6 @@ export const CommunityPage: React.FC = () => {
       { id: 'c2', name: 'Theo', age: '3 anos' }
     ];
 
-    const mockPhotos = [
-      'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=600&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=600&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1485546246426-74dc88dec4d9?w=600&auto=format&fit=crop&q=80'
-    ];
-
     const mockTestimonials = [
       {
         id: 't1',
@@ -237,7 +231,6 @@ export const CommunityPage: React.FC = () => {
       commentsCount: author.role === 'guia' ? 156 : 38,
       reactionsReceivedCount: author.role === 'guia' ? 420 : 112,
       children: mockChildren,
-      photos: mockPhotos,
       testimonials: mockTestimonials
     });
   };
