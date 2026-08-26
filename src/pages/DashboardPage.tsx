@@ -141,7 +141,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     return `${years} ${years === 1 ? 'ano' : 'anos'}`;
   };
 
+  const resolveChildAge = (input: string): string => {
+    if (!input) return '';
+    const clean = input.trim();
+    if (clean.includes('/')) {
+      const calculated = calculateAgeFromBirthdate(clean);
+      if (calculated) return calculated;
+    }
+    const numOnly = parseInt(clean.replace(/\D/g, ''), 10);
+    if (!isNaN(numOnly)) {
+      if (clean.toLowerCase().includes('mês') || clean.toLowerCase().includes('mes')) {
+        return `${numOnly} ${numOnly === 1 ? 'mês' : 'meses'}`;
+      }
+      return `${numOnly} ${numOnly === 1 ? 'ano' : 'anos'}`;
+    }
+    return clean;
+  };
+
   const formatBirthdateMask = (val: string): string => {
+    if (/[a-zA-Z]/.test(val)) return val;
     const digits = val.replace(/\D/g, '').slice(0, 8);
     if (digits.length <= 2) return digits;
     if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
@@ -563,7 +581,36 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
               Minha Família
             </h3>
             <button
-              onClick={() => setIsEditingChildren(!isEditingChildren)}
+              onClick={async () => {
+                if (isEditingChildren) {
+                  // Auto-save if user filled name and age/pregnancy
+                  const isPregnancy = newChildEmoji === '🤰';
+                  const computedAge = isPregnancy ? pregnancyMonth : resolveChildAge(newChildBirthdate);
+                  const childName = isPregnancy ? (newChildName.trim() || 'Gestante') : newChildName.trim();
+                  if (childName && (isPregnancy ? !!pregnancyMonth : !!computedAge)) {
+                    const newChild = {
+                      id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `child-${Date.now()}`,
+                      emoji: newChildEmoji,
+                      name: childName,
+                      age: computedAge,
+                      birthdate: isPregnancy ? undefined : newChildBirthdate,
+                      isPregnancy: isPregnancy
+                    };
+                    const next = [...childrenList, newChild];
+                    setChildrenList(next);
+                    setNewChildName('');
+                    setNewChildBirthdate('');
+                    setPregnancyMonth('');
+                    if (updateUser) {
+                      await updateUser({ children: next });
+                      checkCriandoRaizes();
+                    }
+                  }
+                  setIsEditingChildren(false);
+                } else {
+                  setIsEditingChildren(true);
+                }
+              }}
               className="text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-white/10 active:scale-95"
             >
               <Edit3 className="w-3.5 h-3.5" />
@@ -613,16 +660,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                         setNewChildName('');
                       }
                     }}
-                    className="bg-[#101B1E] border border-white/15 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none cursor-pointer"
+                    className="bg-[#101B1E] border border-white/15 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none cursor-pointer font-bold"
                   >
-                    <option value="🤰">🤰 Gestante</option>
                     <option value="👦">👦 Menino</option>
                     <option value="👧">👧 Menina</option>
+                    <option value="🤰">🤰 Gestante</option>
                   </select>
 
                   <input
                     type="text"
-                    placeholder="Nome"
+                    placeholder="Nome do filho(a)"
                     value={newChildName}
                     onChange={(e) => setNewChildName(e.target.value)}
                     className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none placeholder-slate-500 font-bold"
@@ -648,7 +695,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   ) : (
                     <input
                       type="text"
-                      placeholder="DD/MM/AAAA"
+                      placeholder="Data (DD/MM/AAAA) ou Idade"
                       value={newChildBirthdate}
                       onChange={(e) => setNewChildBirthdate(formatBirthdateMask(e.target.value))}
                       className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none w-full placeholder-slate-500 font-medium"
@@ -659,13 +706,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 <button
                   onClick={async () => {
                     const isPregnancy = newChildEmoji === '🤰';
-                    const computedAge = isPregnancy ? pregnancyMonth : calculateAgeFromBirthdate(newChildBirthdate);
+                    const computedAge = isPregnancy ? pregnancyMonth : resolveChildAge(newChildBirthdate);
                     const childName = isPregnancy ? (newChildName.trim() || 'Gestante') : newChildName.trim();
 
                     if (!childName || (!isPregnancy && !computedAge)) return;
 
                     const newChild = {
-                      id: crypto.randomUUID(),
+                      id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `child-${Date.now()}`,
                       emoji: newChildEmoji,
                       name: childName,
                       age: computedAge,
@@ -677,6 +724,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                     setChildrenList(next);
                     setNewChildName('');
                     setNewChildBirthdate('');
+                    setPregnancyMonth('');
 
                     if (updateUser) {
                       await updateUser({ children: next });
@@ -685,11 +733,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   }}
                   disabled={
                     (newChildEmoji === '🤰' && !pregnancyMonth) ||
-                    (newChildEmoji !== '🤰' && (!newChildName.trim() || newChildBirthdate.length < 10))
+                    (newChildEmoji !== '🤰' && (!newChildName.trim() || !newChildBirthdate.trim()))
                   }
-                  className="w-full bg-[#FF7F5B] hover:bg-[#e06847] disabled:opacity-50 text-slate-950 font-bold text-xs uppercase tracking-wider py-2 rounded-xl transition-all"
+                  className="w-full bg-[#FF7F5B] hover:bg-[#e06847] disabled:opacity-40 text-slate-950 font-bold text-xs uppercase tracking-wider py-2.5 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                 >
-                  Salvar
+                  + Adicionar Filho(a)
                 </button>
               </div>
             </div>
