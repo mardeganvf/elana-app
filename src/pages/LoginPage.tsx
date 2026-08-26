@@ -178,7 +178,30 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
         setSuccessMessage('Enviamos um link de redefinição de senha para o seu e-mail!');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Ocorreu um erro ao processar sua solicitação.');
+      const msg = err.message || '';
+      if (msg.toLowerCase().includes('email not confirmed')) {
+        setErrorMessage('Poxa, parece que você não confirmou seu e-mail.');
+      } else {
+        setErrorMessage(msg || 'Ocorreu um erro ao processar sua solicitação.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setLoading(true);
+    setErrorMessage('');
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: identifier.trim()
+      });
+      if (error) throw error;
+      setMode('verify_email');
+      setSuccessMessage('Novo código enviado! Verifique sua caixa de entrada.');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Erro ao reenviar o código.');
     } finally {
       setLoading(false);
     }
@@ -192,14 +215,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     setLoading(true);
     try {
       const inputVal = identifier.trim();
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.verifyOtp({
         email: inputVal,
-        password,
-        options: { data: { name: name.trim() } }
+        token: inputCode.trim(),
+        type: 'signup'
       });
 
       if (authError) {
-        console.error('Supabase Auth SignUp Error:', authError.message);
+        throw new Error('Código inválido ou expirado. Verifique e tente novamente.');
       }
 
       const supabaseUserId = authData?.user?.id;
@@ -294,9 +317,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
 
         {/* Notifications */}
         {errorMessage && (
-          <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-            <span>{errorMessage}</span>
+          <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-medium flex flex-col gap-2">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+              <span>{errorMessage}</span>
+            </div>
+            {errorMessage === 'Poxa, parece que você não confirmou seu e-mail.' && (
+              <button
+                onClick={handleResendOTP}
+                disabled={loading}
+                className="mt-1 self-start bg-rose-500 hover:bg-rose-600 text-white font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg shadow-sm transition-all"
+              >
+                {loading ? 'Enviando...' : 'Reenviar Código'}
+              </button>
+            )}
           </div>
         )}
 
