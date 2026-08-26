@@ -142,7 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         xp: newUser.xp,
         level: newUser.level,
         updated_at: new Date().toISOString()
-      }, { onConflict: 'email' }).then(({ error, data }) => {
+      }, { onConflict: 'id' }).then(({ error, data }) => {
         if (error) {
           console.error('Supabase profiles insert error:', error.message, error.details);
         } else {
@@ -176,7 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           xp: updatedUser.xp,
           level: updatedUser.level,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'email' }).then(({ error }) => {
+        }, { onConflict: 'id' }).then(({ error }) => {
           if (error) console.log('Supabase profile update note:', error.message);
         });
       }

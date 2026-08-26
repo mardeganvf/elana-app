@@ -243,7 +243,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert(profilePayload, { onConflict: 'email' });
+        .upsert(profilePayload, { onConflict: 'id' });
 
       if (profileError) {
         console.error('Supabase Profiles Table Insert Error:', profileError.message);
