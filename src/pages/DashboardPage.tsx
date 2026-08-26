@@ -21,6 +21,8 @@ interface DashboardPageProps {
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog }) => {
   const { user, logout, updateUser, awardBadge } = useAuth();
 
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
   // Função centralizada para validar e conceder a badge Criando Raízes (b2)
   const checkCriandoRaizes = (avatarToCheck?: string, photosToCheck?: string[]) => {
     if (!user || user.badges.some(b => b.id === 'b2')) return;
@@ -30,24 +32,34 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     const hasEmail = !!user.email;
     const hasPhone = !!user.phone;
     const hasName = !!user.name;
-    const hasBio = !!bioText.trim();
-    const hasFamilyMember = childrenList.length > 0;
+    const hasBio = !!(user.bio || bioText).trim();
+    const hasFamilyMember = (childrenList || []).length > 0 || (user.children || []).length > 0;
     const currentPhotos = photosToCheck || userPhotos;
     const hasPhoto = currentPhotos.length > 0;
 
     if (hasCustomAvatar && hasEmail && hasPhone && hasName && hasBio && hasFamilyMember && hasPhoto) {
-      awardBadge('b2');
+      setTimeout(() => {
+        awardBadge('b2');
+      }, 300);
     }
   };
 
   const handleProfileAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && updateUser) {
+    if (!file || !user || !updateUser || isUploadingPhoto) return;
+
+    try {
+      setIsUploadingPhoto(true);
       const publicUrl = await uploadImageToStorage(file, 'avatars');
       if (publicUrl) {
         await updateUser({ avatar: publicUrl });
         checkCriandoRaizes(publicUrl);
       }
+    } catch (err) {
+      console.error('Error uploading profile avatar:', err);
+    } finally {
+      setIsUploadingPhoto(false);
+      e.target.value = '';
     }
   };
   
@@ -178,7 +190,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && userPhotos.length < 3) {
+    if (!file || userPhotos.length >= 3 || isUploadingPhoto) return;
+
+    try {
+      setIsUploadingPhoto(true);
       const publicUrl = await uploadImageToStorage(file, 'family-photos');
       if (publicUrl) {
         const nextPhotos = [...userPhotos, publicUrl];
@@ -190,6 +205,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
         // Checar desbloqueio do badge Criando Raízes (b2)
         checkCriandoRaizes(undefined, nextPhotos);
       }
+    } catch (err) {
+      console.error('Error uploading family photo:', err);
+    } finally {
+      setIsUploadingPhoto(false);
+      e.target.value = '';
     }
   };
 
@@ -239,15 +259,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             />
             {/* Camera Overlay Button to Change Profile Photo */}
             <label 
-              className="absolute inset-0 rounded-full bg-black/65 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-opacity text-[10px] font-extrabold z-10"
+              className={`absolute inset-0 rounded-full bg-black/65 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-opacity text-[10px] font-extrabold z-10 ${isUploadingPhoto ? 'opacity-100' : ''}`}
               title="Alterar Foto de Perfil"
             >
-              <Camera className="w-5 h-5 text-white mb-0.5" />
-              <span>Editar</span>
+              {isUploadingPhoto ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Camera className="w-5 h-5 text-white mb-0.5" />
+                  <span>Editar</span>
+                </>
+              )}
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleProfileAvatarChange}
+                disabled={isUploadingPhoto}
                 className="hidden"
               />
             </label>
@@ -768,10 +795,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             ))}
 
             {userPhotos.length < 3 && (
-              <label className="aspect-square rounded-2xl border-2 border-dashed border-white/20 hover:border-[#FF7F5B] bg-[#070D0F] hover:bg-white/5 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all text-slate-400 hover:text-white">
-                <Plus className="w-5 h-5 text-[#FF7F5B]" />
-                <span className="text-[10px] font-bold">Adicionar</span>
-                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+              <label className={`aspect-square rounded-2xl border-2 border-dashed border-white/20 hover:border-[#FF7F5B] bg-[#070D0F] hover:bg-white/5 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all text-slate-400 hover:text-white ${isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
+                {isUploadingPhoto ? (
+                  <div className="w-5 h-5 border-2 border-[#FF7F5B] border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5 text-[#FF7F5B]" />
+                    <span className="text-[10px] font-bold">Adicionar</span>
+                  </>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploadingPhoto} />
               </label>
             )}
           </div>
