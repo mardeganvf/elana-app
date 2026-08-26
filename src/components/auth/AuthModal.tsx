@@ -6,7 +6,7 @@ import { GENERIC_DEFAULT_AVATAR } from '../../context/AuthContext';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (userData: { email: string; name: string }) => void;
+  onSuccess: (userData: { email: string; name: string; id?: string }) => void;
 }
 
 export const validateStrongPassword = (pwd: string) => {
@@ -138,7 +138,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
         const userName = data.user?.user_metadata?.name || email.split('@')[0];
         setSuccessMessage('Login realizado com sucesso!');
-        onSuccess({ email, name: userName });
+        onSuccess({ email, name: userName, id: data.user?.id });
         onClose();
       } else if (mode === 'recovery') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {

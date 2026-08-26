@@ -71,15 +71,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
   // Profile info editing state & Email Code Verification
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [userName, setUserName] = useState(user?.name || 'Helena Ribeiro');
+  const [userName, setUserName] = useState(user?.name || '');
   const [userPhone, setUserPhone] = useState(user?.phone || '');
-  const [confirmedEmail, setConfirmedEmail] = useState(user?.email || 'helena@elana.com.br');
-  const [pendingEmail, setPendingEmail] = useState(user?.email || 'helena@elana.com.br');
+  const [confirmedEmail, setConfirmedEmail] = useState(user?.email || '');
+  const [pendingEmail, setPendingEmail] = useState(user?.email || '');
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [inputCode, setInputCode] = useState('');
   const [codeError, setCodeError] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(!!user?.notificationsEnabled);
 
   // Meus Filhos state
   interface ChildInfo {
@@ -96,6 +96,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const [newChildBirthdate, setNewChildBirthdate] = useState('');
   const [pregnancyMonth, setPregnancyMonth] = useState('');
   const [newChildEmoji, setNewChildEmoji] = useState('👦');
+
+  // Sincronizar estados locais do formulário sempre que o perfil do usuário carregar ou atualizar
+  useEffect(() => {
+    if (user) {
+      if (!isEditingBio) setBioText(user.bio || '');
+      if (!isEditingProfile) {
+        setUserName(user.name || '');
+        setUserPhone(user.phone || '');
+        setConfirmedEmail(user.email || '');
+        setPendingEmail(user.email || '');
+        setNotificationsEnabled(!!user.notificationsEnabled);
+      }
+      if (!isEditingChildren) {
+        setChildrenList(user.children || []);
+      }
+    }
+  }, [user?.id, user?.bio, user?.name, user?.phone, user?.email, user?.children, user?.notificationsEnabled]);
 
   // Helper calculation for birthdate (DD/MM/AAAA text string) to age in months/years
   const calculateAgeFromBirthdate = (birthdateStr: string): string => {

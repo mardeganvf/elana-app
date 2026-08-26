@@ -129,18 +129,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const emailClean = email.toLowerCase().trim();
 
-      // 1. Buscar Perfil Principal
-      let { data: profile } = await supabase
+      // 1. Buscar Perfil Principal prioritariamente por e-mail
+      let profile: any = null;
+      const { data: profileByEmail, error: emailFetchErr } = await supabase
         .from('profiles')
         .select('*')
-        .or(`id.eq.${userId},email.eq.${emailClean}`)
+        .eq('email', emailClean)
         .maybeSingle();
+
+      if (profileByEmail) {
+        profile = profileByEmail;
+      } else if (userId && userId.length > 20) {
+        const { data: profileById } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+        if (profileById) {
+          profile = profileById;
+        }
+      }
 
       // Se não encontrou no Supabase, cria um perfil padrão inicial
       if (!profile) {
         const initialName = fallbackName || emailClean.split('@')[0];
         const newProfilePayload = {
-          id: userId,
+          id: (userId && userId.length > 20) ? userId : crypto.randomUUID(),
           email: emailClean,
           name: initialName,
           avatar: GENERIC_DEFAULT_AVATAR,
@@ -152,14 +166,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           level_icon: '🌱',
           streak_days: 1,
           notifications_enabled: false,
+          onboarding_completed: false,
           updated_at: new Date().toISOString()
         };
 
         const { data: createdProfile } = await supabase
           .from('profiles')
-          .upsert(newProfilePayload, { onConflict: 'id' })
+          .upsert(newProfilePayload, { onConflict: 'email' })
           .select()
-          .single();
+          .maybeSingle();
 
         profile = createdProfile || newProfilePayload;
       }
@@ -231,6 +246,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: profile.role || 'Membro da Aldeia',
         familyTag: profile.family_tag || profile.tag || 'Mãe / Pai de 1ª viagem',
         bio: profile.bio || undefined,
+        notificationsEnabled: !!profile.notifications_enabled,
+        onboardingCompleted: !!profile.onboarding_completed,
         xp,
         level: profile.level_number || levelInfo.level,
         levelTitle: profile.level_name || levelInfo.title,
@@ -268,10 +285,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, name?: string, customId?: string) => {
     const emailClean = email.toLowerCase().trim();
-    let validId = (customId && customId.length > 20) ? customId : null;
+    let profileId = (customId && customId.length > 20) ? customId : '';
 
     // Tenta encontrar o perfil existente pelo email para preservar o ID do Supabase
-    if (!validId) {
+    if (!profileId) {
       try {
         const { data: existing } = await supabase
           .from('profiles')
@@ -280,18 +297,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .maybeSingle();
 
         if (existing?.id) {
-          validId = existing.id;
+          profileId = existing.id;
         }
       } catch (err) {
         console.warn('Error checking existing profile id:', err);
       }
     }
 
-    if (!validId) {
-      validId = crypto.randomUUID();
+    if (!profileId) {
+      profileId = crypto.randomUUID();
     }
 
-    const hydrated = await fetchFullUserProfile(validId, emailClean, name);
+    const hydrated = await fetchFullUserProfile(profileId, emailClean, name);
     
     setUser(hydrated);
     try {
@@ -319,9 +336,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (updatedUser.id && updatedUser.id.length > 10) {
         // 1. Atualizar Tabela profiles
-        await supabase.from('profiles').upsert({
+        const profilePayload: Record<string, any> = {
           id: updatedUser.id,
-          email: updatedUser.email,
+          email: updatedUser.email.toLowerCase().trim(),
           name: updatedUser.name,
           phone: updatedUser.phone || null,
           avatar: updatedUser.avatar,
@@ -332,13 +349,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           level_number: updatedUser.level,
           level_name: updatedUser.levelTitle,
           streak_days: updatedUser.streakDays,
+          notifications_enabled: !!updatedUser.notificationsEnabled,
+          onboarding_completed: !!updatedUser.onboardingCompleted,
           last_active_date: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        }, { onConflict: 'id' });
+        };
+
+        const { error: profileErr } = await supabase
+          .from('profiles')
+          .upsert(profilePayload, { onConflict: 'email' });
+
+        if (profileErr) {
+          console.error('Supabase profile update error:', profileErr.message);
+        }
 
         // 2. Sincronizar Filhos na tabela family_members (se foram alterados)
         if (updates.children) {
-          // Deletar anteriores e inserir lista atual
           await supabase.from('family_members').delete().eq('profile_id', updatedUser.id);
           if (updates.children.length > 0) {
             const familyRows = updates.children.map(c => ({
@@ -350,7 +376,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               birthdate: c.birthdate || null,
               is_pregnancy: !!c.isPregnancy
             }));
-            await supabase.from('family_members').insert(familyRows);
+            const { error: famErr } = await supabase.from('family_members').insert(familyRows);
+            if (famErr) {
+              console.error('Supabase family_members insert error:', famErr.message);
+            }
           }
         }
       }

@@ -83,6 +83,8 @@ export interface UserProfile {
   lastActiveDate: string;
   badges: Badge[];
   bio?: string;
+  notificationsEnabled?: boolean;
+  onboardingCompleted?: boolean;
   children?: {
     id: string;
     emoji: string;

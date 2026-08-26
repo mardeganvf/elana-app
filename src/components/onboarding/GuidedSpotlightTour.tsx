@@ -18,7 +18,7 @@ interface StepItem {
 }
 
 export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen, onClose, onComplete }) => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
 
@@ -141,6 +141,9 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
       setCurrentStep(prev => prev + 1);
     } else {
       localStorage.setItem(`elana_spotlight_done_${user.email.toLowerCase().trim()}`, 'true');
+      if (updateUser) {
+        updateUser({ onboardingCompleted: true });
+      }
       onClose();
       if (onComplete) {
         onComplete();

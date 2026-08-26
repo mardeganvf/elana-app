@@ -34,14 +34,17 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (user?.email) {
       const tourKey = `elana_spotlight_done_${user.email.toLowerCase().trim()}`;
-      if (!localStorage.getItem(tourKey)) {
+      const isTourDoneLocally = localStorage.getItem(tourKey) === 'true';
+      const isTourDoneInBackend = !!user.onboardingCompleted;
+
+      if (!isTourDoneLocally && !isTourDoneInBackend) {
         const timer = setTimeout(() => {
           setIsSpotlightTourOpen(true);
-        }, 500);
+        }, 600);
         return () => clearTimeout(timer);
       }
     }
-  }, [user?.email]);
+  }, [user?.email, user?.onboardingCompleted]);
 
   const handleSelectJourney = (journey: Journey) => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -160,15 +163,15 @@ const AppContent: React.FC = () => {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onSuccess={({ email, name }) => {
-          login(email, name);
+        onSuccess={({ email, name, id }) => {
+          login(email, name, id);
           setIsAuthModalOpen(false);
         }}
       />
 
       {/* Interactive Guided Spotlight Tour */}
       <GuidedSpotlightTour
-        isOpen={isSpotlightTourOpen && user !== null && !localStorage.getItem(`elana_spotlight_done_${user.email}`)}
+        isOpen={isSpotlightTourOpen && user !== null && !user.onboardingCompleted && localStorage.getItem(`elana_spotlight_done_${user.email.toLowerCase().trim()}`) !== 'true'}
         onClose={() => setIsSpotlightTourOpen(false)}
         onComplete={() => setIsBadgeRewardOpen(true)}
       />
