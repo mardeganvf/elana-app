@@ -2,6 +2,7 @@ import React from 'react';
 import { Sparkles, ArrowRight, Heart, Award } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { ALL_BADGES, getLevelFromXP } from '../../data/gamificationData';
+import { supabase } from '../../lib/supabase';
 
 interface BadgeRewardModalProps {
   isOpen: boolean;
