@@ -94,22 +94,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             return;
           }
 
-          // Check if user already exists in Supabase profiles
-          const { data: existingUser } = await supabase
-            .from('profiles')
-            .select('id, email')
-            .eq('email', inputVal.toLowerCase())
-            .maybeSingle();
-
-          if (existingUser) {
-            setIsExistingUserModalOpen(true);
-            setLoading(false);
-            return;
-          }
-
           // Trigger real email dispatch via Supabase Auth + Resend SMTP!
-          const { error: authError } = await supabase.auth.signUp({
-            email: inputVal,
+          const { data: signUpData, error: authError } = await supabase.auth.signUp({
+            email: inputVal.trim().toLowerCase(),
             password,
             options: { data: { name: name.trim() } }
           });
@@ -120,8 +107,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user_already_exists')) {
               setIsExistingUserModalOpen(true);
             } else {
-              setErrorMessage('Ops, parece que tivemos um problema. Tente de novo daqui a pouco.');
+              setErrorMessage(authError.message || 'Ops, parece que tivemos um problema. Tente de novo daqui a pouco.');
             }
+            setLoading(false);
+            return;
+          }
+
+          // In Supabase Auth v2, an empty identities array means the user already exists in auth.users
+          if (signUpData.user && signUpData.user.identities && signUpData.user.identities.length === 0) {
+            setIsExistingUserModalOpen(true);
             setLoading(false);
             return;
           }
