@@ -17,6 +17,8 @@ import { AuthModal } from './components/auth/AuthModal';
 import { GuidedSpotlightTour } from './components/onboarding/GuidedSpotlightTour';
 import { BadgeRewardModal } from './components/onboarding/BadgeRewardModal';
 import { ProfileCompletionInviteModal } from './components/onboarding/ProfileCompletionInviteModal';
+import { PwaInstallBanner } from './components/pwa/PwaInstallBanner';
+import { ToastProvider } from './context/ToastContext';
 import { Journey } from './types';
 
 const AppContent: React.FC = () => {
@@ -198,6 +200,9 @@ const AppContent: React.FC = () => {
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         }}
       />
+
+      {/* PWA Install Banner */}
+      <PwaInstallBanner />
     </div>
   );
 };
@@ -207,7 +212,9 @@ export function App() {
     <FontSizeProvider>
       <AuthProvider>
         <CommunityProvider>
-          <AppContent />
+          <ToastProvider>
+            <AppContent />
+          </ToastProvider>
         </CommunityProvider>
       </AuthProvider>
     </FontSizeProvider>

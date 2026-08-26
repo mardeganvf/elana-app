@@ -254,7 +254,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({ stories, ini
                 if (navigator.share) {
                   navigator.share({ title: currentStory.title, url: window.location.href }).catch(() => {});
                 } else {
-                  alert('Link do conteúdo copiado!');
+                  navigator.clipboard.writeText(window.location.href).catch(() => {});
                 }
               }}
               className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-black/60 text-slate-200 border border-white/10 backdrop-blur-md hover:bg-black/80 transition-all"

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Journey, Lesson } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { 
   Play, 
   CheckCircle2, 
@@ -32,6 +33,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
 }) => {
   const handleBack = onBackToHome || onBack || (() => {});
   const { user, completeLesson, saveLessonNote } = useAuth();
+  const { showToast } = useToast();
   
   // Find initial lesson or default to first lesson of first module
   const allLessons = journey.modules.flatMap(m => m.lessons);
@@ -116,7 +118,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     if (saveLessonNote) {
       await saveLessonNote(activeLesson.id, noteText.trim());
     }
-    alert('Anotação salva com sucesso no seu perfil e sincronizada!');
+    showToast('success', 'Anotação salva com sucesso e sincronizada! 📝');
   };
 
   const togglePracticeItem = (idx: number) => {
@@ -247,22 +249,75 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
               </video>
             </div>
           ) : (
-            <div className="bg-gradient-to-br from-[#101B1E] to-[#070D0F] rounded-3xl p-8 sm:p-12 border border-white/10 shadow-2xl flex flex-col items-center justify-center text-center space-y-6 min-h-[320px]">
-              <div className="w-20 h-20 rounded-full bg-[#FF7F5B]/20 border border-[#FF7F5B]/40 text-[#FF7F5B] flex items-center justify-center animate-pulse">
-                <Volume2 className="w-10 h-10" />
+            <div className="bg-gradient-to-br from-[#101B1E] to-[#070D0F] rounded-3xl p-8 sm:p-12 border border-white/10 shadow-2xl flex flex-col items-center justify-center text-center space-y-6 min-h-[320px] relative overflow-hidden">
+              {/* Animated waveform bars background */}
+              <div className="absolute inset-0 flex items-end justify-center gap-[3px] opacity-15 px-8 pb-8 pointer-events-none">
+                {Array.from({ length: 40 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-[#FF7F5B] rounded-t-full w-1.5"
+                    style={{
+                      height: `${20 + Math.sin(i * 0.7) * 30 + Math.random() * 25}%`,
+                      animation: `audioWave ${0.8 + Math.random() * 0.6}s ease-in-out ${Math.random() * 0.5}s infinite alternate`
+                    }}
+                  />
+                ))}
               </div>
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-[#FFD166] uppercase tracking-wider block">
-                  Modo Só Áudio
-                </span>
-                <h3 className="text-xl font-bold text-white">{activeLesson.title}</h3>
-                <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  Economia de bateria e iluminação reduzida para escuta confortável.
-                </p>
+
+              <div className="relative z-10 space-y-6 flex flex-col items-center">
+                <div className="w-20 h-20 rounded-full bg-[#FF7F5B]/20 border border-[#FF7F5B]/40 text-[#FF7F5B] flex items-center justify-center animate-pulse">
+                  <Volume2 className="w-10 h-10" />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-[#FFD166] uppercase tracking-wider block">
+                    🎧 Modo Só Áudio — Mãos Livres
+                  </span>
+                  <h3 className="text-xl font-bold text-white">{activeLesson.title}</h3>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    Economia de bateria e iluminação reduzida. Ideal para ouvir enquanto nina, dirige ou descansa.
+                  </p>
+                </div>
+
+                {/* Audio player + skip controls */}
+                <div className="flex items-center gap-3 w-full max-w-md">
+                  <button
+                    onClick={() => {
+                      const audio = document.querySelector<HTMLAudioElement>('#elana-audio-player');
+                      if (audio) audio.currentTime = Math.max(0, audio.currentTime - 10);
+                    }}
+                    className="w-10 h-10 rounded-full bg-white/10 border border-white/10 text-white/70 hover:text-white hover:bg-white/20 flex items-center justify-center text-[10px] font-extrabold transition-all shrink-0"
+                    title="Retroceder 10 segundos"
+                  >
+                    -10s
+                  </button>
+                  <audio
+                    id="elana-audio-player"
+                    controls
+                    autoPlay
+                    onEnded={triggerAutoplayCountdown}
+                    className="w-full rounded-xl flex-1"
+                  >
+                    <source src={activeLesson.videoUrl} type="audio/mp3" />
+                  </audio>
+                  <button
+                    onClick={() => {
+                      const audio = document.querySelector<HTMLAudioElement>('#elana-audio-player');
+                      if (audio) audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+                    }}
+                    className="w-10 h-10 rounded-full bg-white/10 border border-white/10 text-white/70 hover:text-white hover:bg-white/20 flex items-center justify-center text-[10px] font-extrabold transition-all shrink-0"
+                    title="Avançar 10 segundos"
+                  >
+                    +10s
+                  </button>
+                </div>
               </div>
-              <audio controls autoPlay onEnded={triggerAutoplayCountdown} className="w-full max-w-md rounded-xl">
-                <source src={activeLesson.videoUrl} type="audio/mp3" />
-              </audio>
+
+              <style>{`
+                @keyframes audioWave {
+                  from { transform: scaleY(0.4); }
+                  to   { transform: scaleY(1); }
+                }
+              `}</style>
             </div>
           )}
 
@@ -452,7 +507,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                     <a
                       key={i}
                       href={res.url}
-                      onClick={(e) => { e.preventDefault(); alert(`Download simulado: ${res.title}`); }}
+                      onClick={(e) => { e.preventDefault(); showToast('info', `Download: ${res.title}`); }}
                       className="flex items-center justify-between p-3.5 rounded-xl border border-white/10 bg-[#070D0F] hover:bg-white/5 transition-colors text-xs font-semibold text-white"
                     >
                       <div className="flex items-center gap-2">

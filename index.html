@@ -7,6 +7,12 @@
     <title>Elana Academy | Onde pais e filhos crescem juntos</title>
     <meta name="description" content="Plataforma de jornadas de conhecimento, apoio emocional, videoaulas e comunidade acolhedora para pais e mães em todas as fases da criação dos filhos." />
     
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#070D0F">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+
     <!-- Google Fonts import -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,5 +21,12 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>

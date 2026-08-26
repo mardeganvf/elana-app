@@ -68,54 +68,7 @@ export const AdminPage: React.FC = () => {
   const [sosUrgencyFilter, setSosUrgencyFilter] = useState<'todos' | 'alta' | 'media' | 'baixa'>('todos');
 
   // 🛟 SOS Tickets State with AI Urgency Classification
-  const [sosTickets, setSosTickets] = useState<SOSTicket[]>([
-    {
-      id: 'sos-1',
-      userName: 'Camila Ferreira',
-      userEmail: 'camila.ferreira@email.com',
-      userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-      urgency: 'alta',
-      subject: 'Exaustão extrema e choro contínuo do bebê',
-      message: 'Meu bebê não para de chorar há 3 horas e estou sozinha em casa. Sinto que vou surtar de exaustão, não sei mais o que fazer.',
-      createdAt: 'Hoje às 14:12',
-      status: 'pendente'
-    },
-    {
-      id: 'sos-2',
-      userName: 'Renata Vasconcelos',
-      userEmail: 'renata.vasconcelos@email.com',
-      userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      urgency: 'media',
-      subject: 'Dúvidas e desespero com salto de desenvolvimento de 4 meses',
-      message: 'Preciso de ajuda com o sono de 4 meses. Não durmo mais do que 1 hora seguida há semanas e estou me sentindo uma mãe incapaz.',
-      createdAt: 'Hoje às 13:30',
-      status: 'pendente'
-    },
-    {
-      id: 'sos-3',
-      userName: 'Juliana Mendes',
-      userEmail: 'juliana.mendes@email.com',
-      userAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-      urgency: 'baixa',
-      subject: 'Pedido de conselho sobre desmame gradual',
-      message: 'Gostaria de trocar uma ideia com a equipe sobre como iniciar o desmame sem traumatizar minha filha de 1 ano e meio.',
-      createdAt: 'Ontem às 18:45',
-      status: 'pendente'
-    },
-    {
-      id: 'sos-4',
-      userName: 'Fernanda Lima',
-      userEmail: 'fernanda.lima@email.com',
-      userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      urgency: 'alta',
-      subject: 'Acolhimento durante crise de culpa materna',
-      message: 'Perdi a paciência com meu filho hoje e gritei. Estou me sentindo a pior pessoa do mundo. Preciso conversar.',
-      createdAt: 'Há 2 dias',
-      status: 'atendido',
-      adminReply: 'Oi querida Fernanda! Respira fundo. Sentir raiva e desbordar faz parte da nossa humanidade. Você não é uma mãe má por ter tido um momento difícil.',
-      repliedAt: 'Há 2 dias às 16:20'
-    }
-  ]);
+  const [sosTickets, setSosTickets] = useState<SOSTicket[]>([]);
 
   const [selectedSosTicket, setSelectedSosTicket] = useState<SOSTicket | null>(null);
   const [sosReplyText, setSosReplyText] = useState('');
@@ -148,32 +101,49 @@ export const AdminPage: React.FC = () => {
   const [members, setMembers] = useState<MemberUser[]>([]);
 
   useEffect(() => {
-    const fetchRealProfiles = async () => {
-      try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (data && data.length > 0) {
-          setMembers(data.map(p => ({
-            id: p.id,
-            name: p.name || 'Membro',
-            email: p.email || 'sem-email',
-            avatar: p.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-            role: p.role?.toLowerCase() === 'admin' || p.role?.toLowerCase() === 'guia' ? 'guia' : 'membro',
-            levelTitle: p.level_name || 'Semente Plantada',
-            levelIcon: p.level_icon || '🌱',
-            xp: p.xp || 0,
-            joinedDays: Math.max(1, Math.floor((Date.now() - new Date(p.created_at || Date.now()).getTime()) / (1000 * 60 * 60 * 24)))
-          })));
-        }
-      } catch (e) {
-        console.error('Error loading members in Admin:', e);
+    const loadTickets = async () => {
+      const { data } = await supabase
+        .from('sos_tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (data) {
+        setSosTickets(data.map(t => ({
+          id: t.id,
+          userName: t.user_name || 'Anônimo',
+          userEmail: t.user_email || '',
+          userAvatar: t.user_avatar || '',
+          urgency: t.urgency || 'media',
+          subject: t.subject || '',
+          message: t.message || '',
+          createdAt: new Date(t.created_at).toLocaleString('pt-BR'),
+          status: t.status || 'pendente',
+          adminReply: t.admin_reply,
+          repliedAt: t.replied_at ? new Date(t.replied_at).toLocaleString('pt-BR') : undefined
+        })));
       }
     };
+    loadTickets();
 
-    fetchRealProfiles();
+    const loadMembers = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (data) {
+        setMembers(data.map(p => ({
+          id: p.id,
+          name: p.name || 'Sem nome',
+          email: p.email || '',
+          avatar: p.avatar || '',
+          role: p.role || 'membro',
+          levelTitle: p.level_name || 'Semente Plantada',
+          levelIcon: p.level_icon || '🌱',
+          xp: p.xp || 0,
+          joinedDays: Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000)
+        })));
+      }
+    };
+    loadMembers();
   }, []);
 
   // 🎬 Upload Form State
@@ -187,27 +157,36 @@ export const AdminPage: React.FC = () => {
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
   // 🛟 SOS Ticket Handlers
-  const handleSendSosReply = () => {
+  const handleSendSosReply = async () => {
     if (!selectedSosTicket || !sosReplyText.trim()) return;
-    replySosTicket(sosReplyText.trim());
+    const replyText = sosReplyText.trim();
+
+    await supabase
+      .from('sos_tickets')
+      .update({ status: 'atendido', admin_reply: replyText, replied_at: new Date().toISOString() })
+      .eq('id', selectedSosTicket.id);
+
+    replySosTicket(replyText);
     setSosTickets(prev => prev.map(t => t.id === selectedSosTicket.id ? { 
       ...t, 
       status: 'atendido',
-      adminReply: sosReplyText.trim(),
-      repliedAt: 'Agora mesmo'
+      adminReply: replyText,
+      repliedAt: new Date().toLocaleString('pt-BR')
     } : t));
-    setSelectedSosTicket(prev => prev ? { ...prev, status: 'atendido', adminReply: sosReplyText.trim() } : null);
+    setSelectedSosTicket(prev => prev ? { ...prev, status: 'atendido', adminReply: replyText, repliedAt: new Date().toLocaleString('pt-BR') } : null);
     setSosReplyText('');
   };
 
-  const handleMoveToTrash = (ticketId: string) => {
+  const handleMoveToTrash = async (ticketId: string) => {
+    await supabase.from('sos_tickets').update({ status: 'deletado' }).eq('id', ticketId);
     setSosTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'deletado' } : t));
     if (selectedSosTicket?.id === ticketId) {
       setSelectedSosTicket(null);
     }
   };
 
-  const handleRestoreTicket = (ticketId: string) => {
+  const handleRestoreTicket = async (ticketId: string) => {
+    await supabase.from('sos_tickets').update({ status: 'pendente' }).eq('id', ticketId);
     setSosTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'pendente' } : t));
     if (selectedSosTicket?.id === ticketId) {
       setSelectedSosTicket(prev => prev ? { ...prev, status: 'pendente' } : null);

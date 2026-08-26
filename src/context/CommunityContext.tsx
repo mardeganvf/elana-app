@@ -166,6 +166,78 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     fetchSupabasePosts();
   }, []);
 
+  // Supabase Realtime: live posts and comments via WebSockets
+  useEffect(() => {
+    const channel = supabase
+      .channel('community-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'community_posts' },
+        (payload: any) => {
+          const item = payload.new;
+          if (!item) return;
+          const newPost: CommunityPost = {
+            id: item.id,
+            journeyId: item.journey_id,
+            transversalRoomId: item.transversal_room_id,
+            ageBracketId: item.age_bracket_id,
+            emotionalIntention: item.emotional_intention,
+            authorId: item.author_id || 'unknown',
+            authorName: item.author_name,
+            authorAvatar: item.author_avatar,
+            authorRole: 'membro',
+            isAnonymous: item.is_anonymous,
+            sensitivityLevel: item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
+            title: item.title,
+            content: item.content,
+            createdAt: new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            reactions: {},
+            userReactions: {},
+            comments: []
+          };
+          setPosts(prev => {
+            // Avoid duplicates (we may have added it optimistically)
+            if (prev.some(p => p.id === newPost.id)) return prev;
+            return [sanitizePost(newPost), ...prev];
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'community_comments' },
+        (payload: any) => {
+          const item = payload.new;
+          if (!item || !item.post_id) return;
+          const newComment: CommunityComment = {
+            id: item.id || `rt-comment-${Date.now()}`,
+            authorId: item.author_id || 'unknown',
+            authorName: item.author_name || 'Membro',
+            authorAvatar: item.author_avatar || '',
+            authorRole: 'membro',
+            content: item.content,
+            createdAt: new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            isAnonymous: item.is_anonymous || false,
+            status: 'aprovado',
+            reactions: {},
+            userReactions: {}
+          };
+          setPosts(prev => prev.map(post => {
+            if (post.id === item.post_id) {
+              // Avoid duplicate comments
+              if (post.comments.some(c => c.id === newComment.id)) return post;
+              return { ...post, comments: [...post.comments, newComment] };
+            }
+            return post;
+          }));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('elana_community_posts', JSON.stringify(posts));
   }, [posts]);
