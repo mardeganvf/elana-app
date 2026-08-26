@@ -126,9 +126,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       badges: []
     };
 
-    // Remove spotlight tour flag so tutorial runs for new user
-    localStorage.removeItem(`elana_spotlight_done_${email}`);
-
     setUser(newUser);
     localStorage.setItem('elana_user_session', JSON.stringify(newUser));
 
