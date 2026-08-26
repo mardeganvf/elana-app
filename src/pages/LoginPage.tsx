@@ -172,11 +172,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
         setSuccessMessage('Enviamos um link de redefinição de senha para o seu e-mail!');
       }
     } catch (err: any) {
-      const msg = err.message || '';
-      if (msg.toLowerCase().includes('email not confirmed')) {
+      const msg = (err.message || '').toLowerCase();
+      if (msg.includes('email not confirmed')) {
         setErrorMessage('Poxa, parece que você não confirmou seu e-mail.');
+      } else if (msg.includes('invalid login credentials') || msg.includes('invalid_credentials') || msg.includes('user not found')) {
+        setErrorMessage('Eita. Não encontramos esse usuário.');
       } else {
-        setErrorMessage(msg || 'Ocorreu um erro ao processar sua solicitação.');
+        setErrorMessage(err.message || 'Ocorreu um erro ao processar sua solicitação.');
       }
     } finally {
       setLoading(false);
