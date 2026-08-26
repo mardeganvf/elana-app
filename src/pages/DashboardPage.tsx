@@ -353,24 +353,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                   {userName}
                 </h1>
-                
-                <button
-                  onClick={() => {
-                    setNotificationsEnabled(!notificationsEnabled);
-                    if (!notificationsEnabled) {
-                      awardBadge('b3');
-                    }
-                  }}
-                  className={`text-xs font-bold flex items-center gap-1.5 transition-colors px-2.5 py-1 rounded-lg border active:scale-95 shrink-0 ${
-                    notificationsEnabled 
-                      ? 'bg-amber-400/20 text-amber-300 border-amber-400/30 hover:bg-amber-400/30' 
-                      : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-white'
-                  }`}
-                  title={notificationsEnabled ? 'Notificações Ativas' : 'Ativar Notificações'}
-                >
-                  <Bell className="w-3.5 h-3.5" />
-                  <span>{notificationsEnabled ? 'Notificações On' : 'Notificações Off'}</span>
-                </button>
               </div>
 
               <div className="mt-2 mb-4">
@@ -414,43 +396,63 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
           )}
         </div>
 
-        {/* User Quick Gamification Badges Banner */}
-        <div className="flex items-center gap-4 bg-[#070D0F] p-4 rounded-2xl border border-white/10">
-          
-          <div className="text-center px-3">
-            <div className="flex items-center justify-center gap-1 text-[#FF7F5B] font-black text-xl">
-              <Flame className="w-5 h-5 fill-current animate-bounce" />
-              <span>{user.streakDays}</span>
+        <div className="flex flex-col items-end gap-3">
+          {/* Notifications Toggle */}
+          <button
+            onClick={() => {
+              setNotificationsEnabled(!notificationsEnabled);
+              if (!notificationsEnabled) {
+                awardBadge('b3');
+              }
+            }}
+            className={`text-xs font-bold flex items-center gap-2 transition-all px-4 py-2 rounded-xl border active:scale-95 shadow-md ${
+              notificationsEnabled 
+                ? 'bg-amber-400/20 text-amber-300 border-amber-400/30 hover:bg-amber-400/30' 
+                : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10 hover:text-white'
+            }`}
+            title={notificationsEnabled ? 'Notificações Ativas' : 'Ativar Notificações'}
+          >
+            <Bell className="w-4 h-4" />
+            <span>{notificationsEnabled ? 'Notificações Ligadas' : 'Ligar Notificações'}</span>
+          </button>
+
+          {/* User Quick Gamification Badges Banner */}
+          <div className="flex items-center gap-4 bg-[#070D0F] p-4 rounded-2xl border border-white/10">
+            
+            <div className="text-center px-3">
+              <div className="flex items-center justify-center gap-1 text-[#FF7F5B] font-black text-xl">
+                <Flame className="w-5 h-5 fill-current animate-bounce" />
+                <span>{user.streakDays}</span>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                {user.streakDays === 1 ? 'Dia Conosco' : 'Dias Conosco'}
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              {user.streakDays === 1 ? 'Dia Conosco' : 'Dias Conosco'}
-            </span>
-          </div>
 
-          <div className="w-px h-8 bg-white/10"></div>
+            <div className="w-px h-8 bg-white/10"></div>
 
-          <div className="text-center px-3">
-            <div className="flex items-center justify-center gap-1 text-[#FFD166] font-black text-xl">
-              <Sparkles className="w-5 h-5 fill-current" />
-              <span>{user.xp}</span>
+            <div className="text-center px-3">
+              <div className="flex items-center justify-center gap-1 text-[#FFD166] font-black text-xl">
+                <Sparkles className="w-5 h-5 fill-current" />
+                <span>{user.xp}</span>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                {user.xp === 1 ? 'Ponto' : 'Pontos'}
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              {user.xp === 1 ? 'Ponto' : 'Pontos'}
-            </span>
-          </div>
 
-          <div className="w-px h-8 bg-white/10"></div>
+            <div className="w-px h-8 bg-white/10"></div>
 
-          <div className="text-center px-3">
-            <div className="flex items-center justify-center gap-1 text-[#E66795] font-black text-xl">
-              <Award className="w-5 h-5" />
-              <span>{user.badges.length}</span>
+            <div className="text-center px-3">
+              <div className="flex items-center justify-center gap-1 text-[#E66795] font-black text-xl">
+                <Award className="w-5 h-5" />
+                <span>{user.badges.length}</span>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                {user.badges.length === 1 ? 'Conquista' : 'Conquistas'}
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              {user.badges.length === 1 ? 'Conquista' : 'Conquistas'}
-            </span>
           </div>
-
         </div>
 
       </section>
