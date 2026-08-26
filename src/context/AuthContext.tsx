@@ -93,6 +93,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   });
 
+  // Re-hidratar dados atualizados do Supabase no carregamento inicial da sessão
+  useEffect(() => {
+    if (user?.email && user?.id) {
+      fetchFullUserProfile(user.id, user.email, user.name).then(refreshed => {
+        if (refreshed) {
+          setUser(refreshed);
+        }
+      }).catch(err => {
+        console.warn('Error rehydrating user session from backend:', err);
+      });
+    }
+  }, []);
+
   // Salvar no localStorage sempre que o estado user mudar
   useEffect(() => {
     if (user) {
@@ -254,11 +267,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, name?: string, customId?: string) => {
-    const validId = (customId && customId.length > 20) ? customId : (user?.id && user.id.length > 20 ? user.id : 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11');
-    const hydrated = await fetchFullUserProfile(validId, email, name);
+    const emailClean = email.toLowerCase().trim();
+    let validId = (customId && customId.length > 20) ? customId : null;
+
+    // Tenta encontrar o perfil existente pelo email para preservar o ID do Supabase
+    if (!validId) {
+      try {
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', emailClean)
+          .maybeSingle();
+
+        if (existing?.id) {
+          validId = existing.id;
+        }
+      } catch (err) {
+        console.warn('Error checking existing profile id:', err);
+      }
+    }
+
+    if (!validId) {
+      validId = crypto.randomUUID();
+    }
+
+    const hydrated = await fetchFullUserProfile(validId, emailClean, name);
     
     setUser(hydrated);
-    localStorage.setItem('elana_user_session', JSON.stringify(hydrated));
+    try {
+      localStorage.setItem('elana_user_session', JSON.stringify(hydrated));
+    } catch (e) {
+      console.warn('Could not save session to localStorage:', e);
+    }
   };
 
   const refreshUserFromBackend = async () => {

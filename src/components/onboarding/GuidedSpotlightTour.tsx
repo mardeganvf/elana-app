@@ -140,7 +140,7 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      localStorage.setItem(`elana_spotlight_done_${user.email}`, 'true');
+      localStorage.setItem(`elana_spotlight_done_${user.email.toLowerCase().trim()}`, 'true');
       onClose();
       if (onComplete) {
         onComplete();

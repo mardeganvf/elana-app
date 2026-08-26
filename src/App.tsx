@@ -32,14 +32,16 @@ const AppContent: React.FC = () => {
   const [isProfileInviteOpen, setIsProfileInviteOpen] = useState(false);
 
   useEffect(() => {
-    if (user && !localStorage.getItem(`elana_spotlight_done_${user.email}`)) {
-      // Small delay to ensure DOM is ready for the tour target selectors
-      const timer = setTimeout(() => {
-        setIsSpotlightTourOpen(true);
-      }, 500);
-      return () => clearTimeout(timer);
+    if (user?.email) {
+      const tourKey = `elana_spotlight_done_${user.email.toLowerCase().trim()}`;
+      if (!localStorage.getItem(tourKey)) {
+        const timer = setTimeout(() => {
+          setIsSpotlightTourOpen(true);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [user]);
+  }, [user?.email]);
 
   const handleSelectJourney = (journey: Journey) => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
