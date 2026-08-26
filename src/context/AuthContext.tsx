@@ -36,6 +36,7 @@ interface AuthContextType {
   completeLesson: (lessonId: string, xpReward?: number) => void;
   saveLessonNote: (lessonId: string, note: string) => void;
   addXP: (amount: number) => void;
+  awardBadge: (badgeId: string) => void;
   unlockedBadgeModal: Badge | null;
   closeBadgeModal: () => void;
   sosResponse: SOSTicketResponse | null;
@@ -261,6 +262,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const awardBadge = (badgeId: string) => {
+    if (!user) return;
+    const currentBadgeIds = new Set(user.badges.map(b => b.id));
+    if (currentBadgeIds.has(badgeId)) return; // Already has it
+
+    const badgeToAward = ALL_BADGES.find(b => b.id === badgeId);
+    if (!badgeToAward) return;
+
+    setUser(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        badges: [...prev.badges, badgeToAward]
+      };
+    });
+
+    setUnlockedBadgeModal(badgeToAward);
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  };
+
   const saveLessonNote = (lessonId: string, note: string) => {
     if (!user) return;
     setUser(prev => {
@@ -322,6 +347,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         completeLesson,
         saveLessonNote,
         addXP,
+        awardBadge,
         unlockedBadgeModal,
         closeBadgeModal,
         sosResponse,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { JOURNEYS_DATA } from '../data/journeysData';
 import { Journey } from '../types';
@@ -16,7 +16,7 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog }) => {
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout, updateUser, awardBadge } = useAuth();
 
   const handleProfileAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -37,6 +37,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   // Profile info editing state & Email Code Verification
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [userName, setUserName] = useState(user?.name || 'Helena Ribeiro');
+  const [userPhone, setUserPhone] = useState(user?.phone || '');
   const [confirmedEmail, setConfirmedEmail] = useState(user?.email || 'helena@elana.com.br');
   const [pendingEmail, setPendingEmail] = useState(user?.email || 'helena@elana.com.br');
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
@@ -139,6 +140,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
   const userLevelInfo = getLevelFromXP(user.xp);
 
+  // Check "Criando Raízes" Badge (b2)
+  useEffect(() => {
+    if (!user) return;
+    const hasBadge = user.badges.some(b => b.id === 'b2');
+    if (!hasBadge) {
+      const hasEmail = !!user.email;
+      const hasPhone = !!user.phone;
+      const hasName = !!user.name;
+      const hasBio = !!bioText.trim();
+      const hasFamilyMember = childrenList.length > 0;
+      const hasPhoto = userPhotos.length > 0;
+
+      if (hasEmail && hasPhone && hasName && hasBio && hasFamilyMember && hasPhoto) {
+        awardBadge('b2');
+      }
+    }
+  }, [user, bioText, childrenList, userPhotos, awardBadge]);
+
   return (
     <div className="space-y-10 pb-20 animate-fade-in max-w-6xl mx-auto text-white -mt-4">
       
@@ -198,6 +217,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       placeholder="Novo e-mail"
                       className="px-3 py-1.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none w-full sm:w-auto"
                     />
+                    <input
+                      type="tel"
+                      value={userPhone}
+                      onChange={(e) => setUserPhone(e.target.value)}
+                      placeholder="Celular (Ex: 11 99999-9999)"
+                      className="px-3 py-1.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none w-full sm:w-auto"
+                    />
                     <button
                       onClick={() => {
                         if (!userName.trim()) return;
@@ -209,7 +235,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           setIsVerifyingCode(true);
                         } else {
                           if (updateUser) {
-                            updateUser({ name: userName.trim() });
+                            updateUser({ name: userName.trim(), phone: userPhone.trim() });
                           }
                           setIsEditingProfile(false);
                         }
@@ -270,6 +296,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       onClick={() => {
                         if (inputCode.trim() === verificationCode) {
                           setConfirmedEmail(pendingEmail.trim());
+                          if (updateUser) {
+                            updateUser({ name: userName.trim(), phone: userPhone.trim(), email: pendingEmail.trim() });
+                          }
                           setIsVerifyingCode(false);
                           setIsEditingProfile(false);
                           setCodeError(false);

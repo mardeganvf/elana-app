@@ -69,6 +69,7 @@ export interface UserProfile {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   avatar: string;
   role: string;
   familyTag?: string; // e.g. "Mãe de 2 (0-2 anos)" or "Pai de Primeira Viagem"
