@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { JOURNEYS_DATA } from '../data/journeysData';
 import { Journey } from '../types';
-import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3 } from 'lucide-react';
+import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell } from 'lucide-react';
 import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
 import { BadgeGallery, getUnlockedBadgesCount } from '../components/gamification/BadgeGallery';
 import { UserLevelsModal } from '../components/gamification/UserLevelsModal';
@@ -44,6 +44,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const [verificationCode, setVerificationCode] = useState('');
   const [inputCode, setInputCode] = useState('');
   const [codeError, setCodeError] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   // Meus Filhos state
   interface ChildInfo {
@@ -338,6 +339,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Editar</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setNotificationsEnabled(!notificationsEnabled);
+                    if (!notificationsEnabled) {
+                      awardBadge('b3');
+                    }
+                  }}
+                  className={`text-xs font-bold flex items-center gap-1.5 transition-colors px-2.5 py-1 rounded-lg border active:scale-95 shrink-0 ${
+                    notificationsEnabled 
+                      ? 'bg-amber-400/20 text-amber-300 border-amber-400/30 hover:bg-amber-400/30' 
+                      : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-white'
+                  }`}
+                  title={notificationsEnabled ? 'Notificações Ativas' : 'Ativar Notificações'}
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  <span>{notificationsEnabled ? 'Notificações On' : 'Notificações Off'}</span>
                 </button>
               </div>
 
