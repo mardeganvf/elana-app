@@ -498,7 +498,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   ) : (
                     <input
                       type="text"
-                      placeholder="Data de nascimento"
+                      placeholder="DD/MM/AAAA"
                       value={newChildBirthdate}
                       onChange={(e) => setNewChildBirthdate(formatBirthdateMask(e.target.value))}
                       className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none w-full placeholder-slate-500 font-medium"
