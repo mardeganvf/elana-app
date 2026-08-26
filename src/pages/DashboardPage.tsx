@@ -8,6 +8,8 @@ import { BadgeGallery, getUnlockedBadgesCount } from '../components/gamification
 import { UserLevelsModal } from '../components/gamification/UserLevelsModal';
 import { NotebookModal } from '../components/gamification/NotebookModal';
 import { getLevelFromXP, ALL_BADGES } from '../data/gamificationData';
+import { uploadImageToStorage } from '../lib/storage';
+import { supabase } from '../lib/supabase';
 
 interface DashboardPageProps {
   onStartLearning: (journey: Journey) => void;
@@ -18,17 +20,13 @@ interface DashboardPageProps {
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog }) => {
   const { user, logout, updateUser, awardBadge } = useAuth();
 
-  const handleProfileAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && updateUser) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target?.result as string;
-        if (base64) {
-          updateUser({ avatar: base64 });
-        }
-      };
-      reader.readAsDataURL(file);
+      const publicUrl = await uploadImageToStorage(file, 'avatars');
+      if (publicUrl) {
+        updateUser({ avatar: publicUrl });
+      }
     }
   };
   
@@ -125,28 +123,70 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   // Testimonials state (com moderação de aprovação/negação)
   const [testimonials, setTestimonials] = useState<DashboardTestimonial[]>([]);
 
+  // Carregar depoimentos reais do Supabase para o perfil
+  useEffect(() => {
+    if (!user) return;
+    const fetchTestimonials = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profile_testimonials')
+          .select('*')
+          .eq('recipient_profile_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (data && data.length > 0) {
+          setTestimonials(data.map(t => ({
+            id: t.id,
+            authorName: t.author_name,
+            authorAvatar: t.author_avatar,
+            content: t.content,
+            createdAt: new Date(t.created_at).toLocaleDateString('pt-BR'),
+            likesCount: t.likes_count || 1,
+            status: t.status === 'approved' ? 'aprovado' : 'pendente'
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching testimonials:', err);
+      }
+    };
+
+    fetchTestimonials();
+  }, [user?.id]);
+
   if (!user) return null;
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && userPhotos.length < 3) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target?.result as string;
-        if (base64) {
-          setUserPhotos(prev => [...prev, base64]);
-        }
-      };
-      reader.readAsDataURL(file);
+      const publicUrl = await uploadImageToStorage(file, 'family-photos');
+      if (publicUrl) {
+        setUserPhotos(prev => [...prev, publicUrl]);
+      }
     }
   };
 
-  const handleApproveTestimonial = (id: string) => {
+  const handleApproveTestimonial = async (id: string) => {
     setTestimonials(prev => prev.map(t => t.id === id ? { ...t, status: 'aprovado' as const } : t));
+    try {
+      await supabase
+        .from('profile_testimonials')
+        .update({ status: 'approved' })
+        .eq('id', id);
+    } catch (err) {
+      console.error('Error approving testimonial in Supabase:', err);
+    }
   };
 
-  const handleDenyTestimonial = (id: string) => {
+  const handleDenyTestimonial = async (id: string) => {
     setTestimonials(prev => prev.filter(t => t.id !== id));
+    try {
+      await supabase
+        .from('profile_testimonials')
+        .delete()
+        .eq('id', id);
+    } catch (err) {
+      console.error('Error deleting testimonial in Supabase:', err);
+    }
   };
 
   const purchasedJourneys = JOURNEYS_DATA.filter(j => user.purchasedJourneyIds.includes(j.id));

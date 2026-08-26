@@ -215,6 +215,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     supabase
       .from('community_posts')
       .insert([{
+        author_id: user?.id || null,
         title: payload.title,
         content: payload.content,
         author_name: authorName,
@@ -355,6 +356,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       supabase
         .from('community_comments')
         .insert([{
+          post_id: (postId.includes('-') && postId.length > 20) ? postId : null,
+          author_id: user?.id || null,
           author_name: authorName,
           author_avatar: authorAvatar,
           content: content,

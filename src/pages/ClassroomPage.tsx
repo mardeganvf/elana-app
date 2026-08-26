@@ -31,7 +31,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   onBack
 }) => {
   const handleBack = onBackToHome || onBack || (() => {});
-  const { user } = useAuth();
+  const { user, completeLesson, saveLessonNote } = useAuth();
   
   // Find initial lesson or default to first lesson of first module
   const allLessons = journey.modules.flatMap(m => m.lessons);
@@ -65,6 +65,15 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     setAutoplayTimer(null);
   }, [activeLesson.id, journey.id]);
 
+  // Carregar anotação existente da aula se houver
+  useEffect(() => {
+    if (user?.lessonNotes && user.lessonNotes[activeLesson.id]) {
+      setNoteText(user.lessonNotes[activeLesson.id]);
+    } else {
+      setNoteText('');
+    }
+  }, [activeLesson.id, user?.lessonNotes]);
+
   // Feature 5: Autoplay Countdown Effect
   useEffect(() => {
     let interval: any;
@@ -82,6 +91,10 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   }, [autoplayTimer, nextLesson]);
 
   const triggerAutoplayCountdown = () => {
+    // Marcar aula como concluída no Supabase
+    if (completeLesson) {
+      completeLesson(activeLesson.id);
+    }
     if (nextLesson) {
       setAutoplayTimer(5);
     }
@@ -93,16 +106,17 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
 
   const handleLessonChange = (lesson: Lesson) => {
     setActiveLesson(lesson);
-    setNoteText('');
     setAutoplayTimer(null);
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
-  const handleSaveNote = (e: React.FormEvent) => {
+  const handleSaveNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!noteText.trim()) return;
-    alert('Anotação salva com sucesso no seu perfil!');
-    setNoteText('');
+    if (saveLessonNote) {
+      await saveLessonNote(activeLesson.id, noteText.trim());
+    }
+    alert('Anotação salva com sucesso no seu perfil e sincronizada!');
   };
 
   const togglePracticeItem = (idx: number) => {
@@ -180,10 +194,28 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
               </button>
             </div>
 
-            {/* Playback Speed Control */}
-            <div className="flex items-center gap-1 bg-[#070D0F] px-3 py-1.5 rounded-xl border border-white/10">
-              <span className="text-[10px] text-slate-400 font-bold uppercase">Velocidade:</span>
-              <select
+            {/* Right Controls: Playback Speed + Mark as Completed Button */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  if (completeLesson) {
+                    completeLesson(activeLesson.id);
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all ${
+                  user?.completedLessonIds.includes(activeLesson.id)
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    : 'bg-gradient-to-r from-[#FF7F5B] to-[#E66795] text-white hover:opacity-95 shadow-md active:scale-95'
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>{user?.completedLessonIds.includes(activeLesson.id) ? 'Concluído' : 'Concluir Conteúdo (+10 XP)'}</span>
+              </button>
+
+              {/* Playback Speed Control */}
+              <div className="flex items-center gap-1 bg-[#070D0F] px-3 py-1.5 rounded-xl border border-white/10">
+                <span className="text-[10px] text-slate-400 font-bold uppercase">Velocidade:</span>
+                <select
                 value={playbackSpeed}
                 onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
                 className="bg-transparent text-white font-bold focus:outline-none cursor-pointer"

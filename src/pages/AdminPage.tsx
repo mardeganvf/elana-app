@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   LifeBuoy, 
@@ -18,6 +18,7 @@ import {
   Search
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 // Types for Admin Data
 interface SOSTicket {
@@ -144,41 +145,36 @@ export const AdminPage: React.FC = () => {
   ]);
 
   // 👥 Members State
-  const [members, setMembers] = useState<MemberUser[]>([
-    {
-      id: 'm1',
-      name: 'Mariana Santos',
-      email: 'mariana.santos@email.com',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      role: 'guia',
-      levelTitle: 'Jacarandá',
-      levelIcon: '🪻',
-      xp: 1350,
-      joinedDays: 42
-    },
-    {
-      id: 'm2',
-      name: 'Helena Souza',
-      email: 'helena@elana.com.br',
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-      role: 'membro',
-      levelTitle: 'Raiz',
-      levelIcon: '🌿',
-      xp: 120,
-      joinedDays: 5
-    },
-    {
-      id: 'm3',
-      name: 'Carla Mendes',
-      email: 'carla.mendes@email.com',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      role: 'membro',
-      levelTitle: 'Jabuticabeira',
-      levelIcon: '🍇',
-      xp: 720,
-      joinedDays: 28
-    }
-  ]);
+  const [members, setMembers] = useState<MemberUser[]>([]);
+
+  useEffect(() => {
+    const fetchRealProfiles = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (data && data.length > 0) {
+          setMembers(data.map(p => ({
+            id: p.id,
+            name: p.name || 'Membro',
+            email: p.email || 'sem-email',
+            avatar: p.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+            role: p.role?.toLowerCase() === 'admin' || p.role?.toLowerCase() === 'guia' ? 'guia' : 'membro',
+            levelTitle: p.level_name || 'Semente Plantada',
+            levelIcon: p.level_icon || '🌱',
+            xp: p.xp || 0,
+            joinedDays: Math.max(1, Math.floor((Date.now() - new Date(p.created_at || Date.now()).getTime()) / (1000 * 60 * 60 * 24)))
+          })));
+        }
+      } catch (e) {
+        console.error('Error loading members in Admin:', e);
+      }
+    };
+
+    fetchRealProfiles();
+  }, []);
 
   // 🎬 Upload Form State
   const [selectedArea, setSelectedArea] = useState('Comunicação Não-Violenta');

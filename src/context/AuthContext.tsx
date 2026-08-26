@@ -29,20 +29,21 @@ export const GENERIC_DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http:
 interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
-  login: (email: string, name?: string, customId?: string) => void;
+  login: (email: string, name?: string, customId?: string) => Promise<void>;
   logout: () => void;
-  updateUser: (updates: Partial<UserProfile>) => void;
-  purchaseJourney: (journeyId: string) => void;
-  completeLesson: (lessonId: string, xpReward?: number) => void;
-  saveLessonNote: (lessonId: string, note: string) => void;
-  addXP: (amount: number) => void;
-  awardBadge: (badgeId: string) => void;
+  updateUser: (updates: Partial<UserProfile>) => Promise<void>;
+  purchaseJourney: (journeyId: string) => Promise<void>;
+  completeLesson: (lessonId: string, xpReward?: number) => Promise<void>;
+  saveLessonNote: (lessonId: string, note: string) => Promise<void>;
+  addXP: (amount: number) => Promise<void>;
+  awardBadge: (badgeId: string) => Promise<void>;
   unlockedBadgeModal: Badge | null;
   closeBadgeModal: () => void;
   sosResponse: SOSTicketResponse | null;
-  sendSosTicket: (userMessage: string) => void;
-  replySosTicket: (adminReply: string) => void;
+  sendSosTicket: (userMessage: string) => Promise<void>;
+  replySosTicket: (adminReply: string) => Promise<void>;
   markSosResponseRead: () => void;
+  refreshUserFromBackend: () => Promise<void>;
 }
 
 const DEFAULT_USER: UserProfile = {
@@ -50,7 +51,7 @@ const DEFAULT_USER: UserProfile = {
   name: 'Helena Ribeiro',
   email: 'helena@elana.com.br',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  role: 'Mãe de 1ª viagem',
+  role: 'Membro da Aldeia',
   familyTag: 'Mãe de 1ª viagem (0-2 anos)',
   purchasedJourneyIds: [],
   completedLessonIds: [],
@@ -92,104 +93,254 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   });
 
+  // Salvar no localStorage sempre que o estado user mudar
   useEffect(() => {
     if (user) {
       localStorage.setItem('elana_user_session', JSON.stringify(user));
+      if (user.email) {
+        localStorage.setItem(`elana_user_data_${user.email.toLowerCase()}`, JSON.stringify(user));
+      }
     } else {
       localStorage.removeItem('elana_user_session');
     }
   }, [user]);
 
-  const login = (email: string, name?: string, customId?: string) => {
-    const defaultName = name || email.split('@')[0];
-    const isDemoHelena = email.toLowerCase() === 'helena@elana.com.br';
-    const validId = (customId && customId.length > 20) ? customId : crypto.randomUUID();
-
-    // Check if there is per-user saved profile state in localStorage
-    const savedDataRaw = localStorage.getItem(`elana_user_data_${email.toLowerCase()}`);
-    let savedData: Partial<UserProfile> = {};
-    if (savedDataRaw) {
-      try {
-        savedData = JSON.parse(savedDataRaw);
-      } catch (e) {}
-    }
-
-    const newUser: UserProfile = isDemoHelena ? {
-      ...DEFAULT_USER,
-      id: validId,
-      email,
-      name: defaultName
-    } : {
-      id: validId,
-      email,
-      name: defaultName,
-      avatar: GENERIC_DEFAULT_AVATAR,
-      role: 'Membro da Aldeia',
-      familyTag: 'Mãe / Pai de 1ª viagem',
-      purchasedJourneyIds: [],
-      completedLessonIds: [],
-      lessonNotes: {},
-      xp: 0,
-      level: 1,
-      levelTitle: 'Semente',
-      streakDays: 1,
-      lastActiveDate: new Date().toISOString(),
-      badges: [],
-      ...savedData
-    };
-
-    setUser(newUser);
-    localStorage.setItem('elana_user_session', JSON.stringify(newUser));
-
-    // Upsert new profile into Supabase 'profiles' table!
+  /**
+   * HIDRATAÇÃO COMPLETA: Busca todos os dados do usuário no Supabase
+   */
+  const fetchFullUserProfile = async (userId: string, email: string, fallbackName?: string): Promise<UserProfile> => {
     try {
-      supabase.from('profiles').upsert({
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-        avatar: newUser.avatar,
-        role: newUser.role,
-        xp: newUser.xp,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' }).then(({ error, data }) => {
-        if (error) {
-          console.error('Supabase profiles insert error:', error.message, error.details);
-        } else {
-          console.log('Supabase profiles successfully synced:', data);
+      const emailClean = email.toLowerCase().trim();
+
+      // 1. Buscar Perfil Principal
+      let { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .or(`id.eq.${userId},email.eq.${emailClean}`)
+        .maybeSingle();
+
+      // Se não encontrou no Supabase, cria um perfil padrão inicial
+      if (!profile) {
+        const initialName = fallbackName || emailClean.split('@')[0];
+        const newProfilePayload = {
+          id: userId,
+          email: emailClean,
+          name: initialName,
+          avatar: GENERIC_DEFAULT_AVATAR,
+          role: 'Membro da Aldeia',
+          family_tag: 'Mãe / Pai de 1ª viagem',
+          xp: 0,
+          level_number: 1,
+          level_name: 'Semente Plantada',
+          level_icon: '🌱',
+          streak_days: 1,
+          notifications_enabled: false,
+          updated_at: new Date().toISOString()
+        };
+
+        const { data: createdProfile } = await supabase
+          .from('profiles')
+          .upsert(newProfilePayload, { onConflict: 'id' })
+          .select()
+          .single();
+
+        profile = createdProfile || newProfilePayload;
+      }
+
+      const profileId = profile.id || userId;
+
+      // 2. Buscar Badges conquistadas
+      const { data: userBadgesData } = await supabase
+        .from('user_badges')
+        .select('badge_id')
+        .eq('profile_id', profileId);
+
+      const unlockedBadgeIds = new Set((userBadgesData || []).map(b => b.badge_id));
+      const badges = ALL_BADGES.filter(b => unlockedBadgeIds.has(b.id));
+
+      // 3. Buscar Jornadas Adquiridas
+      const { data: journeysData } = await supabase
+        .from('user_purchased_journeys')
+        .select('journey_id')
+        .eq('profile_id', profileId);
+
+      const purchasedJourneyIds = (journeysData || []).map(j => j.journey_id);
+
+      // 4. Buscar Aulas Concluídas
+      const { data: lessonsData } = await supabase
+        .from('user_completed_lessons')
+        .select('lesson_id')
+        .eq('profile_id', profileId);
+
+      const completedLessonIds = (lessonsData || []).map(l => l.lesson_id);
+
+      // 5. Buscar Anotações de Aula
+      const { data: notesData } = await supabase
+        .from('user_lesson_notes')
+        .select('lesson_id, note')
+        .eq('profile_id', profileId);
+
+      const lessonNotes: Record<string, string> = {};
+      (notesData || []).forEach(n => {
+        if (n.lesson_id && n.note) {
+          lessonNotes[n.lesson_id] = n.note;
         }
       });
-    } catch (e) {
-      console.error('Supabase profiles sync exception:', e);
+
+      // 6. Buscar Filhos / Membros da Família
+      const { data: familyData } = await supabase
+        .from('family_members')
+        .select('*')
+        .eq('profile_id', profileId);
+
+      const children = (familyData || []).map(f => ({
+        id: f.id,
+        emoji: f.emoji || '👶',
+        name: f.name || '',
+        age: f.age || '',
+        birthdate: f.birthdate || undefined,
+        isPregnancy: !!f.is_pregnancy
+      }));
+
+      // 7. Buscar Fotos do Álbum
+      const { data: photosData } = await supabase
+        .from('user_photos')
+        .select('photo_url')
+        .eq('profile_id', profileId);
+
+      const photos = (photosData || []).map(p => p.photo_url);
+
+      const xp = profile.xp || 0;
+      const levelInfo = getLevelFromXP(xp);
+
+      const hydratedUser: UserProfile = {
+        id: profileId,
+        email: profile.email || emailClean,
+        name: profile.name || fallbackName || emailClean.split('@')[0],
+        phone: profile.phone || undefined,
+        avatar: profile.avatar || GENERIC_DEFAULT_AVATAR,
+        role: profile.role || 'Membro da Aldeia',
+        familyTag: profile.family_tag || profile.tag || 'Mãe / Pai de 1ª viagem',
+        bio: profile.bio || undefined,
+        xp,
+        level: profile.level_number || levelInfo.level,
+        levelTitle: profile.level_name || levelInfo.title,
+        streakDays: profile.streak_days || 1,
+        lastActiveDate: profile.last_active_date || new Date().toISOString(),
+        purchasedJourneyIds,
+        completedLessonIds,
+        lessonNotes,
+        badges,
+        children,
+        photos
+      };
+
+      return hydratedUser;
+    } catch (err) {
+      console.error('Error hydrating profile from Supabase, falling back to local defaults:', err);
+      return {
+        id: userId,
+        email,
+        name: fallbackName || email.split('@')[0],
+        avatar: GENERIC_DEFAULT_AVATAR,
+        role: 'Membro da Aldeia',
+        familyTag: 'Mãe / Pai de 1ª viagem',
+        purchasedJourneyIds: [],
+        completedLessonIds: [],
+        lessonNotes: {},
+        xp: 0,
+        level: 1,
+        levelTitle: 'Semente',
+        streakDays: 1,
+        lastActiveDate: new Date().toISOString(),
+        badges: []
+      };
     }
   };
 
-  const updateUser = (updates: Partial<UserProfile>) => {
+  const login = async (email: string, name?: string, customId?: string) => {
+    const isDemoHelena = email.toLowerCase() === 'helena@elana.com.br';
+    if (isDemoHelena) {
+      setUser(DEFAULT_USER);
+      localStorage.setItem('elana_user_session', JSON.stringify(DEFAULT_USER));
+      return;
+    }
+
+    const validId = (customId && customId.length > 20) ? customId : crypto.randomUUID();
+    const hydrated = await fetchFullUserProfile(validId, email, name);
+    
+    setUser(hydrated);
+    localStorage.setItem('elana_user_session', JSON.stringify(hydrated));
+  };
+
+  const refreshUserFromBackend = async () => {
+    if (!user || !user.email) return;
+    const refreshed = await fetchFullUserProfile(user.id, user.email, user.name);
+    setUser(refreshed);
+  };
+
+  const updateUser = async (updates: Partial<UserProfile>) => {
     if (!user) return;
     const updatedUser: UserProfile = {
       ...user,
       ...updates
     };
     setUser(updatedUser);
-    localStorage.setItem('elana_user_session', JSON.stringify(updatedUser));
-    localStorage.setItem(`elana_user_data_${updatedUser.email.toLowerCase()}`, JSON.stringify(updatedUser));
 
-    // Sync profile updates to Supabase 'profiles' table!
+    // Sincronizar dados no Supabase
     try {
-      if (updatedUser.id && updatedUser.id.length > 20) {
-        supabase.from('profiles').upsert({
+      if (updatedUser.id && updatedUser.id.length > 10) {
+        // 1. Atualizar Tabela profiles
+        await supabase.from('profiles').upsert({
           id: updatedUser.id,
           email: updatedUser.email,
           name: updatedUser.name,
+          phone: updatedUser.phone || null,
           avatar: updatedUser.avatar,
           role: updatedUser.role,
+          family_tag: updatedUser.familyTag || null,
+          bio: updatedUser.bio || null,
           xp: updatedUser.xp,
+          level_number: updatedUser.level,
+          level_name: updatedUser.levelTitle,
+          streak_days: updatedUser.streakDays,
+          last_active_date: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        }, { onConflict: 'id' }).then(({ error }) => {
-          if (error) console.log('Supabase profile update note:', error.message);
-        });
+        }, { onConflict: 'id' });
+
+        // 2. Sincronizar Filhos na tabela family_members (se foram alterados)
+        if (updates.children) {
+          // Deletar anteriores e inserir lista atual
+          await supabase.from('family_members').delete().eq('profile_id', updatedUser.id);
+          if (updates.children.length > 0) {
+            const familyRows = updates.children.map(c => ({
+              id: (c.id && c.id.length > 20) ? c.id : crypto.randomUUID(),
+              profile_id: updatedUser.id,
+              name: c.name,
+              age: c.age,
+              emoji: c.emoji || '👶',
+              birthdate: c.birthdate || null,
+              is_pregnancy: !!c.isPregnancy
+            }));
+            await supabase.from('family_members').insert(familyRows);
+          }
+        }
+
+        // 3. Sincronizar Fotos na tabela user_photos (se foram alteradas)
+        if (updates.photos) {
+          await supabase.from('user_photos').delete().eq('profile_id', updatedUser.id);
+          if (updates.photos.length > 0) {
+            const photoRows = updates.photos.map(url => ({
+              id: crypto.randomUUID(),
+              profile_id: updatedUser.id,
+              photo_url: url
+            }));
+            await supabase.from('user_photos').insert(photoRows);
+          }
+        }
       }
     } catch (e) {
-      console.error('Supabase profile update error:', e);
+      console.error('Supabase profile update sync error:', e);
     }
   };
 
@@ -199,38 +350,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.signOut();
   };
 
-  const purchaseJourney = (journeyId: string) => {
+  const purchaseJourney = async (journeyId: string) => {
     if (!user) return;
     if (user.purchasedJourneyIds.includes(journeyId)) return;
 
-    updateUser({
-      purchasedJourneyIds: [...user.purchasedJourneyIds, journeyId]
-    });
+    const newPurchased = [...user.purchasedJourneyIds, journeyId];
+    await updateUser({ purchasedJourneyIds: newPurchased });
+
+    try {
+      await supabase.from('user_purchased_journeys').upsert({
+        profile_id: user.id,
+        journey_id: journeyId
+      }, { onConflict: 'profile_id, journey_id' });
+    } catch (e) {
+      console.error('Error recording purchased journey to Supabase:', e);
+    }
   };
 
-  const addXP = (amount: number) => {
+  const addXP = async (amount: number) => {
     if (!user) return;
     const newXP = user.xp + amount;
     const levelInfo = getLevelFromXP(newXP);
     
-    updateUser({
+    await updateUser({
       xp: newXP,
       level: levelInfo.level,
       levelTitle: levelInfo.title
     });
   };
 
-  const completeLesson = (lessonId: string, xpReward: number = 10) => {
+  const completeLesson = async (lessonId: string, xpReward: number = 10) => {
     if (!user) return;
     if (user.completedLessonIds.includes(lessonId)) return;
 
     let newXP = user.xp + xpReward;
     
-    // Check if new badge unlocked
+    // Check if new badge unlocked (e.g. b4)
     let newlyUnlockedBadge: Badge | null = null;
     const currentBadgeIds = new Set(user.badges.map(b => b.id));
 
-    // Demo check badge b4 on first lesson
     if (!currentBadgeIds.has('b4')) {
       newlyUnlockedBadge = ALL_BADGES.find(b => b.id === 'b4') || null;
       if (newlyUnlockedBadge) {
@@ -239,18 +397,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const levelInfo = getLevelFromXP(newXP);
-
     const updatedBadges = newlyUnlockedBadge 
       ? [...user.badges, newlyUnlockedBadge] 
       : user.badges;
 
-    updateUser({
+    await updateUser({
       completedLessonIds: [...user.completedLessonIds, lessonId],
       xp: newXP,
       level: levelInfo.level,
       levelTitle: levelInfo.title,
       badges: updatedBadges
     });
+
+    // Gravar aula concluída no Supabase
+    try {
+      await supabase.from('user_completed_lessons').upsert({
+        profile_id: user.id,
+        lesson_id: lessonId
+      }, { onConflict: 'profile_id, lesson_id' });
+
+      // Se desbloqueou badge b4, gravar badge no Supabase
+      if (newlyUnlockedBadge) {
+        await supabase.from('user_badges').upsert({
+          profile_id: user.id,
+          badge_id: newlyUnlockedBadge.id
+        }, { onConflict: 'profile_id, badge_id' });
+      }
+    } catch (e) {
+      console.error('Error recording completed lesson to Supabase:', e);
+    }
 
     if (newlyUnlockedBadge) {
       setUnlockedBadgeModal(newlyUnlockedBadge);
@@ -262,7 +437,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const awardBadge = (badgeId: string) => {
+  const awardBadge = async (badgeId: string) => {
     if (!user) return;
     const currentBadgeIds = new Set(user.badges.map(b => b.id));
     if (currentBadgeIds.has(badgeId)) return; // Already has it
@@ -270,10 +445,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const badgeToAward = ALL_BADGES.find(b => b.id === badgeId);
     if (!badgeToAward) return;
 
-    updateUser({
+    await updateUser({
       badges: [...user.badges, badgeToAward],
       xp: user.xp + (badgeToAward.rewardXp || 0)
     });
+
+    // Gravar badge no Supabase
+    try {
+      await supabase.from('user_badges').upsert({
+        profile_id: user.id,
+        badge_id: badgeId
+      }, { onConflict: 'profile_id, badge_id' });
+    } catch (e) {
+      console.error('Error saving user badge to Supabase:', e);
+    }
 
     setUnlockedBadgeModal(badgeToAward);
     confetti({
@@ -283,29 +468,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const saveLessonNote = (lessonId: string, note: string) => {
+  const saveLessonNote = async (lessonId: string, note: string) => {
     if (!user) return;
-    updateUser({
-      lessonNotes: {
-        ...user.lessonNotes,
-        [lessonId]: note
-      }
-    });
+    const newNotes = {
+      ...user.lessonNotes,
+      [lessonId]: note
+    };
+    
+    await updateUser({ lessonNotes: newNotes });
+
+    try {
+      await supabase.from('user_lesson_notes').upsert({
+        profile_id: user.id,
+        lesson_id: lessonId,
+        note,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'profile_id, lesson_id' });
+    } catch (e) {
+      console.error('Error saving lesson note to Supabase:', e);
+    }
   };
 
-  const sendSosTicket = (userMessage: string) => {
-    // Mock Admin automatic acolhimento response
+  const sendSosTicket = async (userMessage: string) => {
+    if (!user) return;
     const mockReply: SOSTicketResponse = {
       userMessage,
-      adminReply: 'Oi, Helena! Recebemos seu pedido de acolhimento SOS. Nossa equipe já acolheu seu desabafo com todo carinho e sigilo. Você não está sozinha. Como podemos te ajudar melhor hoje? 💖',
+      adminReply: `Oi, ${user.name.split(' ')[0]}! Recebemos seu pedido de acolhimento SOS. Nossa equipe já acolheu seu desabafo com todo carinho e sigilo. Você não está sozinha. Como podemos te ajudar melhor hoje? 💖`,
       repliedAt: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       isRead: false
     };
+
     setSosResponse(mockReply);
     localStorage.setItem('elana_sos_ticket_response', JSON.stringify(mockReply));
+
+    try {
+      await supabase.from('sos_tickets').insert([{
+        profile_id: user.id,
+        user_name: user.name,
+        user_avatar: user.avatar,
+        user_message: userMessage,
+        admin_reply: mockReply.adminReply,
+        replied_at: new Date().toISOString(),
+        is_read: false,
+        status: 'in_progress'
+      }]);
+    } catch (e) {
+      console.error('Error saving SOS ticket to Supabase:', e);
+    }
   };
 
-  const replySosTicket = (adminReply: string) => {
+  const replySosTicket = async (adminReply: string) => {
     if (!sosResponse) return;
     const updated: SOSTicketResponse = {
       ...sosResponse,
@@ -346,7 +558,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sosResponse,
         sendSosTicket,
         replySosTicket,
-        markSosResponseRead
+        markSosResponseRead,
+        refreshUserFromBackend
       }}
     >
       {children}

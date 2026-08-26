@@ -23,6 +23,8 @@ import { BadgeGallery } from '../gamification/BadgeGallery';
 import { UserLevelsModal } from '../gamification/UserLevelsModal';
 import { JOURNEYS_DATA } from '../../data/journeysData';
 import { getLevelFromXP } from '../../data/gamificationData';
+import { uploadImageToStorage } from '../../lib/storage';
+import { supabase } from '../../lib/supabase';
 
 export interface ChildInfo {
   id: string;
@@ -126,15 +128,17 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
     }, 4000);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && userPhotos.length < 3) {
-      const imageUrl = URL.createObjectURL(file);
-      setUserPhotos(prev => [...prev, imageUrl]);
+      const publicUrl = await uploadImageToStorage(file, 'family-photos');
+      if (publicUrl) {
+        setUserPhotos(prev => [...prev, publicUrl]);
+      }
     }
   };
 
-  const handleTestimonialSubmit = (e: React.FormEvent) => {
+  const handleTestimonialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTestimonial.trim()) return;
 
@@ -150,6 +154,21 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
     setTestimonials(prev => [testimonial, ...prev]);
     setNewTestimonial('');
     setTestimonialSuccess(true);
+
+    // Gravar no Supabase
+    try {
+      await supabase.from('profile_testimonials').insert([{
+        recipient_profile_id: (profile.id && profile.id.length > 20) ? profile.id : null,
+        author_id: user?.id || null,
+        author_name: user?.name || 'Membro da Rede',
+        author_avatar: user?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+        content: newTestimonial.trim(),
+        status: 'approved'
+      }]);
+    } catch (err) {
+      console.error('Error saving testimonial to Supabase:', err);
+    }
+
     setTimeout(() => setTestimonialSuccess(false), 3500);
   };
 

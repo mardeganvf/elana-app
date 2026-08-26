@@ -282,6 +282,7 @@ export const CommunityPage: React.FC = () => {
     supabase
       .from('emotional_checkins')
       .insert([{
+        profile_id: user?.id || null,
         emotion_id: item.id,
         emotion_label: item.label,
         phrase: phrase,

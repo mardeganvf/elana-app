@@ -176,22 +176,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
       const supabaseUserId = authData?.user?.id;
 
-      // Direct explicit upsert to Supabase 'profiles' table
+      const validId = (supabaseUserId && supabaseUserId.length > 20) ? supabaseUserId : crypto.randomUUID();
       const profilePayload = {
-        id: supabaseUserId || `user-${Date.now()}`,
-        email: inputVal,
+        id: validId,
+        email: inputVal.trim().toLowerCase(),
         name: name.trim(),
         avatar: GENERIC_DEFAULT_AVATAR,
         role: 'Membro da Aldeia',
         family_tag: 'Mãe / Pai de 1ª viagem',
         xp: 0,
-        level: 1,
+        level_number: 1,
+        level_name: 'Semente Plantada',
+        level_icon: '🌱',
         updated_at: new Date().toISOString()
       };
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert(profilePayload, { onConflict: 'email' });
+        .upsert(profilePayload, { onConflict: 'id' });
 
       if (profileError) {
         console.error('Supabase Profiles Table Insert Error:', profileError.message);

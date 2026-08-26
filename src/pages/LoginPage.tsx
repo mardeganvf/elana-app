@@ -161,8 +161,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
 
           const userName = data.user?.user_metadata?.name || inputVal.split('@')[0];
           setSuccessMessage('Login realizado com sucesso!');
-          login(inputVal, userName, data.user?.id);
-          setTimeout(() => onSuccess(false), 500);
+          await login(inputVal, userName, data.user?.id);
+          setTimeout(() => onSuccess(false), 300);
         }
       } else if (mode === 'recovery') {
         const { error } = await supabase.auth.resetPasswordForEmail(inputVal, {
@@ -244,11 +244,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
       }
 
       setSuccessMessage('Conta validada e criada com sucesso! Entrando...');
-      login(inputVal, name.trim(), supabaseUserId);
-      setTimeout(() => onSuccess(false), 800);
+      await login(inputVal, name.trim(), supabaseUserId);
+      setTimeout(() => onSuccess(false), 500);
     } catch (err: any) {
       console.error('Signup Exception:', err);
-      login(identifier.trim(), name.trim());
+      await login(identifier.trim(), name.trim());
       onSuccess(false);
     } finally {
       setLoading(false);
