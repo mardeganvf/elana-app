@@ -226,32 +226,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 6. Buscar Filhos / Membros da Família
       let children: any[] = [];
-      try {
-        const { data: familyData } = await supabase
-          .from('family_members')
-          .select('*')
-          .eq('profile_id', profileId);
-
-        if (familyData && familyData.length > 0) {
-          children = familyData.map(f => ({
-            id: f.id,
-            emoji: f.emoji || '👶',
-            name: f.name || '',
-            age: f.age || '',
-            birthdate: f.birthdate || undefined,
-            isPregnancy: !!f.is_pregnancy
-          }));
-        }
-      } catch (err) {
-        console.warn('Error fetching family_members table:', err);
-      }
-
-      // Se family_members estiver vazio ou bloqueado, restaurar do backup persistido em family_tag
-      if (children.length === 0 && profile.family_tag && profile.family_tag.startsWith('JSON_CHILDREN:')) {
+      // Se houver dados persistidos em profiles.family_tag, essa é a fonte primária e garantida
+      if (profile.family_tag && profile.family_tag.startsWith('JSON_CHILDREN:')) {
         try {
           children = JSON.parse(profile.family_tag.replace('JSON_CHILDREN:', ''));
         } catch (e) {
           console.warn('Error parsing children backup:', e);
+        }
+      } else {
+        // Caso contrário, busca na tabela family_members
+        try {
+          const { data: familyData } = await supabase
+            .from('family_members')
+            .select('*')
+            .eq('profile_id', profileId);
+
+          if (familyData && familyData.length > 0) {
+            children = familyData.map(f => ({
+              id: f.id,
+              emoji: f.emoji || '👶',
+              name: f.name || '',
+              age: f.age || '',
+              birthdate: f.birthdate || undefined,
+              isPregnancy: !!f.is_pregnancy
+            }));
+          }
+        } catch (err) {
+          console.warn('Error fetching family_members table:', err);
         }
       }
 
@@ -372,9 +373,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // 1. Atualizar Tabela profiles com colunas válidas
         let familyTagPayload = updatedUser.familyTag || null;
-        if (updates.children) {
+        if (updates.children !== undefined) {
           familyTagPayload = `JSON_CHILDREN:${JSON.stringify(updates.children)}`;
-        } else if (updatedUser.children && updatedUser.children.length > 0) {
+        } else if (updatedUser.children) {
           familyTagPayload = `JSON_CHILDREN:${JSON.stringify(updatedUser.children)}`;
         }
 
