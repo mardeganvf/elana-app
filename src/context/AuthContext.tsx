@@ -47,7 +47,7 @@ interface AuthContextType {
 }
 
 const DEFAULT_USER: UserProfile = {
-  id: 'user-demo-1',
+  id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   name: 'Helena Ribeiro',
   email: 'helena@elana.com.br',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
@@ -259,14 +259,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, name?: string, customId?: string) => {
-    const isDemoHelena = email.toLowerCase() === 'helena@elana.com.br';
-    if (isDemoHelena) {
-      setUser(DEFAULT_USER);
-      localStorage.setItem('elana_user_session', JSON.stringify(DEFAULT_USER));
-      return;
-    }
-
-    const validId = (customId && customId.length > 20) ? customId : crypto.randomUUID();
+    const validId = (customId && customId.length > 20) ? customId : (user?.id && user.id.length > 20 ? user.id : 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11');
     const hydrated = await fetchFullUserProfile(validId, email, name);
     
     setUser(hydrated);
