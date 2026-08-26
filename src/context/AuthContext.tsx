@@ -103,13 +103,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = (email: string, name?: string, customId?: string) => {
     const defaultName = name || email.split('@')[0];
     const isDemoHelena = email.toLowerCase() === 'helena@elana.com.br';
-
+    const validId = (customId && customId.length > 20) ? customId : crypto.randomUUID();
     const newUser: UserProfile = isDemoHelena ? {
       ...DEFAULT_USER,
+      id: validId,
       email,
       name: defaultName
     } : {
-      id: customId || `user-${Date.now()}`,
+      id: validId,
       email,
       name: defaultName,
       avatar: GENERIC_DEFAULT_AVATAR,
@@ -164,19 +165,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Sync profile updates to Supabase 'profiles' table!
     try {
-      supabase.from('profiles').upsert({
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        avatar: updatedUser.avatar,
-        role: updatedUser.role,
-        family_tag: updatedUser.familyTag,
-        xp: updatedUser.xp,
-        level: updatedUser.level,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'email' }).then(({ error }) => {
-        if (error) console.log('Supabase profile update note:', error.message);
-      });
+      if (updatedUser.id && updatedUser.id.length > 20) {
+        supabase.from('profiles').upsert({
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name,
+          avatar: updatedUser.avatar,
+          role: updatedUser.role,
+          family_tag: updatedUser.familyTag,
+          xp: updatedUser.xp,
+          level: updatedUser.level,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'email' }).then(({ error }) => {
+          if (error) console.log('Supabase profile update note:', error.message);
+        });
+      }
     } catch (e) {
       console.error('Supabase profile update error:', e);
     }

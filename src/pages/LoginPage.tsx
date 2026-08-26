@@ -228,9 +228,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
       const supabaseUserId = authData?.user?.id;
 
       // Direct explicit upsert to Supabase 'profiles' table
+      const validId = (supabaseUserId && supabaseUserId.length > 20) ? supabaseUserId : crypto.randomUUID();
       const profilePayload = {
-        id: supabaseUserId || `user-${Date.now()}`,
-        email: inputVal,
+        id: validId,
+        email: inputVal.trim().toLowerCase(),
         name: name.trim(),
         avatar: GENERIC_DEFAULT_AVATAR,
         role: 'Membro da Aldeia',

@@ -9,9 +9,11 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 1. TABELA DE PERFIS DE USUÁRIOS
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE,
   name TEXT NOT NULL,
   avatar TEXT NOT NULL DEFAULT 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-  role TEXT NOT NULL DEFAULT 'membro',
+  role TEXT NOT NULL DEFAULT 'Membro da Aldeia',
+  family_tag TEXT,
   tag TEXT,
   level_number INTEGER NOT NULL DEFAULT 1,
   level_name TEXT NOT NULL DEFAULT 'Semente Plantada',
@@ -23,6 +25,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Garantir colunas adicionais para tabelas já existentes no Supabase
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS family_tag TEXT;
 
 -- 2. TABELA DE MEMBROS DA FAMÍLIA
 CREATE TABLE IF NOT EXISTS public.family_members (
