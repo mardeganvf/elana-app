@@ -160,13 +160,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           avatar: GENERIC_DEFAULT_AVATAR,
           role: 'Membro da Aldeia',
           family_tag: 'Mãe / Pai de 1ª viagem',
+          tag: 'Membro da Aldeia',
           xp: 0,
           level_number: 1,
           level_name: 'Semente Plantada',
           level_icon: '🌱',
           streak_days: 1,
           notifications_enabled: false,
-          onboarding_completed: false,
           updated_at: new Date().toISOString()
         };
 
@@ -236,6 +236,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const xp = profile.xp || 0;
       const levelInfo = getLevelFromXP(xp);
+      const isTourFinished = profile.tag === 'onboarded' || unlockedBadgeIds.has('b1') || xp >= 25;
 
       const hydratedUser: UserProfile = {
         id: profileId,
@@ -247,7 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         familyTag: profile.family_tag || profile.tag || 'Mãe / Pai de 1ª viagem',
         bio: profile.bio || undefined,
         notificationsEnabled: !!profile.notifications_enabled,
-        onboardingCompleted: !!profile.onboarding_completed,
+        onboardingCompleted: isTourFinished,
         xp,
         level: profile.level_number || levelInfo.level,
         levelTitle: profile.level_name || levelInfo.title,
@@ -335,7 +336,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Sincronizar dados no Supabase
     try {
       if (updatedUser.id && updatedUser.id.length > 10) {
-        // 1. Atualizar Tabela profiles
+        const levelInfo = getLevelFromXP(updatedUser.xp);
+
+        // 1. Atualizar Tabela profiles com colunas válidas
         const profilePayload: Record<string, any> = {
           id: updatedUser.id,
           email: updatedUser.email.toLowerCase().trim(),
@@ -344,13 +347,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           avatar: updatedUser.avatar,
           role: updatedUser.role,
           family_tag: updatedUser.familyTag || null,
+          tag: (updatedUser.onboardingCompleted || updatedUser.xp >= 25) ? 'onboarded' : (updatedUser.familyTag || 'Membro da Aldeia'),
           bio: updatedUser.bio || null,
           xp: updatedUser.xp,
-          level_number: updatedUser.level,
-          level_name: updatedUser.levelTitle,
+          level_number: updatedUser.level || levelInfo.level,
+          level_name: updatedUser.levelTitle || levelInfo.title,
+          level_icon: levelInfo.icon || '🌱',
           streak_days: updatedUser.streakDays,
           notifications_enabled: !!updatedUser.notificationsEnabled,
-          onboarding_completed: !!updatedUser.onboardingCompleted,
           last_active_date: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };

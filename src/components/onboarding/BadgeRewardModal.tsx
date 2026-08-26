@@ -15,7 +15,7 @@ export const BadgeRewardModal: React.FC<BadgeRewardModalProps> = ({ isOpen, onCl
 
   const firstName = user.name.split(' ')[0] || 'Membro';
 
-  const handleClaimReward = () => {
+  const handleClaimReward = async () => {
     // Award 25 XP and unlock "Semente Plantada" badge
     const sementeBadge = ALL_BADGES[0];
     const hasBadge = user.badges.some(b => b.id === sementeBadge.id);
@@ -24,14 +24,26 @@ export const BadgeRewardModal: React.FC<BadgeRewardModalProps> = ({ isOpen, onCl
     const levelInfo = getLevelFromXP(newXP);
 
     if (updateUser) {
-      updateUser({
+      await updateUser({
         xp: newXP,
         level: levelInfo.level,
         levelTitle: levelInfo.title,
-        badges: updatedBadges
+        badges: updatedBadges,
+        onboardingCompleted: true,
+        familyTag: user.familyTag || 'Membro da Aldeia'
       });
     }
 
+    try {
+      await supabase.from('user_badges').upsert({
+        profile_id: user.id,
+        badge_id: 'b1'
+      }, { onConflict: 'profile_id, badge_id' });
+    } catch (e) {
+      console.warn('Error saving initial badge:', e);
+    }
+
+    localStorage.setItem(`elana_spotlight_done_${user.email.toLowerCase().trim()}`, 'true');
     onClose();
   };
 

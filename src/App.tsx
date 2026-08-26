@@ -35,7 +35,7 @@ const AppContent: React.FC = () => {
     if (user?.email) {
       const tourKey = `elana_spotlight_done_${user.email.toLowerCase().trim()}`;
       const isTourDoneLocally = localStorage.getItem(tourKey) === 'true';
-      const isTourDoneInBackend = !!user.onboardingCompleted;
+      const isTourDoneInBackend = !!user.onboardingCompleted || (user.badges && user.badges.some(b => b.id === 'b1')) || (user.xp && user.xp >= 25);
 
       if (!isTourDoneLocally && !isTourDoneInBackend) {
         const timer = setTimeout(() => {
@@ -44,7 +44,7 @@ const AppContent: React.FC = () => {
         return () => clearTimeout(timer);
       }
     }
-  }, [user?.email, user?.onboardingCompleted]);
+  }, [user?.email, user?.onboardingCompleted, user?.xp, user?.badges]);
 
   const handleSelectJourney = (journey: Journey) => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
