@@ -235,9 +235,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
         name: name.trim(),
         avatar: GENERIC_DEFAULT_AVATAR,
         role: 'Membro da Aldeia',
-        family_tag: 'Mãe / Pai de 1ª viagem',
         xp: 0,
-        level: 1,
         updated_at: new Date().toISOString()
       };
 

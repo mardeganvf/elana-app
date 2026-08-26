@@ -138,9 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: newUser.name,
         avatar: newUser.avatar,
         role: newUser.role,
-        family_tag: newUser.familyTag,
         xp: newUser.xp,
-        level: newUser.level,
         updated_at: new Date().toISOString()
       }, { onConflict: 'id' }).then(({ error, data }) => {
         if (error) {
@@ -172,9 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: updatedUser.name,
           avatar: updatedUser.avatar,
           role: updatedUser.role,
-          family_tag: updatedUser.familyTag,
           xp: updatedUser.xp,
-          level: updatedUser.level,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' }).then(({ error }) => {
           if (error) console.log('Supabase profile update note:', error.message);
