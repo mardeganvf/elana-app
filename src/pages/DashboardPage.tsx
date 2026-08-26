@@ -160,7 +160,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     if (file && userPhotos.length < 3) {
       const publicUrl = await uploadImageToStorage(file, 'family-photos');
       if (publicUrl) {
-        setUserPhotos(prev => [...prev, publicUrl]);
+        const nextPhotos = [...userPhotos, publicUrl];
+        setUserPhotos(nextPhotos);
+        if (updateUser) {
+          await updateUser({ photos: nextPhotos });
+        }
+
+        // Checar desbloqueio do badge Criando Raízes (b2)
+        if (user && !user.badges.some(b => b.id === 'b2')) {
+          const hasEmail = !!user.email;
+          const hasPhone = !!user.phone;
+          const hasName = !!user.name;
+          const hasBio = !!bioText.trim();
+          const hasFamilyMember = childrenList.length > 0;
+          if (hasEmail && hasPhone && hasName && hasBio && hasFamilyMember) {
+            awardBadge('b2');
+          }
+        }
       }
     }
   };
@@ -193,37 +209,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
   const userLevelInfo = getLevelFromXP(user.xp);
 
-  // Check "Criando Raízes" Badge (b2)
-  useEffect(() => {
-    if (!user) return;
-    const hasBadge = user.badges.some(b => b.id === 'b2');
-    if (!hasBadge) {
-      const hasEmail = !!user.email;
-      const hasPhone = !!user.phone;
-      const hasName = !!user.name;
-      const hasBio = !!bioText.trim();
-      const hasFamilyMember = childrenList.length > 0;
-      const hasPhoto = userPhotos.length > 0;
-
-      if (hasEmail && hasPhone && hasName && hasBio && hasFamilyMember && hasPhoto) {
-        awardBadge('b2');
-      }
-    }
-  }, [user, bioText, childrenList, userPhotos, awardBadge]);
-
-  // Sync bioText, childrenList and userPhotos to UserProfile when they change (but not aggressively typing for bio, only explicitly saved for bio)
+  // Sincronizar childrenList quando alterado
   useEffect(() => {
     if (!user || !updateUser) return;
     const isChildrenDiff = JSON.stringify(user.children || []) !== JSON.stringify(childrenList);
-    const isPhotosDiff = JSON.stringify(user.photos || []) !== JSON.stringify(userPhotos);
-    
-    if (isChildrenDiff || isPhotosDiff) {
-      updateUser({
-        children: childrenList,
-        photos: userPhotos
-      });
+    if (isChildrenDiff) {
+      updateUser({ children: childrenList });
     }
-  }, [childrenList, userPhotos, user, updateUser]);
+  }, [childrenList, user?.id]);
 
   return (
     <div className="space-y-10 pb-20 animate-fade-in max-w-6xl mx-auto text-white -mt-4">
@@ -742,7 +735,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
                 {isEditingPhotos && (
                   <button
-                    onClick={() => setUserPhotos(prev => prev.filter((_, i) => i !== idx))}
+                    onClick={() => {
+                      const next = userPhotos.filter((_, i) => i !== idx);
+                      setUserPhotos(next);
+                      if (updateUser) updateUser({ photos: next });
+                    }}
                     className="absolute top-1.5 right-1.5 bg-rose-600 hover:bg-rose-700 text-white p-1 rounded-full shadow-lg transition-transform active:scale-90"
                     title="Excluir foto"
                   >
