@@ -91,7 +91,6 @@ export interface UserProfile {
     birthdate?: string;
     isPregnancy?: boolean;
   }[];
-  photos?: string[];
 }
 
 export type EmotionalIntention = 'ajuda' | 'desabafar' | 'celebrar';

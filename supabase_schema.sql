@@ -60,16 +60,7 @@ ALTER TABLE public.family_members ADD COLUMN IF NOT EXISTS emoji TEXT DEFAULT '�
 ALTER TABLE public.family_members ADD COLUMN IF NOT EXISTS birthdate TEXT;
 ALTER TABLE public.family_members ADD COLUMN IF NOT EXISTS is_pregnancy BOOLEAN NOT NULL DEFAULT FALSE;
 
--- 3. TABELA DE FOTOS DO ÁLBUM DA FAMÍLIA
-CREATE TABLE IF NOT EXISTS public.user_photos (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  photo_url TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-ALTER TABLE public.user_photos ALTER COLUMN profile_id DROP NOT NULL;
-
--- 4. TABELA DE CHECK-INS EMOCIONAIS
+-- 3. TABELA DE CHECK-INS EMOCIONAIS
 CREATE TABLE IF NOT EXISTS public.emotional_checkins (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -222,15 +213,8 @@ CREATE POLICY "Allow public insert family_members" ON public.family_members FOR 
 CREATE POLICY "Allow public update family_members" ON public.family_members FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete family_members" ON public.family_members FOR DELETE USING (true);
 
--- Políticas para User Photos
-DROP POLICY IF EXISTS "Allow public read user_photos" ON public.user_photos;
-DROP POLICY IF EXISTS "Allow public insert user_photos" ON public.user_photos;
-DROP POLICY IF EXISTS "Allow public update user_photos" ON public.user_photos;
-DROP POLICY IF EXISTS "Allow public delete user_photos" ON public.user_photos;
-CREATE POLICY "Allow public read user_photos" ON public.user_photos FOR SELECT USING (true);
-CREATE POLICY "Allow public insert user_photos" ON public.user_photos FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update user_photos" ON public.user_photos FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete user_photos" ON public.user_photos FOR DELETE USING (true);
+-- Excluir tabela legada de fotos se existir
+DROP TABLE IF EXISTS public.user_photos CASCADE;
 
 -- Políticas para Emotional Checkins
 DROP POLICY IF EXISTS "Allow public read emotional_checkins" ON public.emotional_checkins;

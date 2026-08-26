@@ -206,14 +206,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isPregnancy: !!f.is_pregnancy
       }));
 
-      // 7. Buscar Fotos do Álbum
-      const { data: photosData } = await supabase
-        .from('user_photos')
-        .select('photo_url')
-        .eq('profile_id', profileId);
-
-      const photos = (photosData || []).map(p => p.photo_url);
-
       const xp = profile.xp || 0;
       const levelInfo = getLevelFromXP(xp);
 
@@ -235,8 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         completedLessonIds,
         lessonNotes,
         badges,
-        children,
-        photos
+        children
       };
 
       return hydratedUser;
@@ -320,19 +311,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               is_pregnancy: !!c.isPregnancy
             }));
             await supabase.from('family_members').insert(familyRows);
-          }
-        }
-
-        // 3. Sincronizar Fotos na tabela user_photos (se foram alteradas)
-        if (updates.photos) {
-          await supabase.from('user_photos').delete().eq('profile_id', updatedUser.id);
-          if (updates.photos.length > 0) {
-            const photoRows = updates.photos.map(url => ({
-              id: crypto.randomUUID(),
-              profile_id: updatedUser.id,
-              photo_url: url
-            }));
-            await supabase.from('user_photos').insert(photoRows);
           }
         }
       }

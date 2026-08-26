@@ -24,7 +24,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // Função centralizada para validar e conceder a badge Criando Raízes (b2)
-  const checkCriandoRaizes = (avatarToCheck?: string, photosToCheck?: string[]) => {
+  const checkCriandoRaizes = (avatarToCheck?: string) => {
     if (!user || user.badges.some(b => b.id === 'b2')) return;
     
     const currentAvatar = avatarToCheck || user.avatar;
@@ -34,10 +34,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     const hasName = !!user.name;
     const hasBio = !!(user.bio || bioText).trim();
     const hasFamilyMember = (childrenList || []).length > 0 || (user.children || []).length > 0;
-    const currentPhotos = photosToCheck || userPhotos;
-    const hasPhoto = currentPhotos.length > 0;
 
-    if (hasCustomAvatar && hasEmail && hasPhone && hasName && hasBio && hasFamilyMember && hasPhoto) {
+    if (hasCustomAvatar && hasEmail && hasPhone && hasName && hasBio && hasFamilyMember) {
       setTimeout(() => {
         awardBadge('b2');
       }, 300);
@@ -133,15 +131,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
   };
 
-  // Álbum da Família state
-  const [isEditingPhotos, setIsEditingPhotos] = useState(false);
-  const [newPhotoUrl, setNewPhotoUrl] = useState('');
-
   // Followed Members state
   const [followedMembers] = useState<PublicUserProfile[]>([]);
-  
-  // Photos state (up to 3 photos)
-  const [userPhotos, setUserPhotos] = useState<string[]>(user?.photos || []);
 
   interface DashboardTestimonial {
     id: string;
@@ -187,31 +178,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   }, [user?.id]);
 
   if (!user) return null;
-
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || userPhotos.length >= 3 || isUploadingPhoto) return;
-
-    try {
-      setIsUploadingPhoto(true);
-      const publicUrl = await uploadImageToStorage(file, 'family-photos');
-      if (publicUrl) {
-        const nextPhotos = [...userPhotos, publicUrl];
-        setUserPhotos(nextPhotos);
-        if (updateUser) {
-          await updateUser({ photos: nextPhotos });
-        }
-
-        // Checar desbloqueio do badge Criando Raízes (b2)
-        checkCriandoRaizes(undefined, nextPhotos);
-      }
-    } catch (err) {
-      console.error('Error uploading family photo:', err);
-    } finally {
-      setIsUploadingPhoto(false);
-      e.target.value = '';
-    }
-  };
 
   const handleApproveTestimonial = async (id: string) => {
     setTestimonials(prev => prev.map(t => t.id === id ? { ...t, status: 'aprovado' as const } : t));
@@ -518,60 +484,57 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 {user.badges.length === 1 ? 'Conquista' : 'Conquistas'}
               </span>
             </div>
-          </div>
-        </div>
-
-      </section>
-
-      {/* 📝 Um pouquinho sobre mim... (Bio Card) */}
-      <section className="bg-[#101B1E] p-6 rounded-3xl border border-white/10 shadow-lg space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-extrabold text-[#FF7F5B] uppercase tracking-wider flex items-center gap-2">
-            <Quote className="w-4 h-4 text-[#FF7F5B]" />
-            Um pouquinho sobre mim...
-          </h3>
-          <button
-            onClick={() => setIsEditingBio(!isEditingBio)}
-            className="text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-white/10 active:scale-95"
-          >
-            <Edit3 className="w-3.5 h-3.5" />
-            <span>{isEditingBio ? 'Salvar' : 'Editar'}</span>
-          </button>
-        </div>
-
-        {isEditingBio ? (
-          <div className="space-y-2 pt-1">
-            <textarea
-              rows={3}
-              value={bioText}
-              onChange={(e) => setBioText(e.target.value)}
-              placeholder="Escreva uma breve apresentação sobre você..."
-              className="w-full p-3.5 bg-[#070D0F] border border-[#FF7F5B]/50 rounded-2xl text-xs text-white focus:outline-none transition-all resize-none"
-            />
-            <button
-              onClick={async () => {
-                setIsEditingBio(false);
-                if (updateUser) {
-                  await updateUser({ bio: bioText });
-                  checkCriandoRaizes();
-                }
-              }}
-              className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl shadow-md transition-all active:scale-95"
-            >
-              Salvar Alterações
-            </button>
-          </div>
-        ) : (
-          <p className="text-xs text-slate-300 italic leading-relaxed bg-[#070D0F] p-4 rounded-2xl border border-white/10">
-            {bioText ? `"${bioText}"` : <span className="text-slate-400 not-italic">Divida conosco um pouquinho sobre você! ✨</span>}
-          </p>
-        )}
-      </section>
-
-      {/* 👶 Meus Filhos e 📸 Álbum da Família */}
+         {/* 📝 Um pouquinho sobre mim & 👶 Minha Família */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Minha Família */}
+        {/* 📝 Um pouquinho sobre mim... (Bio Card - Esquerda) */}
+        <div className="bg-[#101B1E] p-6 rounded-3xl border border-white/10 space-y-4 shadow-lg flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-extrabold text-[#FF7F5B] uppercase tracking-wider flex items-center gap-2">
+                <Quote className="w-4 h-4 text-[#FF7F5B]" />
+                Um pouquinho sobre mim...
+              </h3>
+              <button
+                onClick={() => setIsEditingBio(!isEditingBio)}
+                className="text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-white/10 active:scale-95"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>{isEditingBio ? 'Salvar' : 'Editar'}</span>
+              </button>
+            </div>
+
+            {isEditingBio ? (
+              <div className="space-y-2 pt-1">
+                <textarea
+                  rows={4}
+                  value={bioText}
+                  onChange={(e) => setBioText(e.target.value)}
+                  placeholder="Escreva uma breve apresentação sobre você..."
+                  className="w-full p-3.5 bg-[#070D0F] border border-[#FF7F5B]/50 rounded-2xl text-xs text-white focus:outline-none transition-all resize-none"
+                />
+                <button
+                  onClick={async () => {
+                    setIsEditingBio(false);
+                    if (updateUser) {
+                      await updateUser({ bio: bioText });
+                      checkCriandoRaizes();
+                    }
+                  }}
+                  className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl shadow-md transition-all active:scale-95"
+                >
+                  Salvar Alterações
+                </button>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-300 italic leading-relaxed bg-[#070D0F] p-4 rounded-2xl border border-white/10 flex-1">
+                {bioText ? `"${bioText}"` : <span className="text-slate-400 not-italic">Divida conosco um pouquinho sobre você! ✨</span>}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* 👶 Minha Família (Direita) */}
         <div className="bg-[#101B1E] p-6 rounded-3xl border border-white/10 space-y-4 shadow-lg">
           <div className="flex items-center justify-between border-b border-white/10 pb-3">
             <h3 className="text-sm font-extrabold text-[#FF7F5B] uppercase tracking-wider flex items-center gap-2">
@@ -746,92 +709,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-        </div>
-
-        {/* Álbum da Família */}
-        <div className="bg-[#101B1E] p-6 rounded-3xl border border-white/10 space-y-4 shadow-lg">
-          <div className="flex items-center justify-between border-b border-white/10 pb-3">
-            <h3 className="text-sm font-extrabold text-[#FF7F5B] uppercase tracking-wider flex items-center gap-2">
-              <Camera className="w-5 h-5 text-[#FF7F5B]" />
-              Álbum da Família ({userPhotos.length}/3 fotos)
-            </h3>
-            <button
-              onClick={() => setIsEditingPhotos(!isEditingPhotos)}
-              className="text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-white/10 active:scale-95"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>{isEditingPhotos ? 'Fechar' : 'Editar'}</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            {userPhotos.map((photo, idx) => (
-              <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-white/15 group shadow-md bg-[#070D0F]">
-                <img 
-                  src={photo} 
-                  alt={`Momento ${idx + 1}`} 
-                  onError={(e) => {
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=600&auto=format&fit=crop&q=80';
-                  }}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                />
-
-                {isEditingPhotos && (
-                  <button
-                    onClick={() => {
-                      const next = userPhotos.filter((_, i) => i !== idx);
-                      setUserPhotos(next);
-                      if (updateUser) updateUser({ photos: next });
-                    }}
-                    className="absolute top-1.5 right-1.5 bg-rose-600 hover:bg-rose-700 text-white p-1 rounded-full shadow-lg transition-transform active:scale-90"
-                    title="Excluir foto"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            ))}
-
-            {userPhotos.length < 3 && (
-              <label className={`aspect-square rounded-2xl border-2 border-dashed border-white/20 hover:border-[#FF7F5B] bg-[#070D0F] hover:bg-white/5 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all text-slate-400 hover:text-white ${isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
-                {isUploadingPhoto ? (
-                  <div className="w-5 h-5 border-2 border-[#FF7F5B] border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Plus className="w-5 h-5 text-[#FF7F5B]" />
-                    <span className="text-[10px] font-bold">Adicionar</span>
-                  </>
-                )}
-                <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoUpload} disabled={isUploadingPhoto} />
-              </label>
-            )}
-          </div>
-
-          {isEditingPhotos && userPhotos.length < 3 && (
-            <div className="pt-2 border-t border-white/10 space-y-2">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Ou insira o link de uma imagem:</span>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="https://sua-foto.com/imagem.jpg"
-                  value={newPhotoUrl}
-                  onChange={(e) => setNewPhotoUrl(e.target.value)}
-                  className="bg-[#070D0F] border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none flex-1"
-                />
-                <button
-                  onClick={() => {
-                    if (!newPhotoUrl.trim()) return;
-                    setUserPhotos(prev => [...prev, newPhotoUrl.trim()]);
-                    setNewPhotoUrl('');
-                  }}
-                  disabled={!newPhotoUrl.trim()}
-                  className="bg-[#FF7F5B] text-slate-950 font-bold text-xs px-3 py-1.5 rounded-xl disabled:opacity-50"
-                >
-                  Adicionar
-                </button>
-              </div>
             </div>
           )}
         </div>
