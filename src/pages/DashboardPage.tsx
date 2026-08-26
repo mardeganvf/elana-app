@@ -221,15 +221,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
   const userLevelInfo = getLevelFromXP(user.xp);
 
-  // Sincronizar childrenList quando alterado
-  useEffect(() => {
-    if (!user || !updateUser) return;
-    const isChildrenDiff = JSON.stringify(user.children || []) !== JSON.stringify(childrenList);
-    if (isChildrenDiff) {
-      updateUser({ children: childrenList });
-    }
-  }, [childrenList, user?.id]);
-
   return (
     <div className="space-y-10 pb-20 animate-fade-in max-w-6xl mx-auto text-white -mt-4">
       
@@ -579,7 +570,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       </div>
                     </div>
                     <button
-                      onClick={() => setChildrenList(prev => prev.filter(c => c.id !== child.id))}
+                      onClick={async () => {
+                        const next = childrenList.filter(c => c.id !== child.id);
+                        setChildrenList(next);
+                        if (updateUser) await updateUser({ children: next });
+                      }}
                       className="text-rose-400 hover:text-rose-300 p-1.5 hover:bg-white/5 rounded-lg transition-colors shrink-0"
                       title="Remover"
                     >
@@ -648,26 +643,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 </div>
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     const isPregnancy = newChildEmoji === '🤰';
                     const computedAge = isPregnancy ? pregnancyMonth : calculateAgeFromBirthdate(newChildBirthdate);
                     const childName = isPregnancy ? (newChildName.trim() || 'Gestante') : newChildName.trim();
 
                     if (!childName || (!isPregnancy && !computedAge)) return;
 
-                    setChildrenList(prev => [
-                      ...prev,
-                      {
-                        id: `c-${Date.now()}`,
-                        emoji: newChildEmoji,
-                        name: childName,
-                        age: computedAge,
-                        birthdate: isPregnancy ? undefined : newChildBirthdate,
-                        isPregnancy: isPregnancy
-                      }
-                    ]);
+                    const newChild = {
+                      id: crypto.randomUUID(),
+                      emoji: newChildEmoji,
+                      name: childName,
+                      age: computedAge,
+                      birthdate: isPregnancy ? undefined : newChildBirthdate,
+                      isPregnancy: isPregnancy
+                    };
+
+                    const next = [...childrenList, newChild];
+                    setChildrenList(next);
                     setNewChildName('');
                     setNewChildBirthdate('');
+
+                    if (updateUser) {
+                      await updateUser({ children: next });
+                      checkCriandoRaizes();
+                    }
                   }}
                   disabled={
                     (newChildEmoji === '🤰' && !pregnancyMonth) ||
