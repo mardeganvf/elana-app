@@ -641,6 +641,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser) return;
     const currentBadgeIds = new Set(currentUser.badges.map(b => b.id));
     if (currentBadgeIds.has(badgeId)) return; // Already has it
+    const badgeToAward = ALL_BADGES.find(b => b.id === badgeId);
+    if (!badgeToAward) return;
 
     const previousLevel = currentUser.level || getLevelFromXP(currentUser.xp).level;
     const nextBadges = [...currentUser.badges, badgeToAward];
