@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { UserProfile, Badge } from '../types';
-import { ALL_BADGES, getLevelFromXP } from '../data/gamificationData';
+import { ALL_BADGES, getLevelFromXP, USER_LEVELS } from '../data/gamificationData';
 import { supabase } from '../lib/supabase';
 import confetti from 'canvas-confetti';
 
