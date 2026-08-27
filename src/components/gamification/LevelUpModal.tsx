@@ -124,17 +124,10 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
         onClick={onClose}
       />
 
-      {/* Rotating Sunburst God Rays Background */}
-      <div 
-        className="absolute w-[800px] h-[800px] opacity-40 pointer-events-none animate-[spin_30s_linear_infinite]"
-        style={{
-          background: 'conic-gradient(from 0deg at 50% 50%, rgba(255,127,91,0.3) 0deg, transparent 25deg, rgba(230,103,149,0.3) 50deg, transparent 75deg, rgba(255,209,102,0.3) 100deg, transparent 125deg, rgba(138,154,91,0.3) 150deg, transparent 175deg, rgba(255,127,91,0.3) 200deg, transparent 225deg, rgba(230,103,149,0.3) 250deg, transparent 275deg, rgba(255,209,102,0.3) 300deg, transparent 325deg, rgba(255,127,91,0.3) 360deg)',
-          borderRadius: '50%'
-        }}
-      />
-
-      {/* Radial Gradient Ambient Glow */}
-      <div className="absolute w-[600px] h-[600px] bg-gradient-to-tr from-[#E66795]/30 via-[#FF7F5B]/35 to-[#FFD166]/30 rounded-full blur-[120px] pointer-events-none animate-pulse" />
+      {/* Smooth Soft Ambient Aura Glow (No harsh circular edges) */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+        <div className="w-[650px] h-[650px] bg-gradient-to-tr from-[#FF7F5B]/25 via-[#FFD166]/25 to-[#E66795]/20 rounded-full blur-[150px] animate-pulse" />
+      </div>
 
       {/* Main High-Impact Level Up Card */}
       <div className="relative z-10 w-full max-w-lg bg-gradient-to-b from-[#182C31] via-[#101E22] to-[#070E10] border-2 border-[#FFD166]/70 rounded-[36px] p-6 sm:p-9 shadow-[0_0_100px_rgba(255,209,102,0.45)] text-center space-y-6 animate-scale-up overflow-hidden">

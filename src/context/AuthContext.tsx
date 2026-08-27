@@ -751,7 +751,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setPendingLevelUp(null);
       setTimeout(() => {
         setUnlockedLevelUpModal(queued);
-      }, 350);
+      }, 500);
     }
   };
 
