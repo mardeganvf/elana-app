@@ -159,7 +159,7 @@ const AppContent: React.FC = () => {
       )}
 
       {/* Gamification Level Up Ranking Promotion Celebration Modal */}
-      {unlockedLevelUpModal && (
+      {!unlockedBadgeModal && unlockedLevelUpModal && (
         <LevelUpModal
           levelInfo={unlockedLevelUpModal.levelInfo}
           previousLevel={unlockedLevelUpModal.previousLevel}
