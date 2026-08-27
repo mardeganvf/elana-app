@@ -39,6 +39,9 @@ interface AuthContextType {
   awardBadge: (badgeId: string) => Promise<void>;
   unlockedBadgeModal: Badge | null;
   closeBadgeModal: () => void;
+  unlockedLevelUpModal: { levelInfo: any; previousLevel: number } | null;
+  closeLevelUpModal: () => void;
+  triggerLevelUpModal: (level: number) => void;
   sosResponse: SOSTicketResponse | null;
   sendSosTicket: (userMessage: string) => Promise<void>;
   replySosTicket: (adminReply: string) => Promise<void>;
@@ -86,6 +89,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   const [unlockedBadgeModal, setUnlockedBadgeModal] = useState<Badge | null>(null);
+  const [unlockedLevelUpModal, setUnlockedLevelUpModal] = useState<{
+    levelInfo: any;
+    previousLevel: number;
+  } | null>(null);
+  const [pendingLevelUp, setPendingLevelUp] = useState<{
+    levelInfo: any;
+    previousLevel: number;
+  } | null>(null);
+
   const [sosResponse, setSosResponse] = useState<SOSTicketResponse | null>(() => {
     const savedTicket = localStorage.getItem('elana_sos_ticket_response');
     if (savedTicket) {
@@ -97,6 +109,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     return null;
   });
+
+  // Checagem automática: se o usuário já alcançou um novo ranking e ainda não celebrou nesta sessão
+  useEffect(() => {
+    if (user?.id && user.xp >= 60) {
+      const currentLevelInfo = getLevelFromXP(user.xp);
+      const celebratedLevel = parseInt(localStorage.getItem(`elana_celebrated_level_${user.id}`) || '1', 10);
+      if (currentLevelInfo.level > celebratedLevel) {
+        setUnlockedLevelUpModal({
+          levelInfo: currentLevelInfo,
+          previousLevel: celebratedLevel
+        });
+        localStorage.setItem(`elana_celebrated_level_${user.id}`, String(currentLevelInfo.level));
+      }
+    }
+  }, [user?.id]);
 
   // Re-hidratar dados atualizados do Supabase no carregamento inicial da sessão
   useEffect(() => {
@@ -372,12 +399,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUser = async (updates: Partial<UserProfile>) => {
     const baseUser = userRef.current || user;
     if (!baseUser) return;
+
+    const previousLevel = baseUser.level || getLevelFromXP(baseUser.xp).level;
+    const nextXp = updates.xp !== undefined ? updates.xp : baseUser.xp;
+    const nextLevelInfo = getLevelFromXP(nextXp);
+
     const updatedUser: UserProfile = {
       ...baseUser,
-      ...updates
+      ...updates,
+      level: updates.level !== undefined ? updates.level : nextLevelInfo.level,
+      levelTitle: updates.levelTitle !== undefined ? updates.levelTitle : nextLevelInfo.title
     };
     userRef.current = updatedUser;
     setUser(updatedUser);
+
+    // Detect if rank level promoted!
+    if (nextLevelInfo.level > previousLevel && previousLevel >= 1) {
+      const levelUpPayload = {
+        levelInfo: nextLevelInfo,
+        previousLevel
+      };
+      if (unlockedBadgeModal) {
+        setPendingLevelUp(levelUpPayload);
+      } else {
+        setTimeout(() => {
+          setUnlockedLevelUpModal(levelUpPayload);
+        }, 300);
+      }
+      if (updatedUser.id) {
+        localStorage.setItem(`elana_celebrated_level_${updatedUser.id}`, String(nextLevelInfo.level));
+      }
+    }
 
     try {
       localStorage.setItem('elana_user_session', JSON.stringify(updatedUser));
@@ -674,6 +726,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const closeBadgeModal = () => {
     setUnlockedBadgeModal(null);
+    if (pendingLevelUp) {
+      const queued = pendingLevelUp;
+      setPendingLevelUp(null);
+      setTimeout(() => {
+        setUnlockedLevelUpModal(queued);
+      }, 350);
+    }
+  };
+
+  const closeLevelUpModal = () => {
+    setUnlockedLevelUpModal(null);
+  };
+
+  const triggerLevelUpModal = (targetLevel?: number) => {
+    if (!user) return;
+    const lvl = targetLevel || user.level || 2;
+    const levelObj = USER_LEVELS.find(l => l.level === lvl) || USER_LEVELS[1];
+    const levelInfo = getLevelFromXP(levelObj.minXp);
+    setUnlockedLevelUpModal({
+      levelInfo,
+      previousLevel: Math.max(1, lvl - 1)
+    });
   };
 
   return (
@@ -691,6 +765,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         awardBadge,
         unlockedBadgeModal,
         closeBadgeModal,
+        unlockedLevelUpModal,
+        closeLevelUpModal,
+        triggerLevelUpModal,
         sosResponse,
         sendSosTicket,
         replySosTicket,

@@ -13,6 +13,8 @@ import { LoginPage } from './pages/LoginPage';
 import { CheckoutModal } from './components/catalog/CheckoutModal';
 import { BadgeModal } from './components/gamification/BadgeModal';
 import { CertificateModal } from './components/gamification/CertificateModal';
+import { LevelUpModal } from './components/gamification/LevelUpModal';
+import { UserLevelsModal } from './components/gamification/UserLevelsModal';
 import { AuthModal } from './components/auth/AuthModal';
 import { GuidedSpotlightTour } from './components/onboarding/GuidedSpotlightTour';
 import { BadgeRewardModal } from './components/onboarding/BadgeRewardModal';
@@ -22,7 +24,7 @@ import { ToastProvider } from './context/ToastContext';
 import { Journey } from './types';
 
 const AppContent: React.FC = () => {
-  const { user, login, unlockedBadgeModal, closeBadgeModal } = useAuth();
+  const { user, login, unlockedBadgeModal, closeBadgeModal, unlockedLevelUpModal, closeLevelUpModal } = useAuth();
   
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedJourneyForCheckout, setSelectedJourneyForCheckout] = useState<Journey | null>(null);
@@ -32,6 +34,7 @@ const AppContent: React.FC = () => {
   const [isSpotlightTourOpen, setIsSpotlightTourOpen] = useState(false);
   const [isBadgeRewardOpen, setIsBadgeRewardOpen] = useState(false);
   const [isProfileInviteOpen, setIsProfileInviteOpen] = useState(false);
+  const [isUserLevelsListOpen, setIsUserLevelsListOpen] = useState(false);
 
   useEffect(() => {
     if (user?.email) {
@@ -152,6 +155,24 @@ const AppContent: React.FC = () => {
         <BadgeModal
           badge={unlockedBadgeModal}
           onClose={closeBadgeModal}
+        />
+      )}
+
+      {/* Gamification Level Up Ranking Promotion Celebration Modal */}
+      {unlockedLevelUpModal && (
+        <LevelUpModal
+          levelInfo={unlockedLevelUpModal.levelInfo}
+          previousLevel={unlockedLevelUpModal.previousLevel}
+          onClose={closeLevelUpModal}
+          onOpenAllLevels={() => setIsUserLevelsListOpen(true)}
+        />
+      )}
+
+      {/* 15 Levels Tree Timeline Modal */}
+      {isUserLevelsListOpen && user && (
+        <UserLevelsModal
+          currentXp={user.xp}
+          onClose={() => setIsUserLevelsListOpen(false)}
         />
       )}
 
