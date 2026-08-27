@@ -19,6 +19,7 @@ export const UserLevelsModal: React.FC<UserLevelsModalProps> = ({ currentXp, onC
         <div className="p-6 sm:p-8 bg-gradient-to-r from-[#FF7F5B]/20 via-[#101B1E] to-[#8A9A5B]/20 border-b border-white/10 shrink-0 relative">
           <button
             onClick={onClose}
+            aria-label="Fechar"
             className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors z-10"
             title="Fechar"
           >

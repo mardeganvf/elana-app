@@ -105,6 +105,7 @@ export const OnboardingTutorialModal: React.FC<OnboardingTutorialModalProps> = (
           }}
           className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-colors"
           title="Pular Tutorial"
+          aria-label="Pular Tutorial"
         >
           <X className="w-4 h-4" />
         </button>

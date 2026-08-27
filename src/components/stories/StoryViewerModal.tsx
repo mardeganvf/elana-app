@@ -165,6 +165,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({ stories, ini
               onClick={onClose}
               className="w-7 h-7 rounded-full bg-black/60 hover:bg-black text-white backdrop-blur-md flex items-center justify-center border border-white/20 shadow-md"
               title="Fechar Story"
+              aria-label="Fechar Story"
             >
               <X className="w-3.5 h-3.5" />
             </button>

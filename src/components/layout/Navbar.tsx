@@ -499,6 +499,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             
             <button
               onClick={() => setIsEmotionalHistoryOpen(false)}
+              aria-label="Fechar Diário de Emoções"
               className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
@@ -598,6 +599,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             
             <button
               onClick={() => setIsEmergencyOpen(false)}
+              aria-label="Fechar Atendimento SOS"
               className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />

@@ -18,6 +18,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ journey, use
         
         <button
           onClick={onClose}
+          aria-label="Fechar"
           className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full p-2 transition-colors z-10"
         >
           <X className="w-5 h-5" />

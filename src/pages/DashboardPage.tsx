@@ -642,6 +642,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       }}
                       className="text-rose-400 hover:text-rose-300 p-1.5 hover:bg-white/5 rounded-lg transition-colors shrink-0"
                       title="Remover"
+                      aria-label="Remover filho(a)"
                     >
                       <X className="w-4 h-4" />
                     </button>

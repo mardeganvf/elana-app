@@ -468,6 +468,7 @@ export const CommunityPage: React.FC = () => {
             
             <button
               onClick={handleCloseDailyCheckin}
+              aria-label="Fechar Check-in"
               className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors"
               title="Fechar"
             >
@@ -570,6 +571,7 @@ export const CommunityPage: React.FC = () => {
             
             <button
               onClick={() => setIsBreathingModalOpen(false)}
+              aria-label="Fechar Respiro"
               className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors"
             >
               <X className="w-4 h-4" />
@@ -1195,6 +1197,7 @@ export const CommunityPage: React.FC = () => {
             
             <button
               onClick={() => setFlaggedCommentInfo(null)}
+              aria-label="Fechar Notificação de Moderação"
               className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors"
             >
               <X className="w-4 h-4" />

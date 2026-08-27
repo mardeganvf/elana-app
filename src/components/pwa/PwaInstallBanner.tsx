@@ -81,6 +81,7 @@ export function PwaInstallBanner() {
           </div>
           <button 
             onClick={handleDismiss}
+            aria-label="Fechar"
             className="text-white/40 hover:text-white/80 p-1 transition-colors"
           >
             <X size={20} />

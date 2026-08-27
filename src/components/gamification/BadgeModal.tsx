@@ -33,6 +33,7 @@ export const BadgeModal: React.FC<BadgeModalProps> = ({ badge, onClose }) => {
         {/* Top Right Close Button */}
         <button
           onClick={onClose}
+          aria-label="Fechar"
           className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-colors cursor-pointer z-20"
           title="Fechar"
         >

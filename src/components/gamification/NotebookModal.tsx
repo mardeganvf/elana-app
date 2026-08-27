@@ -81,6 +81,7 @@ export const NotebookModal: React.FC<NotebookModalProps> = ({ initialJourneyId, 
 
             <button
               onClick={onClose}
+              aria-label="Fechar"
               className="text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors"
             >
               <X className="w-4 h-4" />
