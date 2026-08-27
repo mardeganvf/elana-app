@@ -307,9 +307,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      const xp = profile.xp || 0;
+      const badgeXpSum = badges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
+      const lessonXpSum = completedLessonIds.length * 10;
+      const calculatedMinimumXp = badgeXpSum + lessonXpSum;
+      const xp = Math.max(profile.xp || 0, calculatedMinimumXp);
       const levelInfo = getLevelFromXP(xp);
       const isTourFinished = profile.tag === 'onboarded' || unlockedBadgeIds.has('b1') || xp >= 25;
+
+      // Auto-heal Supabase se profiles.xp estiver desatualizado
+      if (xp > (profile.xp || 0) && profileId) {
+        supabase
+          .from('profiles')
+          .update({
+            xp,
+            level_number: levelInfo.level,
+            level_name: levelInfo.title,
+            level_icon: levelInfo.icon,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', profileId)
+          .then();
+      }
 
       const hydratedUser: UserProfile = {
         id: profileId,
@@ -402,13 +420,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const baseUser = userRef.current || user;
     if (!baseUser) return;
 
+    const currentBadges = updates.badges !== undefined ? updates.badges : (baseUser.badges || []);
+    const currentLessons = updates.completedLessonIds !== undefined ? updates.completedLessonIds : (baseUser.completedLessonIds || []);
+    const badgeXpSum = currentBadges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
+    const lessonXpSum = currentLessons.length * 10;
+    const guaranteedMinXp = badgeXpSum + lessonXpSum;
+
     const previousLevel = baseUser.level || getLevelFromXP(baseUser.xp).level;
-    const nextXp = updates.xp !== undefined ? updates.xp : baseUser.xp;
+    const requestedXp = updates.xp !== undefined ? updates.xp : baseUser.xp;
+    const nextXp = Math.max(requestedXp, guaranteedMinXp);
     const nextLevelInfo = getLevelFromXP(nextXp);
 
     const updatedUser: UserProfile = {
       ...baseUser,
       ...updates,
+      xp: nextXp,
       level: updates.level !== undefined ? updates.level : nextLevelInfo.level,
       levelTitle: updates.levelTitle !== undefined ? updates.levelTitle : nextLevelInfo.title
     };
@@ -616,11 +642,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const currentBadgeIds = new Set(currentUser.badges.map(b => b.id));
     if (currentBadgeIds.has(badgeId)) return; // Already has it
 
-    const badgeToAward = ALL_BADGES.find(b => b.id === badgeId);
-    if (!badgeToAward) return;
-
     const previousLevel = currentUser.level || getLevelFromXP(currentUser.xp).level;
-    const newXP = currentUser.xp + (badgeToAward.rewardXp || 0);
+    const nextBadges = [...currentUser.badges, badgeToAward];
+    const badgeXpSum = nextBadges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
+    const lessonXpSum = (currentUser.completedLessonIds || []).length * 10;
+    const newXP = Math.max(currentUser.xp + (badgeToAward.rewardXp || 0), badgeXpSum + lessonXpSum);
     const levelInfo = getLevelFromXP(newXP);
 
     if (levelInfo.level > previousLevel && previousLevel >= 1) {
@@ -631,7 +657,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     await updateUser({
-      badges: [...currentUser.badges, badgeToAward],
+      badges: nextBadges,
       xp: newXP,
       level: levelInfo.level,
       levelTitle: levelInfo.title
