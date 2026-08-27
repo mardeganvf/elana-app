@@ -110,22 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   });
 
-  // Checagem automática: se o usuário já alcançou um novo ranking e ainda não celebrou nesta sessão
-  useEffect(() => {
-    if (user?.id && user.xp >= 60) {
-      const currentLevelInfo = getLevelFromXP(user.xp);
-      const celebratedLevel = parseInt(localStorage.getItem(`elana_celebrated_level_${user.id}`) || '1', 10);
-      if (currentLevelInfo.level > celebratedLevel && !unlockedBadgeModal && !unlockedLevelUpModal) {
-        const timer = setTimeout(() => {
-          setUnlockedLevelUpModal({
-            levelInfo: currentLevelInfo,
-            previousLevel: Math.max(1, currentLevelInfo.level - 1)
-          });
-        }, 500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [user?.id, user?.xp, unlockedBadgeModal, unlockedLevelUpModal]);
+
 
   // Re-hidratar dados atualizados do Supabase no carregamento inicial da sessão
   useEffect(() => {
