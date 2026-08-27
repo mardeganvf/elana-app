@@ -89,7 +89,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   const [unlockedBadgeModal, setUnlockedBadgeModal] = useState<Badge | null>(null);
+  const activeBadgeModalRef = useRef<Badge | null>(null);
+
   const [unlockedLevelUpModal, setUnlockedLevelUpModal] = useState<{
+    levelInfo: any;
+    previousLevel: number;
+  } | null>(null);
+  const pendingLevelUpRef = useRef<{
     levelInfo: any;
     previousLevel: number;
   } | null>(null);
@@ -432,12 +438,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         levelInfo: nextLevelInfo,
         previousLevel
       };
-      if (unlockedBadgeModal || pendingLevelUp) {
+      if (activeBadgeModalRef.current !== null || pendingLevelUpRef.current !== null || unlockedBadgeModal !== null) {
+        pendingLevelUpRef.current = levelUpPayload;
         setPendingLevelUp(levelUpPayload);
       } else {
         setTimeout(() => {
-          setUnlockedLevelUpModal(levelUpPayload);
-        }, 300);
+          if (activeBadgeModalRef.current === null && pendingLevelUpRef.current === null) {
+            setUnlockedLevelUpModal(levelUpPayload);
+          }
+        }, 1000);
       }
     }
 
@@ -612,6 +621,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (newlyUnlockedBadge) {
+      activeBadgeModalRef.current = newlyUnlockedBadge;
       setUnlockedBadgeModal(newlyUnlockedBadge);
       confetti({
         particleCount: 100,
@@ -629,6 +639,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const badgeToAward = ALL_BADGES.find(b => b.id === badgeId);
     if (!badgeToAward) return;
 
+    activeBadgeModalRef.current = badgeToAward;
+
     const previousLevel = currentUser.level || getLevelFromXP(currentUser.xp).level;
     const nextBadges = [...currentUser.badges, badgeToAward];
     const badgeXpSum = nextBadges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
@@ -637,10 +649,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const levelInfo = getLevelFromXP(newXP);
 
     if (levelInfo.level > previousLevel && previousLevel >= 1) {
-      setPendingLevelUp({
+      const levelUpPayload = {
         levelInfo,
         previousLevel
-      });
+      };
+      pendingLevelUpRef.current = levelUpPayload;
+      setPendingLevelUp(levelUpPayload);
     }
 
     await updateUser({
@@ -660,6 +674,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error saving user badge to Supabase:', e);
     }
 
+    activeBadgeModalRef.current = badgeToAward;
     setUnlockedBadgeModal(badgeToAward);
     confetti({
       particleCount: 100,
@@ -745,9 +760,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const closeBadgeModal = () => {
+    activeBadgeModalRef.current = null;
     setUnlockedBadgeModal(null);
-    if (pendingLevelUp) {
-      const queued = pendingLevelUp;
+    const queued = pendingLevelUpRef.current || pendingLevelUp;
+    if (queued) {
+      pendingLevelUpRef.current = null;
       setPendingLevelUp(null);
       setTimeout(() => {
         setUnlockedLevelUpModal(queued);
