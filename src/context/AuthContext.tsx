@@ -444,7 +444,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (activeBadgeModalRef.current === null && pendingLevelUpRef.current === null) {
             setUnlockedLevelUpModal(levelUpPayload);
           }
-        }, 1000);
+        }, 2000);
       }
     }
 
@@ -757,7 +757,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setPendingLevelUp(null);
       setTimeout(() => {
         setUnlockedLevelUpModal(queued);
-      }, 1000);
+      }, 2000);
     }
   };
 
