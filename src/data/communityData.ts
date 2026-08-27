@@ -1,5 +1,4 @@
 import { BrandReaction, CommunityPost } from '../types';
-import { MASSIVE_POSTS } from './massivePostsData';
 
 export interface TransversalRoomDef {
   id: string;
@@ -145,4 +144,4 @@ export const AGE_BRACKET_ROOMS: AgeBracketRoomDef[] = [
   { id: '20-plus', name: '20+ anos', range: 'Jovens Adultos & Ninho Vazio', description: 'Novos ciclos na família, filhos alando voo e o reencontro com a sua própria caminhada.' }
 ];
 
-export const INITIAL_POSTS: CommunityPost[] = MASSIVE_POSTS;
+export const INITIAL_POSTS: CommunityPost[] = [];

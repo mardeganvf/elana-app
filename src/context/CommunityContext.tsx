@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CommunityPost, CommunityComment, EmotionalIntention, SensitivityLevel } from '../types';
-import { INITIAL_POSTS } from '../data/communityData';
+
 import { useAuth } from './AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -96,21 +96,7 @@ const sanitizePost = (post: CommunityPost): CommunityPost => {
 
 export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, addXP } = useAuth();
-  const [posts, setPosts] = useState<CommunityPost[]>(() => {
-    const saved = localStorage.getItem('elana_community_posts');
-    let loadedPosts = INITIAL_POSTS;
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= INITIAL_POSTS.length) {
-          loadedPosts = parsed;
-        }
-      } catch (e) {
-        console.error('Error parsing stored posts', e);
-      }
-    }
-    return loadedPosts.map(sanitizePost);
-  });
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
 
   // Fetch posts from Supabase on mount
   useEffect(() => {
@@ -238,9 +224,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('elana_community_posts', JSON.stringify(posts));
-  }, [posts]);
+
 
   const createPost = (payload: CreatePostPayload) => {
     if (!user) return;

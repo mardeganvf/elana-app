@@ -29,6 +29,46 @@ interface NavbarProps {
   onOpenAuthModal: () => void;
 }
 
+// 4-Week Emotional Summary — static mock data (outside component to avoid re-creation)
+const emotionalSummary = [
+  { emoji: '☀️', label: 'Com Esperança', count: 8, color: 'bg-[#FFD166]/10 border-[#FFD166]/30 text-[#FFD166]' },
+  { emoji: '🎉', label: 'Celebrando', count: 5, color: 'bg-purple-500/10 border-purple-500/30 text-purple-300' },
+  { emoji: '🪫', label: 'Sem Energia', count: 3, color: 'bg-rose-500/10 border-rose-500/30 text-rose-300' },
+  { emoji: '🆘', label: 'Precisando de Luz', count: 1, color: 'bg-rose-600/20 border-rose-500/40 text-rose-300' },
+];
+
+// 28 Days Calendar — static mock data (outside component to avoid re-creation)
+const last4WeeksDays = [
+  { day: 26, month: 'Jul', emoji: '☀️', label: 'Com Esperança' },
+  { day: 27, month: 'Jul', emoji: '🪫', label: 'Sem Energia' },
+  { day: 28, month: 'Jul', emoji: '☀️', label: 'Com Esperança' },
+  { day: 29, month: 'Jul', emoji: '🆘', label: 'Precisando de Luz' },
+  { day: 30, month: 'Jul', emoji: '🎉', label: 'Celebrando' },
+  { day: 31, month: 'Jul', emoji: '☀️', label: 'Com Esperança' },
+  { day: 1, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
+  { day: 2, month: 'Ago', emoji: '🪫', label: 'Sem Energia' },
+  { day: 3, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
+  { day: 4, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
+  { day: 5, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
+  { day: 6, month: 'Ago', emoji: null, label: 'Sem registro' },
+  { day: 7, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
+  { day: 8, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
+  { day: 9, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
+  { day: 10, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
+  { day: 11, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
+  { day: 12, month: 'Ago', emoji: '🪫', label: 'Sem Energia' },
+  { day: 13, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
+  { day: 14, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
+  { day: 15, month: 'Ago', emoji: null, label: 'Sem registro' },
+  { day: 16, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
+  { day: 17, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
+  { day: 18, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
+  { day: 19, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
+  { day: 20, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
+  { day: 21, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
+  { day: 22, month: 'Ago', emoji: '☀️', label: 'Com Esperança', isToday: true },
+] as const;
+
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenAuthModal }) => {
   const { user, isAuthenticated, logout, sosResponse, sendSosTicket, markSosResponseRead } = useAuth();
   const isAdmin = isAdminUser(user);
@@ -75,49 +115,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // 4-Week Emotional Summary (Last 28 Days) aligned strictly with the 4 official options
-  const emotionalSummary = [
-    { emoji: '☀️', label: 'Com Esperança', count: 8, color: 'bg-[#FFD166]/10 border-[#FFD166]/30 text-[#FFD166]' },
-    { emoji: '🎉', label: 'Celebrando', count: 5, color: 'bg-purple-500/10 border-purple-500/30 text-purple-300' },
-    { emoji: '🪫', label: 'Sem Energia', count: 3, color: 'bg-rose-500/10 border-rose-500/30 text-rose-300' },
-    { emoji: '🆘', label: 'Precisando de Luz', count: 1, color: 'bg-rose-600/20 border-rose-500/40 text-rose-300' },
-  ];
-
-  // 28 Days Calendar (Last 4 Weeks) aligned strictly with the 4 options
-  const last4WeeksDays = [
-    { day: 26, month: 'Jul', emoji: '☀️', label: 'Com Esperança' },
-    { day: 27, month: 'Jul', emoji: '🪫', label: 'Sem Energia' },
-    { day: 28, month: 'Jul', emoji: '☀️', label: 'Com Esperança' },
-    { day: 29, month: 'Jul', emoji: '🆘', label: 'Precisando de Luz' },
-    { day: 30, month: 'Jul', emoji: '🎉', label: 'Celebrando' },
-    { day: 31, month: 'Jul', emoji: '☀️', label: 'Com Esperança' },
-    { day: 1, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-
-    { day: 2, month: 'Ago', emoji: '🪫', label: 'Sem Energia' },
-    { day: 3, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-    { day: 4, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-    { day: 5, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-    { day: 6, month: 'Ago', emoji: null, label: 'Sem registro' },
-    { day: 7, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-    { day: 8, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-
-    { day: 9, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-    { day: 10, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-    { day: 11, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-    { day: 12, month: 'Ago', emoji: '🪫', label: 'Sem Energia' },
-    { day: 13, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-    { day: 14, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-    { day: 15, month: 'Ago', emoji: null, label: 'Sem registro' },
-
-    { day: 16, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-    { day: 17, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-    { day: 18, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-    { day: 19, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-    { day: 20, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-    { day: 21, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-    { day: 22, month: 'Ago', emoji: '☀️', label: 'Com Esperança', isToday: true },
-  ];
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
