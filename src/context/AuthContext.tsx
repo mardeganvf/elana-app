@@ -110,26 +110,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       // Carregar último chamado SOS do usuário direto do Supabase
-      supabase
-        .from('sos_tickets')
-        .select('*')
-        .eq('profile_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-        .then(({ data: ticketData }) => {
-          if (ticketData) {
+      const fetchUserSosTicket = async () => {
+        try {
+          const { data: ticketData } = await supabase
+            .from('sos_tickets')
+            .select('*')
+            .eq('profile_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (ticketData && ticketData.admin_reply) {
             setSosResponse({
               userMessage: ticketData.user_message || '',
               adminReply: ticketData.admin_reply,
-              repliedAt: ticketData.replied_at ? new Date(ticketData.replied_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : undefined,
-              isRead: ticketData.is_read
+              repliedAt: ticketData.replied_at ? new Date(ticketData.replied_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+              isRead: Boolean(ticketData.is_read)
             });
           }
-        })
-        .catch(err => {
+        } catch (err) {
           console.warn('Error fetching SOS ticket from Supabase:', err);
-        });
+        }
+      };
+      fetchUserSosTicket();
     }
   }, []);
 
