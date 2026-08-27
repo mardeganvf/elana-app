@@ -131,9 +131,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           const formattedPhone = cleanPhone.startsWith('55') ? `+${cleanPhone}` : `+55${cleanPhone}`;
           const { error } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
           if (error) throw error;
-          setSuccessMessage(`Código SMS enviado para ${formattedPhone}! Entrando...`);
-          await login(`${cleanPhone}@elana.app`, name.trim());
-          onSuccess(false);
+          const userEmail = `${cleanPhone}@elana.app`;
+          localStorage.removeItem(`elana_spotlight_done_${userEmail}`);
+          await login(userEmail, name.trim());
+          onSuccess(true);
         }
       } else if (mode === 'login') {
         // Special Helena Demo Bypass
@@ -244,12 +245,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
       }
 
       setSuccessMessage('Conta validada e criada com sucesso! Entrando...');
-      await login(inputVal, name.trim(), supabaseUserId);
-      onSuccess(false);
+      const cleanEmail = inputVal.trim().toLowerCase();
+      localStorage.removeItem(`elana_spotlight_done_${cleanEmail}`);
+      await login(cleanEmail, name.trim(), supabaseUserId);
+      onSuccess(true);
     } catch (err: any) {
       console.error('Signup Exception:', err);
-      await login(identifier.trim(), name.trim());
-      onSuccess(false);
+      const cleanId = identifier.trim().toLowerCase();
+      localStorage.removeItem(`elana_spotlight_done_${cleanId}`);
+      await login(cleanId, name.trim());
+      onSuccess(true);
     } finally {
       setLoading(false);
     }

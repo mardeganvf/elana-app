@@ -200,10 +200,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       }
 
       setSuccessMessage('Conta validada com sucesso! Entrando...');
-      onSuccess({ email: inputVal, name: name.trim() });
+      const cleanEmail = inputVal.trim().toLowerCase();
+      localStorage.removeItem(`elana_spotlight_done_${cleanEmail}`);
+      onSuccess({ email: cleanEmail, name: name.trim() });
       onClose();
     } catch (err: any) {
-      onSuccess({ email: email.trim(), name: name.trim() });
+      const cleanEmail = email.trim().toLowerCase();
+      localStorage.removeItem(`elana_spotlight_done_${cleanEmail}`);
+      onSuccess({ email: cleanEmail, name: name.trim() });
       onClose();
     } finally {
       setLoading(false);

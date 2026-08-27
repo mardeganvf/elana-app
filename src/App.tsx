@@ -37,16 +37,16 @@ const AppContent: React.FC = () => {
     if (user?.email) {
       const tourKey = `elana_spotlight_done_${user.email.toLowerCase().trim()}`;
       const isTourDoneLocally = localStorage.getItem(tourKey) === 'true';
-      const isTourDoneInBackend = !!user.onboardingCompleted || (user.badges && user.badges.some(b => b.id === 'b1')) || (user.xp && user.xp >= 25);
+      const isTourDoneInBackend = Boolean(user.onboardingCompleted);
 
       if (!isTourDoneLocally && !isTourDoneInBackend) {
         const timer = setTimeout(() => {
           setIsSpotlightTourOpen(true);
-        }, 600);
+        }, 500);
         return () => clearTimeout(timer);
       }
     }
-  }, [user?.email, user?.onboardingCompleted, user?.xp, user?.badges]);
+  }, [user?.email, user?.onboardingCompleted]);
 
   const handleSelectJourney = (journey: Journey) => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -74,9 +74,12 @@ const AppContent: React.FC = () => {
   if (!user || activeTab === 'login') {
     return (
       <LoginPage
-        onSuccess={() => {
+        onSuccess={(isNewUser) => {
           setActiveTab('home');
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+          if (isNewUser) {
+            setIsSpotlightTourOpen(true);
+          }
         }}
       />
     );
@@ -168,14 +171,18 @@ const AppContent: React.FC = () => {
         onSuccess={({ email, name, id }) => {
           login(email, name, id);
           setIsAuthModalOpen(false);
+          setIsSpotlightTourOpen(true);
         }}
       />
 
       {/* Interactive Guided Spotlight Tour */}
       <GuidedSpotlightTour
-        isOpen={isSpotlightTourOpen && user !== null && !user.onboardingCompleted && localStorage.getItem(`elana_spotlight_done_${user.email.toLowerCase().trim()}`) !== 'true'}
+        isOpen={isSpotlightTourOpen && user !== null}
         onClose={() => setIsSpotlightTourOpen(false)}
-        onComplete={() => setIsBadgeRewardOpen(true)}
+        onComplete={() => {
+          setIsSpotlightTourOpen(false);
+          setIsBadgeRewardOpen(true);
+        }}
       />
 
       {/* High-Impact Semente Plantada Badge Reward Modal */}
