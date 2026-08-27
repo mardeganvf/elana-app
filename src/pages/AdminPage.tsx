@@ -74,28 +74,7 @@ export const AdminPage: React.FC = () => {
   const [sosReplyText, setSosReplyText] = useState('');
 
   // 🛡️ Moderation Items State
-  const [modItems, setModItems] = useState<ModerationItem[]>([
-    {
-      id: 'mod-1',
-      authorName: 'Patrícia L.',
-      authorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-      roomName: 'Cantinho da Mel',
-      content: 'Você deveria dar mamadeira de uma vez, isso é falta de pulso firme com a criança!',
-      flagReason: 'IA Antijulgamento: Palavra-chave de julgamento materno ("falta de pulso")',
-      createdAt: 'Há 20 min',
-      status: 'pendente'
-    },
-    {
-      id: 'mod-2',
-      authorName: 'Mãe Anônima',
-      authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      roomName: 'Confessionário',
-      content: 'Às vezes sinto vontade de sumir por uns dias e deixar meu marido sozinho cuidando de tudo.',
-      flagReason: 'Confessionário Anônimo: Verificação preventiva de segurança emocional',
-      createdAt: 'Há 1 hora',
-      status: 'pendente'
-    }
-  ]);
+  const [modItems, setModItems] = useState<ModerationItem[]>([]);
 
   // 👥 Members State
   const [members, setMembers] = useState<MemberUser[]>([]);
@@ -123,6 +102,27 @@ export const AdminPage: React.FC = () => {
       }
     };
     loadTickets();
+
+    const loadModeration = async () => {
+      const { data } = await supabase
+        .from('community_posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (data && data.length > 0) {
+        setModItems(data.map(p => ({
+          id: p.id,
+          authorName: p.author_name || 'Anônimo',
+          authorAvatar: p.author_avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+          roomName: p.transversal_room_id || p.journey_id || 'Comunidade Geral',
+          content: p.content,
+          flagReason: p.is_anonymous ? 'Post em sala anônima' : 'Verificação preventiva de acolhimento',
+          createdAt: new Date(p.created_at).toLocaleString('pt-BR'),
+          status: 'pendente'
+        })));
+      }
+    };
+    loadModeration();
 
     const loadMembers = async () => {
       const { data } = await supabase
@@ -201,13 +201,28 @@ export const AdminPage: React.FC = () => {
   };
 
   // Moderation Handlers
-  const handleModerateItem = (id: string, newStatus: 'aprovado' | 'rejeitado') => {
+  const handleModerateItem = async (id: string, newStatus: 'aprovado' | 'rejeitado') => {
     setModItems(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
+    if (newStatus === 'rejeitado') {
+      try {
+        await supabase.from('community_posts').delete().eq('id', id);
+      } catch (err) {
+        console.warn('Error deleting rejected post in Supabase:', err);
+      }
+    }
   };
 
   // Role Toggle Handler
-  const handleToggleRole = (userId: string) => {
-    setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: m.role === 'guia' ? 'membro' : 'guia' } : m));
+  const handleToggleRole = async (userId: string) => {
+    const target = members.find(m => m.id === userId);
+    if (!target) return;
+    const newRole = target.role === 'guia' ? 'membro' : 'guia';
+    setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m));
+    try {
+      await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+    } catch (err) {
+      console.warn('Error updating member role in Supabase:', err);
+    }
   };
 
   // Upload Submit Handler
@@ -658,52 +673,60 @@ export const AdminPage: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            {modItems.map(item => (
-              <div key={item.id} className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
-                  <div className="flex items-center gap-3">
-                    <img src={item.authorAvatar} alt={item.authorName} className="w-9 h-9 rounded-full object-cover" />
-                    <div>
-                      <h4 className="text-xs font-bold text-white">{item.authorName}</h4>
-                      <span className="text-[10px] text-[#FF7F5B] font-bold">Sala: {item.roomName} • {item.createdAt}</span>
-                    </div>
-                  </div>
-
-                  <span className="text-[10px] font-extrabold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full flex items-center gap-1.5 w-fit">
-                    <AlertTriangle className="w-3 h-3 text-amber-400" />
-                    {item.flagReason}
-                  </span>
-                </div>
-
-                <div className="bg-[#101B1E] p-3.5 rounded-xl border border-white/5 text-xs text-slate-200 italic leading-relaxed">
-                  "{item.content}"
-                </div>
-
-                {item.status === 'pendente' ? (
-                  <div className="flex items-center justify-end gap-3 pt-1">
-                    <button
-                      onClick={() => handleModerateItem(item.id, 'rejeitado')}
-                      className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <XCircle className="w-3.5 h-3.5" />
-                      <span>Remover Post</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleModerateItem(item.id, 'aprovado')}
-                      className="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Aprovar Publicação</span>
-                    </button>
-                  </div>
-                ) : (
-                  <span className={`text-xs font-bold flex items-center gap-1 justify-end ${item.status === 'aprovado' ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {item.status === 'aprovado' ? '✓ Aprovado e Mantido na Comunidade' : '✕ Removido por infringir diretrizes de acolhimento'}
-                  </span>
-                )}
+            {modItems.length === 0 ? (
+              <div className="bg-[#070D0F] p-8 rounded-2xl border border-white/5 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
+                <ShieldCheck className="w-8 h-8 text-[#8A9A5B] opacity-60" />
+                <span className="font-bold text-slate-300">Fila de moderação limpa!</span>
+                <span className="text-[11px] text-slate-500">Nenhuma publicação pendente de revisão no momento.</span>
               </div>
-            ))}
+            ) : (
+              modItems.map(item => (
+                <div key={item.id} className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+                    <div className="flex items-center gap-3">
+                      <img src={item.authorAvatar} alt={item.authorName} className="w-9 h-9 rounded-full object-cover" />
+                      <div>
+                        <h4 className="text-xs font-bold text-white">{item.authorName}</h4>
+                        <span className="text-[10px] text-[#FF7F5B] font-bold">Sala: {item.roomName} • {item.createdAt}</span>
+                      </div>
+                    </div>
+
+                    <span className="text-[10px] font-extrabold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full flex items-center gap-1.5 w-fit">
+                      <AlertTriangle className="w-3 h-3 text-amber-400" />
+                      {item.flagReason}
+                    </span>
+                  </div>
+
+                  <div className="bg-[#101B1E] p-3.5 rounded-xl border border-white/5 text-xs text-slate-200 italic leading-relaxed">
+                    "{item.content}"
+                  </div>
+
+                  {item.status === 'pendente' ? (
+                    <div className="flex items-center justify-end gap-3 pt-1">
+                      <button
+                        onClick={() => handleModerateItem(item.id, 'rejeitado')}
+                        className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>Remover Post</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleModerateItem(item.id, 'aprovado')}
+                        className="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Aprovar Publicação</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <span className={`text-xs font-bold flex items-center gap-1 justify-end ${item.status === 'aprovado' ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {item.status === 'aprovado' ? '✓ Aprovado e Mantido na Comunidade' : '✕ Removido por infringir diretrizes de acolhimento'}
+                    </span>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </section>
       )}

@@ -108,6 +108,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }).catch(err => {
         console.warn('Error rehydrating user session from backend:', err);
       });
+
+      // Carregar último chamado SOS do usuário direto do Supabase
+      supabase
+        .from('sos_tickets')
+        .select('*')
+        .eq('profile_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data: ticketData }) => {
+          if (ticketData) {
+            setSosResponse({
+              userMessage: ticketData.user_message || '',
+              adminReply: ticketData.admin_reply,
+              repliedAt: ticketData.replied_at ? new Date(ticketData.replied_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : undefined,
+              isRead: ticketData.is_read
+            });
+          }
+        })
+        .catch(err => {
+          console.warn('Error fetching SOS ticket from Supabase:', err);
+        });
     }
   }, []);
 
@@ -116,9 +138,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) {
       try {
         localStorage.setItem('elana_user_session', JSON.stringify(user));
-        if (user.email) {
-          localStorage.setItem(`elana_user_data_${user.email.toLowerCase()}`, JSON.stringify(user));
-        }
       } catch (err) {
         console.warn('localStorage quota exceeded, skipping local cache sync:', err);
       }
@@ -359,9 +378,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       localStorage.setItem('elana_user_session', JSON.stringify(updatedUser));
-      if (updatedUser.email) {
-        localStorage.setItem(`elana_user_data_${updatedUser.email.toLowerCase()}`, JSON.stringify(updatedUser));
-      }
     } catch (err) {
       console.warn('LocalStorage error:', err);
     }
@@ -444,7 +460,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     userRef.current = null;
     setUser(null);
+    setSosResponse(null);
     localStorage.removeItem('elana_user_session');
+    localStorage.removeItem('elana_sos_ticket_response');
     supabase.auth.signOut();
   };
 
@@ -637,11 +655,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('elana_sos_ticket_response', JSON.stringify(updated));
   };
 
-  const markSosResponseRead = () => {
+  const markSosResponseRead = async () => {
     if (!sosResponse) return;
     const updated = { ...sosResponse, isRead: true };
     setSosResponse(updated);
     localStorage.setItem('elana_sos_ticket_response', JSON.stringify(updated));
+    if (user?.id) {
+      try {
+        await supabase.from('sos_tickets').update({ is_read: true }).eq('profile_id', user.id);
+      } catch (err) {
+        console.warn('Error marking SOS ticket as read in Supabase:', err);
+      }
+    }
   };
 
   const closeBadgeModal = () => {

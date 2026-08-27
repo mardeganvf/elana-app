@@ -10,7 +10,8 @@ import {
   AGE_BRACKET_ROOMS 
 } from '../data/communityData';
 import { CreatePostModal } from '../components/community/CreatePostModal';
-import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
+import { PublicProfileModal, PublicUserProfile, ChildInfo, ProfileTestimonial } from '../components/community/PublicProfileModal';
+import { getLevelFromXP } from '../data/gamificationData';
 import { 
   MessageSquare, 
   Plus, 
@@ -173,7 +174,7 @@ export const CommunityPage: React.FC = () => {
   // Public Profile Modal State
   const [selectedPublicProfile, setSelectedPublicProfile] = useState<PublicUserProfile | null>(null);
 
-  const openAuthorProfile = (author: {
+  const openAuthorProfile = async (author: {
     id: string;
     name: string;
     avatar: string;
@@ -181,57 +182,73 @@ export const CommunityPage: React.FC = () => {
     tag?: string;
     isAnonymous?: boolean;
   }) => {
-    // Populate rich mock data for children, photos & testimonials
-    const mockChildren = [
-      { id: 'c1', name: 'Cecília', age: '8 meses' },
-      { id: 'c2', name: 'Theo', age: '3 anos' }
-    ];
+    let authorProfileData: any = null;
+    let authorChildren: ChildInfo[] = [];
+    let authorTestimonials: ProfileTestimonial[] = [];
 
-    const mockTestimonials = [
-      {
-        id: 't1',
-        authorName: 'Mariana Santos',
-        authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        content: `A ${author.name.split(' ')[0]} é uma luz na nossa comunidade! Me acolheu com palavras tão calmas na madrugada mais difícil com a amamentação da minha filha. Gratidão enorme por essa presença carinhosa! ✨💖`,
-        createdAt: 'Há 2 dias',
-        likesCount: 14
-      },
-      {
-        id: 't2',
-        authorName: 'Camila Rodrigues',
-        authorAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-        content: `Pessoa maravilhosa e super dedicada! Suas respostas nos tópicos sempre transmitem paz, empatia e zero julgamento. Orgulho de caminhar ao seu lado na Elana! 🌿🌸`,
-        createdAt: 'Há 1 semana',
-        likesCount: 9
-      },
-      {
-        id: 't3',
-        authorName: 'Rodrigo Mendonça',
-        authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        content: `Muito bom ver o quanto a ${author.name.split(' ')[0]} soma nos desabafos e trocas de experiência. Uma verdadeira referência de acolhimento genuíno! 👏⭐`,
-        createdAt: 'Há 2 semanas',
-        likesCount: 6
+    if (author.id && author.id.includes('-') && author.id.length > 20) {
+      try {
+        const [profileRes, familyRes, testRes] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', author.id).maybeSingle(),
+          supabase.from('family_members').select('*').eq('profile_id', author.id),
+          supabase.from('profile_testimonials').select('*').eq('recipient_profile_id', author.id).order('created_at', { ascending: false })
+        ]);
+
+        if (profileRes.data) {
+          authorProfileData = profileRes.data;
+        }
+
+        if (familyRes.data && familyRes.data.length > 0) {
+          authorChildren = familyRes.data.map(f => ({
+            id: f.id,
+            name: f.name || 'Filho(a)',
+            age: f.age,
+            emoji: f.emoji || '👶',
+            birthdate: f.birthdate,
+            isPregnancy: f.is_pregnancy
+          }));
+        } else if (profileRes.data?.family_tag && profileRes.data.family_tag.startsWith('JSON_CHILDREN:')) {
+          try {
+            authorChildren = JSON.parse(profileRes.data.family_tag.replace('JSON_CHILDREN:', ''));
+          } catch (e) {}
+        }
+
+        if (testRes.data && testRes.data.length > 0) {
+          authorTestimonials = testRes.data.map(t => ({
+            id: t.id,
+            authorName: t.author_name,
+            authorAvatar: t.author_avatar,
+            content: t.content,
+            createdAt: new Date(t.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+            likesCount: t.likes_count || 0
+          }));
+        }
+      } catch (err) {
+        console.warn('Error fetching author public profile:', err);
       }
-    ];
+    }
+
+    const xp = authorProfileData?.xp || (author.role === 'guia' ? 3900 : 650);
+    const levelInfo = getLevelFromXP(xp);
 
     setSelectedPublicProfile({
       id: author.id,
-      name: author.name,
-      avatar: author.avatar,
-      role: author.role,
-      tag: author.tag || (author.role === 'guia' ? 'Guia & Mentor(a)' : 'Mãe de 1ª viagem (0-2 anos)'),
+      name: authorProfileData?.name || author.name,
+      avatar: authorProfileData?.avatar || author.avatar,
+      role: authorProfileData?.role || author.role || 'membro',
+      tag: authorProfileData?.tag || author.tag || (author.role === 'guia' ? 'Guia & Mentor(a)' : 'Membro da Aldeia'),
       isAnonymous: author.isAnonymous,
-      joinedDate: 'Fevereiro/2026',
-      levelNumber: author.role === 'guia' ? 10 : 4,
-      levelName: author.role === 'guia' ? 'Oliveira' : 'Raiz Firme',
-      levelIcon: author.role === 'guia' ? '🫒' : '🪵',
-      xp: author.role === 'guia' ? 3900 : 650,
-      streakDays: author.role === 'guia' ? 42 : 8,
+      joinedDate: authorProfileData?.joined_date || 'Fevereiro/2026',
+      levelNumber: authorProfileData?.level_number || levelInfo.level,
+      levelName: authorProfileData?.level_name || levelInfo.title,
+      levelIcon: authorProfileData?.level_icon || levelInfo.icon,
+      xp: xp,
+      streakDays: authorProfileData?.streak_days || (author.role === 'guia' ? 42 : 5),
       postsCount: author.role === 'guia' ? 48 : 14,
       commentsCount: author.role === 'guia' ? 156 : 38,
       reactionsReceivedCount: author.role === 'guia' ? 420 : 112,
-      children: mockChildren,
-      testimonials: mockTestimonials
+      children: authorChildren,
+      testimonials: authorTestimonials
     });
   };
 
@@ -269,7 +286,7 @@ export const CommunityPage: React.FC = () => {
     const phrase = item.phrases[randomIndex];
     setActiveRandomPhrase(phrase);
     const todayStr = new Date().toISOString().split('T')[0];
-    localStorage.setItem('elana_daily_checkin_date', todayStr);
+    localStorage.setItem(`elana_daily_checkin_${user?.id || 'anon'}`, todayStr);
 
     // Save check-in into Supabase
     supabase

@@ -78,30 +78,40 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
   const [supportSent, setSupportSent] = useState(false);
 
   // Children info state
-  const [childrenList] = useState<ChildInfo[]>(profile.children || [
-    { id: '1', name: 'Cecília', age: '8 meses' },
-    { id: '2', name: 'Theo', age: '3 anos' }
-  ]);
+  const [childrenList] = useState<ChildInfo[]>(profile.children || []);
 
   // Testimonials state (Estilo Orkut)
-  const [testimonials, setTestimonials] = useState<ProfileTestimonial[]>(profile.testimonials || [
-    {
-      id: 't1',
-      authorName: 'Mariana Santos',
-      authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      content: 'A Maria é um anjo nesta comunidade! Me acolheu com palavras tão calmas durante a madrugada mais difícil da amamentação da Cecília. Gratidão eterna por essa luz! ✨💖',
-      createdAt: 'Há 2 dias',
-      likesCount: 12
-    },
-    {
-      id: 't2',
-      authorName: 'Camila Rodrigues',
-      authorAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-      content: 'Pessoa maravilhosa e super dedicada. Suas respostas sempre transmitem paz e zero julgamento. Orgulho de ter você na nossa rede de apoio! 🌿🌸',
-      createdAt: 'Há 1 semana',
-      likesCount: 8
-    }
-  ]);
+  const [testimonials, setTestimonials] = useState<ProfileTestimonial[]>(profile.testimonials || []);
+
+  // Fetch real testimonials from Supabase on mount
+  useEffect(() => {
+    if (!profile.id || profile.id.length < 20) return;
+    const loadTestimonials = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profile_testimonials')
+          .select('*')
+          .eq('recipient_profile_id', profile.id)
+          .order('created_at', { ascending: false });
+
+        if (data && data.length > 0) {
+          setTestimonials(data.map(t => ({
+            id: t.id,
+            authorName: t.author_name,
+            authorAvatar: t.author_avatar,
+            content: t.content,
+            createdAt: new Date(t.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+            likesCount: t.likes_count || 0
+          })));
+        } else if (!profile.testimonials || profile.testimonials.length === 0) {
+          setTestimonials([]);
+        }
+      } catch (err) {
+        console.warn('Could not load testimonials from Supabase:', err);
+      }
+    };
+    loadTestimonials();
+  }, [profile.id]);
 
   const [newTestimonial, setNewTestimonial] = useState('');
   const [testimonialSuccess, setTestimonialSuccess] = useState(false);
@@ -441,30 +451,37 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
 
             {/* List of Testimonials */}
             <div className="space-y-3">
-              {testimonials.map(t => (
-                <div key={t.id} className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 space-y-2 relative overflow-hidden">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <img
-                        src={t.authorAvatar}
-                        alt={t.authorName}
-                        className="w-8 h-8 rounded-full object-cover border border-white/15"
-                      />
-                      <div>
-                        <h5 className="text-xs font-bold text-white">{t.authorName}</h5>
-                        <span className="text-[10px] text-slate-400 block">{t.createdAt}</span>
+              {testimonials.length === 0 ? (
+                <div className="text-center py-6 px-4 text-slate-400 text-xs bg-[#070D0F] rounded-2xl border border-white/5 space-y-1">
+                  <p className="font-semibold text-slate-300">Nenhum depoimento ainda.</p>
+                  <p className="text-[11px] text-slate-500">Que tal deixar a primeira mensagem de carinho e acolhimento? ✨</p>
+                </div>
+              ) : (
+                testimonials.map(t => (
+                  <div key={t.id} className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 space-y-2 relative overflow-hidden">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={t.authorAvatar}
+                          alt={t.authorName}
+                          className="w-8 h-8 rounded-full object-cover border border-white/15"
+                        />
+                        <div>
+                          <h5 className="text-xs font-bold text-white">{t.authorName}</h5>
+                          <span className="text-[10px] text-slate-400 block">{t.createdAt}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-rose-400 text-xs font-bold bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">
+                        <Heart className="w-3 h-3 fill-current" />
+                        <span>{t.likesCount || 1}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-rose-400 text-xs font-bold bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">
-                      <Heart className="w-3 h-3 fill-current" />
-                      <span>{t.likesCount || 1}</span>
-                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed bg-[#101B1E] p-3 rounded-xl border border-white/5 italic">
+                      "{t.content}"
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-300 leading-relaxed bg-[#101B1E] p-3 rounded-xl border border-white/5 italic">
-                    "{t.content}"
-                  </p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
