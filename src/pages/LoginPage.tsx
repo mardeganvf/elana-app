@@ -57,6 +57,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     setLoading(false);
   };
 
+  const resetFormFields = () => {
+    setName('');
+    setIdentifier('');
+    setConfirmEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setInputCode('');
+    resetStates();
+  };
+
+  // Sempre zerar os campos ao carregar a página
+  React.useEffect(() => {
+    resetFormFields();
+  }, []);
+
   const pwdChecks = validateStrongPassword(password);
 
   // SUBMIT AUTH
@@ -137,14 +152,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           onSuccess(true);
         }
       } else if (mode === 'login') {
-        // Special Helena Demo Bypass
-        if (inputVal.toLowerCase() === 'helena@elana.com.br') {
-          setSuccessMessage('Login de demonstração da Helena realizado com sucesso!');
-          await login('helena@elana.com.br', 'Helena Ribeiro');
-          onSuccess(true);
-          return;
-        }
-
         if (loginMethod === 'phone') {
           const cleanPhone = inputVal.replace(/\D/g, '');
           const formattedPhone = cleanPhone.startsWith('55') ? `+${cleanPhone}` : `+55${cleanPhone}`;
@@ -397,12 +404,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
               className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#E66795] via-[#FF7F5B] to-[#FF7F5B] text-white font-extrabold text-xs uppercase tracking-wider shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {loading && <RefreshCw className="w-4 h-4 animate-spin" />}
-              <span>Fazer parte do Elana</span>
+              <span>Fazer parte da Elana</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setMode('register')}
+              onClick={() => { setMode('register'); resetFormFields(); }}
               className="w-full text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1 py-1 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -411,31 +418,35 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           </form>
         ) : (
           /* REGULAR AUTH FORM */
-          <form onSubmit={handleAuthSubmit} className="space-y-3.5">
+          <form onSubmit={handleAuthSubmit} autoComplete="off" className="space-y-3.5">
             {mode === 'register' && (
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">Seu Nome Completo</label>
                 <input
                   type="text"
                   required
+                  autoComplete="off"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: Helena Ribeiro"
+                  placeholder="Seu nome completo"
                   className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
                 />
               </div>
             )}
 
+            {/* IDENTIFIER FIELD */}
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                {loginMethod === 'phone' ? 'Número do Celular' : 'Endereço de E-mail'}
+                {loginMethod === 'email' ? 'E-mail' : 'Celular (com DDD)'}
               </label>
               <input
-                type={loginMethod === 'phone' ? 'tel' : 'email'}
+                type={loginMethod === 'email' ? 'email' : 'tel'}
                 required
+                autoComplete="off"
                 value={identifier}
                 onChange={handleIdentifierChange}
-                placeholder={loginMethod === 'phone' ? '(11) 99999-9999' : 'seu.email@exemplo.com'}
+                placeholder={loginMethod === 'email' ? 'seu@email.com' : '(00) 00000-0000'}
+                maxLength={loginMethod === 'phone' ? 15 : 100}
                 className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
               />
             </div>
@@ -447,6 +458,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 <input
                   type="email"
                   required
+                  autoComplete="off"
                   value={confirmEmail}
                   onChange={(e) => setConfirmEmail(e.target.value)}
                   placeholder="Redigite seu e-mail para confirmação"
@@ -462,7 +474,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                   {mode === 'login' && (
                     <button
                       type="button"
-                      onClick={() => { setMode('recovery'); resetStates(); }}
+                      onClick={() => { setMode('recovery'); resetFormFields(); }}
                       className="text-[11px] text-[#FF7F5B] hover:underline cursor-pointer"
                     >
                       Esqueceu a senha?
@@ -472,6 +484,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 <input
                   type="password"
                   required
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
@@ -487,6 +500,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 <input
                   type="password"
                   required
+                  autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Redigite sua senha para confirmação"
@@ -559,28 +573,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
               <span>Continuar com o Google</span>
             </button>
 
-            {/* HELENA DEMO QUICK ACCESS BUTTON */}
-            {mode === 'login' && (
-              <button
-                type="button"
-                onClick={async () => {
-                  setSuccessMessage('Login de demonstração da Helena realizado com sucesso!');
-                  await login('helena@elana.com.br', 'Helena Ribeiro');
-                  onSuccess(true);
-                }}
-                className="w-full py-2.5 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-amber-500/20 border border-purple-400/40 text-purple-200 hover:text-white font-black text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:border-purple-400"
-              >
-                <span>⚡ Entrar como Helena Ribeiro (Demo)</span>
-              </button>
-            )}
-
             {/* SWITCH BETWEEN LOGIN / REGISTER */}
             <div className="pt-2 text-center text-xs text-slate-400 border-t border-white/10">
               {mode === 'login' ? (
                 <p>
                   Ainda não tem uma conta?{' '}
                   <button
-                    onClick={() => { setMode('register'); resetStates(); }}
+                    onClick={() => { setMode('register'); resetFormFields(); }}
                     className="text-[#FF7F5B] font-bold hover:underline cursor-pointer"
                   >
                     Criar conta agora
@@ -590,7 +589,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 <p>
                   Já possui uma conta?{' '}
                   <button
-                    onClick={() => { setMode('login'); resetStates(); }}
+                    onClick={() => { setMode('login'); resetFormFields(); }}
                     className="text-[#FF7F5B] font-bold hover:underline cursor-pointer"
                   >
                     Fazer Login

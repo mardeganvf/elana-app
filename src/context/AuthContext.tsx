@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { UserProfile, Badge } from '../types';
 import { ALL_BADGES, getLevelFromXP, USER_LEVELS } from '../data/gamificationData';
+import { JOURNEYS_DATA } from '../data/journeysData';
 import { supabase } from '../lib/supabase';
 import confetti from 'canvas-confetti';
 
@@ -33,7 +34,7 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (updates: Partial<UserProfile>) => Promise<void>;
   purchaseJourney: (journeyId: string) => Promise<void>;
-  completeLesson: (lessonId: string, xpReward?: number) => Promise<void>;
+  completeLesson: (lessonId: string) => Promise<void>;
   saveLessonNote: (lessonId: string, note: string) => Promise<void>;
   addXP: (amount: number) => Promise<void>;
   awardBadge: (badgeId: string) => Promise<void>;
@@ -299,8 +300,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const badgeXpSum = badges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
-      const lessonXpSum = completedLessonIds.length * 10;
-      const calculatedMinimumXp = badgeXpSum + lessonXpSum;
+      const calculatedMinimumXp = badgeXpSum;
       const xp = Math.max(profile.xp || 0, calculatedMinimumXp);
       const levelInfo = getLevelFromXP(xp);
       const isTourFinished = profile.tag === 'onboarded' || unlockedBadgeIds.has('b1') || xp >= 25;
@@ -412,10 +412,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!baseUser) return;
 
     const currentBadges = updates.badges !== undefined ? updates.badges : (baseUser.badges || []);
-    const currentLessons = updates.completedLessonIds !== undefined ? updates.completedLessonIds : (baseUser.completedLessonIds || []);
     const badgeXpSum = currentBadges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
-    const lessonXpSum = currentLessons.length * 10;
-    const guaranteedMinXp = badgeXpSum + lessonXpSum;
+    const guaranteedMinXp = badgeXpSum;
 
     const previousLevel = baseUser.level || getLevelFromXP(baseUser.xp).level;
     const requestedXp = updates.xp !== undefined ? updates.xp : baseUser.xp;
@@ -571,63 +569,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const completeLesson = async (lessonId: string, xpReward: number = 10) => {
+  const completeLesson = async (lessonId: string) => {
     const currentUser = userRef.current || user;
     if (!currentUser) return;
     if (currentUser.completedLessonIds.includes(lessonId)) return;
 
-    let newXP = currentUser.xp + xpReward;
-    
-    // Check if new badge unlocked (e.g. b4)
-    let newlyUnlockedBadge: Badge | null = null;
+    const nextCompletedLessonIds = [...currentUser.completedLessonIds, lessonId];
     const currentBadgeIds = new Set(currentUser.badges.map(b => b.id));
 
-    if (!currentBadgeIds.has('b4')) {
-      newlyUnlockedBadge = ALL_BADGES.find(b => b.id === 'b4') || null;
-      if (newlyUnlockedBadge) {
-        newXP += newlyUnlockedBadge.rewardXp;
-      }
-    }
-
-    const levelInfo = getLevelFromXP(newXP);
-    const updatedBadges = newlyUnlockedBadge 
-      ? [...currentUser.badges, newlyUnlockedBadge] 
-      : currentUser.badges;
-
-    await updateUser({
-      completedLessonIds: [...currentUser.completedLessonIds, lessonId],
-      xp: newXP,
-      level: levelInfo.level,
-      levelTitle: levelInfo.title,
-      badges: updatedBadges
-    });
-
-    // Gravar aula concluída no Supabase
+    // 1. Gravar aula concluída no Supabase
     try {
       await supabase.from('user_completed_lessons').upsert({
         profile_id: currentUser.id,
         lesson_id: lessonId
       }, { onConflict: 'profile_id, lesson_id' });
-
-      // Se desbloqueou badge b4, gravar badge no Supabase
-      if (newlyUnlockedBadge) {
-        await supabase.from('user_badges').upsert({
-          profile_id: currentUser.id,
-          badge_id: newlyUnlockedBadge.id
-        }, { onConflict: 'profile_id, badge_id' });
-      }
     } catch (e) {
       console.error('Error recording completed lesson to Supabase:', e);
     }
 
-    if (newlyUnlockedBadge) {
-      activeBadgeModalRef.current = newlyUnlockedBadge;
-      setUnlockedBadgeModal(newlyUnlockedBadge);
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
+    // 2. Atualizar estado local de aulas concluídas (sem somar XP solto por vídeo)
+    await updateUser({
+      completedLessonIds: nextCompletedLessonIds
+    });
+
+    // 3. Checagem de Conquistas de Trilha:
+    // Conquista 1: 1º vídeo assistido -> b4 ("Minha Jornada" +25 XP)
+    if (!currentBadgeIds.has('b4')) {
+      await awardBadge('b4');
+      return;
+    }
+
+    // Conquistas 2, 3 e 4: 25%, 50% e 100% da jornada
+    for (const journey of JOURNEYS_DATA) {
+      const journeyLessonIds = journey.modules.flatMap(m => m.lessons.map(l => l.id));
+      if (journeyLessonIds.includes(lessonId)) {
+        const completedCountInJourney = journeyLessonIds.filter(id => nextCompletedLessonIds.includes(id)).length;
+        const total = journeyLessonIds.length;
+        const progressPct = (completedCountInJourney / total) * 100;
+
+        if (progressPct >= 100 && !currentBadgeIds.has('b7')) {
+          await awardBadge('b7'); // Caminho Iluminado (100%) +50 XP
+          return;
+        } else if (progressPct >= 50 && !currentBadgeIds.has('b6')) {
+          await awardBadge('b6'); // Chegando Lá! (50%) +15 XP
+          return;
+        } else if (progressPct >= 25 && !currentBadgeIds.has('b5')) {
+          await awardBadge('b5'); // Passos Seguros (25%) +15 XP
+          return;
+        }
+      }
     }
   };
 
@@ -644,8 +634,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const previousLevel = currentUser.level || getLevelFromXP(currentUser.xp).level;
     const nextBadges = [...currentUser.badges, badgeToAward];
     const badgeXpSum = nextBadges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
-    const lessonXpSum = (currentUser.completedLessonIds || []).length * 10;
-    const newXP = Math.max(currentUser.xp + (badgeToAward.rewardXp || 0), badgeXpSum + lessonXpSum);
+    const newXP = Math.max(currentUser.xp + (badgeToAward.rewardXp || 0), badgeXpSum);
     const levelInfo = getLevelFromXP(newXP);
 
     if (levelInfo.level > previousLevel && previousLevel >= 1) {

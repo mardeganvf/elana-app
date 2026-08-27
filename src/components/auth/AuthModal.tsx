@@ -49,6 +49,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     setLoading(false);
   };
 
+  const resetFormFields = () => {
+    setName('');
+    setEmail('');
+    setConfirmEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setInputCode('');
+    resetStates();
+  };
+
+  React.useEffect(() => {
+    if (isOpen) {
+      resetFormFields();
+    }
+  }, [isOpen]);
+
   const pwdChecks = validateStrongPassword(password);
 
   // 1. LOGIN / CADASTRO VIA E-MAIL E SENHA
@@ -60,57 +76,47 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     try {
       if (mode === 'register') {
         if (!name.trim()) {
-          setErrorMessage('Por favor, informe seu nome completo.');
+          setErrorMessage('Por favor, informe seu nome.');
           setLoading(false);
           return;
         }
 
         if (email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) {
-          setErrorMessage('Os e-mails informados não coincidem. Por favor, confira seu e-mail.');
+          setErrorMessage('Os e-mails informados não coincidem.');
           setLoading(false);
           return;
         }
 
         if (!pwdChecks.isValid) {
-          setErrorMessage('A senha precisa ter no mínimo 8 caracteres, com letra maiúscula, minúscula, número e caractere especial.');
+          setErrorMessage('Sua senha não atende a todos os critérios de segurança.');
           setLoading(false);
           return;
         }
 
         if (password !== confirmPassword) {
-          setErrorMessage('As senhas informadas não coincidem. Por favor, digite a mesma senha nos dois campos.');
+          setErrorMessage('As senhas informadas não coincidem.');
           setLoading(false);
           return;
         }
 
-        // Check if user already exists
-        const { data: existingUser } = await supabase
-          .from('profiles')
-          .select('id, email')
-          .eq('email', email.trim().toLowerCase())
-          .maybeSingle();
-
-        if (existingUser) {
-          setIsExistingUserModalOpen(true);
-          setLoading(false);
-          return;
-        }
-
-        // Trigger real email dispatch via Supabase Auth + Resend SMTP!
-        const { error: authError } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: { data: { name: name.trim() } }
+        // Send 8-digit OTP Email verification code via Supabase
+        const { error: otpError } = await supabase.auth.signInWithOtp({
+          email: email.trim().toLowerCase(),
+          options: {
+            data: {
+              name: name.trim()
+            }
+          }
         });
 
-        if (authError) {
-          console.error('Supabase Auth SignUp Error:', authError.message);
-          const msg = authError.message.toLowerCase();
-          if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user_already_exists')) {
+        if (otpError) {
+          const msg = otpError.message.toLowerCase();
+          if (msg.includes('registered') || msg.includes('already') || msg.includes('exists')) {
             setIsExistingUserModalOpen(true);
-          } else {
-            setErrorMessage('Ops, parece que tivemos um problema. Tente de novo daqui a pouco.');
+            setLoading(false);
+            return;
           }
+          setErrorMessage(`Erro ao enviar código de verificação: ${otpError.message}`);
           setLoading(false);
           return;
         }
@@ -121,14 +127,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         setLoading(false);
         return;
       } else if (mode === 'login') {
-        // Special Demo Account Login
-        if (email.trim().toLowerCase() === 'helena@elana.com.br') {
-          setSuccessMessage('Login de demonstração da Helena realizado com sucesso!');
-          onSuccess({ email: 'helena@elana.com.br', name: 'Helena Ribeiro' });
-          onClose();
-          return;
-        }
-
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password
@@ -282,12 +280,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               className="w-full py-3 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {loading && <RefreshCw className="w-4 h-4 animate-spin" />}
-              <span>Fazer parte do Elana</span>
+              <span>Fazer parte da Elana</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setMode('register')}
+              onClick={() => { setMode('register'); resetFormFields(); }}
               className="w-full text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1 py-1 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -296,16 +294,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           </form>
         ) : (
           /* REGULAR AUTH FORM */
-          <form onSubmit={handleEmailAuth} className="space-y-3.5 text-left">
+          <form onSubmit={handleEmailAuth} autoComplete="off" className="space-y-3.5 text-left">
             {mode === 'register' && (
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Nome Completo</label>
                 <input
                   type="text"
                   required
+                  autoComplete="off"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: Helena Ribeiro"
+                  placeholder="Seu nome completo"
                   className="w-full p-2.5 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
                 />
               </div>

@@ -196,23 +196,14 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
               </button>
             </div>
 
-            {/* Right Controls: Playback Speed + Mark as Completed Button */}
+            {/* Right Controls: Playback Speed & Status */}
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  if (completeLesson) {
-                    completeLesson(activeLesson.id);
-                  }
-                }}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all ${
-                  user?.completedLessonIds.includes(activeLesson.id)
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'bg-gradient-to-r from-[#FF7F5B] to-[#E66795] text-white hover:opacity-95 shadow-md active:scale-95'
-                }`}
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{user?.completedLessonIds.includes(activeLesson.id) ? 'Concluído' : 'Concluir Conteúdo (+10 XP)'}</span>
-              </button>
+              {user?.completedLessonIds.includes(activeLesson.id) && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Assistido</span>
+                </div>
+              )}
 
               {/* Playback Speed Control */}
               <div className="flex items-center gap-1 bg-[#070D0F] px-3 py-1.5 rounded-xl border border-white/10">
