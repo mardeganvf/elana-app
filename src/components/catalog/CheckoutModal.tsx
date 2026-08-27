@@ -36,6 +36,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
         >
           <button
             onClick={onClose}
+            aria-label="Fechar"
             className="absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 transition-colors"
           >
             <X className="w-5 h-5" />

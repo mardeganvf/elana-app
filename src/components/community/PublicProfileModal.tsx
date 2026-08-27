@@ -176,6 +176,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
         <div className="h-28 bg-gradient-to-r from-[#E66795]/30 via-[#FF7F5B]/30 to-[#8A9A5B]/30 relative shrink-0">
           <button
             onClick={onClose}
+            aria-label="Fechar Perfil"
             className="absolute top-4 right-4 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-colors z-10"
             title="Fechar Perfil"
           >

@@ -217,6 +217,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         {/* Close Button */}
         <button 
           onClick={onClose}
+          aria-label="Fechar"
           className="absolute top-5 right-5 text-slate-400 hover:text-white bg-white/5 p-2 rounded-full transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />

@@ -113,6 +113,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
           <button
             onClick={onClose}
+            aria-label="Fechar"
             className="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-colors cursor-pointer shrink-0 ml-2"
             title="Fechar"
           >
