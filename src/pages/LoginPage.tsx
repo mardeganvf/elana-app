@@ -132,8 +132,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           const { error } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
           if (error) throw error;
           setSuccessMessage(`Código SMS enviado para ${formattedPhone}! Entrando...`);
-          login(`${cleanPhone}@elana.app`, name.trim());
-          setTimeout(() => onSuccess(false), 800);
+          await login(`${cleanPhone}@elana.app`, name.trim());
+          onSuccess(false);
         }
       } else if (mode === 'login') {
         // Special Helena Demo Bypass
@@ -162,7 +162,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           const userName = data.user?.user_metadata?.name || inputVal.split('@')[0];
           setSuccessMessage('Login realizado com sucesso!');
           await login(inputVal, userName, data.user?.id);
-          setTimeout(() => onSuccess(false), 300);
+          onSuccess(false);
         }
       } else if (mode === 'recovery') {
         const { error } = await supabase.auth.resetPasswordForEmail(inputVal, {
@@ -245,7 +245,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
 
       setSuccessMessage('Conta validada e criada com sucesso! Entrando...');
       await login(inputVal, name.trim(), supabaseUserId);
-      setTimeout(() => onSuccess(false), 500);
+      onSuccess(false);
     } catch (err: any) {
       console.error('Signup Exception:', err);
       await login(identifier.trim(), name.trim());
@@ -267,8 +267,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
       if (error) throw error;
     } catch (err: any) {
       setErrorMessage(err.message || 'Falha ao conectar com o Google. Usando login demonstrativo.');
-      login('usuario.google@elana.com.br', 'Usuário Google');
-      setTimeout(() => onSuccess(false), 800);
+      await login('usuario.google@elana.com.br', 'Usuário Google');
+      onSuccess(false);
     } finally {
       setLoading(false);
     }
