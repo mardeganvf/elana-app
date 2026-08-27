@@ -18,10 +18,33 @@ interface DashboardPageProps {
   onExploreCatalog: () => void;
 }
 
+// Helper para máscara de celular brasileiro: (00) 00000-0000 ou (00) 0000-0000
+const formatPhoneMask = (val: string) => {
+  const digits = val.replace(/\D/g, '').slice(0, 11);
+  if (!digits) return '';
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog }) => {
   const { user, logout, updateUser, awardBadge } = useAuth();
 
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  // Efeito reativo central: Concede a conquista "Criando Raízes" (b2) quando o perfil for completado
+  useEffect(() => {
+    if (!user || user.badges.some(b => b.id === 'b2')) return;
+
+    const hasCustomAvatar = !!user.avatar && user.avatar !== GENERIC_DEFAULT_AVATAR;
+    const hasPhone = !!user.phone && user.phone.replace(/\D/g, '').length >= 10;
+    const hasBio = !!user.bio && user.bio.trim().length > 0;
+    const hasChildren = !!user.children && user.children.length > 0;
+
+    if (hasCustomAvatar && hasPhone && hasBio && hasChildren) {
+      awardBadge('b2');
+    }
+  }, [user?.avatar, user?.phone, user?.bio, user?.children, user?.badges]);
 
   // Função centralizada para validar e conceder a badge Criando Raízes (b2)
   const checkCriandoRaizes = (avatarToCheck?: string) => {
@@ -30,8 +53,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     const currentAvatar = avatarToCheck || user.avatar;
     const hasCustomAvatar = !!currentAvatar && currentAvatar !== GENERIC_DEFAULT_AVATAR;
     const hasEmail = !!user.email;
-    const hasPhone = !!user.phone;
-    const hasName = !!user.name;
+    const hasPhone = !!(user.phone || userPhone) && (user.phone || userPhone).replace(/\D/g, '').length >= 10;
+    const hasName = !!(user.name || userName);
     const hasBio = !!(user.bio || bioText).trim();
     const hasFamilyMember = (childrenList || []).length > 0 || (user.children || []).length > 0;
 
@@ -72,7 +95,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   // Profile info editing state & Email Code Verification
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [userName, setUserName] = useState(user?.name || '');
-  const [userPhone, setUserPhone] = useState(user?.phone || '');
+  const [userPhone, setUserPhone] = useState(formatPhoneMask(user?.phone || ''));
   const [confirmedEmail, setConfirmedEmail] = useState(user?.email || '');
   const [pendingEmail, setPendingEmail] = useState(user?.email || '');
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
@@ -103,7 +126,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
       if (!isEditingBio) setBioText(user.bio || '');
       if (!isEditingProfile) {
         setUserName(user.name || '');
-        setUserPhone(user.phone || '');
+        setUserPhone(formatPhoneMask(user.phone || ''));
         setConfirmedEmail(user.email || '');
         setPendingEmail(user.email || '');
         setNotificationsEnabled(!!user.notificationsEnabled);
@@ -314,12 +337,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                     <input
                       type="tel"
                       value={userPhone}
-                      onChange={(e) => setUserPhone(e.target.value)}
-                      placeholder="Celular (Ex: 11 99999-9999)"
-                      className="px-3 py-1.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none w-full sm:w-auto"
+                      onChange={(e) => setUserPhone(formatPhoneMask(e.target.value))}
+                      placeholder="Celular (00) 00000-0000"
+                      maxLength={15}
+                      className="px-3 py-1.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none w-full sm:w-auto font-medium"
                     />
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (!userName.trim()) return;
                         if (pendingEmail.trim().toLowerCase() !== confirmedEmail.toLowerCase()) {
                           const mockCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -329,7 +353,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           setIsVerifyingCode(true);
                         } else {
                           if (updateUser) {
-                            updateUser({ name: userName.trim(), phone: userPhone.trim() });
+                            await updateUser({ name: userName.trim(), phone: userPhone.trim() });
+                            checkCriandoRaizes();
                           }
                           setIsEditingProfile(false);
                         }
