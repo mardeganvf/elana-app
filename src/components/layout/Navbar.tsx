@@ -37,8 +37,16 @@ const emotionalSummary = [
   { emoji: '🆘', label: 'Precisando de Luz', count: 1, color: 'bg-rose-600/20 border-rose-500/40 text-rose-300' },
 ];
 
+interface CalendarDay {
+  day: number;
+  month: string;
+  emoji: string | null;
+  label: string;
+  isToday?: boolean;
+}
+
 // 28 Days Calendar — static mock data (outside component to avoid re-creation)
-const last4WeeksDays = [
+const last4WeeksDays: CalendarDay[] = [
   { day: 26, month: 'Jul', emoji: '☀️', label: 'Com Esperança' },
   { day: 27, month: 'Jul', emoji: '🪫', label: 'Sem Energia' },
   { day: 28, month: 'Jul', emoji: '☀️', label: 'Com Esperança' },
@@ -67,7 +75,7 @@ const last4WeeksDays = [
   { day: 20, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
   { day: 21, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
   { day: 22, month: 'Ago', emoji: '☀️', label: 'Com Esperança', isToday: true },
-] as const;
+];
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenAuthModal }) => {
   const { user, isAuthenticated, logout, sosResponse, sendSosTicket, markSosResponseRead } = useAuth();
