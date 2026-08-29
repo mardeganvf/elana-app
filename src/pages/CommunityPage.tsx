@@ -710,50 +710,34 @@ export const CommunityPage: React.FC = () => {
       </div>
 
       {/* Top Banner (Centered, Coral Orange Header) */}
-      <section className="bg-[#101B1E] text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-white/10 relative overflow-hidden text-center">
+      <section className="bg-[#101B1E] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl border border-white/10 relative overflow-hidden text-center">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#FF7F5B]/15 rounded-full blur-3xl pointer-events-none"></div>
 
-        {/* Respiro de 60s — Mobile only icon button (top-right corner of banner) */}
-        <button
-          onClick={() => {
-            setBreathingTimer(60);
-            setBreathingPhase('puxe');
-            setIsBreathingModalOpen(true);
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-          }}
-          className="lg:hidden absolute top-4 right-4 z-10 flex items-center gap-1.5 bg-[#8A9A5B]/20 hover:bg-[#8A9A5B]/30 text-[#8A9A5B] border border-[#8A9A5B]/40 font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-xl shadow-md transition-all active:scale-95"
-          title="Respiro de 60 Segundos"
-        >
-          <Wind className="w-3.5 h-3.5" />
-          <span>Respiro</span>
-        </button>
-
-        <div className="relative z-10 space-y-1.5 max-w-2xl mx-auto">
-          <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-[#FF7F5B] uppercase" style={{ fontFamily: 'var(--font-heading)' }}>
+        <div className="relative z-10 space-y-1 max-w-2xl mx-auto">
+          <h1 className="text-xl sm:text-3xl font-black tracking-tight text-[#FF7F5B] uppercase" style={{ fontFamily: 'var(--font-heading)' }}>
             SUA REDE DE APOIO
           </h1>
-          <p className="text-sm sm:text-base text-slate-300">
+          <p className="text-xs sm:text-sm text-slate-300">
             Nosso espaço seguro de troca e acolhimento.
           </p>
         </div>
       </section>
 
-      {/* ── MOBILE ONLY: Horizontal Pills Navigation ───────────────────────── */}
+      {/* ── MOBILE ONLY: Clean Horizontal Pills Navigation ──────────────────── */}
       <div className="lg:hidden space-y-2">
 
-        {/* Row 1 — Category Pills */}
+        {/* Row 1 — Category Pills (Clean text without icons) */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
           {/* Pill: Todas */}
           <button
             onClick={() => { setMobilePillCategory(null); setMobilePillJourneyId(null); setActiveSelection(null); }}
-            className={`shrink-0 snap-start flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+            className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
               mobilePillCategory === null
                 ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
                 : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
             }`}
           >
-            <span>✨</span>
-            <span>Todas</span>
+            Todas
           </button>
 
           {/* Pill: Geral */}
@@ -764,14 +748,13 @@ export const CommunityPage: React.FC = () => {
               setMobilePillJourneyId(null);
               if (next === null) setActiveSelection(null);
             }}
-            className={`shrink-0 snap-start flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+            className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
               mobilePillCategory === 'geral'
                 ? 'bg-[#8A9A5B] text-white border-[#8A9A5B] shadow-md'
                 : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
             }`}
           >
-            <span>🌱</span>
-            <span>Geral</span>
+            Geral
           </button>
 
           {/* Pill: Jornadas */}
@@ -782,14 +765,13 @@ export const CommunityPage: React.FC = () => {
               setMobilePillJourneyId(null);
               if (next === null) setActiveSelection(null);
             }}
-            className={`shrink-0 snap-start flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+            className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
               mobilePillCategory === 'jornadas'
                 ? 'bg-[#FFD166] text-slate-900 border-[#FFD166] shadow-md'
                 : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
             }`}
           >
-            <span>🌿</span>
-            <span>Jornadas</span>
+            Jornadas
           </button>
 
           {/* Pill: Idades */}
@@ -800,18 +782,17 @@ export const CommunityPage: React.FC = () => {
               setMobilePillJourneyId(null);
               if (next === null) setActiveSelection(null);
             }}
-            className={`shrink-0 snap-start flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+            className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
               mobilePillCategory === 'idades'
                 ? 'bg-[#E66795] text-white border-[#E66795] shadow-md'
                 : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
             }`}
           >
-            <span>🎂</span>
-            <span>Idades</span>
+            Idades
           </button>
         </div>
 
-        {/* Row 2 — Sub-option Pills (dynamic based on selected category) */}
+        {/* Row 2 — Sub-option Pills (Clean text without emojis) */}
         {mobilePillCategory === 'geral' && (
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in">
             {TRANSVERSAL_ROOMS.map(r => {
@@ -820,15 +801,14 @@ export const CommunityPage: React.FC = () => {
                 <button
                   key={r.id}
                   onClick={() => setActiveSelection({ type: 'geral', roomId: r.id })}
-                  className={`shrink-0 snap-start flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                  className={`shrink-0 snap-start px-3 py-1 rounded-full text-[11px] font-bold transition-all border ${
                     isSelected
                       ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
                       : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
                   }`}
                 >
-                  <span>{r.emoji}</span>
                   <span>{r.name}</span>
-                  {r.isAnonymous && <span className="text-[9px] opacity-70">Anônimo</span>}
+                  {r.isAnonymous && <span className="text-[9px] opacity-70 ml-1">(Anônimo)</span>}
                 </button>
               );
             })}
@@ -851,7 +831,7 @@ export const CommunityPage: React.FC = () => {
                         setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'abertas' });
                       }
                     }}
-                    className={`shrink-0 snap-start flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                    className={`shrink-0 snap-start px-3 py-1 rounded-full text-[11px] font-bold transition-all border ${
                       isSelected
                         ? 'text-white border-transparent shadow-md'
                         : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
@@ -868,10 +848,10 @@ export const CommunityPage: React.FC = () => {
             {mobilePillJourneyId && (
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in">
                 {[
-                  { id: 'abertas' as const, label: '🔓 Abertas' },
-                  { id: 'ajuda' as const,   label: '🆘 Preciso de Ajuda' },
-                  { id: 'celebrar' as const, label: '🎉 Celebrar' },
-                  { id: 'desabafar' as const, label: '💧 Desabafar' },
+                  { id: 'abertas' as const, label: 'Abertas' },
+                  { id: 'ajuda' as const,   label: 'Preciso de Ajuda' },
+                  { id: 'celebrar' as const, label: 'Celebrar' },
+                  { id: 'desabafar' as const, label: 'Desabafar' },
                 ].map(sub => {
                   const isSelected = activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId && activeSelection.subOption === sub.id;
                   const journey = JOURNEYS_DATA.find(j => j.id === mobilePillJourneyId);
@@ -879,7 +859,7 @@ export const CommunityPage: React.FC = () => {
                     <button
                       key={sub.id}
                       onClick={() => setActiveSelection({ type: 'jornada', journeyId: mobilePillJourneyId, subOption: sub.id })}
-                      className={`shrink-0 snap-start flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                      className={`shrink-0 snap-start px-3 py-1 rounded-full text-[11px] font-bold transition-all border ${
                         isSelected
                           ? 'text-white border-transparent shadow-md'
                           : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
@@ -903,13 +883,12 @@ export const CommunityPage: React.FC = () => {
                 <button
                   key={a.id}
                   onClick={() => setActiveSelection({ type: 'idade', ageId: a.id })}
-                  className={`shrink-0 snap-start flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                  className={`shrink-0 snap-start px-3 py-1 rounded-full text-[11px] font-bold transition-all border ${
                     isSelected
                       ? 'bg-[#E66795] text-white border-[#E66795] shadow-md'
                       : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
                   }`}
                 >
-                  <span>🎂</span>
                   <span>{a.name}</span>
                 </button>
               );
@@ -1158,37 +1137,37 @@ export const CommunityPage: React.FC = () => {
           
           {/* Active Selection Header Card with Journey / Room Theme Color */}
           <div 
-            className="rounded-3xl p-6 shadow-xl border border-white/10 space-y-1 relative overflow-hidden transition-colors duration-500 text-white"
+            className="rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-lg border border-white/10 space-y-0.5 relative overflow-hidden transition-colors duration-500 text-white"
             style={{ backgroundColor: currentHeader.themeColor }}
           >
             {/* Subtle Overlay Gradient for Readability */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-black/40 pointer-events-none"></div>
 
             <div className="relative z-10">
-              <span className="text-xs font-extrabold uppercase tracking-wider block opacity-95 text-white/90">
+              <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider block opacity-90 text-white/90">
                 {currentHeader.categoryLabel}
               </span>
-              <h2 className="text-2xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+              <h2 className="text-base sm:text-2xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                 {currentHeader.mainTitle}
               </h2>
             </div>
           </div>
 
           {/* Text Search Bar & Criar Tópico Button Side-by-Side */}
-          <div className="flex items-center gap-3 w-full">
+          <div className="flex items-center gap-2.5 w-full">
             <div className="relative flex-1 min-w-0">
-              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar por palavras-chave, assuntos ou autores nesta sala"
-                className="w-full pl-11 pr-16 py-3.5 rounded-2xl bg-[#101B1E] border border-white/10 text-base sm:text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#FF7F5B] transition-colors shadow-md"
+                className="search-input-compact w-full pl-9 pr-14 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-[#101B1E] border border-white/10 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#FF7F5B] transition-colors shadow-md"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs bg-white/10 px-2.5 py-1 rounded-lg"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-[10px] bg-white/10 px-2 py-0.5 rounded-md cursor-pointer"
                 >
                   Limpar
                 </button>
@@ -1199,9 +1178,9 @@ export const CommunityPage: React.FC = () => {
             {activeSelection && (
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-extrabold text-xs uppercase tracking-wider py-3.5 px-5 rounded-2xl shadow-lg transition-all active:scale-95 shrink-0 whitespace-nowrap cursor-pointer"
+                className="flex items-center gap-1.5 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-extrabold text-[11px] sm:text-xs uppercase tracking-wider py-2.5 sm:py-3 px-3.5 sm:px-5 rounded-xl sm:rounded-2xl shadow-lg transition-all active:scale-95 shrink-0 whitespace-nowrap cursor-pointer"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
                 <span>Criar Tópico</span>
               </button>
             )}

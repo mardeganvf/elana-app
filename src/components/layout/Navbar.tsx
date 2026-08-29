@@ -19,7 +19,8 @@ import {
   X,
   Send,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  Wind
 } from 'lucide-react';
 import logoElana from '../../assets/logo-elana.png';
 
@@ -85,9 +86,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
   const [isMamadaMode, setIsMamadaMode] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
-  // Modals State for Emoções and SOS
+  // Modals State for Emoções, SOS and Respiro de 60s
   const [isEmotionalHistoryOpen, setIsEmotionalHistoryOpen] = useState(false);
   const [isEmergencyOpen, setIsEmergencyOpen] = useState(false);
+  const [isBreathingModalOpen, setIsBreathingModalOpen] = useState(false);
+  const [breathingTimer, setBreathingTimer] = useState(60);
+  const [breathingPhase, setBreathingPhase] = useState<'puxe' | 'segure' | 'solte'>('puxe');
 
   // SOS Private Message State
   const [sosMessage, setSosMessage] = useState('');
@@ -96,6 +100,37 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const hasUnreadSosReply = !!(sosResponse && sosResponse.adminReply && !sosResponse.isRead);
+
+  // Respiro 60s Timer Hooks
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isBreathingModalOpen && breathingTimer > 0) {
+      interval = setInterval(() => {
+        setBreathingTimer(prev => {
+          if (prev <= 1) {
+            setIsBreathingModalOpen(false);
+            return 60;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isBreathingModalOpen, breathingTimer]);
+
+  useEffect(() => {
+    let phaseInterval: NodeJS.Timeout;
+    if (isBreathingModalOpen) {
+      phaseInterval = setInterval(() => {
+        setBreathingPhase(prev => {
+          if (prev === 'puxe') return 'segure';
+          if (prev === 'segure') return 'solte';
+          return 'puxe';
+        });
+      }, 4000);
+    }
+    return () => clearInterval(phaseInterval);
+  }, [isBreathingModalOpen]);
 
   const toggleMamadaMode = () => {
     setIsMamadaMode(prev => {
@@ -426,6 +461,44 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             </button>
           )}
 
+        </div>
+
+        {/* Right Mobile: Quick Actions (Respiro 60s & SOS) */}
+        <div className="md:hidden flex items-center gap-2 shrink-0">
+          {/* Botão Respiro 60s */}
+          <button
+            onClick={() => {
+              setBreathingTimer(60);
+              setBreathingPhase('puxe');
+              setIsBreathingModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 bg-[#8A9A5B]/15 hover:bg-[#8A9A5B]/25 text-[#8A9A5B] border border-[#8A9A5B]/35 font-bold text-[11px] uppercase tracking-wider py-1.5 px-3 rounded-full transition-all active:scale-95 cursor-pointer shadow-sm"
+            title="Pausa Acolhedora - Respiro de 60 Segundos"
+          >
+            <Wind className="w-3.5 h-3.5" />
+            <span>Respiro</span>
+          </button>
+
+          {/* Botão SOS */}
+          <button
+            onClick={() => {
+              setIsEmergencyOpen(true);
+              setIsSosSent(false);
+              setSosMessage('');
+            }}
+            className={`flex items-center gap-1 font-black text-[11px] uppercase tracking-wider py-1.5 px-3 rounded-full transition-all active:scale-95 border relative cursor-pointer shadow-sm ${
+              hasUnreadSosReply
+                ? 'bg-rose-500 text-white border-rose-400 animate-pulse'
+                : 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border-rose-500/35'
+            }`}
+            title="Canal SOS Privado de Acolhimento"
+          >
+            <LifeBuoy className="w-3.5 h-3.5 text-rose-400" />
+            <span>SOS</span>
+            {hasUnreadSosReply && (
+              <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping absolute -top-0.5 -right-0.5 border border-rose-600" />
+            )}
+          </button>
         </div>
 
       </div>
@@ -771,6 +844,63 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                 </button>
               </div>
             )}
+
+      {/* Feature 3 Modal: Respiro de 60 Segundos (Pausa Acolhedora) */}
+      {isBreathingModalOpen && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="bg-[#101B1E] rounded-3xl max-w-md w-full p-8 shadow-2xl border border-white/10 text-center relative text-white space-y-6 m-auto max-h-[90vh] overflow-y-auto">
+            
+            <button
+              onClick={() => setIsBreathingModalOpen(false)}
+              aria-label="Fechar Respiro"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="space-y-1">
+              <span className="text-xs font-bold text-[#8A9A5B] uppercase tracking-wider block">
+                Pausa Acolhedora
+              </span>
+              <h3 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                Respiro de 60 Segundos
+              </h3>
+              <p className="text-xs text-slate-400">
+                Desacelere seu ritmo. Acompanhe a animação para respirar com calma.
+              </p>
+            </div>
+
+            {/* Animated Breathing Circle (Puxe o Ar -> Segure -> Solte o Ar) */}
+            <div className="py-6 flex flex-col items-center justify-center space-y-4">
+              <div className="relative flex items-center justify-center w-48 h-48">
+                <div 
+                  className={`w-40 h-40 rounded-full border-4 border-[#8A9A5B] bg-[#8A9A5B]/10 flex items-center justify-center transition-all duration-[4000ms] ease-in-out ${
+                    breathingPhase === 'puxe' 
+                      ? 'scale-125 bg-[#8A9A5B]/30 border-[#FF7F5B]' 
+                      : breathingPhase === 'segure' 
+                      ? 'scale-125 bg-[#FFD166]/30 border-[#FFD166]' 
+                      : 'scale-90 bg-[#8A9A5B]/05 border-[#8A9A5B]'
+                  }`}
+                >
+                  <span className="text-base font-black uppercase text-white tracking-wider animate-pulse text-center px-2">
+                    {breathingPhase === 'puxe' && '🌊 Puxe o Ar...'}
+                    {breathingPhase === 'segure' && '🧘 Segure...'}
+                    {breathingPhase === 'solte' && '🍃 Solte o Ar...'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="font-mono text-xl font-bold text-[#FFD166]">
+                00:{breathingTimer.toString().padStart(2, '0')}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsBreathingModalOpen(false)}
+              className="w-full bg-[#8A9A5B] hover:bg-[#7a8a4b] text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl shadow-lg transition-all cursor-pointer"
+            >
+              Concluir Respiro
+            </button>
 
           </div>
         </div>,

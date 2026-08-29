@@ -138,6 +138,9 @@ button, input, select, textarea {
   select {
     font-size: 16px !important;
   }
+  input.search-input-compact {
+    font-size: 13px !important;
+  }
 }
 
 /* Feedback tátil universal em elementos interativos e remoção do highlight cinza */
