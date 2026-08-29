@@ -146,6 +146,10 @@ export const CommunityPage: React.FC = () => {
   const [expandedJourneyId, setExpandedJourneyId] = useState<string | null>(null);
   const [activeSelection, setActiveSelection] = useState<ActiveSelection>(null);
 
+  // Mobile Pills Navigation State
+  const [mobilePillCategory, setMobilePillCategory] = useState<'geral' | 'jornadas' | 'idades' | null>(null);
+  const [mobilePillJourneyId, setMobilePillJourneyId] = useState<string | null>(null);
+
   // Search Bar State
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -459,7 +463,7 @@ export const CommunityPage: React.FC = () => {
   const currentHeader = getHeaderDetails();
 
   return (
-    <div className="space-y-8 pb-20 animate-fade-in max-w-7xl mx-auto text-white -mt-4 relative">
+    <div className="space-y-4 lg:space-y-8 pb-20 animate-fade-in max-w-7xl mx-auto text-white -mt-4 relative">
       
       {/* Daily Check-in Pop-up Modal (Portal to document.body for true viewport centering) */}
       {isDailyCheckinModalOpen && createPortal(
@@ -630,6 +634,21 @@ export const CommunityPage: React.FC = () => {
       <section className="bg-[#101B1E] text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-white/10 relative overflow-hidden text-center">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#FF7F5B]/15 rounded-full blur-3xl pointer-events-none"></div>
 
+        {/* Respiro de 60s — Mobile only icon button (top-right corner of banner) */}
+        <button
+          onClick={() => {
+            setBreathingTimer(60);
+            setBreathingPhase('puxe');
+            setIsBreathingModalOpen(true);
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+          }}
+          className="lg:hidden absolute top-4 right-4 z-10 flex items-center gap-1.5 bg-[#8A9A5B]/20 hover:bg-[#8A9A5B]/30 text-[#8A9A5B] border border-[#8A9A5B]/40 font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-xl shadow-md transition-all active:scale-95"
+          title="Respiro de 60 Segundos"
+        >
+          <Wind className="w-3.5 h-3.5" />
+          <span>Respiro</span>
+        </button>
+
         <div className="relative z-10 space-y-1.5 max-w-2xl mx-auto">
           <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-[#FF7F5B] uppercase" style={{ fontFamily: 'var(--font-heading)' }}>
             SUA REDE DE APOIO
@@ -640,11 +659,193 @@ export const CommunityPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Main Layout: Left Drill-Down Sidebar + Right Content Feed */}
+      {/* ── MOBILE ONLY: Horizontal Pills Navigation ───────────────────────── */}
+      <div className="lg:hidden space-y-2">
+
+        {/* Row 1 — Category Pills */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
+          {/* Pill: Todas */}
+          <button
+            onClick={() => { setMobilePillCategory(null); setMobilePillJourneyId(null); setActiveSelection(null); }}
+            className={`shrink-0 snap-start flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+              mobilePillCategory === null
+                ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
+                : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
+            }`}
+          >
+            <span>✨</span>
+            <span>Todas</span>
+          </button>
+
+          {/* Pill: Geral */}
+          <button
+            onClick={() => {
+              const next = mobilePillCategory === 'geral' ? null : 'geral';
+              setMobilePillCategory(next);
+              setMobilePillJourneyId(null);
+              if (next === null) setActiveSelection(null);
+            }}
+            className={`shrink-0 snap-start flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+              mobilePillCategory === 'geral'
+                ? 'bg-[#8A9A5B] text-white border-[#8A9A5B] shadow-md'
+                : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
+            }`}
+          >
+            <span>🌱</span>
+            <span>Geral</span>
+          </button>
+
+          {/* Pill: Jornadas */}
+          <button
+            onClick={() => {
+              const next = mobilePillCategory === 'jornadas' ? null : 'jornadas';
+              setMobilePillCategory(next);
+              setMobilePillJourneyId(null);
+              if (next === null) setActiveSelection(null);
+            }}
+            className={`shrink-0 snap-start flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+              mobilePillCategory === 'jornadas'
+                ? 'bg-[#FFD166] text-slate-900 border-[#FFD166] shadow-md'
+                : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
+            }`}
+          >
+            <span>🌿</span>
+            <span>Jornadas</span>
+          </button>
+
+          {/* Pill: Idades */}
+          <button
+            onClick={() => {
+              const next = mobilePillCategory === 'idades' ? null : 'idades';
+              setMobilePillCategory(next);
+              setMobilePillJourneyId(null);
+              if (next === null) setActiveSelection(null);
+            }}
+            className={`shrink-0 snap-start flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+              mobilePillCategory === 'idades'
+                ? 'bg-[#E66795] text-white border-[#E66795] shadow-md'
+                : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
+            }`}
+          >
+            <span>🎂</span>
+            <span>Idades</span>
+          </button>
+        </div>
+
+        {/* Row 2 — Sub-option Pills (dynamic based on selected category) */}
+        {mobilePillCategory === 'geral' && (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in">
+            {TRANSVERSAL_ROOMS.map(r => {
+              const isSelected = activeSelection?.type === 'geral' && activeSelection.roomId === r.id;
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => setActiveSelection({ type: 'geral', roomId: r.id })}
+                  className={`shrink-0 snap-start flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                    isSelected
+                      ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
+                      : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
+                  }`}
+                >
+                  <span>{r.emoji}</span>
+                  <span>{r.name}</span>
+                  {r.isAnonymous && <span className="text-[9px] opacity-70">Anônimo</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {mobilePillCategory === 'jornadas' && (
+          <div className="space-y-2 animate-fade-in">
+            {/* Journey pills */}
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
+              {JOURNEYS_DATA.map(j => {
+                const isSelected = mobilePillJourneyId === j.id;
+                return (
+                  <button
+                    key={j.id}
+                    onClick={() => {
+                      const next = mobilePillJourneyId === j.id ? null : j.id;
+                      setMobilePillJourneyId(next);
+                      if (next) {
+                        setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'abertas' });
+                      }
+                    }}
+                    className={`shrink-0 snap-start flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                      isSelected
+                        ? 'text-white border-transparent shadow-md'
+                        : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
+                    }`}
+                    style={isSelected ? { backgroundColor: j.themeColor, borderColor: j.themeColor } : {}}
+                  >
+                    <span>{j.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Sub-option pills for selected journey */}
+            {mobilePillJourneyId && (
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in">
+                {[
+                  { id: 'abertas' as const, label: '🔓 Abertas' },
+                  { id: 'ajuda' as const,   label: '🆘 Preciso de Ajuda' },
+                  { id: 'celebrar' as const, label: '🎉 Celebrar' },
+                  { id: 'desabafar' as const, label: '💧 Desabafar' },
+                ].map(sub => {
+                  const isSelected = activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId && activeSelection.subOption === sub.id;
+                  const journey = JOURNEYS_DATA.find(j => j.id === mobilePillJourneyId);
+                  return (
+                    <button
+                      key={sub.id}
+                      onClick={() => setActiveSelection({ type: 'jornada', journeyId: mobilePillJourneyId, subOption: sub.id })}
+                      className={`shrink-0 snap-start flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                        isSelected
+                          ? 'text-white border-transparent shadow-md'
+                          : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
+                      }`}
+                      style={isSelected && journey ? { backgroundColor: journey.themeColor, borderColor: journey.themeColor } : {}}
+                    >
+                      <span>{sub.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {mobilePillCategory === 'idades' && (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in">
+            {AGE_BRACKET_ROOMS.map(a => {
+              const isSelected = activeSelection?.type === 'idade' && activeSelection.ageId === a.id;
+              return (
+                <button
+                  key={a.id}
+                  onClick={() => setActiveSelection({ type: 'idade', ageId: a.id })}
+                  className={`shrink-0 snap-start flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                    isSelected
+                      ? 'bg-[#E66795] text-white border-[#E66795] shadow-md'
+                      : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
+                  }`}
+                >
+                  <span>🎂</span>
+                  <span>{a.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+      </div>
+      {/* ── END MOBILE PILLS ───────────────────────────────────────────────── */}
+
+      {/* Main Layout: Left Drill-Down Sidebar (desktop only) + Right Content Feed */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         
-        {/* Left Sidebar Container */}
-        <aside className="w-full lg:w-72 shrink-0 space-y-3">
+        {/* Left Sidebar Container — hidden on mobile, visible on desktop */}
+        <aside className="hidden lg:block w-full lg:w-72 shrink-0 space-y-3">
           
           {/* Button Respiro de 60 Segundos Above Criar Tópico */}
           <button
