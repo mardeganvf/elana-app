@@ -13,7 +13,8 @@ import {
   ListTodo,
   Volume2,
   ChevronDown,
-  BookOpen
+  BookOpen,
+  Film
 } from 'lucide-react';
 import { NotebookModal } from '../components/gamification/NotebookModal';
 
@@ -39,10 +40,20 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   const allLessons = journey.modules.flatMap(m => m.lessons);
   const initialLesson = allLessons.find(l => l.id === initialLessonId) || allLessons[0];
 
-  const [activeLesson, setActiveLesson] = useState<Lesson>(initialLesson);
+  const [activeLesson, setActiveLesson] = useState<Lesson>(initialLesson || {
+    id: 'intro',
+    title: 'Boas-Vindas e Acolhimento Inicial',
+    duration: '03:45 min',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    description: 'Comece respirando fundo. Aqui você não está só.'
+  });
+
   const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'resources' | 'practice'>('overview');
   const [noteText, setNoteText] = useState('');
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
+
+  // Mobile View Tab: 'content' (Player/Tabs) vs 'modules' (List of modules and lessons)
+  const [mobileTab, setMobileTab] = useState<'content' | 'modules'>('content');
 
   // Audio Mode & Speed Controls
   const [mediaMode, setMediaMode] = useState<'video' | 'audio'>('video');
@@ -109,6 +120,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   const handleLessonChange = (lesson: Lesson) => {
     setActiveLesson(lesson);
     setAutoplayTimer(null);
+    setMobileTab('content');
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
@@ -138,7 +150,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   ];
 
   return (
-    <div className="space-y-8 pb-20 animate-fade-in max-w-7xl mx-auto text-white -mt-4">
+    <div className="space-y-6 lg:space-y-8 pb-20 animate-fade-in max-w-7xl mx-auto text-white -mt-4">
       
       {/* Top Header Navigation */}
       <div className="flex items-center justify-between">
@@ -159,11 +171,38 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
         </div>
       </div>
 
+      {/* ── MOBILE TAB SWITCHER: Aula Atual vs Módulos & Aulas ── */}
+      <div className="lg:hidden flex items-center bg-[#101B1E] p-1.5 rounded-2xl border border-white/10 shadow-md">
+        <button
+          onClick={() => setMobileTab('content')}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
+            mobileTab === 'content'
+              ? 'bg-[#FF7F5B] text-white shadow-md'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Film className="w-4 h-4" />
+          <span>Aula Atual</span>
+        </button>
+
+        <button
+          onClick={() => setMobileTab('modules')}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
+            mobileTab === 'modules'
+              ? 'bg-[#FF7F5B] text-white shadow-md'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>Módulos ({progressPercent}%)</span>
+        </button>
+      </div>
+
       {/* Classroom Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Main Video & Lesson Content Area */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={`lg:col-span-2 space-y-6 ${mobileTab === 'content' ? 'block' : 'hidden lg:block'}`}>
           
           {/* Controls Bar for Media Mode & Speed */}
           <div className="bg-[#101B1E] p-3 rounded-2xl border border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -517,7 +556,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
         </div>
 
         {/* Sidebar: Netflix Episodes Picker with Dropdown & Collapsible Modules */}
-        <div className="space-y-6">
+        <div className={`space-y-6 ${mobileTab === 'modules' ? 'block animate-fade-in' : 'hidden lg:block'}`}>
           
           {/* Progress Card */}
           <div className="bg-[#101B1E] rounded-3xl p-6 border border-white/10 shadow-lg space-y-3">
