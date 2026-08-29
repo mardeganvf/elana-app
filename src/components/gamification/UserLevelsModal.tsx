@@ -131,7 +131,7 @@ export const UserLevelsModal: React.FC<UserLevelsModalProps> = ({ currentXp, onC
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-[#070D0F] border-t border-white/10 shrink-0 text-center">
+        <div className="p-4 pb-safe bg-[#070D0F] border-t border-white/10 shrink-0 text-center">
           <button
             onClick={onClose}
             className="w-full bg-[#FF7F5B] hover:bg-[#e06847] text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all shadow-md"

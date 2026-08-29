@@ -130,7 +130,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
       </div>
 
       {/* Main High-Impact Level Up Card — bottom sheet on mobile, centered card on desktop */}
-      <div className="relative z-10 w-full md:max-w-lg bg-gradient-to-b from-[#182C31] via-[#101E22] to-[#070E10] border-2 border-[#FFD166]/70 md:rounded-[36px] rounded-t-[36px] p-6 sm:p-9 shadow-[0_0_100px_rgba(255,209,102,0.45)] text-center space-y-6 animate-slide-up md:animate-scale-up overflow-y-auto max-h-[92dvh] md:max-h-[90vh]">
+      <div className="relative z-10 w-full md:max-w-lg bg-gradient-to-b from-[#182C31] via-[#101E22] to-[#070E10] border-2 border-[#FFD166]/70 md:rounded-[36px] rounded-t-[36px] p-6 sm:p-9 pb-safe shadow-[0_0_100px_rgba(255,209,102,0.45)] text-center space-y-6 animate-slide-up md:animate-scale-up overflow-y-auto max-h-[92dvh] md:max-h-[90vh]">
 
         {/* Drag handle — mobile only */}
         <div className="md:hidden w-10 h-1 bg-white/20 rounded-full mx-auto -mt-3 mb-0" />

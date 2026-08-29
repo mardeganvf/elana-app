@@ -96,7 +96,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       {/* Backdrop */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative z-10 bg-[#101B1E] md:rounded-3xl rounded-t-[32px] max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-white/15 text-white space-y-5 max-h-[92dvh] md:max-h-[90vh] overflow-y-auto animate-slide-up md:animate-scale-up">
+      <div className="relative z-10 bg-[#101B1E] md:rounded-3xl rounded-t-[32px] max-w-lg w-full p-6 sm:p-8 pb-safe shadow-2xl border border-white/15 text-white space-y-5 max-h-[92dvh] md:max-h-[90vh] overflow-y-auto animate-slide-up md:animate-scale-up">
         
         {/* Drag handle — mobile only */}
         <div className="md:hidden flex justify-center pb-2 -mt-2">

@@ -193,7 +193,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
         </div>
 
         {/* Scrollable Content Container */}
-        <div className="px-6 sm:px-8 pb-8 relative -mt-12 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+        <div className="px-6 sm:px-8 pb-8 pb-safe relative -mt-12 space-y-6 overflow-y-auto custom-scrollbar flex-1">
 
           
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
