@@ -845,6 +845,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               </div>
             )}
 
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* Feature 3 Modal: Respiro de 60 Segundos (Pausa Acolhedora) */}
       {isBreathingModalOpen && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
