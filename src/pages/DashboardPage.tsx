@@ -488,7 +488,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
           )}
         </div>
 
-        <div className="flex flex-col items-end gap-3">
+        <div className="flex items-center gap-3">
           {/* Notifications Toggle */}
           <button
             onClick={async () => {
@@ -511,45 +511,93 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             <Bell className="w-4 h-4" />
             <span>{notificationsEnabled ? 'Notificações Ligadas' : 'Ligar Notificações'}</span>
           </button>
+        </div>
+      </section>
 
-          {/* User Quick Gamification Badges Banner */}
-          <div className="flex items-center gap-4 bg-[#070D0F] p-4 rounded-2xl border border-white/10">
-            
-            <div className="text-center px-3">
-              <div className="flex items-center justify-center gap-1 text-[#FF7F5B] font-black text-xl">
-                <Flame className="w-5 h-5 fill-current animate-bounce" />
-                <span>{user.streakDays}</span>
-              </div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                {user.streakDays === 1 ? 'Dia Conosco' : 'Dias Conosco'}
-              </span>
-            </div>
-
-            <div className="w-px h-8 bg-white/10"></div>
-
-            <div className="text-center px-3">
-              <div className="flex items-center justify-center gap-1 text-[#FFD166] font-black text-xl">
-                <Sparkles className="w-5 h-5 fill-current" />
-                <span>{user.xp}</span>
-              </div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                {user.xp === 1 ? 'Ponto' : 'Pontos'}
-              </span>
-            </div>
-
-            <div className="w-px h-8 bg-white/10"></div>
-
-            <div className="text-center px-3">
-              <div className="flex items-center justify-center gap-1 text-[#E66795] font-black text-xl">
-                <Award className="w-5 h-5" />
-                <span>{user.badges.length}</span>
-              </div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                {user.badges.length === 1 ? 'Conquista' : 'Conquistas'}
-              </span>
-            </div>
+      {/* ── 2x2 STATUS METRICS GRID (Compact on mobile, 4 columns on desktop) ── */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        
+        {/* Card 1: Nível Atual */}
+        <div 
+          onClick={() => setIsLevelsModalOpen(true)}
+          className="bg-[#101B1E] p-4 sm:p-5 rounded-3xl border border-white/10 hover:border-[#FF7F5B]/50 transition-all shadow-md cursor-pointer group flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs font-extrabold text-[#FF7F5B] uppercase tracking-wider">
+              Nível
+            </span>
+            <span className="text-2xl group-hover:scale-110 transition-transform">{userLevelInfo.icon}</span>
+          </div>
+          <div className="mt-2">
+            <h4 className="text-sm sm:text-base font-black text-white truncate group-hover:text-[#FF7F5B] transition-colors">
+              {userLevelInfo.title}
+            </h4>
+            <span className="text-[10px] text-slate-400 font-bold block mt-0.5">
+              Ver 15 níveis →
+            </span>
           </div>
         </div>
+
+        {/* Card 2: Pontos XP */}
+        <div className="bg-[#101B1E] p-4 sm:p-5 rounded-3xl border border-white/10 shadow-md flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs font-extrabold text-[#FFD166] uppercase tracking-wider">
+              Pontuação
+            </span>
+            <div className="p-1.5 rounded-xl bg-[#FFD166]/10 text-[#FFD166]">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+            </div>
+          </div>
+          <div className="mt-2">
+            <h4 className="text-sm sm:text-base font-black text-white">
+              {user.xp} <span className="text-xs font-bold text-[#FFD166]">XP</span>
+            </h4>
+            <span className="text-[10px] text-slate-400 font-bold block mt-0.5">
+              {user.xp === 1 ? 'Ponto acumulado' : 'Pontos acumulados'}
+            </span>
+          </div>
+        </div>
+
+        {/* Card 3: Dias Conosco (Streak) */}
+        <div className="bg-[#101B1E] p-4 sm:p-5 rounded-3xl border border-white/10 shadow-md flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs font-extrabold text-[#FF7F5B] uppercase tracking-wider">
+              Caminhada
+            </span>
+            <div className="p-1.5 rounded-xl bg-[#FF7F5B]/10 text-[#FF7F5B]">
+              <Flame className="w-4 h-4 sm:w-5 sm:h-5 fill-current animate-bounce" />
+            </div>
+          </div>
+          <div className="mt-2">
+            <h4 className="text-sm sm:text-base font-black text-white">
+              {user.streakDays} <span className="text-xs font-bold text-[#FF7F5B]">{user.streakDays === 1 ? 'Dia' : 'Dias'}</span>
+            </h4>
+            <span className="text-[10px] text-slate-400 font-bold block mt-0.5">
+              Constância na aldeia
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: Conquistas */}
+        <div className="bg-[#101B1E] p-4 sm:p-5 rounded-3xl border border-white/10 shadow-md flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs font-extrabold text-[#E66795] uppercase tracking-wider">
+              Conquistas
+            </span>
+            <div className="p-1.5 rounded-xl bg-[#E66795]/10 text-[#E66795]">
+              <Award className="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+          </div>
+          <div className="mt-2">
+            <h4 className="text-sm sm:text-base font-black text-white">
+              {user.badges.length} <span className="text-xs font-bold text-slate-400">/ {ALL_BADGES.length}</span>
+            </h4>
+            <span className="text-[10px] text-slate-400 font-bold block mt-0.5">
+              Badges desbloqueadas
+            </span>
+          </div>
+        </div>
+
       </section>
 
       {/* 📝 Um pouquinho sobre mim & 👶 Minha Família */}
@@ -1117,12 +1165,49 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
       {/* 🎖️ Minhas Conquistas (Todas as Badges) */}
       <section className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+          <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
+            <Award className="w-6 h-6 text-[#FF7F5B]" />
             Minhas Conquistas ({getUnlockedBadgesCount(user.badges)}/{ALL_BADGES.length})
           </h2>
+          <span className="text-xs text-slate-400 font-bold md:hidden">
+            Deslize para ver todas →
+          </span>
         </div>
 
-        <div className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl">
+        {/* ── MOBILE: Horizontal Swipe Carousel for Badges ── */}
+        <div className="md:hidden">
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+            {ALL_BADGES.map(badge => {
+              const isUnlocked = user.badges.some(b => b.id === badge.id || b.title === badge.title);
+              return (
+                <div
+                  key={badge.id}
+                  className={`shrink-0 snap-start w-36 p-4 rounded-3xl border flex flex-col items-center justify-center text-center space-y-2 transition-all ${
+                    isUnlocked
+                      ? 'bg-gradient-to-b from-[#152428] to-[#0D181A] border-[#FF7F5B]/50 shadow-lg shadow-[#FF7F5B]/10'
+                      : 'bg-[#070D0F]/80 border-white/5 opacity-40'
+                  }`}
+                >
+                  <div className="relative">
+                    <span className="text-3xl filter drop-shadow">{badge.icon}</span>
+                    {isUnlocked && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#FFD166] ring-2 ring-[#070D0F]" />
+                    )}
+                  </div>
+                  <div className="min-w-0 w-full">
+                    <h4 className="text-xs font-bold text-white truncate">{badge.title}</h4>
+                    <span className={`text-[10px] font-black block mt-0.5 ${isUnlocked ? 'text-[#FFD166]' : 'text-slate-500'}`}>
+                      {isUnlocked ? `+${badge.rewardXp} XP` : 'Bloqueado'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── DESKTOP: Full Categorized Badge Gallery ── */}
+        <div className="hidden md:block bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl">
           <BadgeGallery unlockedBadges={user.badges} hideHeaderTitle={true} />
         </div>
       </section>
