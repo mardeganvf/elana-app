@@ -325,14 +325,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       value={userName}
                       onChange={(e) => setUserName(e.target.value)}
                       placeholder="Seu nome"
-                      className="px-3 py-1.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none w-full sm:w-auto font-bold"
+                      className="px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none w-full sm:w-auto font-bold"
                     />
                     <input
                       type="email"
                       value={pendingEmail}
                       onChange={(e) => setPendingEmail(e.target.value)}
                       placeholder="Novo e-mail"
-                      className="px-3 py-1.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none w-full sm:w-auto"
+                      className="px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none w-full sm:w-auto"
                     />
                     <input
                       type="tel"
@@ -340,7 +340,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       onChange={(e) => setUserPhone(formatPhoneMask(e.target.value))}
                       placeholder="Celular (00) 00000-0000"
                       maxLength={15}
-                      className="px-3 py-1.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none w-full sm:w-auto font-medium"
+                      className="px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none w-full sm:w-auto font-medium"
                     />
                     <button
                       onClick={async () => {
@@ -408,7 +408,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                         if (codeError) setCodeError(false);
                       }}
                       placeholder="000000"
-                      className="px-3 py-2 bg-[#101B1E] border border-white/20 rounded-xl text-sm font-black text-center text-white tracking-widest focus:outline-none focus:border-[#FF7F5B] w-36"
+                      className="px-3.5 py-2.5 bg-[#101B1E] border border-white/20 rounded-xl text-base sm:text-sm font-black text-center text-white tracking-widest focus:outline-none focus:border-[#FF7F5B] w-36"
                     />
 
                     <button
@@ -627,7 +627,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   value={bioText}
                   onChange={(e) => setBioText(e.target.value)}
                   placeholder="Escreva uma breve apresentação sobre você..."
-                  className="w-full p-3.5 bg-[#070D0F] border border-[#FF7F5B]/50 rounded-2xl text-xs text-white focus:outline-none transition-all resize-none"
+                  className="w-full p-3.5 bg-[#070D0F] border border-[#FF7F5B]/50 rounded-2xl text-base sm:text-xs text-white focus:outline-none transition-all resize-none"
                 />
                 <button
                   onClick={async () => {
@@ -738,7 +738,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                         setNewChildName('');
                       }
                     }}
-                    className="bg-[#101B1E] border border-white/15 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none cursor-pointer font-bold"
+                    className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white focus:outline-none cursor-pointer font-bold"
                   >
                     <option value="👦">👦 Menino</option>
                     <option value="👧">👧 Menina</option>
@@ -750,14 +750,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                     placeholder="Nome do filho(a)"
                     value={newChildName}
                     onChange={(e) => setNewChildName(e.target.value)}
-                    className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none placeholder-slate-500 font-bold"
+                    className="bg-[#101B1E] border border-white/15 rounded-xl px-3.5 py-2.5 text-base sm:text-xs text-white focus:outline-none placeholder-slate-500 font-bold"
                   />
 
                   {newChildEmoji === '🤰' ? (
                     <select
                       value={pregnancyMonth}
                       onChange={(e) => setPregnancyMonth(e.target.value)}
-                      className="bg-[#101B1E] border border-white/15 rounded-xl px-2.5 py-2 text-xs text-purple-200 focus:outline-none cursor-pointer font-bold"
+                      className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2.5 text-base sm:text-xs text-purple-200 focus:outline-none cursor-pointer font-bold"
                     >
                       <option value="" disabled hidden>Quantos meses?</option>
                       <option value="1º mês">1º mês</option>
@@ -776,7 +776,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       placeholder="Data (DD/MM/AAAA) ou Idade"
                       value={newChildBirthdate}
                       onChange={(e) => setNewChildBirthdate(formatBirthdateMask(e.target.value))}
-                      className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none w-full placeholder-slate-500 font-medium"
+                      className="bg-[#101B1E] border border-white/15 rounded-xl px-3.5 py-2.5 text-base sm:text-xs text-white focus:outline-none w-full placeholder-slate-500 font-medium"
                     />
                   )}
                 </div>

@@ -130,3 +130,13 @@ button, input, select, textarea {
 .mamada-mode video {
   filter: sepia(0.3) saturate(1.1);
 }
+
+/* Previne zoom automático indesejado no iOS Safari e garante conforto de toque em telas mobile */
+@media screen and (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+

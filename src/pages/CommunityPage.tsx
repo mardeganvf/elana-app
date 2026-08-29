@@ -1104,7 +1104,7 @@ export const CommunityPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar por palavras-chave, assuntos ou autores nesta sala"
-                className="w-full pl-11 pr-16 py-3.5 rounded-2xl bg-[#101B1E] border border-white/10 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#FF7F5B] transition-colors shadow-md"
+                className="w-full pl-11 pr-16 py-3.5 rounded-2xl bg-[#101B1E] border border-white/10 text-base sm:text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#FF7F5B] transition-colors shadow-md"
               />
               {searchQuery && (
                 <button
@@ -1332,7 +1332,7 @@ export const CommunityPage: React.FC = () => {
                                   placeholder="Escreva uma resposta com empatia e respeito..."
                                   value={commentInputs[post.id] || ''}
                                   onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
-                                  className="flex-1 p-3 rounded-xl border border-white/10 text-xs bg-[#101B1E] text-white focus:outline-none focus:border-[#FF7F5B]"
+                                  className="flex-1 p-3 rounded-xl border border-white/10 text-base sm:text-xs bg-[#101B1E] text-white focus:outline-none focus:border-[#FF7F5B]"
                                 />
                                 <button
                                   type="submit"

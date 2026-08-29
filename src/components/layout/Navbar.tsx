@@ -722,7 +722,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                     onChange={(e) => setSosMessage(e.target.value)}
                     placeholder="O que está te incomodando hoje?"
                     rows={4}
-                    className="w-full bg-[#070D0F] border border-white/15 focus:border-rose-400/60 rounded-2xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all resize-none"
+                    className="w-full bg-[#070D0F] border border-white/15 focus:border-rose-400/60 rounded-2xl p-3.5 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none transition-all resize-none"
                   />
 
                   <button

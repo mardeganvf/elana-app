@@ -305,7 +305,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Seu nome completo"
-                  className="w-full p-2.5 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
+                  className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
                 />
               </div>
             )}
@@ -318,7 +318,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu.email@exemplo.com"
-                className="w-full p-2.5 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
+                className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
               />
             </div>
 
@@ -332,7 +332,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                   value={confirmEmail}
                   onChange={(e) => setConfirmEmail(e.target.value)}
                   placeholder="Redigite seu e-mail"
-                  className="w-full p-2.5 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
+                  className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
                 />
               </div>
             )}
@@ -346,7 +346,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full p-2.5 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
+                  className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
                 />
               </div>
             )}
@@ -361,7 +361,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Redigite sua senha"
-                  className="w-full p-2.5 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
+                  className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
                 />
               </div>
             )}

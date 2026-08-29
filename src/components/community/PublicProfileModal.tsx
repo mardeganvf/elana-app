@@ -438,7 +438,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
                   placeholder={`Escreva uma mensagem carinhosa ou depoimento público para ${profile.name}...`}
                   value={newTestimonial}
                   onChange={(e) => setNewTestimonial(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-white/10 text-xs bg-[#101B1E] text-white focus:outline-none focus:border-[#E66795] resize-none"
+                  className="w-full p-3 rounded-xl border border-white/10 text-base sm:text-xs bg-[#101B1E] text-white focus:outline-none focus:border-[#E66795] resize-none"
                 />
                 <div className="flex justify-end">
                   <button

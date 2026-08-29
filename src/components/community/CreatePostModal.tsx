@@ -150,7 +150,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               placeholder="Ex: Meu bebê falou a primeira palavra hoje."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-3 rounded-2xl border border-white/15 text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B] transition-all"
+              className="w-full p-3.5 rounded-2xl border border-white/15 text-base sm:text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B] transition-all"
             />
           </div>
 
@@ -165,7 +165,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               placeholder="Escreva com o coração. Este é um espaço de acolhimento mútuo."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full p-3 rounded-2xl border border-white/15 text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B] transition-all resize-none"
+              className="w-full p-3.5 rounded-2xl border border-white/15 text-base sm:text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B] transition-all resize-none"
             />
           </div>
 

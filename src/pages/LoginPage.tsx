@@ -429,7 +429,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Seu nome completo"
-                  className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                  className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
                 />
               </div>
             )}
@@ -447,7 +447,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 onChange={handleIdentifierChange}
                 placeholder={loginMethod === 'email' ? 'seu@email.com' : '(00) 00000-0000'}
                 maxLength={loginMethod === 'phone' ? 15 : 100}
-                className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
               />
             </div>
 
@@ -462,7 +462,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                   value={confirmEmail}
                   onChange={(e) => setConfirmEmail(e.target.value)}
                   placeholder="Redigite seu e-mail para confirmação"
-                  className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                  className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
                 />
               </div>
             )}
@@ -488,7 +488,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                  className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
                 />
               </div>
             )}
@@ -504,7 +504,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Redigite sua senha para confirmação"
-                  className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                  className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
                 />
               </div>
             )}
