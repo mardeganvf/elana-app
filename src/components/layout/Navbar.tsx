@@ -233,8 +233,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
 
         </div>
 
-        {/* Right: Gamification Widget & Profile Dropdown Avatar */}
-        <div className="flex items-center gap-3 text-slate-300 shrink-0">
+        {/* Right: Gamification Widget & Profile Dropdown Avatar (Desktop Only) */}
+        <div className="hidden md:flex items-center gap-3 text-slate-300 shrink-0">
           
           {isAuthenticated && user ? (
             <>
