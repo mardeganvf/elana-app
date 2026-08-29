@@ -125,10 +125,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
   }, []);
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      isScrolled ? 'netflix-nav-scrolled py-3' : 'bg-gradient-to-b from-black/90 via-black/50 to-transparent py-4 sm:py-5'
-    }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 flex items-center justify-between gap-4">
+    <>
+      <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+        isScrolled ? 'netflix-nav-scrolled py-3' : 'bg-gradient-to-b from-black/90 via-black/50 to-transparent py-4 sm:py-5'
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex items-center justify-between gap-4">
         
         {/* Left: Brand Logo & Main Navigation */}
         <div className="flex items-center gap-4 lg:gap-8 shrink-0">
@@ -428,10 +429,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         </div>
 
       </div>
+    </header>
 
-      {/* ── MOBILE BOTTOM TAB BAR ───────────────────────────────────────────── */}
-      <div
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#070D0F]/98 backdrop-blur-xl border-t border-white/10"
+    {/* ── MOBILE BOTTOM TAB BAR ───────────────────────────────────────────── */}
+    <div
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#070D0F]/98 backdrop-blur-xl border-t border-white/10"
         style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))' }}
       >
         <div className="flex items-end justify-around px-2 pt-2 pb-2">
@@ -775,6 +777,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         document.body
       )}
 
-    </header>
+    </>
   );
 };
