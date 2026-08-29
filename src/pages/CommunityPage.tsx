@@ -13,6 +13,7 @@ import { CreatePostModal } from '../components/community/CreatePostModal';
 import { PublicProfileModal, PublicUserProfile, ChildInfo, ProfileTestimonial } from '../components/community/PublicProfileModal';
 import { PostSkeleton } from '../components/common/SkeletonLoader';
 import { getLevelFromXP } from '../data/gamificationData';
+import { useToast } from '../context/ToastContext';
 import { 
   MessageSquare, 
   Plus, 
@@ -32,7 +33,8 @@ import {
   HelpCircle,
   Wind,
   X,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 
 export type ActiveSelection = 
@@ -140,8 +142,60 @@ const splitTextIntoTwoLines = (text: string) => {
 };
 
 export const CommunityPage: React.FC = () => {
-  const { posts, isLoading, toggleReaction, toggleCommentReaction, addComment } = useCommunity();
+  const { posts, isLoading, refreshPosts, toggleReaction, toggleCommentReaction, addComment } = useCommunity();
   const { user, isAuthenticated } = useAuth();
+  const { showToast } = useToast();
+
+  // Pull-to-Refresh State
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const touchStartY = React.useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Only engage pull-down if window is at the very top of the page
+    if (window.scrollY <= 0) {
+      touchStartY.current = e.touches[0].clientY;
+    } else {
+      touchStartY.current = null;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null || isRefreshing) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - touchStartY.current;
+
+    if (diff > 0 && window.scrollY <= 0) {
+      // Elastic damping formula: max 85px
+      const damped = Math.min(diff * 0.45, 85);
+      setPullDistance(damped);
+    } else {
+      setPullDistance(0);
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (touchStartY.current === null) return;
+    touchStartY.current = null;
+
+    if (pullDistance >= 50 && !isRefreshing) {
+      setIsRefreshing(true);
+      setPullDistance(50);
+      try {
+        await refreshPosts();
+        showToast('success', 'Comunidade atualizada! ✨');
+      } catch (err) {
+        console.warn('Refresh error:', err);
+      } finally {
+        setTimeout(() => {
+          setIsRefreshing(false);
+          setPullDistance(0);
+        }, 500);
+      }
+    } else {
+      setPullDistance(0);
+    }
+  };
 
   // Left Sidebar Drill-Down State (All collapsed and none selected by default)
   const [expandedJourneyId, setExpandedJourneyId] = useState<string | null>(null);
@@ -464,7 +518,12 @@ export const CommunityPage: React.FC = () => {
   const currentHeader = getHeaderDetails();
 
   return (
-    <div className="space-y-4 lg:space-y-8 pb-20 animate-fade-in max-w-7xl mx-auto text-white -mt-4 relative">
+    <div 
+      className="space-y-4 lg:space-y-8 pb-20 animate-fade-in max-w-7xl mx-auto text-white -mt-4 relative"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       
       {/* Daily Check-in Pop-up Modal (Portal to document.body for true viewport centering) */}
       {isDailyCheckinModalOpen && createPortal(
@@ -630,6 +689,25 @@ export const CommunityPage: React.FC = () => {
         </div>,
         document.body
       )}
+
+      {/* ── Pull to Refresh Visual Indicator (Mobile) ── */}
+      <div 
+        className="flex items-center justify-center overflow-hidden transition-all duration-200 pointer-events-none -mb-1"
+        style={{ 
+          height: `${pullDistance}px`, 
+          opacity: pullDistance > 10 ? Math.min(pullDistance / 35, 1) : 0,
+          transform: `scale(${Math.min(0.6 + pullDistance / 90, 1)})`
+        }}
+      >
+        <div className="w-10 h-10 rounded-full bg-[#101B1E] border border-[#FF7F5B]/70 shadow-[0_0_25px_rgba(255,127,91,0.4)] flex items-center justify-center text-white">
+          <RefreshCw 
+            className={`w-4 h-4 text-[#FF7F5B] ${isRefreshing ? 'animate-spin' : ''}`}
+            style={{ 
+              transform: isRefreshing ? undefined : `rotate(${pullDistance * 4}deg)` 
+            }}
+          />
+        </div>
+      </div>
 
       {/* Top Banner (Centered, Coral Orange Header) */}
       <section className="bg-[#101B1E] text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-white/10 relative overflow-hidden text-center">

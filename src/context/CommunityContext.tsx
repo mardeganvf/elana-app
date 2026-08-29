@@ -67,6 +67,7 @@ interface CommunityContextType {
   toggleReaction: (postId: string, reactionKey: string) => void;
   toggleCommentReaction: (postId: string, commentId: string, reactionKey: string) => void;
   addComment: (postId: string, content: string, isAnonymous?: boolean) => { isFlagged: boolean; matchedWord?: string };
+  refreshPosts: () => Promise<void>;
 }
 
 const CommunityContext = createContext<CommunityContextType | undefined>(undefined);
@@ -100,62 +101,66 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  const fetchSupabasePosts = async (showLoading = false) => {
+    if (showLoading) setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('community_posts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('Supabase fetch notice:', error.message);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const remotePosts: CommunityPost[] = data.map((item: any) => ({
+          id: item.id,
+          journeyId: item.journey_id,
+          transversalRoomId: item.transversal_room_id,
+          ageBracketId: item.age_bracket_id,
+          emotionalIntention: item.emotional_intention,
+          authorId: item.author_id || 'demo-user',
+          authorName: item.author_name,
+          authorAvatar: item.author_avatar,
+          authorRole: 'membro',
+          isAnonymous: item.is_anonymous,
+          sensitivityLevel: item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
+          title: item.title,
+          content: item.content,
+          createdAt: new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          reactions: {},
+          userReactions: {},
+          comments: []
+        }));
+
+        setPosts(prev => {
+          const combined = [...remotePosts];
+          // Add local posts that aren't in remote
+          prev.forEach(p => {
+            if (!combined.some(r => r.id === p.id)) {
+              combined.push(p);
+            }
+          });
+          return combined.map(sanitizePost);
+        });
+      }
+    } catch (err) {
+      console.warn('Supabase connection fallback to local state:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Fetch posts from Supabase on mount
   useEffect(() => {
-    const fetchSupabasePosts = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('community_posts')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.warn('Supabase fetch notice:', error.message);
-          setIsLoading(false);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          const remotePosts: CommunityPost[] = data.map((item: any) => ({
-            id: item.id,
-            journeyId: item.journey_id,
-            transversalRoomId: item.transversal_room_id,
-            ageBracketId: item.age_bracket_id,
-            emotionalIntention: item.emotional_intention,
-            authorId: item.author_id || 'demo-user',
-            authorName: item.author_name,
-            authorAvatar: item.author_avatar,
-            authorRole: 'membro',
-            isAnonymous: item.is_anonymous,
-            sensitivityLevel: item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
-            title: item.title,
-            content: item.content,
-            createdAt: new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-            reactions: {},
-            userReactions: {},
-            comments: []
-          }));
-
-          setPosts(prev => {
-            const combined = [...remotePosts];
-            // Add local posts that aren't in remote
-            prev.forEach(p => {
-              if (!combined.some(r => r.id === p.id)) {
-                combined.push(p);
-              }
-            });
-            return combined.map(sanitizePost);
-          });
-        }
-      } catch (err) {
-        console.warn('Supabase connection fallback to local state:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSupabasePosts();
+    fetchSupabasePosts(true);
   }, []);
+
+  const refreshPosts = async () => {
+    await fetchSupabasePosts(false);
+  };
 
   // Supabase Realtime: live posts and comments via WebSockets
   useEffect(() => {
@@ -442,7 +447,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       createPost,
       toggleReaction,
       toggleCommentReaction,
-      addComment
+      addComment,
+      refreshPosts
     }}>
       {children}
     </CommunityContext.Provider>
