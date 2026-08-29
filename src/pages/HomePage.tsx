@@ -281,7 +281,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
               <div
                 key={story.id}
                 onClick={() => setActiveStoryIndex(originalIndex !== -1 ? originalIndex : 0)}
-                className="group flex-none w-36 sm:w-44 aspect-[9/16] rounded-2xl overflow-hidden relative cursor-pointer border border-white/15 shadow-xl hover:border-[#FF7F5B] transition-all duration-300 hover:-translate-y-1.5"
+                className="group flex-none w-36 sm:w-44 aspect-[9/16] rounded-2xl overflow-hidden relative cursor-pointer border border-white/15 shadow-xl hover:border-[#FF7F5B] transition-all duration-300 hover:-translate-y-1.5 active:scale-95"
               >
                 {/* Vertical Poster Image (Full Custom Cover Art) */}
                 <img

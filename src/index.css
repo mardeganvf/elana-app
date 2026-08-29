@@ -140,3 +140,19 @@ button, input, select, textarea {
   }
 }
 
+/* Feedback tátil universal em elementos interativos e remoção do highlight cinza */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  button:active,
+  [role="button"]:active,
+  a:active,
+  .touch-feedback:active {
+    transform: scale(0.96);
+    transition: transform 0.08s ease-out;
+  }
+}
+
+

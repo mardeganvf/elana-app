@@ -76,7 +76,7 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
 
   return (
     <div 
-      className="group relative bg-[#101B1E] rounded-2xl overflow-hidden border border-white/10 shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between hover:-translate-y-1.5 cursor-pointer"
+      className="group relative bg-[#101B1E] rounded-2xl overflow-hidden border border-white/10 shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between hover:-translate-y-1.5 cursor-pointer active:scale-[0.98]"
       onClick={() => isPurchased && onStartLearning ? onStartLearning(journey) : onSelect(journey)}
     >
       

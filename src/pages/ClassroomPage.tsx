@@ -581,7 +581,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                             <button
                               key={lesson.id}
                               onClick={() => handleLessonChange(lesson)}
-                              className={`w-full text-left p-2.5 rounded-xl flex items-start gap-2.5 transition-all ${
+                              className={`w-full text-left p-2.5 rounded-xl flex items-start gap-2.5 transition-all cursor-pointer active:scale-95 ${
                                 isCurrent
                                   ? 'bg-[#FF7F5B] text-white font-bold shadow-md'
                                   : 'hover:bg-white/5 text-slate-300'
