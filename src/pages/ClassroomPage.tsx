@@ -269,6 +269,8 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                 ref={videoRef}
                 key={activeLesson.id}
                 controls
+                playsInline
+                preload="metadata"
                 autoPlay={false}
                 onEnded={triggerAutoplayCountdown}
                 className="w-full h-full object-cover"
