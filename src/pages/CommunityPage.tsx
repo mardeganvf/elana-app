@@ -11,6 +11,7 @@ import {
 } from '../data/communityData';
 import { CreatePostModal } from '../components/community/CreatePostModal';
 import { PublicProfileModal, PublicUserProfile, ChildInfo, ProfileTestimonial } from '../components/community/PublicProfileModal';
+import { PostSkeleton } from '../components/common/SkeletonLoader';
 import { getLevelFromXP } from '../data/gamificationData';
 import { 
   MessageSquare, 
@@ -139,7 +140,7 @@ const splitTextIntoTwoLines = (text: string) => {
 };
 
 export const CommunityPage: React.FC = () => {
-  const { posts, toggleReaction, toggleCommentReaction, addComment } = useCommunity();
+  const { posts, isLoading, toggleReaction, toggleCommentReaction, addComment } = useCommunity();
   const { user, isAuthenticated } = useAuth();
 
   // Left Sidebar Drill-Down State (All collapsed and none selected by default)
@@ -1130,7 +1131,13 @@ export const CommunityPage: React.FC = () => {
 
           {/* Feed of Posts */}
           <section className="space-y-6">
-            {filteredPosts.length === 0 ? (
+            {isLoading ? (
+              <div className="space-y-6">
+                <PostSkeleton />
+                <PostSkeleton />
+                <PostSkeleton />
+              </div>
+            ) : filteredPosts.length === 0 ? (
               <div className="bg-[#101B1E] rounded-3xl p-12 text-center space-y-3 border border-white/10">
                 <div className="w-12 h-12 rounded-full bg-white/5 text-slate-400 mx-auto flex items-center justify-center text-xl">
                   💬

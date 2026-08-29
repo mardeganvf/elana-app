@@ -62,6 +62,7 @@ export const getRandomAnonymousName = () => {
 
 interface CommunityContextType {
   posts: CommunityPost[];
+  isLoading: boolean;
   createPost: (payload: CreatePostPayload) => void;
   toggleReaction: (postId: string, reactionKey: string) => void;
   toggleCommentReaction: (postId: string, commentId: string, reactionKey: string) => void;
@@ -97,6 +98,7 @@ const sanitizePost = (post: CommunityPost): CommunityPost => {
 export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, addXP } = useAuth();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Fetch posts from Supabase on mount
   useEffect(() => {
@@ -109,6 +111,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
         if (error) {
           console.warn('Supabase fetch notice:', error.message);
+          setIsLoading(false);
           return;
         }
 
@@ -146,6 +149,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       } catch (err) {
         console.warn('Supabase connection fallback to local state:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -433,6 +438,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   return (
     <CommunityContext.Provider value={{
       posts,
+      isLoading,
       createPost,
       toggleReaction,
       toggleCommentReaction,
