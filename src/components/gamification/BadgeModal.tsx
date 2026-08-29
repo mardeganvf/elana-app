@@ -16,7 +16,7 @@ export const BadgeModal: React.FC<BadgeModalProps> = ({ badge, onClose }) => {
   const firstName = user?.name.split(' ')[0] || 'Membro';
 
   return (
-    <div className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 select-none overflow-hidden">
+    <div className="fixed inset-0 z-[9999999] flex items-end md:items-center justify-center select-none overflow-hidden">
       
       {/* Dark Blurred Backdrop */}
       <div 
@@ -27,8 +27,12 @@ export const BadgeModal: React.FC<BadgeModalProps> = ({ badge, onClose }) => {
       {/* Radial Glow Rays in Background */}
       <div className="absolute w-[500px] h-[500px] bg-gradient-to-tr from-[#E66795]/30 to-[#FF7F5B]/40 rounded-full blur-[100px] pointer-events-none animate-pulse" />
 
-      {/* Main Impact Card */}
-      <div className="relative z-10 w-full max-w-md bg-gradient-to-b from-[#152428] via-[#0F1B1E] to-[#091113] border-2 border-[#FF7F5B]/60 rounded-[32px] p-8 shadow-[0_0_80px_rgba(255,127,91,0.4)] text-center space-y-5 animate-scale-up">
+      {/* Main Impact Card — bottom sheet on mobile, centered card on desktop */}
+      <div className="relative z-10 w-full md:max-w-md bg-gradient-to-b from-[#152428] via-[#0F1B1E] to-[#091113] border-2 border-[#FF7F5B]/60 md:rounded-[32px] rounded-t-[32px] p-8 shadow-[0_0_80px_rgba(255,127,91,0.4)] text-center space-y-5 animate-slide-up md:animate-scale-up overflow-y-auto max-h-[92dvh] md:max-h-[90vh]">
+
+        {/* Drag handle — mobile only */}
+        <div className="md:hidden w-10 h-1 bg-white/20 rounded-full mx-auto -mt-3 mb-2" />
+
         
         {/* Top Right Close Button */}
         <button

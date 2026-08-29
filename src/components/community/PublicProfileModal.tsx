@@ -169,8 +169,16 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
   const reactionsReceived = profile.reactionsReceivedCount ?? 89;
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in text-white overflow-y-auto">
-      <div className="bg-[#101B1E] rounded-3xl max-w-xl w-full border border-white/15 shadow-2xl relative overflow-hidden my-8 animate-scale-up max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-[99999] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-md animate-fade-in text-white">
+      {/* Backdrop — click to close */}
+      <div className="absolute inset-0" onClick={onClose} />
+
+      <div className="relative z-10 bg-[#101B1E] w-full md:max-w-xl md:rounded-3xl rounded-t-3xl border border-white/15 shadow-2xl overflow-hidden md:my-8 animate-slide-up md:animate-scale-up max-h-[92dvh] md:max-h-[90vh] flex flex-col">
+
+        {/* Drag handle — mobile only */}
+        <div className="md:hidden flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-10 h-1 bg-white/20 rounded-full" />
+        </div>
         
         {/* Header Background Banner */}
         <div className="h-28 bg-gradient-to-r from-[#E66795]/30 via-[#FF7F5B]/30 to-[#8A9A5B]/30 relative shrink-0">
@@ -186,6 +194,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
 
         {/* Scrollable Content Container */}
         <div className="px-6 sm:px-8 pb-8 relative -mt-12 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+
           
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="relative">

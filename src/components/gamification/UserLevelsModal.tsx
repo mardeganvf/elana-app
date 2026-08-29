@@ -12,9 +12,17 @@ export const UserLevelsModal: React.FC<UserLevelsModalProps> = ({ currentXp, onC
   const currentLevelInfo = getLevelFromXP(currentXp);
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
-      <div className="bg-[#101B1E] rounded-3xl max-w-2xl w-full border border-white/15 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[99999] flex items-end md:items-center justify-center md:p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
+      {/* Backdrop */}
+      <div className="absolute inset-0" onClick={onClose} />
+
+      <div className="relative z-10 bg-[#101B1E] md:rounded-3xl rounded-t-[32px] max-w-2xl w-full border border-white/15 shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] md:max-h-[90vh] animate-slide-up md:animate-scale-up">
         
+        {/* Drag handle — mobile only */}
+        <div className="md:hidden flex justify-center pt-3 pb-1 bg-gradient-to-r from-[#FF7F5B]/20 via-[#101B1E] to-[#8A9A5B]/20 shrink-0">
+          <div className="w-10 h-1 bg-white/20 rounded-full" />
+        </div>
+
         {/* Header */}
         <div className="p-6 sm:p-8 bg-gradient-to-r from-[#FF7F5B]/20 via-[#101B1E] to-[#8A9A5B]/20 border-b border-white/10 shrink-0 relative">
           <button

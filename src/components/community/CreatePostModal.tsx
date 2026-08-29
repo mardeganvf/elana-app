@@ -92,9 +92,17 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
-      <div className="bg-[#101B1E] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-white m-auto space-y-5 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[99999] flex items-end md:items-center justify-center md:p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
+      {/* Backdrop */}
+      <div className="absolute inset-0" onClick={onClose} />
+
+      <div className="relative z-10 bg-[#101B1E] md:rounded-3xl rounded-t-[32px] max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-white/15 text-white space-y-5 max-h-[92dvh] md:max-h-[90vh] overflow-y-auto animate-slide-up md:animate-scale-up">
         
+        {/* Drag handle — mobile only */}
+        <div className="md:hidden flex justify-center pb-2 -mt-2">
+          <div className="w-10 h-1 bg-white/20 rounded-full" />
+        </div>
+
         {/* Clean Header with Subtitle Text Below Title */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
