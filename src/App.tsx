@@ -103,7 +103,7 @@ const AppContent: React.FC = () => {
           }}
         />
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-24 md:pb-0">
           {activeTab === 'home' && (
             <HomePage
               onSelectJourney={handleSelectJourney}
