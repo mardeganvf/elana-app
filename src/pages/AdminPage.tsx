@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
+  ShieldAlert,
+  Lock,
   LifeBuoy, 
   Upload, 
   Video, 
@@ -58,8 +60,24 @@ interface MemberUser {
   joinedDays: number;
 }
 
-export const AdminPage: React.FC = () => {
-  const { replySosTicket } = useAuth();
+export interface AdminPageProps {
+  onBackToHome?: () => void;
+  onOpenLogin?: () => void;
+}
+
+export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin }) => {
+  const { user, isAuthenticated, replySosTicket } = useAuth();
+
+  const isAdmin = Boolean(
+    user && (
+      user.role?.toLowerCase().includes('admin') || 
+      user.role?.toLowerCase().includes('guia') ||
+      user.email?.toLowerCase().includes('admin') ||
+      user.email?.toLowerCase().includes('mardegan') ||
+      user.email === 'helena@elana.com.br'
+    )
+  );
+
   const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users'>('sos');
 
   // 🛟 SOS Email Inbox Folder State
@@ -269,6 +287,76 @@ export const AdminPage: React.FC = () => {
   const pendingCount = sosTickets.filter(t => t.status === 'pendente').length;
   const completedCount = sosTickets.filter(t => t.status === 'atendido').length;
   const trashCount = sosTickets.filter(t => t.status === 'deletado').length;
+
+  // Security Guard 1: User is not authenticated
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-[#101B1E] border border-red-500/20 rounded-3xl p-8 text-center space-y-6 shadow-2xl backdrop-blur-xl">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+              Acesso Restrito ao Painel
+            </h2>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Esta área administrativa é restrita e exige autenticação prévia com credenciais autorizadas.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 pt-2">
+            {onOpenLogin && (
+              <button
+                onClick={onOpenLogin}
+                className="w-full py-3.5 px-4 bg-[#FF7F5B] hover:bg-[#FF7F5B]/90 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-lg active:scale-95 cursor-pointer"
+              >
+                Fazer Login como Administrador
+              </button>
+            )}
+            {onBackToHome && (
+              <button
+                onClick={onBackToHome}
+                className="w-full py-3 px-4 bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs uppercase tracking-wider rounded-2xl transition-all border border-white/10 active:scale-95 cursor-pointer"
+              >
+                Voltar para o Início
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Security Guard 2: User is logged in but does not have admin permissions
+  if (!isAdmin) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-[#101B1E] border border-amber-500/20 rounded-3xl p-8 text-center space-y-6 shadow-2xl backdrop-blur-xl">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+              Acesso Não Autorizado (403)
+            </h2>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              O usuário <strong>{user.email}</strong> não possui privilégios de administrador no Elana Academy.
+            </p>
+          </div>
+          <div className="pt-2">
+            {onBackToHome && (
+              <button
+                onClick={onBackToHome}
+                className="w-full py-3.5 px-4 bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider rounded-2xl transition-all border border-white/15 active:scale-95 cursor-pointer"
+              >
+                Voltar para a Página Inicial
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-20 animate-fade-in max-w-6xl mx-auto text-white -mt-4">

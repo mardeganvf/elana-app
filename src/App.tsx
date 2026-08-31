@@ -135,7 +135,18 @@ const AppContent: React.FC = () => {
             />
           )}
 
-          {activeTab === 'admin' && <AdminPage />}
+          {activeTab === 'admin' && (
+            <AdminPage
+              onBackToHome={() => {
+                setActiveTab('home');
+                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+              }}
+              onOpenLogin={() => {
+                setActiveTab('login');
+                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+              }}
+            />
+          )}
         </main>
       </div>
 
