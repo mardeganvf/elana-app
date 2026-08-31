@@ -1076,54 +1076,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
         )}
       </section>
 
-      {/* 🎖️ Minhas Conquistas (Todas as Badges) */}
+      {/* 🎖️ Minhas Conquistas (Categorizadas em Sliders no Mobile e Grid no Desktop) */}
       <section className="space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
-            <Award className="w-6 h-6 text-[#FF7F5B]" />
-            Minhas Conquistas ({getUnlockedBadgesCount(user.badges)}/{ALL_BADGES.length})
-          </h2>
-          <span className="text-xs text-slate-400 font-bold md:hidden">
-            Deslize para ver todas →
-          </span>
-        </div>
-
-        {/* ── MOBILE: Horizontal Swipe Carousel for Badges ── */}
-        <div className="md:hidden">
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-            {ALL_BADGES.map(badge => {
-              const isUnlocked = user.badges.some(b => b.id === badge.id || b.title === badge.title);
-              return (
-                <div
-                  key={badge.id}
-                  className={`shrink-0 snap-start w-36 p-4 rounded-3xl border flex flex-col items-center justify-center text-center space-y-2 transition-all ${
-                    isUnlocked
-                      ? 'bg-gradient-to-b from-[#152428] to-[#0D181A] border-[#FF7F5B]/50 shadow-lg shadow-[#FF7F5B]/10'
-                      : 'bg-[#070D0F]/80 border-white/5 opacity-40'
-                  }`}
-                >
-                  <div className="relative">
-                    <span className="text-3xl filter drop-shadow">{badge.icon}</span>
-                    {isUnlocked && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#FFD166] ring-2 ring-[#070D0F]" />
-                    )}
-                  </div>
-                  <div className="min-w-0 w-full">
-                    <h4 className="text-xs font-bold text-white truncate">{badge.title}</h4>
-                    <span className={`text-[10px] font-black block mt-0.5 ${isUnlocked ? 'text-[#FFD166]' : 'text-slate-500'}`}>
-                      {isUnlocked ? `+${badge.rewardXp} pontos` : 'Bloqueado'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── DESKTOP: Full Categorized Badge Gallery ── */}
-        <div className="hidden md:block bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl">
-          <BadgeGallery unlockedBadges={user.badges} hideHeaderTitle={true} />
-        </div>
+        <BadgeGallery unlockedBadges={user.badges} hideHeaderTitle={false} />
       </section>
 
       {/* Logout button */}
