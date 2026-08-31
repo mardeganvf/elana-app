@@ -327,14 +327,64 @@ export const CommunityPage: React.FC = () => {
     }
   }, [isDailyCheckinModalOpen, isBreathingModalOpen]);
 
-  // Check-in Pop-up Trigger (Opens every time page opens as requested)
+  // Helper to format current local date (YYYY-MM-DD) resetting at 00:00:00 local time
+  const getTodayDateKey = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Check-in Pop-up Trigger (Opens only once per day, resets at 00h00)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsDailyCheckinModalOpen(true);
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    }, 200);
-    return () => clearTimeout(timer);
-  }, []);
+    const todayStr = getTodayDateKey();
+    const userKey = user?.id || 'anon';
+    const lastCheckinDate = localStorage.getItem(`elana_daily_checkin_${userKey}`);
+
+    // If already checked in or dismissed today, do NOT open
+    if (lastCheckinDate === todayStr) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    // If logged in, check if user already recorded an emotional check-in today in Supabase
+    if (user?.id) {
+      supabase
+        .from('emotional_checkins')
+        .select('id')
+        .eq('profile_id', user.id)
+        .eq('checkin_date', todayStr)
+        .limit(1)
+        .then(({ data }) => {
+          if (isCancelled) return;
+          if (data && data.length > 0) {
+            localStorage.setItem(`elana_daily_checkin_${userKey}`, todayStr);
+            return;
+          }
+          const timer = setTimeout(() => {
+            if (!isCancelled) {
+              setIsDailyCheckinModalOpen(true);
+              window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            }
+          }, 300);
+          return () => clearTimeout(timer);
+        });
+    } else {
+      const timer = setTimeout(() => {
+        if (!isCancelled) {
+          setIsDailyCheckinModalOpen(true);
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user?.id]);
 
   const [activeRandomPhrase, setActiveRandomPhrase] = useState<string>('');
 
@@ -344,7 +394,7 @@ export const CommunityPage: React.FC = () => {
     const randomIndex = Math.floor(Math.random() * item.phrases.length);
     const phrase = item.phrases[randomIndex];
     setActiveRandomPhrase(phrase);
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getTodayDateKey();
     localStorage.setItem(`elana_daily_checkin_${user?.id || 'anon'}`, todayStr);
 
     // Save check-in into Supabase
@@ -399,6 +449,8 @@ export const CommunityPage: React.FC = () => {
   const handleCloseDailyCheckin = () => {
     setIsDailyCheckinModalOpen(false);
     setSubmittedEmotionObj(null);
+    const todayStr = getTodayDateKey();
+    localStorage.setItem(`elana_daily_checkin_${user?.id || 'anon'}`, todayStr);
   };
 
   // 60-Second Breathing Timer Effect
