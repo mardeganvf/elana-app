@@ -82,56 +82,51 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   // Selected module index state for each journey
   const [selectedModuleMap, setSelectedModuleMap] = useState<Record<string, number>>({});
 
+  const sliderRef = React.useRef<HTMLDivElement>(null);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollLeft = e.currentTarget.scrollLeft;
+    const width = e.currentTarget.clientWidth;
+    if (width > 0) {
+      const newIndex = Math.round(scrollLeft / width);
+      if (newIndex >= 0 && newIndex < JOURNEYS_DATA.length && newIndex !== currentSlideIndex) {
+        setCurrentSlideIndex(newIndex);
+      }
+    }
+  };
+
+  const scrollToIndex = (idx: number) => {
+    if (sliderRef.current) {
+      const width = sliderRef.current.clientWidth;
+      sliderRef.current.scrollTo({
+        left: idx * width,
+        behavior: 'smooth'
+      });
+    }
+    setCurrentSlideIndex(idx);
+  };
+
   const nextSlide = () => {
-    setCurrentSlideIndex((prev) => (prev + 1) % JOURNEYS_DATA.length);
+    const nextIdx = (currentSlideIndex + 1) % JOURNEYS_DATA.length;
+    scrollToIndex(nextIdx);
   };
 
   const prevSlide = () => {
-    setCurrentSlideIndex((prev) => (prev - 1 + JOURNEYS_DATA.length) % JOURNEYS_DATA.length);
+    const prevIdx = (currentSlideIndex - 1 + JOURNEYS_DATA.length) % JOURNEYS_DATA.length;
+    scrollToIndex(prevIdx);
   };
 
-  // Touch Swipe Handlers for Mobile
-  const touchStartX = React.useRef<number | null>(null);
-  const touchEndX = React.useRef<number | null>(null);
-
-  const handleHeroTouchStart = (e: React.TouchEvent) => {
-    setIsPaused(true);
-    touchStartX.current = e.targetTouches[0].clientX;
-    touchEndX.current = null;
-  };
-
-  const handleHeroTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-  };
-
-  const handleHeroTouchEnd = () => {
-    setIsPaused(false);
-    if (!touchStartX.current || !touchEndX.current) return;
-    const distance = touchStartX.current - touchEndX.current;
-    const isLeftSwipe = distance > 40;
-    const isRightSwipe = distance < -40;
-
-    if (isLeftSwipe) {
-      nextSlide();
-    } else if (isRightSwipe) {
-      prevSlide();
-    }
-    touchStartX.current = null;
-    touchEndX.current = null;
-  };
-
-  // Auto-advance hero slider every 6 seconds unless user hovers / interacts
+  // Auto-advance hero slider every 6 seconds unless user hovers / touches
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
-      nextSlide();
+      const nextIdx = (currentSlideIndex + 1) % JOURNEYS_DATA.length;
+      scrollToIndex(nextIdx);
     }, 6000);
     return () => clearInterval(interval);
-  }, [isPaused]);
+  }, [isPaused, currentSlideIndex]);
 
   const activeJourney = JOURNEYS_DATA[currentSlideIndex];
-
-
 
   const purchasedJourneys = JOURNEYS_DATA.filter(j => user?.purchasedJourneyIds.includes(j.id));
 
@@ -166,24 +161,25 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
     };
   };
 
-
-
   return (
     <div className="space-y-14 pb-24 animate-fade-in">
       
-      {/* 6-Journey Interactive Slider Showcase */}
+      {/* 6-Journey Interactive Slider Showcase (Frameless with Snap) */}
       <section 
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
-        onTouchStart={handleHeroTouchStart}
-        onTouchMove={handleHeroTouchMove}
-        onTouchEnd={handleHeroTouchEnd}
-        className="relative w-full min-h-[460px] sm:min-h-[540px] rounded-3xl overflow-hidden shadow-2xl border border-white/10 my-4 group select-none"
+        onTouchStart={() => setIsPaused(true)}
+        onTouchEnd={() => {
+          setTimeout(() => setIsPaused(false), 3000);
+        }}
+        className="relative w-full rounded-3xl overflow-hidden my-4 group select-none"
       >
-        {/* Sliding Horizontal Track */}
+        {/* Hardware-Accelerated Scroll Snap Track */}
         <div 
-          className="flex h-full w-full transition-transform duration-500 ease-out"
-          style={{ transform: `translateX(-${currentSlideIndex * 100}%)` }}
+          ref={sliderRef}
+          onScroll={handleScroll}
+          className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide w-full"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {JOURNEYS_DATA.map((journey) => {
             const isPurchased = user?.purchasedJourneyIds.includes(journey.id);
@@ -192,7 +188,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
             return (
               <div 
                 key={journey.id}
-                className="relative min-w-full h-full min-h-[460px] sm:min-h-[540px] flex items-end p-6 sm:p-14 overflow-hidden shrink-0"
+                className="relative min-w-full w-full min-h-[460px] sm:min-h-[540px] flex items-end p-6 sm:p-14 overflow-hidden shrink-0 snap-center snap-always rounded-3xl"
               >
                 {/* Background Image */}
                 <img
@@ -281,7 +277,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
             return (
               <button
                 key={journey.id}
-                onClick={() => setCurrentSlideIndex(idx)}
+                onClick={() => scrollToIndex(idx)}
                 className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
                   isActive ? 'w-6 sm:w-8 bg-[#FF7F5B]' : 'w-2 sm:w-2.5 bg-white/40 hover:bg-white/70'
                 }`}
