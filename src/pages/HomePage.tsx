@@ -361,22 +361,22 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
               {/* Line 3: Seletor do Módulo Embaixo (Apenas se tiver mais de 1 módulo: PRN e PON) */}
               {hasMultipleModules && (
                 <div className="pl-6 pt-1">
-                  <div className="relative inline-flex items-center">
+                  <div className="relative inline-flex items-center max-w-full">
                     <select
                       value={selectedModuleIdx}
                       onChange={(e) => {
                         const newIdx = Number(e.target.value);
                         setSelectedModuleMap(prev => ({ ...prev, [journey.id]: newIdx }));
                       }}
-                      className="appearance-none bg-[#162327] hover:bg-[#1f3137] text-white font-bold text-xs px-3.5 py-2 pr-8 rounded-xl border border-white/20 focus:outline-none focus:border-[#FF7F5B] cursor-pointer shadow-md transition-colors"
+                      className="module-select-compact appearance-none bg-[#101B1E] hover:bg-[#162327] text-slate-200 font-extrabold text-[11px] sm:text-xs px-3 py-1.5 pr-7 rounded-lg sm:rounded-xl border border-white/15 focus:outline-none focus:border-[#FF7F5B] cursor-pointer shadow-sm transition-colors max-w-full truncate"
                     >
                       {journey.modules.map((mod, idx) => (
-                        <option key={mod.id} value={idx} className="bg-[#101B1E] text-white py-1">
+                        <option key={mod.id} value={idx} className="bg-[#101B1E] text-white py-1 text-xs">
                           Módulo 0{mod.number}: {mod.title} ({mod.lessons.length} conteúdos)
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 pointer-events-none" />
                   </div>
                 </div>
               )}
