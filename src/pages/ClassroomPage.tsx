@@ -33,8 +33,15 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   onBack
 }) => {
   const handleBack = onBackToHome || onBack || (() => {});
-  const { user, completeLesson, saveLessonNote } = useAuth();
+  const { user, completeLesson, saveLessonNote, awardBadge } = useAuth();
   const { showToast } = useToast();
+  
+  // Award b4 (Minha Jornada) upon entering classroom / watching lesson
+  useEffect(() => {
+    if (user?.id) {
+      awardBadge('b4');
+    }
+  }, [user?.id]);
   
   // Find initial lesson or default to first lesson of first module
   const allLessons = journey.modules.flatMap(m => m.lessons);
@@ -222,7 +229,10 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
               </button>
 
               <button
-                onClick={() => setMediaMode('audio')}
+                onClick={() => {
+                  setMediaMode('audio');
+                  awardBadge('b8');
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
                   mediaMode === 'audio'
                     ? 'bg-[#FF7F5B] text-white shadow-md'

@@ -308,7 +308,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 6. Buscar Filhos / Membros da Família
       let children: any[] = [];
-      // Se houver dados persistidos em profiles.family_tag, essa é a fonte primária e garantida
       if (profile.family_tag && profile.family_tag.startsWith('JSON_CHILDREN:')) {
         try {
           children = JSON.parse(profile.family_tag.replace('JSON_CHILDREN:', ''));
@@ -316,7 +315,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.warn('Error parsing children backup:', e);
         }
       } else {
-        // Caso contrário, busca na tabela family_members
         try {
           const { data: familyData } = await supabase
             .from('family_members')
@@ -337,6 +335,91 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.warn('Error fetching family_members table:', err);
         }
       }
+
+      // Sincronização e Auditoria Completa de Todas as Badges do Usuário
+      const checkAndAddBadge = (badgeId: string) => {
+        if (!unlockedBadgeIds.has(badgeId)) {
+          unlockedBadgeIds.add(badgeId);
+          supabase.from('user_badges').upsert({
+            profile_id: profileId,
+            badge_id: badgeId,
+            unlocked_at: new Date().toISOString()
+          }, { onConflict: 'profile_id, badge_id' }).then();
+        }
+      };
+
+      // 🌿 1. Primeiros Passos (b1, b2, b3)
+      checkAndAddBadge('b1'); // Semente Plantada
+      if (profile.bio && profile.bio.trim().length > 0 && children.length > 0) {
+        checkAndAddBadge('b2'); // Criando Raízes
+      }
+      if (profile.notifications_enabled) {
+        checkAndAddBadge('b3'); // Sempre Alerta
+      }
+
+      // ▶️ 2. Jornadas de Conhecimento (b4, b5, b6, b7, b9)
+      if (completedLessonIds.length >= 1) {
+        checkAndAddBadge('b4'); // Minha Jornada
+      }
+      for (const journey of JOURNEYS_DATA) {
+        const journeyLessonIds = journey.modules.flatMap(m => m.lessons.map(l => l.id));
+        const completedInJourney = journeyLessonIds.filter(id => completedLessonIds.includes(id)).length;
+        const total = journeyLessonIds.length;
+        if (total > 0) {
+          const pct = (completedInJourney / total) * 100;
+          if (pct >= 25) checkAndAddBadge('b5'); // Passos Seguros (25%)
+          if (pct >= 50) checkAndAddBadge('b6'); // Chegando Lá! (50%)
+          if (pct >= 100) checkAndAddBadge('b7'); // Caminho Iluminado (100%)
+        }
+      }
+      if (Object.keys(lessonNotes).length >= 1) {
+        checkAndAddBadge('b9'); // Minhas Reflexões
+      }
+
+      // ⚡ 4. Evolução Constante (b24, b25, b26, b27, b28)
+      const streak = profile.streak_days || 1;
+      if (streak >= 10) checkAndAddBadge('b24');
+      if (streak >= 20) checkAndAddBadge('b25');
+      if (streak >= 30) checkAndAddBadge('b26');
+      if (streak >= 60) checkAndAddBadge('b27');
+      if (streak >= 90) checkAndAddBadge('b28');
+
+      // 💬 5. Espaços de Troca & 🤝 6. Rede de Apoio & 💖 8. Acolhimento
+      try {
+        const [postsRes, commentsRes, testimonialsRes] = await Promise.all([
+          supabase.from('community_posts').select('id, transversal_room_id, is_anonymous').eq('author_id', profileId),
+          supabase.from('community_comments').select('id').eq('author_id', profileId),
+          supabase.from('profile_testimonials').select('id').eq('recipient_profile_id', profileId)
+        ]);
+
+        if (postsRes.data && postsRes.data.length > 0) {
+          checkAndAddBadge('b29'); // Voz de Coragem (1º post)
+          postsRes.data.forEach(p => {
+            if (p.is_anonymous || p.transversal_room_id === 'confessionario') checkAndAddBadge('b30');
+            if (p.transversal_room_id === 'cantinho-da-mel' || p.transversal_room_id === 'trocas-livres') checkAndAddBadge('b31');
+            if (p.transversal_room_id === 'espaco-dois') checkAndAddBadge('b32');
+            if (p.transversal_room_id === 'cuidando-de-quem-cuida') checkAndAddBadge('b33');
+          });
+        }
+
+        if (commentsRes.data && commentsRes.data.length > 0) {
+          checkAndAddBadge('b36'); // Primeiro Acolhimento
+          const commentCount = commentsRes.data.length;
+          if (commentCount >= 5) checkAndAddBadge('b37');
+          if (commentCount >= 25) checkAndAddBadge('b38');
+          if (commentCount >= 100) checkAndAddBadge('b39');
+          if (commentCount >= 250) checkAndAddBadge('b40');
+          if (commentCount >= 500) checkAndAddBadge('b41');
+        }
+
+        if (testimonialsRes.data && testimonialsRes.data.length > 0) {
+          checkAndAddBadge('b57'); // Afeto Recebido
+        }
+      } catch (err) {
+        console.warn('Notice checking community badges:', err);
+      }
+
+      const badges = ALL_BADGES.filter(b => unlockedBadgeIds.has(b.id));
 
       const badgeXpSum = badges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
       const calculatedMinimumXp = badgeXpSum;
@@ -720,6 +803,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     await updateUser({ lessonNotes: newNotes });
+    await awardBadge('b9'); // Minhas Reflexões
 
     try {
       await supabase.from('user_lesson_notes').upsert({

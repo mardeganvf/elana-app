@@ -36,29 +36,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   useEffect(() => {
     if (!user || user.badges.some(b => b.id === 'b2')) return;
 
-    const hasCustomAvatar = !!user.avatar && user.avatar !== GENERIC_DEFAULT_AVATAR;
-    const hasPhone = !!user.phone && user.phone.replace(/\D/g, '').length >= 10;
     const hasBio = !!user.bio && user.bio.trim().length > 0;
     const hasChildren = !!user.children && user.children.length > 0;
 
-    if (hasCustomAvatar && hasPhone && hasBio && hasChildren) {
+    if (hasBio && hasChildren) {
       awardBadge('b2');
     }
-  }, [user?.avatar, user?.phone, user?.bio, user?.children, user?.badges]);
+  }, [user?.bio, user?.children, user?.badges]);
 
   // Função centralizada para validar e conceder a badge Criando Raízes (b2)
-  const checkCriandoRaizes = (avatarToCheck?: string) => {
+  const checkCriandoRaizes = () => {
     if (!user || user.badges.some(b => b.id === 'b2')) return;
     
-    const currentAvatar = avatarToCheck || user.avatar;
-    const hasCustomAvatar = !!currentAvatar && currentAvatar !== GENERIC_DEFAULT_AVATAR;
-    const hasEmail = !!user.email;
-    const hasPhone = !!(user.phone || userPhone) && (user.phone || userPhone).replace(/\D/g, '').length >= 10;
-    const hasName = !!(user.name || userName);
     const hasBio = !!(user.bio || bioText).trim();
     const hasFamilyMember = (childrenList || []).length > 0 || (user.children || []).length > 0;
 
-    if (hasCustomAvatar && hasEmail && hasPhone && hasName && hasBio && hasFamilyMember) {
+    if (hasBio && hasFamilyMember) {
       setTimeout(() => {
         awardBadge('b2');
       }, 300);

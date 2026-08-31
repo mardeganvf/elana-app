@@ -72,7 +72,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
   onClose,
   onSendSupport
 }) => {
-  const { user } = useAuth();
+  const { user, awardBadge } = useAuth();
   const isOwnProfile = Boolean(user && (user.id === profile.id || profile.name === user.name));
   const [isFollowing, setIsFollowing] = useState(false);
   const [supportSent, setSupportSent] = useState(false);
@@ -154,6 +154,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
         content: newTestimonial.trim(),
         status: 'approved'
       }]);
+      awardBadge('b56'); // Palavra de Carinho (enviou depoimento)
     } catch (err) {
       console.error('Error saving testimonial to Supabase:', err);
     }
@@ -216,7 +217,13 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
             {!profile.isAnonymous && (
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setIsFollowing(!isFollowing)}
+                  onClick={() => {
+                    const next = !isFollowing;
+                    setIsFollowing(next);
+                    if (next) {
+                      awardBadge('b54'); // Novo Laço (acompanhou alguém)
+                    }
+                  }}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
                     isFollowing
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'

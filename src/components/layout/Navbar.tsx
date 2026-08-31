@@ -40,7 +40,7 @@ interface CalendarDay {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenAuthModal }) => {
-  const { user, isAuthenticated, logout, sosResponse, sendSosTicket, markSosResponseRead } = useAuth();
+  const { user, isAuthenticated, logout, sosResponse, sendSosTicket, markSosResponseRead, awardBadge } = useAuth();
   const isAdmin = isAdminUser(user);
   const { fontSize, setFontSize } = useFontSize();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -172,6 +172,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         setBreathingTimer(prev => {
           if (prev <= 1) {
             setIsBreathingModalOpen(false);
+            awardBadge('b23'); // Pausa Necessária (60s de respiro)
             return 60;
           }
           return prev - 1;
@@ -199,6 +200,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     setIsMamadaMode(prev => {
       const next = !prev;
       document.documentElement.classList.toggle('mamada-mode', next);
+      if (next) {
+        awardBadge('b22'); // Farol Noturno (Modo Madrugada/Noturno)
+      }
       return next;
     });
   };
@@ -278,6 +282,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
           <button
             onClick={() => {
               setIsEmotionalHistoryOpen(true);
+              awardBadge('b21'); // Olhar Para Dentro
               window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             }}
             data-tour="emotions-button"
@@ -613,6 +618,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         <button
           onClick={() => {
             setIsEmotionalHistoryOpen(true);
+            awardBadge('b21'); // Olhar Para Dentro
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
           }}
           className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"

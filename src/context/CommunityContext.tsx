@@ -97,7 +97,7 @@ const sanitizePost = (post: CommunityPost): CommunityPost => {
 };
 
 export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, addXP } = useAuth();
+  const { user, addXP, awardBadge } = useAuth();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -300,11 +300,29 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       });
 
+    // 🏆 Conquistas de Postagem na Comunidade:
+    awardBadge('b29'); // Voz de Coragem (1º post)
+    if (isAnonymous || payload.transversalRoomId === 'confessionario') {
+      awardBadge('b30'); // Confissão Liberta
+    }
+    if (payload.transversalRoomId === 'cantinho-da-mel' || payload.transversalRoomId === 'trocas-livres') {
+      awardBadge('b31'); // Roda de Conversa
+    }
+    if (payload.transversalRoomId === 'espaco-dois') {
+      awardBadge('b32'); // Ponte a Dois
+    }
+    if (payload.transversalRoomId === 'cuidando-de-quem-cuida') {
+      awardBadge('b33'); // Máscara de Oxigênio
+    }
+
     // Reward XP for community participation (+20 XP)
     addXP(20);
   };
 
   const toggleReaction = (postId: string, reactionKey: string) => {
+    // 🏆 Conquista: Acolhimento Pleno (usou reações)
+    awardBadge('b35');
+
     setPosts(prev => prev.map(post => {
       if (post.id === postId) {
         const currentUserReactions = post.userReactions || {};
@@ -435,6 +453,21 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
 
       addXP(10);
+
+      // 🏆 Conquistas de Comentários / Rede de Apoio:
+      awardBadge('b36'); // Primeiro Acolhimento
+      supabase
+        .from('community_comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('author_id', user.id)
+        .then(({ count }) => {
+          const total = (count || 0) + 1;
+          if (total >= 500) awardBadge('b41');
+          else if (total >= 250) awardBadge('b40');
+          else if (total >= 100) awardBadge('b39');
+          else if (total >= 25) awardBadge('b38');
+          else if (total >= 5) awardBadge('b37');
+        });
     }
 
     return { isFlagged, matchedWord };
