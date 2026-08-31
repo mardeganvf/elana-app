@@ -67,7 +67,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
       const publicUrl = await uploadImageToStorage(file, 'avatars');
       if (publicUrl) {
         await updateUser({ avatar: publicUrl });
-        checkCriandoRaizes(publicUrl);
+        checkCriandoRaizes();
       }
     } catch (err) {
       console.error('Error uploading profile avatar:', err);

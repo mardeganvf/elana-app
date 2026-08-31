@@ -275,8 +275,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('Notice checking retroactive emotional badges:', err);
       }
 
-      const badges = ALL_BADGES.filter(b => unlockedBadgeIds.has(b.id));
-
       // 3. Buscar Jornadas Adquiridas
       const { data: journeysData } = await supabase
         .from('user_purchased_journeys')
