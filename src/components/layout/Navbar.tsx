@@ -505,127 +505,101 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     </header>
 
     {/* ── MOBILE BOTTOM TAB BAR ───────────────────────────────────────────── */}
-    <div
+    <nav
+      aria-label="Navegação Principal"
       className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#070D0F]/98 backdrop-blur-xl border-t border-white/10"
-        style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))' }}
-      >
-        <div className="flex items-end justify-around px-2 pt-2 pb-2">
+      style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))' }}
+    >
+      <div className="grid grid-cols-4 px-2 pt-2 pb-1.5 items-center">
 
-          {/* Tab: Conteúdos */}
-          <button
-            onClick={() => setActiveTab('home')}
-            className="flex flex-col items-center gap-1 flex-1 py-1 min-h-[52px] justify-center active:scale-95 transition-transform"
-          >
-            <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
-              activeTab === 'home' ? 'bg-[#FF7F5B]/15' : ''
+        {/* Tab 1: Conteúdos */}
+        <button
+          onClick={() => setActiveTab('home')}
+          className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
+        >
+          <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+            activeTab === 'home' ? 'bg-[#FF7F5B]/15' : ''
+          }`}>
+            <Film className={`w-5 h-5 transition-colors ${activeTab === 'home' ? 'text-[#FF7F5B]' : 'text-slate-500'}`} />
+            <span className={`text-[10px] font-black tracking-wide transition-all ${
+              activeTab === 'home' ? 'text-[#FF7F5B] opacity-100' : 'text-slate-500 opacity-70'
             }`}>
-              <Film className={`w-6 h-6 transition-colors ${activeTab === 'home' ? 'text-[#FF7F5B]' : 'text-slate-500'}`} />
-              <span className={`text-[10px] font-black tracking-wide transition-all ${
-                activeTab === 'home' ? 'text-[#FF7F5B] opacity-100' : 'text-slate-500 opacity-70'
-              }`}>
-                Conteúdos
-              </span>
-            </div>
-          </button>
-
-          {/* Tab: Comunidade */}
-          <button
-            onClick={() => setActiveTab('community')}
-            className="flex flex-col items-center gap-1 flex-1 py-1 min-h-[52px] justify-center active:scale-95 transition-transform"
-          >
-            <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
-              activeTab === 'community' ? 'bg-[#8A9A5B]/15' : ''
-            }`}>
-              <MessageSquare className={`w-6 h-6 transition-colors ${activeTab === 'community' ? 'text-[#8A9A5B]' : 'text-slate-500'}`} />
-              <span className={`text-[10px] font-black tracking-wide transition-all ${
-                activeTab === 'community' ? 'text-[#8A9A5B] opacity-100' : 'text-slate-500 opacity-70'
-              }`}>
-                Comunidade
-              </span>
-            </div>
-          </button>
-
-          {/* Tab: SOS — Centro, elevado */}
-          <button
-            onClick={() => {
-              setIsEmergencyOpen(true);
-              setIsSosSent(false);
-              setSosMessage('');
-              window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-            }}
-            className="flex flex-col items-center flex-1 -translate-y-3 active:scale-90 transition-transform relative"
-          >
-            <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30 transition-all ${
-              hasUnreadSosReply
-                ? 'bg-rose-500 animate-pulse ring-4 ring-rose-500/30'
-                : 'bg-rose-600 hover:bg-rose-500'
-            }`}>
-              <LifeBuoy className="w-7 h-7 text-white" />
-              {hasUnreadSosReply && (
-                <span className="absolute top-0 right-1 w-3 h-3 rounded-full bg-amber-300 border-2 border-[#070D0F] animate-ping" />
-              )}
-            </div>
-            <span className={`text-[10px] font-black tracking-wide mt-1 transition-colors ${
-              hasUnreadSosReply ? 'text-rose-400' : 'text-slate-500'
-            }`}>
-              SOS
+              Conteúdos
             </span>
-          </button>
+          </div>
+        </button>
 
-          {/* Tab: Emoções */}
-          <button
-            onClick={() => {
-              setIsEmotionalHistoryOpen(true);
-              window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-            }}
-            className="flex flex-col items-center gap-1 flex-1 py-1 min-h-[52px] justify-center active:scale-95 transition-transform"
-          >
-            <div className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all">
-              <HeartHandshake className="w-6 h-6 text-[#E66795]" />
-              <span className="text-[10px] font-black tracking-wide text-slate-500 opacity-70">
-                Emoções
-              </span>
-            </div>
-          </button>
-
-          {/* Tab: Perfil */}
-          <button
-            onClick={() => {
-              if (isAuthenticated) {
-                setActiveTab('dashboard');
-              } else {
-                onOpenAuthModal();
-              }
-            }}
-            className="flex flex-col items-center gap-1 flex-1 py-1 min-h-[52px] justify-center active:scale-95 transition-transform"
-          >
-            <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
-              activeTab === 'dashboard' ? 'bg-[#FFD166]/15' : ''
+        {/* Tab 2: Comunidade */}
+        <button
+          onClick={() => setActiveTab('community')}
+          className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
+        >
+          <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+            activeTab === 'community' ? 'bg-[#8A9A5B]/15' : ''
+          }`}>
+            <MessageSquare className={`w-5 h-5 transition-colors ${activeTab === 'community' ? 'text-[#8A9A5B]' : 'text-slate-500'}`} />
+            <span className={`text-[10px] font-black tracking-wide transition-all ${
+              activeTab === 'community' ? 'text-[#8A9A5B] opacity-100' : 'text-slate-500 opacity-70'
             }`}>
-              {isAuthenticated && user ? (
-                <img
-                  src={user.avatar}
-                  alt={user.name}
-                  className={`w-6 h-6 rounded-full object-cover transition-all ${
-                    activeTab === 'dashboard'
-                      ? 'ring-2 ring-[#FFD166]'
-                      : 'ring-1 ring-slate-600 opacity-70'
-                  }`}
-                />
-              ) : (
-                <UserCheck className={`w-6 h-6 transition-colors ${activeTab === 'dashboard' ? 'text-[#FFD166]' : 'text-slate-500'}`} />
-              )}
-              <span className={`text-[10px] font-black tracking-wide transition-all ${
-                activeTab === 'dashboard' ? 'text-[#FFD166] opacity-100' : 'text-slate-500 opacity-70'
-              }`}>
-                Perfil
-              </span>
-            </div>
-          </button>
+              Comunidade
+            </span>
+          </div>
+        </button>
 
-        </div>
+        {/* Tab 3: Emoções */}
+        <button
+          onClick={() => {
+            setIsEmotionalHistoryOpen(true);
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+          }}
+          className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
+        >
+          <div className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all">
+            <HeartHandshake className="w-5 h-5 text-[#E66795]" />
+            <span className="text-[10px] font-black tracking-wide text-slate-500 opacity-70">
+              Emoções
+            </span>
+          </div>
+        </button>
+
+        {/* Tab 4: Perfil */}
+        <button
+          onClick={() => {
+            if (isAuthenticated) {
+              setActiveTab('dashboard');
+            } else {
+              onOpenAuthModal();
+            }
+          }}
+          className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
+        >
+          <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+            activeTab === 'dashboard' ? 'bg-[#FFD166]/15' : ''
+          }`}>
+            {isAuthenticated && user ? (
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className={`w-5 h-5 rounded-full object-cover transition-all ${
+                  activeTab === 'dashboard'
+                    ? 'ring-2 ring-[#FFD166]'
+                    : 'ring-1 ring-slate-600 opacity-70'
+                }`}
+              />
+            ) : (
+              <UserCheck className={`w-5 h-5 transition-colors ${activeTab === 'dashboard' ? 'text-[#FFD166]' : 'text-slate-500'}`} />
+            )}
+            <span className={`text-[10px] font-black tracking-wide transition-all ${
+              activeTab === 'dashboard' ? 'text-[#FFD166] opacity-100' : 'text-slate-500 opacity-70'
+            }`}>
+              Perfil
+            </span>
+          </div>
+        </button>
+
       </div>
-      {/* ── END MOBILE BOTTOM TAB BAR ───────────────────────────────────────── */}
+    </nav>
+    {/* ── END MOBILE BOTTOM TAB BAR ───────────────────────────────────────── */}
 
       {/* Feature 1 Modal: Diário de Emoções (Resumo de 4 Semanas e Calendário) */}
       {isEmotionalHistoryOpen && createPortal(
