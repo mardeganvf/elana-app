@@ -236,11 +236,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                   className="absolute inset-0 w-full h-full object-cover object-center"
                 />
                 
-                {/* ── Discreet Morph Lateral Edge Feathers (Seamless Soft Blend Between Images) ── */}
-                <div className="absolute inset-y-0 left-0 w-8 sm:w-16 bg-gradient-to-r from-[#070D0F]/60 to-transparent pointer-events-none z-10"></div>
-                <div className="absolute inset-y-0 right-0 w-8 sm:w-16 bg-gradient-to-l from-[#070D0F]/60 to-transparent pointer-events-none z-10"></div>
-
-                {/* Subtle Gradient Vignette for Readability without heavy shadows */}
+                {/* Subtle Gradient Vignette for Readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#070D0F] via-[#070D0F]/30 to-transparent z-10 pointer-events-none"></div>
 
                 {/* Content Box */}
