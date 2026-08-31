@@ -83,48 +83,97 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   const [selectedModuleMap, setSelectedModuleMap] = useState<Record<string, number>>({});
 
   const sliderRef = React.useRef<HTMLDivElement>(null);
+  const isResettingScroll = React.useRef(false);
+
+  // 3-repeat buffer for seamless 360-degree infinite looping without borders
+  const INFINITE_JOURNEYS = React.useMemo(() => {
+    return [...JOURNEYS_DATA, ...JOURNEYS_DATA, ...JOURNEYS_DATA];
+  }, []);
+
+  // Initial scroll position: center of the 3-repeat buffer (index 6)
+  useEffect(() => {
+    if (sliderRef.current) {
+      const width = sliderRef.current.clientWidth;
+      sliderRef.current.scrollTo({
+        left: 6 * width,
+        behavior: 'instant' as ScrollBehavior
+      });
+    }
+  }, []);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const scrollLeft = e.currentTarget.scrollLeft;
     const width = e.currentTarget.clientWidth;
-    if (width > 0) {
-      const newIndex = Math.round(scrollLeft / width);
-      if (newIndex >= 0 && newIndex < JOURNEYS_DATA.length && newIndex !== currentSlideIndex) {
-        setCurrentSlideIndex(newIndex);
+    if (width <= 0) return;
+
+    const rawIndex = Math.round(scrollLeft / width);
+    const normalizedIndex = rawIndex % JOURNEYS_DATA.length;
+    
+    if (normalizedIndex >= 0 && normalizedIndex < JOURNEYS_DATA.length && normalizedIndex !== currentSlideIndex) {
+      setCurrentSlideIndex(normalizedIndex);
+    }
+
+    // Seamless infinite repositioning when entering outer boundaries
+    if (!isResettingScroll.current) {
+      if (rawIndex < 3) {
+        isResettingScroll.current = true;
+        const target = (rawIndex + 6) * width;
+        e.currentTarget.scrollTo({ left: target, behavior: 'instant' as ScrollBehavior });
+        setTimeout(() => { isResettingScroll.current = false; }, 80);
+      } else if (rawIndex >= 15) {
+        isResettingScroll.current = true;
+        const target = (rawIndex - 6) * width;
+        e.currentTarget.scrollTo({ left: target, behavior: 'instant' as ScrollBehavior });
+        setTimeout(() => { isResettingScroll.current = false; }, 80);
       }
     }
   };
 
-  const scrollToIndex = (idx: number) => {
+  const nextSlide = () => {
     if (sliderRef.current) {
       const width = sliderRef.current.clientWidth;
+      const currentRaw = Math.round(sliderRef.current.scrollLeft / width);
       sliderRef.current.scrollTo({
-        left: idx * width,
+        left: (currentRaw + 1) * width,
         behavior: 'smooth'
       });
     }
-    setCurrentSlideIndex(idx);
-  };
-
-  const nextSlide = () => {
-    const nextIdx = (currentSlideIndex + 1) % JOURNEYS_DATA.length;
-    scrollToIndex(nextIdx);
   };
 
   const prevSlide = () => {
-    const prevIdx = (currentSlideIndex - 1 + JOURNEYS_DATA.length) % JOURNEYS_DATA.length;
-    scrollToIndex(prevIdx);
+    if (sliderRef.current) {
+      const width = sliderRef.current.clientWidth;
+      const currentRaw = Math.round(sliderRef.current.scrollLeft / width);
+      sliderRef.current.scrollTo({
+        left: (currentRaw - 1) * width,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const scrollToIndex = (targetNormIdx: number) => {
+    if (sliderRef.current) {
+      const width = sliderRef.current.clientWidth;
+      const currentRaw = Math.round(sliderRef.current.scrollLeft / width);
+      const currentNorm = currentRaw % JOURNEYS_DATA.length;
+      let diff = targetNormIdx - currentNorm;
+      if (diff > 3) diff -= 6;
+      if (diff < -3) diff += 6;
+      sliderRef.current.scrollTo({
+        left: (currentRaw + diff) * width,
+        behavior: 'smooth'
+      });
+    }
   };
 
   // Auto-advance hero slider every 6 seconds unless user hovers / touches
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
-      const nextIdx = (currentSlideIndex + 1) % JOURNEYS_DATA.length;
-      scrollToIndex(nextIdx);
+      nextSlide();
     }, 6000);
     return () => clearInterval(interval);
-  }, [isPaused, currentSlideIndex]);
+  }, [isPaused]);
 
   const activeJourney = JOURNEYS_DATA[currentSlideIndex];
 
@@ -164,7 +213,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   return (
     <div className="space-y-14 pb-24 animate-fade-in">
       
-      {/* 6-Journey Interactive Slider Showcase (Full Bleed Edge-to-Edge, Frameless & Snap) */}
+      {/* 6-Journey Infinite Slider Showcase with Lateral Image Morphing */}
       <section 
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
@@ -181,12 +230,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
           className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide w-full"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {JOURNEYS_DATA.map((journey) => {
+          {INFINITE_JOURNEYS.map((journey, index) => {
             const isPurchased = user?.purchasedJourneyIds.includes(journey.id);
 
             return (
               <div 
-                key={journey.id}
+                key={`${journey.id}-${index}`}
                 className="relative min-w-full w-full min-h-[480px] sm:min-h-[580px] flex items-end p-6 sm:p-14 overflow-hidden shrink-0 snap-center snap-always"
               >
                 {/* Background Image */}
@@ -196,12 +245,26 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                   className="absolute inset-0 w-full h-full object-cover object-center"
                 />
                 
+                {/* ── Morph Lateral Edge Gradient Feathers (Seamless Blend Between Images) ── */}
+                <div className="absolute inset-y-0 left-0 w-28 sm:w-48 bg-gradient-to-r from-[#070D0F] via-[#070D0F]/70 to-transparent pointer-events-none z-10"></div>
+                <div className="absolute inset-y-0 right-0 w-28 sm:w-48 bg-gradient-to-l from-[#070D0F] via-[#070D0F]/70 to-transparent pointer-events-none z-10"></div>
+
+                {/* Ambient Radial Color Glow based on Journey Theme */}
+                <div 
+                  className="absolute -bottom-16 -left-16 w-80 h-80 rounded-full blur-3xl opacity-25 pointer-events-none z-10"
+                  style={{ backgroundColor: journey.themeColor }}
+                ></div>
+                <div 
+                  className="absolute -top-16 -right-16 w-80 h-80 rounded-full blur-3xl opacity-15 pointer-events-none z-10"
+                  style={{ backgroundColor: journey.themeColor }}
+                ></div>
+
                 {/* Dark Gradient Vignette Overlay for Crisp Readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#070D0F] via-[#070D0F]/60 to-transparent"></div>
-                <div className="absolute inset-0 bg-gradient-to-r from-[#070D0F]/90 via-[#070D0F]/40 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#070D0F] via-[#070D0F]/60 to-transparent z-10 pointer-events-none"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-[#070D0F]/90 via-[#070D0F]/40 to-transparent z-10 pointer-events-none"></div>
 
                 {/* Content Box */}
-                <div className="relative z-10 max-w-2xl space-y-3 sm:space-y-4 pb-8 sm:pb-2">
+                <div className="relative z-20 max-w-2xl space-y-3 sm:space-y-4 pb-8 sm:pb-2">
 
                   {/* Journey Title */}
                   <h1 
