@@ -183,7 +183,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
         >
           {JOURNEYS_DATA.map((journey) => {
             const isPurchased = user?.purchasedJourneyIds.includes(journey.id);
-            const totalLessons = journey.modules.reduce((acc, m) => acc + m.lessons.length, 0);
 
             return (
               <div 
@@ -203,19 +202,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
                 {/* Content Box */}
                 <div className="relative z-10 max-w-2xl space-y-3 sm:space-y-4 pb-8 sm:pb-2">
-                  
-                  {/* Category / Target Audience Badge */}
-                  <div className="flex items-center gap-2">
-                    <span 
-                      className="text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full text-white shadow-md"
-                      style={{ backgroundColor: journey.themeColor }}
-                    >
-                      {journey.targetAudience}
-                    </span>
-                    <span className="text-[11px] text-slate-300 font-bold bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
-                      {journey.modules.length} Módulos • {totalLessons} Aulas
-                    </span>
-                  </div>
 
                   {/* Journey Title */}
                   <h1 
