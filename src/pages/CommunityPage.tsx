@@ -143,7 +143,7 @@ const splitTextIntoTwoLines = (text: string) => {
 
 export const CommunityPage: React.FC = () => {
   const { posts, isLoading, refreshPosts, toggleReaction, toggleCommentReaction, addComment } = useCommunity();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, awardBadge } = useAuth();
   const { showToast } = useToast();
 
   // Pull-to-Refresh State
@@ -338,7 +338,7 @@ export const CommunityPage: React.FC = () => {
 
   const [activeRandomPhrase, setActiveRandomPhrase] = useState<string>('');
 
-  const handleSelectDailyEmotion = (item: typeof EMOTIONAL_CHECKINS[0]) => {
+  const handleSelectDailyEmotion = async (item: typeof EMOTIONAL_CHECKINS[0]) => {
     setSelectedEmotionId(item.id);
     setSubmittedEmotionObj(item);
     const randomIndex = Math.floor(Math.random() * item.phrases.length);
@@ -348,22 +348,52 @@ export const CommunityPage: React.FC = () => {
     localStorage.setItem(`elana_daily_checkin_${user?.id || 'anon'}`, todayStr);
 
     // Save check-in into Supabase
-    supabase
-      .from('emotional_checkins')
-      .insert([{
-        profile_id: user?.id || null,
-        emotion_id: item.id,
-        emotion_label: item.label,
-        phrase: phrase,
-        checkin_date: todayStr
-      }])
-      .then(({ error }) => {
-        if (error) {
-          console.warn('Supabase checkin notice:', error.message);
-        } else {
+    if (user?.id) {
+      try {
+        const { error } = await supabase
+          .from('emotional_checkins')
+          .insert([{
+            profile_id: user.id,
+            emotion_id: item.id,
+            emotion_label: item.label,
+            phrase: phrase,
+            checkin_date: todayStr
+          }]);
+
+        if (!error) {
           console.log('✅ Check-in emocional salvo com sucesso no Supabase!');
+          
+          // 🏆 1. Conquista Geral: Sinal de Cuidado (1º check-in realizado) -> b11
+          await awardBadge('b11');
+
+          // 🏆 2. Conquistas Específicas por Sentimento:
+          if (item.id === 'sem_energia') {
+            await awardBadge('b12'); // Tudo Bem Parar
+          } else if (item.id === 'esperanca') {
+            await awardBadge('b13'); // Luz no Caminho
+          } else if (item.id === 'celebrando') {
+            await awardBadge('b14'); // Pequenas Vitórias
+          } else if (item.id === 'precisando_luz') {
+            await awardBadge('b15'); // Pedido de Colo
+          }
+
+          // 🏆 3. Conquistas Quantitativas Acumuladas
+          const { count } = await supabase
+            .from('emotional_checkins')
+            .select('*', { count: 'exact', head: true })
+            .eq('profile_id', user.id);
+
+          const totalCheckins = count || 1;
+          if (totalCheckins >= 90) await awardBadge('b20');
+          else if (totalCheckins >= 60) await awardBadge('b19');
+          else if (totalCheckins >= 30) await awardBadge('b18');
+          else if (totalCheckins >= 20) await awardBadge('b17');
+          else if (totalCheckins >= 10) await awardBadge('b16');
         }
-      });
+      } catch (err) {
+        console.warn('Erro ao processar check-in emocional:', err);
+      }
+    }
   };
 
   const handleCloseDailyCheckin = () => {

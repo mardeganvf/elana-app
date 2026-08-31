@@ -236,6 +236,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('profile_id', profileId);
 
       const unlockedBadgeIds = new Set((userBadgesData || []).map(b => b.badge_id));
+
+      // Sincronizar Conquistas Emocionais retroativamente a partir de emotional_checkins
+      try {
+        const { data: checkinsData } = await supabase
+          .from('emotional_checkins')
+          .select('emotion_id')
+          .eq('profile_id', profileId);
+
+        if (checkinsData && checkinsData.length > 0) {
+          const autoBadges: string[] = ['b11']; // b11 = Sinal de Cuidado (1º check-in)
+          checkinsData.forEach(c => {
+            if (c.emotion_id === 'sem_energia') autoBadges.push('b12');
+            if (c.emotion_id === 'esperanca') autoBadges.push('b13');
+            if (c.emotion_id === 'celebrando') autoBadges.push('b14');
+            if (c.emotion_id === 'precisando_luz') autoBadges.push('b15');
+          });
+
+          const totalCheckins = checkinsData.length;
+          if (totalCheckins >= 90) autoBadges.push('b20');
+          if (totalCheckins >= 60) autoBadges.push('b19');
+          if (totalCheckins >= 30) autoBadges.push('b18');
+          if (totalCheckins >= 20) autoBadges.push('b17');
+          if (totalCheckins >= 10) autoBadges.push('b16');
+
+          autoBadges.forEach(bId => {
+            if (!unlockedBadgeIds.has(bId)) {
+              unlockedBadgeIds.add(bId);
+              supabase.from('user_badges').upsert({
+                profile_id: profileId,
+                badge_id: bId,
+                unlocked_at: new Date().toISOString()
+              }).then();
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Notice checking retroactive emotional badges:', err);
+      }
+
       const badges = ALL_BADGES.filter(b => unlockedBadgeIds.has(b.id));
 
       // 3. Buscar Jornadas Adquiridas
