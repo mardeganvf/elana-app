@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth, isAdminUser } from '../../context/AuthContext';
 import { useFontSize } from '../../context/FontSizeContext';
+import { supabase } from '../../lib/supabase';
 import { 
   Flame, 
   Sparkles, 
@@ -30,14 +31,6 @@ interface NavbarProps {
   onOpenAuthModal: () => void;
 }
 
-// 4-Week Emotional Summary — static mock data (outside component to avoid re-creation)
-const emotionalSummary = [
-  { emoji: '☀️', label: 'Com Esperança', count: 8, color: 'bg-[#FFD166]/10 border-[#FFD166]/30 text-[#FFD166]' },
-  { emoji: '🎉', label: 'Celebrando', count: 5, color: 'bg-purple-500/10 border-purple-500/30 text-purple-300' },
-  { emoji: '🪫', label: 'Sem Energia', count: 3, color: 'bg-rose-500/10 border-rose-500/30 text-rose-300' },
-  { emoji: '🆘', label: 'Precisando de Luz', count: 1, color: 'bg-rose-600/20 border-rose-500/40 text-rose-300' },
-];
-
 interface CalendarDay {
   day: number;
   month: string;
@@ -45,38 +38,6 @@ interface CalendarDay {
   label: string;
   isToday?: boolean;
 }
-
-// 28 Days Calendar — static mock data (outside component to avoid re-creation)
-const last4WeeksDays: CalendarDay[] = [
-  { day: 26, month: 'Jul', emoji: '☀️', label: 'Com Esperança' },
-  { day: 27, month: 'Jul', emoji: '🪫', label: 'Sem Energia' },
-  { day: 28, month: 'Jul', emoji: '☀️', label: 'Com Esperança' },
-  { day: 29, month: 'Jul', emoji: '🆘', label: 'Precisando de Luz' },
-  { day: 30, month: 'Jul', emoji: '🎉', label: 'Celebrando' },
-  { day: 31, month: 'Jul', emoji: '☀️', label: 'Com Esperança' },
-  { day: 1, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-  { day: 2, month: 'Ago', emoji: '🪫', label: 'Sem Energia' },
-  { day: 3, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-  { day: 4, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-  { day: 5, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-  { day: 6, month: 'Ago', emoji: null, label: 'Sem registro' },
-  { day: 7, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-  { day: 8, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-  { day: 9, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-  { day: 10, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-  { day: 11, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-  { day: 12, month: 'Ago', emoji: '🪫', label: 'Sem Energia' },
-  { day: 13, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-  { day: 14, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-  { day: 15, month: 'Ago', emoji: null, label: 'Sem registro' },
-  { day: 16, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-  { day: 17, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-  { day: 18, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-  { day: 19, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-  { day: 20, month: 'Ago', emoji: '☀️', label: 'Com Esperança' },
-  { day: 21, month: 'Ago', emoji: '🎉', label: 'Celebrando' },
-  { day: 22, month: 'Ago', emoji: '☀️', label: 'Com Esperança', isToday: true },
-];
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenAuthModal }) => {
   const { user, isAuthenticated, logout, sosResponse, sendSosTicket, markSosResponseRead } = useAuth();
@@ -92,6 +53,108 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
   const [isBreathingModalOpen, setIsBreathingModalOpen] = useState(false);
   const [breathingTimer, setBreathingTimer] = useState(60);
   const [breathingPhase, setBreathingPhase] = useState<'puxe' | 'segure' | 'solte'>('puxe');
+
+  // User's Real Emotional Check-ins from Supabase
+  const [userCheckins, setUserCheckins] = useState<{ date: string; emoji: string; label: string }[]>([]);
+  const [isLoadingCheckins, setIsLoadingCheckins] = useState(false);
+
+  useEffect(() => {
+    if (!isEmotionalHistoryOpen || !user?.id) {
+      if (!user?.id) setUserCheckins([]);
+      return;
+    }
+
+    const fetchCheckins = async () => {
+      setIsLoadingCheckins(true);
+      try {
+        const { data, error } = await supabase
+          .from('emotional_checkins')
+          .select('checkin_date, emotion_id, emotion_label')
+          .eq('profile_id', user.id)
+          .order('checkin_date', { ascending: false });
+
+        if (!error && data) {
+          const mapped = data.map(item => {
+            let emoji = '💖';
+            if (item.emotion_id === 'esperanca' || item.emotion_label?.toLowerCase().includes('esperança')) emoji = '☀️';
+            else if (item.emotion_id === 'celebrando' || item.emotion_label?.toLowerCase().includes('celebrando')) emoji = '🎉';
+            else if (item.emotion_id === 'sem_energia' || item.emotion_label?.toLowerCase().includes('energia') || item.emotion_label?.toLowerCase().includes('exausto')) emoji = '🪫';
+            else if (item.emotion_id === 'precisando_luz' || item.emotion_label?.toLowerCase().includes('luz') || item.emotion_label?.toLowerCase().includes('ajuda')) emoji = '🆘';
+            else if (item.emotion_id === 'calma' || item.emotion_label?.toLowerCase().includes('paz')) emoji = '🌿';
+            else if (item.emotion_id === 'ansiosa' || item.emotion_label?.toLowerCase().includes('ansiosa')) emoji = '🌊';
+            
+            return {
+              date: item.checkin_date,
+              emoji: emoji,
+              label: item.emotion_label || 'Emoção'
+            };
+          });
+          setUserCheckins(mapped);
+        } else {
+          setUserCheckins([]);
+        }
+      } catch (err) {
+        console.warn('Error loading emotional checkins:', err);
+      } finally {
+        setIsLoadingCheckins(false);
+      }
+    };
+
+    fetchCheckins();
+  }, [isEmotionalHistoryOpen, user?.id]);
+
+  // Dynamically compute the rolling 28-day window ending on TODAY
+  const dynamicLast4WeeksDays = React.useMemo(() => {
+    const days: CalendarDay[] = [];
+    const today = new Date();
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+    const checkinMap = new Map<string, { emoji: string; label: string }>();
+    userCheckins.forEach(c => {
+      checkinMap.set(c.date, { emoji: c.emoji, label: c.label });
+    });
+
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const isoDate = d.toISOString().split('T')[0];
+      const match = checkinMap.get(isoDate);
+
+      days.push({
+        day: d.getDate(),
+        month: monthNames[d.getMonth()],
+        emoji: match ? match.emoji : null,
+        label: match ? match.label : 'Sem registro',
+        isToday: i === 0
+      });
+    }
+
+    return days;
+  }, [userCheckins]);
+
+  // Dynamically compute counts per emotional category
+  const dynamicSummary = React.useMemo(() => {
+    const counts: Record<string, number> = {
+      'Com Esperança': 0,
+      'Celebrando': 0,
+      'Sem Energia': 0,
+      'Precisando de Luz': 0,
+    };
+
+    userCheckins.forEach(c => {
+      if (c.label.includes('Esperança') || c.emoji === '☀️') counts['Com Esperança']++;
+      else if (c.label.includes('Celebrando') || c.emoji === '🎉') counts['Celebrando']++;
+      else if (c.label.includes('Energia') || c.emoji === '🪫') counts['Sem Energia']++;
+      else if (c.label.includes('Luz') || c.emoji === '🆘') counts['Precisando de Luz']++;
+    });
+
+    return [
+      { emoji: '☀️', label: 'Com Esperança', count: counts['Com Esperança'], color: 'bg-[#FFD166]/10 border-[#FFD166]/30 text-[#FFD166]' },
+      { emoji: '🎉', label: 'Celebrando', count: counts['Celebrando'], color: 'bg-purple-500/10 border-purple-500/30 text-purple-300' },
+      { emoji: '🪫', label: 'Sem Energia', count: counts['Sem Energia'], color: 'bg-rose-500/10 border-rose-500/30 text-rose-300' },
+      { emoji: '🆘', label: 'Precisando de Luz', count: counts['Precisando de Luz'], color: 'bg-rose-600/20 border-rose-500/40 text-rose-300' },
+    ];
+  }, [userCheckins]);
 
   // SOS Private Message State
   const [sosMessage, setSosMessage] = useState('');
@@ -632,22 +695,33 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                 Resumo das Últimas 4 Semanas:
               </span>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {emotionalSummary.map((item, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`flex items-center justify-between p-3 rounded-2xl border text-xs font-bold transition-all ${item.color}`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <span className="text-xl shrink-0">{item.emoji}</span>
-                      <span className="truncate text-xs font-bold text-white">{item.label}</span>
+              {userCheckins.length === 0 ? (
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center space-y-1">
+                  <p className="text-xs font-bold text-slate-300">
+                    Você ainda não registrou nenhuma emoção recente.
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Faça seu primeiro check-in diário na aba <strong>Comunidade</strong> para ver seus gráficos! 💖
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {dynamicSummary.map((item, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`flex items-center justify-between p-3 rounded-2xl border text-xs font-bold transition-all ${item.color}`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <span className="text-xl shrink-0">{item.emoji}</span>
+                        <span className="truncate text-xs font-bold text-white">{item.label}</span>
+                      </div>
+                      <span className="bg-black/50 px-3 py-1 rounded-full text-xs font-black text-white shrink-0 ml-2">
+                        {item.count}x
+                      </span>
                     </div>
-                    <span className="bg-black/50 px-3 py-1 rounded-full text-xs font-black text-white shrink-0 ml-2">
-                      {item.count}x
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* 2. Calendário das Últimas 4 Semanas (28 Dias) */}
@@ -657,7 +731,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                   Histórico Diário (4 Semanas)
                 </span>
                 <span className="text-[10px] text-[#FF7F5B] font-bold bg-[#FF7F5B]/10 px-2.5 py-1 rounded-full border border-[#FF7F5B]/20">
-                  17 Registros 🌟
+                  {userCheckins.length} {userCheckins.length === 1 ? 'Registro' : 'Registros'} 🌟
                 </span>
               </div>
 
@@ -666,7 +740,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                   <span key={i} className="text-[10px] font-extrabold text-slate-500 uppercase">{d}</span>
                 ))}
 
-                {last4WeeksDays.map((item, idx) => (
+                {dynamicLast4WeeksDays.map((item, idx) => (
                   <div
                     key={idx}
                     className={`aspect-square rounded-2xl border flex flex-col items-center justify-center p-1 transition-all ${
