@@ -5,7 +5,7 @@ import { Journey, Lesson, CourseModule } from '../types';
 import { JourneyCard } from '../components/catalog/JourneyCard';
 import { StoryViewerModal } from '../components/stories/StoryViewerModal';
 import { useAuth } from '../context/AuthContext';
-import { Play, Flame, CheckCircle2, ChevronDown, Lock, Sparkles, Instagram } from 'lucide-react';
+import { Play, Flame, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Lock, Sparkles, Instagram } from 'lucide-react';
 
 interface HomePageProps {
   onSelectJourney: (journey: Journey) => void;
@@ -82,11 +82,49 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   // Selected module index state for each journey
   const [selectedModuleMap, setSelectedModuleMap] = useState<Record<string, number>>({});
 
-  // Auto-advance hero slider every 6 seconds unless user hovers
+  const nextSlide = () => {
+    setCurrentSlideIndex((prev) => (prev + 1) % JOURNEYS_DATA.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlideIndex((prev) => (prev - 1 + JOURNEYS_DATA.length) % JOURNEYS_DATA.length);
+  };
+
+  // Touch Swipe Handlers for Mobile
+  const touchStartX = React.useRef<number | null>(null);
+  const touchEndX = React.useRef<number | null>(null);
+
+  const handleHeroTouchStart = (e: React.TouchEvent) => {
+    setIsPaused(true);
+    touchStartX.current = e.targetTouches[0].clientX;
+    touchEndX.current = null;
+  };
+
+  const handleHeroTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleHeroTouchEnd = () => {
+    setIsPaused(false);
+    if (!touchStartX.current || !touchEndX.current) return;
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > 40;
+    const isRightSwipe = distance < -40;
+
+    if (isLeftSwipe) {
+      nextSlide();
+    } else if (isRightSwipe) {
+      prevSlide();
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  // Auto-advance hero slider every 6 seconds unless user hovers / interacts
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
-      setCurrentSlideIndex((prev) => (prev + 1) % JOURNEYS_DATA.length);
+      nextSlide();
     }, 6000);
     return () => clearInterval(interval);
   }, [isPaused]);
@@ -133,65 +171,119 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   return (
     <div className="space-y-14 pb-24 animate-fade-in">
       
-      {/* 6-Slider Hero Vitrine */}
+      {/* 6-Journey Interactive Slider Showcase */}
       <section 
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
-        className="relative w-full min-h-[500px] sm:min-h-[560px] rounded-3xl overflow-hidden flex items-end p-6 sm:p-14 shadow-2xl border border-white/10 my-4 group select-none"
+        onTouchStart={handleHeroTouchStart}
+        onTouchMove={handleHeroTouchMove}
+        onTouchEnd={handleHeroTouchEnd}
+        className="relative w-full min-h-[460px] sm:min-h-[540px] rounded-3xl overflow-hidden shadow-2xl border border-white/10 my-4 group select-none"
       >
-        
-        {/* Background Image Slider */}
-        {JOURNEYS_DATA.map((journey, index) => {
-          const isActive = index === currentSlideIndex;
-          return (
-            <div 
-              key={journey.id}
-              className={`absolute inset-0 z-0 transition-opacity duration-1000 ease-in-out ${
-                isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'
-              }`}
-            >
-              <img
-                src={SLIDE_POSTERS[journey.id]}
-                alt={journey.title}
-                className="w-full h-full object-cover object-center"
-              />
-              <div className="absolute inset-0 hero-vignette"></div>
-            </div>
-          );
-        })}
+        {/* Sliding Horizontal Track */}
+        <div 
+          className="flex h-full w-full transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${currentSlideIndex * 100}%)` }}
+        >
+          {JOURNEYS_DATA.map((journey) => {
+            const isPurchased = user?.purchasedJourneyIds.includes(journey.id);
+            const totalLessons = journey.modules.reduce((acc, m) => acc + m.lessons.length, 0);
 
-        {/* Content Details Box */}
-        <div className="relative z-10 max-w-2xl space-y-4 animate-fade-in key={activeJourney.id}">
-          
-          <h1 
-            className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-none drop-shadow-md cursor-pointer hover:text-[#FF7F5B] transition-colors"
-            style={{ fontFamily: 'var(--font-heading)' }}
-            onClick={() => onSelectJourney(activeJourney)}
-          >
-            {activeJourney.title}
-          </h1>
+            return (
+              <div 
+                key={journey.id}
+                className="relative min-w-full h-full min-h-[460px] sm:min-h-[540px] flex items-end p-6 sm:p-14 overflow-hidden shrink-0"
+              >
+                {/* Background Image */}
+                <img
+                  src={SLIDE_POSTERS[journey.id]}
+                  alt={journey.title}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+                
+                {/* Dark Gradient Vignette Overlay for Crisp Readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#070D0F] via-[#070D0F]/60 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-[#070D0F]/90 via-[#070D0F]/40 to-transparent"></div>
 
-          <div className="space-y-1.5 font-normal leading-relaxed">
-            <p className="text-sm sm:text-base font-semibold text-slate-100 italic drop-shadow-sm">
-              "{activeJourney.tagline}"
-            </p>
-            <p className="text-xs sm:text-sm text-slate-300 line-clamp-2 max-w-[75%]">
-              {activeJourney.description}
-            </p>
-          </div>
+                {/* Content Box */}
+                <div className="relative z-10 max-w-2xl space-y-3 sm:space-y-4 pb-8 sm:pb-2">
+                  
+                  {/* Category / Target Audience Badge */}
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className="text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full text-white shadow-md"
+                      style={{ backgroundColor: journey.themeColor }}
+                    >
+                      {journey.targetAudience}
+                    </span>
+                    <span className="text-[11px] text-slate-300 font-bold bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
+                      {journey.modules.length} Módulos • {totalLessons} Aulas
+                    </span>
+                  </div>
 
+                  {/* Journey Title */}
+                  <h1 
+                    className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-none drop-shadow-md cursor-pointer hover:text-[#FF7F5B] transition-colors"
+                    style={{ fontFamily: 'var(--font-heading)' }}
+                    onClick={() => isPurchased ? onStartLearning(journey) : onSelectJourney(journey)}
+                  >
+                    {journey.title}
+                  </h1>
+
+                  {/* Tagline & Description */}
+                  <div className="space-y-1 sm:space-y-1.5 leading-relaxed">
+                    <p className="text-xs sm:text-base font-semibold text-slate-100 italic drop-shadow-sm line-clamp-2">
+                      "{journey.tagline}"
+                    </p>
+                    <p className="text-xs sm:text-sm text-slate-300 line-clamp-2 max-w-xl hidden sm:block">
+                      {journey.description}
+                    </p>
+                  </div>
+
+                  {/* CTA Button */}
+                  <div className="pt-1">
+                    <button
+                      onClick={() => isPurchased ? onStartLearning(journey) : onSelectJourney(journey)}
+                      className="flex items-center gap-2 px-5 py-2.5 sm:py-3 rounded-2xl font-extrabold text-xs uppercase tracking-wider text-slate-950 bg-white hover:bg-slate-100 shadow-xl transition-all active:scale-95 cursor-pointer"
+                    >
+                      <Play className="w-4 h-4 fill-current text-slate-950" />
+                      <span>{isPurchased ? 'Continuar Assistindo' : 'Conhecer Jornada'}</span>
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            );
+          })}
         </div>
 
+        {/* Navigation Arrows: Left and Right */}
+        <button
+          onClick={prevSlide}
+          aria-label="Slide Anterior"
+          className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md border border-white/15 text-white flex items-center justify-center transition-all opacity-80 hover:opacity-100 hover:scale-105 cursor-pointer active:scale-95"
+        >
+          <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
+
+        <button
+          onClick={nextSlide}
+          aria-label="Próximo Slide"
+          className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md border border-white/15 text-white flex items-center justify-center transition-all opacity-80 hover:opacity-100 hover:scale-105 cursor-pointer active:scale-95"
+        >
+          <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
+
         {/* 6 Slider Dots / Indicators */}
-        <div className="absolute bottom-4 right-6 z-20 flex items-center gap-2 bg-black/50 backdrop-blur-md px-3.5 py-2 rounded-full border border-white/10">
+        <div className="absolute bottom-4 right-4 sm:right-6 z-20 flex items-center gap-1.5 sm:gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full border border-white/10">
           {JOURNEYS_DATA.map((journey, idx) => {
             const isActive = idx === currentSlideIndex;
             return (
               <button
                 key={journey.id}
                 onClick={() => setCurrentSlideIndex(idx)}
-                className={`h-2.5 rounded-full transition-all duration-300 ${
-                  isActive ? 'w-8 bg-[#FF7F5B]' : 'w-2.5 bg-white/40 hover:bg-white/70'
+                className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                  isActive ? 'w-6 sm:w-8 bg-[#FF7F5B]' : 'w-2 sm:w-2.5 bg-white/40 hover:bg-white/70'
                 }`}
                 title={journey.title}
               />
