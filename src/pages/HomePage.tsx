@@ -164,7 +164,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   return (
     <div className="space-y-14 pb-24 animate-fade-in">
       
-      {/* 6-Journey Interactive Slider Showcase (Frameless with Snap) */}
+      {/* 6-Journey Interactive Slider Showcase (Full Bleed Edge-to-Edge, Frameless & Snap) */}
       <section 
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
@@ -172,7 +172,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
         onTouchEnd={() => {
           setTimeout(() => setIsPaused(false), 3000);
         }}
-        className="relative w-full rounded-3xl overflow-hidden my-4 group select-none"
+        className="relative -mx-4 sm:-mx-6 lg:-mx-8 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] overflow-hidden -mt-4 sm:-mt-6 lg:-mt-8 mb-8 group select-none"
       >
         {/* Hardware-Accelerated Scroll Snap Track */}
         <div 
@@ -188,7 +188,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
             return (
               <div 
                 key={journey.id}
-                className="relative min-w-full w-full min-h-[460px] sm:min-h-[540px] flex items-end p-6 sm:p-14 overflow-hidden shrink-0 snap-center snap-always rounded-3xl"
+                className="relative min-w-full w-full min-h-[480px] sm:min-h-[580px] flex items-end p-6 sm:p-14 overflow-hidden shrink-0 snap-center snap-always"
               >
                 {/* Background Image */}
                 <img
