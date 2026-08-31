@@ -82,88 +82,46 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   // Selected module index state for each journey
   const [selectedModuleMap, setSelectedModuleMap] = useState<Record<string, number>>({});
 
-  const sliderRef = React.useRef<HTMLDivElement>(null);
-  const isResettingScroll = React.useRef(false);
-
-  // 3-repeat buffer for seamless 360-degree infinite looping without borders
-  const INFINITE_JOURNEYS = React.useMemo(() => {
-    return [...JOURNEYS_DATA, ...JOURNEYS_DATA, ...JOURNEYS_DATA];
-  }, []);
-
-  // Initial scroll position: center of the 3-repeat buffer (index 6)
-  useEffect(() => {
-    if (sliderRef.current) {
-      const width = sliderRef.current.clientWidth;
-      sliderRef.current.scrollTo({
-        left: 6 * width,
-        behavior: 'instant' as ScrollBehavior
-      });
-    }
-  }, []);
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const scrollLeft = e.currentTarget.scrollLeft;
-    const width = e.currentTarget.clientWidth;
-    if (width <= 0) return;
-
-    const rawIndex = Math.round(scrollLeft / width);
-    const normalizedIndex = rawIndex % JOURNEYS_DATA.length;
-    
-    if (normalizedIndex >= 0 && normalizedIndex < JOURNEYS_DATA.length && normalizedIndex !== currentSlideIndex) {
-      setCurrentSlideIndex(normalizedIndex);
-    }
-
-    // Seamless infinite repositioning when entering outer boundaries
-    if (!isResettingScroll.current) {
-      if (rawIndex < 3) {
-        isResettingScroll.current = true;
-        const target = (rawIndex + 6) * width;
-        e.currentTarget.scrollTo({ left: target, behavior: 'instant' as ScrollBehavior });
-        setTimeout(() => { isResettingScroll.current = false; }, 80);
-      } else if (rawIndex >= 15) {
-        isResettingScroll.current = true;
-        const target = (rawIndex - 6) * width;
-        e.currentTarget.scrollTo({ left: target, behavior: 'instant' as ScrollBehavior });
-        setTimeout(() => { isResettingScroll.current = false; }, 80);
-      }
-    }
-  };
-
   const nextSlide = () => {
-    if (sliderRef.current) {
-      const width = sliderRef.current.clientWidth;
-      const currentRaw = Math.round(sliderRef.current.scrollLeft / width);
-      sliderRef.current.scrollTo({
-        left: (currentRaw + 1) * width,
-        behavior: 'smooth'
-      });
-    }
+    setCurrentSlideIndex((prev) => (prev + 1) % JOURNEYS_DATA.length);
   };
 
   const prevSlide = () => {
-    if (sliderRef.current) {
-      const width = sliderRef.current.clientWidth;
-      const currentRaw = Math.round(sliderRef.current.scrollLeft / width);
-      sliderRef.current.scrollTo({
-        left: (currentRaw - 1) * width,
-        behavior: 'smooth'
-      });
-    }
+    setCurrentSlideIndex((prev) => (prev - 1 + JOURNEYS_DATA.length) % JOURNEYS_DATA.length);
   };
 
-  const scrollToIndex = (targetNormIdx: number) => {
-    if (sliderRef.current) {
-      const width = sliderRef.current.clientWidth;
-      const currentRaw = Math.round(sliderRef.current.scrollLeft / width);
-      const currentNorm = currentRaw % JOURNEYS_DATA.length;
-      let diff = targetNormIdx - currentNorm;
-      if (diff > 3) diff -= 6;
-      if (diff < -3) diff += 6;
-      sliderRef.current.scrollTo({
-        left: (currentRaw + diff) * width,
-        behavior: 'smooth'
-      });
+  const scrollToIndex = (idx: number) => {
+    setCurrentSlideIndex(idx);
+  };
+
+  // Touch Swipe Handlers for Mobile (No scroll loops / zero risk of Safari crash)
+  const touchStartX = React.useRef<number | null>(null);
+  const touchEndX = React.useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsPaused(true);
+    touchStartX.current = e.targetTouches[0].clientX;
+    touchEndX.current = null;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    setIsPaused(false);
+    if (!touchStartX.current || !touchEndX.current) return;
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > 35;
+    const isRightSwipe = distance < -35;
+
+    if (isLeftSwipe) {
+      nextSlide();
+    } else if (isRightSwipe) {
+      prevSlide();
     }
+    touchStartX.current = null;
+    touchEndX.current = null;
   };
 
   // Auto-advance hero slider every 6 seconds unless user hovers / touches
@@ -217,26 +175,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
       <section 
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
-        onTouchStart={() => setIsPaused(true)}
-        onTouchEnd={() => {
-          setTimeout(() => setIsPaused(false), 3000);
-        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         className="relative -mx-4 sm:-mx-6 lg:-mx-8 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] overflow-hidden -mt-4 sm:-mt-6 lg:-mt-8 mb-8 group select-none"
       >
-        {/* Hardware-Accelerated Scroll Snap Track */}
+        {/* Hardware-Accelerated Sliding Track */}
         <div 
-          ref={sliderRef}
-          onScroll={handleScroll}
-          className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide w-full"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          className="flex h-full w-full transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${currentSlideIndex * 100}%)`, willChange: 'transform' }}
         >
-          {INFINITE_JOURNEYS.map((journey, index) => {
+          {JOURNEYS_DATA.map((journey) => {
             const isPurchased = user?.purchasedJourneyIds.includes(journey.id);
 
             return (
               <div 
-                key={`${journey.id}-${index}`}
-                className="relative min-w-full w-full min-h-[480px] sm:min-h-[580px] flex items-end p-6 sm:p-14 overflow-hidden shrink-0 snap-center snap-always"
+                key={journey.id}
+                className="relative min-w-full w-full min-h-[480px] sm:min-h-[580px] flex items-end p-6 sm:p-14 overflow-hidden shrink-0"
               >
                 {/* Background Image */}
                 <img
