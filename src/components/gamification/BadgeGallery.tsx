@@ -75,7 +75,7 @@ export const BadgeGallery: React.FC<BadgeGalleryProps> = ({ unlockedBadges = [],
                     <span className="text-xs font-bold text-white truncate">{b.title}</span>
                   </div>
                   <span className="text-[10px] font-extrabold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2 py-0.5 rounded-full border border-[#FF7F5B]/20 shrink-0">
-                    +{b.rewardXp} XP
+                    +{b.rewardXp} pontos
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-200 leading-relaxed font-normal">
@@ -168,7 +168,7 @@ export const BadgeGallery: React.FC<BadgeGalleryProps> = ({ unlockedBadges = [],
                             <span className="text-xs font-bold text-white truncate">{badge.title}</span>
                           </div>
                           <span className="text-[10px] font-extrabold text-[#FF7F5B] bg-[#FF7F5B]/15 px-2.5 py-0.5 rounded-full border border-[#FF7F5B]/30 shrink-0">
-                            +{badge.rewardXp} XP
+                            +{badge.rewardXp} pontos
                           </span>
                         </div>
 
@@ -209,7 +209,7 @@ export const BadgeGallery: React.FC<BadgeGalleryProps> = ({ unlockedBadges = [],
                           {badge.title}
                         </h4>
                         <span className="text-[10px] font-extrabold text-[#FF7F5B] block">
-                          +{badge.rewardXp} XP
+                          +{badge.rewardXp} pontos
                         </span>
                       </div>
 

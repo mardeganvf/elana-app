@@ -1111,7 +1111,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   <div className="min-w-0 w-full">
                     <h4 className="text-xs font-bold text-white truncate">{badge.title}</h4>
                     <span className={`text-[10px] font-black block mt-0.5 ${isUnlocked ? 'text-[#FFD166]' : 'text-slate-500'}`}>
-                      {isUnlocked ? `+${badge.rewardXp} XP` : 'Bloqueado'}
+                      {isUnlocked ? `+${badge.rewardXp} pontos` : 'Bloqueado'}
                     </span>
                   </div>
                 </div>

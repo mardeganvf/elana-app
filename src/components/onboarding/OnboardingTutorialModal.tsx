@@ -31,7 +31,7 @@ export const OnboardingTutorialModal: React.FC<OnboardingTutorialModalProps> = (
       title: `Boas-vindas à Elana, ${user.name.split(' ')[0]}! 💖`,
       subtitle: 'Que alegria ter você com a gente nessa caminhada.',
       description: 'Maternidade e paternidade não precisam ser solitárias. Aqui você ganha oxigênio, acolhimento e conhecimento sem julgamentos.',
-      highlight: '🎁 Você acabou de ganhar +25 XP e sua 1ª Conquista: "Semente Plantada"!',
+      highlight: '🎁 Você acabou de ganhar +25 pontos e sua 1ª Conquista: "Semente Plantada"!',
       color: 'from-[#E66795]/20 to-[#FF7F5B]/20',
       borderColor: 'border-[#E66795]/40'
     },
@@ -41,7 +41,7 @@ export const OnboardingTutorialModal: React.FC<OnboardingTutorialModalProps> = (
       title: 'Aulas Leves com Especialistas',
       subtitle: 'Direto ao ponto, no ritmo da sua rotina.',
       description: 'Explore nossas 6 Trilhas Guiadas sobre sono, autocuidado, fases do bebê e relacionamento. Aulas curtas em vídeo feitas para assistir até com o bebê no colo!',
-      highlight: '💡 Assista aos módulos e acumule pontos (XP) para subir de nível!',
+      highlight: '💡 Assista aos módulos e acumule pontos para subir de nível!',
       color: 'from-[#FF7F5B]/20 to-[#FFD166]/20',
       borderColor: 'border-[#FF7F5B]/40'
     },
@@ -171,7 +171,7 @@ export const OnboardingTutorialModal: React.FC<OnboardingTutorialModalProps> = (
             onClick={handleNext}
             className="bg-gradient-to-r from-[#E66795] to-[#FF7F5B] hover:opacity-95 text-white font-extrabold text-xs py-3 px-6 rounded-2xl shadow-lg transition-all flex items-center gap-2 uppercase tracking-wider"
           >
-            <span>{currentStep === steps.length - 1 ? 'Concluir & Ganhar +50 XP 🎉' : 'Próximo'}</span>
+            <span>{currentStep === steps.length - 1 ? 'Concluir & Ganhar +50 Pontos 🎉' : 'Próximo'}</span>
             {currentStep === steps.length - 1 ? (
               <CheckCircle2 className="w-4 h-4" />
             ) : (

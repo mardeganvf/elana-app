@@ -222,11 +222,11 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
         <div className="bg-[#0A1518] p-3.5 rounded-2xl border border-white/10 space-y-2">
           <div className="flex items-center justify-between text-xs font-bold">
             <span className="text-slate-400">
-              Pontuação Atual: <strong className="text-white">{user?.xp || levelInfo.minXp} XP</strong>
+              Pontuação Atual: <strong className="text-white">{user?.xp || levelInfo.minXp} pontos</strong>
             </span>
             {nextLevelObj && (
               <span className="text-[#FFD166]">
-                Próximo: {nextLevelObj.title} ({nextLevelObj.minXp} XP)
+                Próximo: {nextLevelObj.title} ({nextLevelObj.minXp} pontos)
               </span>
             )}
           </div>
