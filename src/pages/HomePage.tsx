@@ -82,19 +82,52 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   // Selected module index state for each journey
   const [selectedModuleMap, setSelectedModuleMap] = useState<Record<string, number>>({});
 
+  // 8-slide revolving track: [Clone 6, Slide 1..6, Clone 1]
+  const EXTENDED_JOURNEYS = React.useMemo(() => {
+    return [JOURNEYS_DATA[JOURNEYS_DATA.length - 1], ...JOURNEYS_DATA, JOURNEYS_DATA[0]];
+  }, []);
+
+  const [displayIndex, setDisplayIndex] = useState(1);
+  const [isTransitioning, setIsTransitioning] = useState(true);
+  const isAnimating = React.useRef(false);
+
+  // Normalized active journey index for indicators and details (0 to 5)
+  const activeNormIdx = displayIndex === 0 ? 5 : displayIndex === 7 ? 0 : displayIndex - 1;
+  const activeJourney = JOURNEYS_DATA[activeNormIdx];
+
+  const handleTransitionEnd = () => {
+    isAnimating.current = false;
+    if (displayIndex >= 7) {
+      setIsTransitioning(false);
+      setDisplayIndex(1);
+    } else if (displayIndex <= 0) {
+      setIsTransitioning(false);
+      setDisplayIndex(6);
+    }
+  };
+
   const nextSlide = () => {
-    setCurrentSlideIndex((prev) => (prev + 1) % JOURNEYS_DATA.length);
+    if (isAnimating.current) return;
+    isAnimating.current = true;
+    setIsTransitioning(true);
+    setDisplayIndex((prev) => prev + 1);
   };
 
   const prevSlide = () => {
-    setCurrentSlideIndex((prev) => (prev - 1 + JOURNEYS_DATA.length) % JOURNEYS_DATA.length);
+    if (isAnimating.current) return;
+    isAnimating.current = true;
+    setIsTransitioning(true);
+    setDisplayIndex((prev) => prev - 1);
   };
 
-  const scrollToIndex = (idx: number) => {
-    setCurrentSlideIndex(idx);
+  const scrollToIndex = (targetIdx: number) => {
+    if (isAnimating.current) return;
+    isAnimating.current = true;
+    setIsTransitioning(true);
+    setDisplayIndex(targetIdx + 1);
   };
 
-  // Touch Swipe Handlers for Mobile (No scroll loops / zero risk of Safari crash)
+  // Touch Swipe Handlers for Mobile
   const touchStartX = React.useRef<number | null>(null);
   const touchEndX = React.useRef<number | null>(null);
 
@@ -131,9 +164,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
       nextSlide();
     }, 6000);
     return () => clearInterval(interval);
-  }, [isPaused]);
-
-  const activeJourney = JOURNEYS_DATA[currentSlideIndex];
+  }, [isPaused, displayIndex]);
 
   const purchasedJourneys = JOURNEYS_DATA.filter(j => user?.purchasedJourneyIds.includes(j.id));
 
@@ -171,7 +202,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   return (
     <div className="space-y-14 pb-24 animate-fade-in">
       
-      {/* 6-Journey Infinite Slider Showcase with Lateral Image Morphing */}
+      {/* 6-Journey Revolving Infinite Slider with Discreet Lateral Morphing */}
       <section 
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
@@ -180,17 +211,22 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
         onTouchEnd={handleTouchEnd}
         className="relative -mx-4 sm:-mx-6 lg:-mx-8 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] overflow-hidden -mt-4 sm:-mt-6 lg:-mt-8 mb-8 group select-none"
       >
-        {/* Hardware-Accelerated Sliding Track */}
+        {/* Hardware-Accelerated Revolving Sliding Track */}
         <div 
-          className="flex h-full w-full transition-transform duration-500 ease-out"
-          style={{ transform: `translateX(-${currentSlideIndex * 100}%)`, willChange: 'transform' }}
+          onTransitionEnd={handleTransitionEnd}
+          className="flex h-full w-full"
+          style={{ 
+            transform: `translateX(-${displayIndex * 100}%)`, 
+            transition: isTransitioning ? 'transform 500ms cubic-bezier(0.25, 1, 0.5, 1)' : 'none',
+            willChange: 'transform' 
+          }}
         >
-          {JOURNEYS_DATA.map((journey) => {
+          {EXTENDED_JOURNEYS.map((journey, index) => {
             const isPurchased = user?.purchasedJourneyIds.includes(journey.id);
 
             return (
               <div 
-                key={journey.id}
+                key={`${journey.id}-${index}`}
                 className="relative min-w-full w-full min-h-[480px] sm:min-h-[580px] flex items-end p-6 sm:p-14 overflow-hidden shrink-0"
               >
                 {/* Background Image */}
@@ -200,23 +236,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                   className="absolute inset-0 w-full h-full object-cover object-center"
                 />
                 
-                {/* ── Morph Lateral Edge Gradient Feathers (Seamless Blend Between Images) ── */}
-                <div className="absolute inset-y-0 left-0 w-28 sm:w-48 bg-gradient-to-r from-[#070D0F] via-[#070D0F]/70 to-transparent pointer-events-none z-10"></div>
-                <div className="absolute inset-y-0 right-0 w-28 sm:w-48 bg-gradient-to-l from-[#070D0F] via-[#070D0F]/70 to-transparent pointer-events-none z-10"></div>
+                {/* ── Discreet Morph Lateral Edge Feathers (Seamless Soft Blend Between Images) ── */}
+                <div className="absolute inset-y-0 left-0 w-8 sm:w-16 bg-gradient-to-r from-[#070D0F]/60 to-transparent pointer-events-none z-10"></div>
+                <div className="absolute inset-y-0 right-0 w-8 sm:w-16 bg-gradient-to-l from-[#070D0F]/60 to-transparent pointer-events-none z-10"></div>
 
-                {/* Ambient Radial Color Glow based on Journey Theme */}
-                <div 
-                  className="absolute -bottom-16 -left-16 w-80 h-80 rounded-full blur-3xl opacity-25 pointer-events-none z-10"
-                  style={{ backgroundColor: journey.themeColor }}
-                ></div>
-                <div 
-                  className="absolute -top-16 -right-16 w-80 h-80 rounded-full blur-3xl opacity-15 pointer-events-none z-10"
-                  style={{ backgroundColor: journey.themeColor }}
-                ></div>
-
-                {/* Dark Gradient Vignette Overlay for Crisp Readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#070D0F] via-[#070D0F]/60 to-transparent z-10 pointer-events-none"></div>
-                <div className="absolute inset-0 bg-gradient-to-r from-[#070D0F]/90 via-[#070D0F]/40 to-transparent z-10 pointer-events-none"></div>
+                {/* Subtle Gradient Vignette for Readability without heavy shadows */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#070D0F] via-[#070D0F]/30 to-transparent z-10 pointer-events-none"></div>
 
                 {/* Content Box */}
                 <div className="relative z-20 max-w-2xl space-y-3 sm:space-y-4 pb-8 sm:pb-2">
@@ -277,7 +302,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
         {/* 6 Slider Dots / Indicators */}
         <div className="absolute bottom-4 right-4 sm:right-6 z-20 flex items-center gap-1.5 sm:gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full border border-white/10">
           {JOURNEYS_DATA.map((journey, idx) => {
-            const isActive = idx === currentSlideIndex;
+            const isActive = idx === activeNormIdx;
             return (
               <button
                 key={journey.id}
