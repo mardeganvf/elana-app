@@ -336,14 +336,18 @@ export const CommunityPage: React.FC = () => {
     return `${year}-${month}-${day}`;
   };
 
-  // Check-in Pop-up Trigger (Opens only once per day, resets at 00h00)
+  // Check-in Pop-up Trigger (Opens ONLY once per calendar day, resets at 00h00)
   useEffect(() => {
     const todayStr = getTodayDateKey();
     const userKey = user?.id || 'anon';
-    const lastCheckinDate = localStorage.getItem(`elana_daily_checkin_${userKey}`);
+    
+    // Check multiple storage flags to guarantee it only opens once per day
+    const isDoneToday = 
+      localStorage.getItem('elana_daily_checkin_done_' + todayStr) === 'true' ||
+      localStorage.getItem(`elana_daily_checkin_${userKey}`) === todayStr ||
+      sessionStorage.getItem('elana_daily_checkin_session_' + todayStr) === 'true';
 
-    // If already checked in or dismissed today, do NOT open
-    if (lastCheckinDate === todayStr) {
+    if (isDoneToday) {
       return;
     }
 
@@ -360,7 +364,9 @@ export const CommunityPage: React.FC = () => {
         .then(({ data }) => {
           if (isCancelled) return;
           if (data && data.length > 0) {
+            localStorage.setItem('elana_daily_checkin_done_' + todayStr, 'true');
             localStorage.setItem(`elana_daily_checkin_${userKey}`, todayStr);
+            sessionStorage.setItem('elana_daily_checkin_session_' + todayStr, 'true');
             return;
           }
           const timer = setTimeout(() => {
@@ -395,20 +401,45 @@ export const CommunityPage: React.FC = () => {
     const phrase = item.phrases[randomIndex];
     setActiveRandomPhrase(phrase);
     const todayStr = getTodayDateKey();
-    localStorage.setItem(`elana_daily_checkin_${user?.id || 'anon'}`, todayStr);
+    const userKey = user?.id || 'anon';
+    localStorage.setItem('elana_daily_checkin_done_' + todayStr, 'true');
+    localStorage.setItem(`elana_daily_checkin_${userKey}`, todayStr);
+    sessionStorage.setItem('elana_daily_checkin_session_' + todayStr, 'true');
 
-    // Save check-in into Supabase
+    // Save or Update check-in into Supabase (at most 1 row per user per calendar day)
     if (user?.id) {
       try {
-        const { error } = await supabase
+        const { data: existingRows } = await supabase
           .from('emotional_checkins')
-          .insert([{
-            profile_id: user.id,
-            emotion_id: item.id,
-            emotion_label: item.label,
-            phrase: phrase,
-            checkin_date: todayStr
-          }]);
+          .select('id')
+          .eq('profile_id', user.id)
+          .eq('checkin_date', todayStr)
+          .limit(1);
+
+        let error = null;
+        if (existingRows && existingRows.length > 0) {
+          const res = await supabase
+            .from('emotional_checkins')
+            .update({
+              emotion_id: item.id,
+              emotion_label: item.label,
+              phrase: phrase,
+              created_at: new Date().toISOString()
+            })
+            .eq('id', existingRows[0].id);
+          error = res.error;
+        } else {
+          const res = await supabase
+            .from('emotional_checkins')
+            .insert([{
+              profile_id: user.id,
+              emotion_id: item.id,
+              emotion_label: item.label,
+              phrase: phrase,
+              checkin_date: todayStr
+            }]);
+          error = res.error;
+        }
 
         if (!error) {
           console.log('✅ Check-in emocional salvo com sucesso no Supabase!');
@@ -450,7 +481,10 @@ export const CommunityPage: React.FC = () => {
     setIsDailyCheckinModalOpen(false);
     setSubmittedEmotionObj(null);
     const todayStr = getTodayDateKey();
-    localStorage.setItem(`elana_daily_checkin_${user?.id || 'anon'}`, todayStr);
+    const userKey = user?.id || 'anon';
+    localStorage.setItem('elana_daily_checkin_done_' + todayStr, 'true');
+    localStorage.setItem(`elana_daily_checkin_${userKey}`, todayStr);
+    sessionStorage.setItem('elana_daily_checkin_session_' + todayStr, 'true');
   };
 
   // 60-Second Breathing Timer Effect

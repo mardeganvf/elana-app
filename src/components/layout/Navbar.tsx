@@ -103,6 +103,26 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     fetchCheckins();
   }, [isEmotionalHistoryOpen, user?.id]);
 
+  // Helper to format Date object into local YYYY-MM-DD
+  const formatLocalDateKey = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Deduplicate check-ins by unique calendar date (1 check-in per day)
+  const uniqueDailyCheckins = React.useMemo(() => {
+    const seenMap = new Map<string, { date: string; emoji: string; label: string }>();
+    // userCheckins are ordered descending by date, so first occurrence is the latest
+    userCheckins.forEach(c => {
+      if (!seenMap.has(c.date)) {
+        seenMap.set(c.date, c);
+      }
+    });
+    return Array.from(seenMap.values());
+  }, [userCheckins]);
+
   // Dynamically compute the rolling 28-day window ending on TODAY
   const dynamicLast4WeeksDays = React.useMemo(() => {
     const days: CalendarDay[] = [];
@@ -110,14 +130,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
     const checkinMap = new Map<string, { emoji: string; label: string }>();
-    userCheckins.forEach(c => {
+    uniqueDailyCheckins.forEach(c => {
       checkinMap.set(c.date, { emoji: c.emoji, label: c.label });
     });
 
     for (let i = 27; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
-      const isoDate = d.toISOString().split('T')[0];
+      const isoDate = formatLocalDateKey(d);
       const match = checkinMap.get(isoDate);
 
       days.push({
@@ -130,9 +150,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     }
 
     return days;
-  }, [userCheckins]);
+  }, [uniqueDailyCheckins]);
 
-  // Dynamically compute counts per emotional category
+  // Dynamically compute counts per emotional category (strictly 1 vote per unique day)
   const dynamicSummary = React.useMemo(() => {
     const counts: Record<string, number> = {
       'Com Esperança': 0,
@@ -141,7 +161,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
       'Precisando de Luz': 0,
     };
 
-    userCheckins.forEach(c => {
+    uniqueDailyCheckins.forEach(c => {
       if (c.label.includes('Esperança') || c.emoji === '☀️') counts['Com Esperança']++;
       else if (c.label.includes('Celebrando') || c.emoji === '🎉') counts['Celebrando']++;
       else if (c.label.includes('Energia') || c.emoji === '🪫') counts['Sem Energia']++;
@@ -154,7 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
       { emoji: '🪫', label: 'Sem Energia', count: counts['Sem Energia'], color: 'bg-rose-500/10 border-rose-500/30 text-rose-300' },
       { emoji: '🆘', label: 'Precisando de Luz', count: counts['Precisando de Luz'], color: 'bg-rose-600/20 border-rose-500/40 text-rose-300' },
     ];
-  }, [userCheckins]);
+  }, [uniqueDailyCheckins]);
 
   // SOS Private Message State
   const [sosMessage, setSosMessage] = useState('');
