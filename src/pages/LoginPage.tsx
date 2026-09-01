@@ -169,6 +169,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           if (error) throw error;
           const userEmail = `${cleanPhone}@elana.app`;
           localStorage.removeItem(`elana_spotlight_done_${userEmail}`);
+          localStorage.removeItem('elana_user_session');
           await login(userEmail, name.trim());
           onSuccess(true);
         }
@@ -275,12 +276,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
       setSuccessMessage('Conta validada e criada com sucesso! Entrando...');
       const cleanEmail = inputVal.trim().toLowerCase();
       localStorage.removeItem(`elana_spotlight_done_${cleanEmail}`);
+      localStorage.removeItem('elana_user_session');
       await login(cleanEmail, name.trim(), supabaseUserId);
       onSuccess(true);
     } catch (err: any) {
       console.error('Signup Exception:', err);
       const cleanId = identifier.trim().toLowerCase();
       localStorage.removeItem(`elana_spotlight_done_${cleanId}`);
+      localStorage.removeItem('elana_user_session');
       await login(cleanId, name.trim());
       onSuccess(true);
     } finally {

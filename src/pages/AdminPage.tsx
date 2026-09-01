@@ -68,6 +68,7 @@ interface MemberUser {
   levelIcon: string;
   xp: number;
   joinedDays: number;
+  bio?: string;
 }
 
 export interface AdminPageProps {
@@ -234,7 +235,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           levelTitle: p.level_name || 'Semente Plantada',
           levelIcon: p.level_icon || '🌱',
           xp: p.xp || 0,
-          joinedDays: Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000)
+          joinedDays: Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000),
+          bio: p.bio || undefined
         })));
       }
     };
@@ -307,6 +309,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
     } catch (err) {
       console.warn('Error updating member role in Supabase:', err);
+    }
+  };
+
+  // Limpar Bio de Membro (caso tenha herdado dados indevidamente)
+  const handleClearMemberBio = async (userId: string) => {
+    setMembers(prev => prev.map(m => m.id === userId ? { ...m, bio: undefined } : m));
+    try {
+      await supabase.from('profiles').update({ bio: null }).eq('id', userId);
+      showToast('Bio do membro limpa com sucesso!');
+    } catch (err) {
+      console.warn('Error clearing member bio in Supabase:', err);
     }
   };
 
@@ -1206,6 +1219,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     <p className="text-[10px] text-slate-400 mt-0.5">
                       {member.email} • {member.joinedDays} dias conosco • {member.xp} pontos
                     </p>
+                    {member.bio && (
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-[11px] text-slate-300 italic bg-white/5 px-2.5 py-0.5 rounded-lg border border-white/10 truncate max-w-xs">
+                          "{member.bio}"
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleClearMemberBio(member.id)}
+                          className="text-[10px] text-rose-400 hover:text-rose-300 underline font-bold cursor-pointer shrink-0"
+                          title="Zerar bio deste membro"
+                        >
+                          Zerar Bio
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
