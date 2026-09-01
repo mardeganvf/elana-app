@@ -19,7 +19,11 @@ import {
   RotateCcw,
   Search,
   Vote,
-  Plus
+  Plus,
+  ChevronDown,
+  ChevronRight,
+  BookOpen,
+  Menu
 } from 'lucide-react';
 import { useAuth, isAdminUser } from '../context/AuthContext';
 import { useCommunity } from '../context/CommunityContext';
@@ -75,7 +79,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
 
-  const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'polls'>('sos');
+  const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'polls'>('content');
+
+  // Grupos expansíveis (drop-downs) do menu lateral
+  const [openMenuGroups, setOpenMenuGroups] = useState<Record<string, boolean>>({
+    content: true,
+    community: true,
+    support: true,
+    users: true
+  });
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMenuGroup = (groupKey: string) => {
+    setOpenMenuGroups(prev => ({
+      ...prev,
+      [groupKey]: !prev[groupKey]
+    }));
+  };
 
   // 🗳️ Enquetes State
   const { polls, createPoll, togglePollStatus } = useCommunity();
@@ -376,80 +396,242 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         </div>
       </section>
 
-      {/* Admin Navigation Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+      {/* Botão Mobile para abrir/fechar menu lateral */}
+      <div className="lg:hidden">
         <button
-          onClick={() => setActiveAdminTab('sos')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-xs transition-all shrink-0 border ${
-            activeAdminTab === 'sos'
-              ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-lg scale-[1.02]'
-              : 'bg-[#101B1E] text-slate-300 border-white/10 hover:bg-white/10'
-          }`}
+          type="button"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="w-full py-3 px-4 bg-[#101B1E] border border-white/10 rounded-2xl flex items-center justify-between text-xs font-bold text-white shadow-md cursor-pointer active:scale-98 transition-all"
         >
-          <LifeBuoy className="w-4 h-4" />
-          <span>Atendimento SOS ({pendingCount})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveAdminTab('moderation')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-xs transition-all shrink-0 border ${
-            activeAdminTab === 'moderation'
-              ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-lg scale-[1.02]'
-              : 'bg-[#101B1E] text-slate-300 border-white/10 hover:bg-white/10'
-          }`}
-        >
-          <ShieldCheck className="w-4 h-4" />
-          <span>Moderação Antijulgamento ({modItems.filter(m => m.status === 'pendente').length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveAdminTab('analytics')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-xs transition-all shrink-0 border ${
-            activeAdminTab === 'analytics'
-              ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-lg scale-[1.02]'
-              : 'bg-[#101B1E] text-slate-300 border-white/10 hover:bg-white/10'
-          }`}
-        >
-          <TrendingUp className="w-4 h-4" />
-          <span>Termômetro Emocional</span>
-        </button>
-
-        <button
-          onClick={() => setActiveAdminTab('content')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-xs transition-all shrink-0 border ${
-            activeAdminTab === 'content'
-              ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-lg scale-[1.02]'
-              : 'bg-[#101B1E] text-slate-300 border-white/10 hover:bg-white/10'
-          }`}
-        >
-          <Upload className="w-4 h-4" />
-          <span>Gestão de Conteúdos & Jornadas</span>
-        </button>
-
-        <button
-          onClick={() => setActiveAdminTab('users')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-xs transition-all shrink-0 border ${
-            activeAdminTab === 'users'
-              ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-lg scale-[1.02]'
-              : 'bg-[#101B1E] text-slate-300 border-white/10 hover:bg-white/10'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>Gestão de Membros ({members.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveAdminTab('polls')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-xs transition-all shrink-0 border ${
-            activeAdminTab === 'polls'
-              ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-lg scale-[1.02]'
-              : 'bg-[#101B1E] text-slate-300 border-white/10 hover:bg-white/10'
-          }`}
-        >
-          <Vote className="w-4 h-4" />
-          <span>Enquetes Interativas ({polls.length})</span>
+          <span className="flex items-center gap-2">
+            <Menu className="w-4 h-4 text-[#FF7F5B]" />
+            <span>Navegação do Painel (Menu Lateral)</span>
+          </span>
+          <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-180' : ''}`} />
         </button>
       </div>
+
+      {/* Grid Principal: Menu Lateral à Esquerda + Conteúdo Principal à Direita */}
+      <div className="flex flex-col lg:flex-row items-start gap-6">
+        
+        {/* SIDEBAR LATERAL ESQUERDA COM DROP-DOWNS */}
+        <aside className={`w-full lg:w-72 shrink-0 ${isMobileMenuOpen ? 'block' : 'hidden lg:block'}`}>
+          <div className="bg-[#101B1E] border border-white/10 rounded-3xl p-4 sm:p-5 shadow-xl space-y-4 lg:sticky lg:top-24">
+            
+            {/* Header da Sidebar */}
+            <div className="px-2 py-1 border-b border-white/10 pb-3 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#FF7F5B] block">
+                  Menu Administrativo
+                </span>
+                <span className="text-xs font-bold text-slate-300">
+                  Gestão & Acolhimento
+                </span>
+              </div>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Painel ativo" />
+            </div>
+
+            {/* GRUPO 1: CONTEÚDOS & JORNADAS */}
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => toggleMenuGroup('content')}
+                className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
+              >
+                <span>Conteúdos & Jornadas</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.content ? 'rotate-0' : '-rotate-90'}`} />
+              </button>
+
+              {openMenuGroups.content && (
+                <div className="space-y-1 pl-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAdminTab('content');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                      activeAdminTab === 'content'
+                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
+                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4" />
+                      <span>Gestão de Conteúdos</span>
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* GRUPO 2: COMUNIDADE & MODERAÇÃO */}
+            <div className="space-y-1 pt-2 border-t border-white/5">
+              <button
+                type="button"
+                onClick={() => toggleMenuGroup('community')}
+                className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
+              >
+                <span>Comunidade & Moderação</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.community ? 'rotate-0' : '-rotate-90'}`} />
+              </button>
+
+              {openMenuGroups.community && (
+                <div className="space-y-1 pl-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAdminTab('moderation');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                      activeAdminTab === 'moderation'
+                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
+                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Moderação de Posts</span>
+                    </span>
+                    {modItems.filter(m => m.status === 'pendente').length > 0 && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
+                        activeAdminTab === 'moderation' ? 'bg-black/30 text-white' : 'bg-amber-500/20 text-amber-300'
+                      }`}>
+                        {modItems.filter(m => m.status === 'pendente').length}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAdminTab('polls');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                      activeAdminTab === 'polls'
+                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
+                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Vote className="w-4 h-4" />
+                      <span>Enquetes da Aldeia</span>
+                    </span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
+                      activeAdminTab === 'polls' ? 'bg-black/30 text-white' : 'bg-white/10 text-slate-300'
+                    }`}>
+                      {polls.length}
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* GRUPO 3: ACOLHIMENTO & ATENDIMENTO */}
+            <div className="space-y-1 pt-2 border-t border-white/5">
+              <button
+                type="button"
+                onClick={() => toggleMenuGroup('support')}
+                className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
+              >
+                <span>Acolhimento & SOS</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.support ? 'rotate-0' : '-rotate-90'}`} />
+              </button>
+
+              {openMenuGroups.support && (
+                <div className="space-y-1 pl-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAdminTab('sos');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                      activeAdminTab === 'sos'
+                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
+                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <LifeBuoy className="w-4 h-4" />
+                      <span>Atendimento SOS</span>
+                    </span>
+                    {pendingCount > 0 && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
+                        activeAdminTab === 'sos' ? 'bg-black/30 text-white' : 'bg-red-500/20 text-red-300'
+                      }`}>
+                        {pendingCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAdminTab('analytics');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                      activeAdminTab === 'analytics'
+                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
+                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      <span>Termômetro Emocional</span>
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* GRUPO 4: MEMBROS DA ALDEIA */}
+            <div className="space-y-1 pt-2 border-t border-white/5">
+              <button
+                type="button"
+                onClick={() => toggleMenuGroup('users')}
+                className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
+              >
+                <span>Membros da Aldeia</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.users ? 'rotate-0' : '-rotate-90'}`} />
+              </button>
+
+              {openMenuGroups.users && (
+                <div className="space-y-1 pl-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAdminTab('users');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                      activeAdminTab === 'users'
+                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
+                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      <span>Gestão de Membros</span>
+                    </span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
+                      activeAdminTab === 'users' ? 'bg-black/30 text-white' : 'bg-white/10 text-slate-300'
+                    }`}>
+                      {members.length}
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </aside>
+
+        {/* ÁREA DE CONTEÚDO PRINCIPAL À DIREITA */}
+        <main className="flex-1 min-w-0 w-full space-y-6">
 
       {/* TAB 1: 🛟 ATENDIMENTO SOS (EMAIL INBOX STYLE) */}
       {activeAdminTab === 'sos' && (
@@ -1214,6 +1396,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           </section>
         </div>
       )}
+
+        </main>
+      </div>
 
     </div>
   );

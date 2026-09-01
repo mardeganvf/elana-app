@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FolderPlus, 
   Plus, 
@@ -111,6 +111,13 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
       [modId]: !prev[modId]
     }));
   };
+
+  // Garante que a tela comece no topo absoluto ao abrir qualquer janela de cadastro/edição
+  useEffect(() => {
+    if (isContentModalOpen || isJourneyModalOpen || isModuleModalOpen || deleteConfirm) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [isContentModalOpen, isJourneyModalOpen, isModuleModalOpen, deleteConfirm]);
 
   // ----------------------------------------------------
   // HANDLERS: JORNADA
@@ -789,8 +796,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
       {/* MODAL 1: CRIAR / EDITAR JORNADA */}
       {/* ==================================================== */}
       {isJourneyModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#101B1E] border border-white/15 rounded-3xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-sm p-3 sm:p-6 flex justify-center items-start animate-fade-in">
+          <div className="bg-[#101B1E] border border-white/15 rounded-3xl w-full max-w-xl p-6 sm:p-8 space-y-5 shadow-2xl my-2 sm:my-8 animate-scale-in">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-lg font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                 {editingJourney ? 'Editar Jornada' : 'Criar Nova Jornada'}
@@ -911,8 +918,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
       {/* MODAL 2: CRIAR / EDITAR SUBTEMA */}
       {/* ==================================================== */}
       {isModuleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#101B1E] border border-white/15 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-sm p-3 sm:p-6 flex justify-center items-start animate-fade-in">
+          <div className="bg-[#101B1E] border border-white/15 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl my-2 sm:my-8 animate-scale-in">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-base font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                 {editingModule?.module ? 'Editar Subtema' : 'Novo Subtema'}
@@ -973,8 +980,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
       {/* MODAL 3: CRIAR / EDITAR CONTEÚDO (VÍDEO & MATERIAIS) */}
       {/* ==================================================== */}
       {isContentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#101B1E] border border-white/15 rounded-3xl w-full max-w-xl max-h-[92vh] overflow-y-auto p-6 sm:p-7 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-sm p-3 sm:p-6 flex justify-center items-start animate-fade-in">
+          <div className="bg-[#101B1E] border border-white/15 rounded-3xl w-full max-w-xl p-6 sm:p-7 space-y-4 shadow-2xl my-2 sm:my-8 animate-scale-in">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div>
                 <h3 className="text-base font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -1216,8 +1223,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
       {/* MODAL 4: CONFIRMAÇÃO DE EXCLUSÃO */}
       {/* ==================================================== */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#101B1E] border border-rose-500/30 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl text-center">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-sm p-4 sm:p-6 flex justify-center items-start animate-fade-in">
+          <div className="bg-[#101B1E] border border-rose-500/30 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl text-center my-6 sm:my-16 animate-scale-in">
             <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
               <AlertCircle className="w-6 h-6" />
             </div>
