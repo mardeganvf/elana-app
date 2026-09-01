@@ -477,7 +477,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     let ok = false;
     if (type === 'journey') {
       ok = await deleteJourney(journeyId);
-      if (ok && selectedJourneyId === journeyId) {
+      if (ok && activeJourneyId === journeyId) {
         const remaining = journeys.filter(j => j.id !== journeyId);
         if (remaining.length > 0) setSelectedJourneyId(remaining[0].id);
       }
