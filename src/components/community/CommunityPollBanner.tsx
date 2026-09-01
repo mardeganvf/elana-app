@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Vote, CheckCircle2, BarChart2, Sparkles, ChevronRight, ChevronDown } from 'lucide-react';
+import { CheckCircle2, BarChart2, Sparkles, ChevronRight, ChevronDown } from 'lucide-react';
 import { useCommunity } from '../../context/CommunityContext';
 import { CommunityPoll, PollOption } from '../../types';
 
@@ -58,27 +58,22 @@ export const CommunityPollBanner: React.FC<CommunityPollBannerProps> = ({ poll: 
   const total = Math.max(1, poll.totalVotes || 0);
 
   return (
-    <div className="bg-gradient-to-br from-[#101B1E] via-[#0E1618] to-[#070D0F] border border-[#FF7F5B]/30 rounded-3xl p-4 sm:p-5 shadow-xl relative overflow-hidden animate-fade-in group">
+    <div className="bg-gradient-to-br from-[#101B1E] via-[#0E1618] to-[#070D0F] border border-[#FF7F5B]/30 rounded-3xl p-3.5 sm:p-5 shadow-xl relative overflow-hidden animate-fade-in group">
       {/* Decorative Glow */}
       <div className="absolute top-0 right-0 w-48 h-48 bg-[#FF7F5B]/10 rounded-full blur-3xl pointer-events-none -mr-12 -mt-12" />
 
-      {/* Header Badge & Action */}
-      <div className="flex items-center justify-between gap-3 mb-2.5">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="px-2.5 py-1 rounded-full bg-[#FF7F5B]/20 border border-[#FF7F5B]/40 text-[#FF7F5B] text-[10px] font-black tracking-wider uppercase flex items-center gap-1.5">
-            <Vote className="w-3 h-3 animate-pulse" />
-            <span>Sua Voz Importa</span>
-          </div>
-
-          {hasVoted && (
-            <div className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              <span>Voto Registrado</span>
-            </div>
-          )}
+      {/* Slim Header & Question Bar */}
+      <div 
+        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${hasVoted ? 'cursor-pointer select-none' : ''}`}
+        onClick={hasVoted ? () => setIsExpanded(!isExpanded) : undefined}
+      >
+        <div className="flex-1 min-w-0 pr-2">
+          <h3 className="text-sm sm:text-base font-extrabold text-white leading-snug">
+            {poll.title}
+          </h3>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-center">
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
             <BarChart2 className="w-3.5 h-3.5 text-[#FFD166]" />
             <span>{poll.totalVotes || 0} {(poll.totalVotes || 0) === 1 ? 'voto' : 'votos'}</span>
@@ -88,7 +83,10 @@ export const CommunityPollBanner: React.FC<CommunityPollBannerProps> = ({ poll: 
           {hasVoted && (
             <button
               type="button"
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
               className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-all flex items-center gap-1 cursor-pointer"
             >
               <span>{isExpanded ? 'Recolher' : 'Ver Resultados'}</span>
@@ -96,16 +94,6 @@ export const CommunityPollBanner: React.FC<CommunityPollBannerProps> = ({ poll: 
             </button>
           )}
         </div>
-      </div>
-
-      {/* Question Title */}
-      <div 
-        className={hasVoted ? 'cursor-pointer select-none' : ''}
-        onClick={hasVoted ? () => setIsExpanded(!isExpanded) : undefined}
-      >
-        <h3 className="text-sm sm:text-base font-extrabold text-white leading-snug">
-          {poll.title}
-        </h3>
       </div>
 
       {/* Options List (Sempre visível se NÃO votou; Expansível/Retrátil se JÁ votou) */}
