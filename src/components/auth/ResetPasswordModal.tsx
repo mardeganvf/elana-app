@@ -11,11 +11,7 @@ interface ResetPasswordModalProps {
 }
 
 export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  let showToast: (type: string, msg: string) => void = () => {};
-  try {
-    const toast = useToast();
-    if (toast) showToast = toast.showToast;
-  } catch (e) {}
+  const { showToast } = useToast();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

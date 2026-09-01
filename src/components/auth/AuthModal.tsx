@@ -9,7 +9,8 @@ interface AuthModalProps {
   onSuccess: (userData: { email: string; name: string; id?: string }) => void;
 }
 
-export { validateStrongPassword } from '../../utils/validators';
+import { validateStrongPassword } from '../../utils/validators';
+export { validateStrongPassword };
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [mode, setMode] = useState<'login' | 'register' | 'verify_email' | 'recovery'>('login');
