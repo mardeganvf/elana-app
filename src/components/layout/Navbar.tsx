@@ -608,11 +608,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
           className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
         >
           <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
-            activeTab === 'home' ? 'bg-[#FF7F5B]/15' : ''
+            activeTab === 'home' ? 'bg-[#FF7F5B]/15 border border-[#FF7F5B]/30' : 'hover:bg-white/5'
           }`}>
-            <Film className={`w-5 h-5 transition-colors ${activeTab === 'home' ? 'text-[#FF7F5B]' : 'text-slate-500'}`} />
-            <span className={`text-[10px] font-black tracking-wide transition-all ${
-              activeTab === 'home' ? 'text-[#FF7F5B] opacity-100' : 'text-slate-500 opacity-70'
+            <Film className={`w-5 h-5 transition-colors ${activeTab === 'home' ? 'text-[#FF7F5B]' : 'text-slate-200'}`} />
+            <span className={`text-[10px] tracking-wide transition-all ${
+              activeTab === 'home' ? 'text-[#FF7F5B] font-black' : 'text-slate-200 font-semibold'
             }`}>
               Conteúdos
             </span>
@@ -626,11 +626,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
           className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
         >
           <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
-            activeTab === 'community' ? 'bg-[#8A9A5B]/15' : ''
+            activeTab === 'community' ? 'bg-[#8A9A5B]/15 border border-[#8A9A5B]/30' : 'hover:bg-white/5'
           }`}>
-            <MessageSquare className={`w-5 h-5 transition-colors ${activeTab === 'community' ? 'text-[#8A9A5B]' : 'text-slate-500'}`} />
-            <span className={`text-[10px] font-black tracking-wide transition-all ${
-              activeTab === 'community' ? 'text-[#8A9A5B] opacity-100' : 'text-slate-500 opacity-70'
+            <MessageSquare className={`w-5 h-5 transition-colors ${activeTab === 'community' ? 'text-[#8A9A5B]' : 'text-slate-200'}`} />
+            <span className={`text-[10px] tracking-wide transition-all ${
+              activeTab === 'community' ? 'text-[#8A9A5B] font-black' : 'text-slate-200 font-semibold'
             }`}>
               Comunidade
             </span>
@@ -647,9 +647,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
           data-tour="emotions-button"
           className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
         >
-          <div className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all">
+          <div className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all hover:bg-white/5">
             <HeartHandshake className="w-5 h-5 text-[#E66795]" />
-            <span className="text-[10px] font-black tracking-wide text-slate-500 opacity-70">
+            <span className="text-[10px] font-semibold tracking-wide text-slate-200">
               Emoções
             </span>
           </div>
@@ -668,7 +668,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
           className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
         >
           <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
-            activeTab === 'dashboard' ? 'bg-[#FFD166]/15' : ''
+            activeTab === 'dashboard' ? 'bg-[#FFD166]/15 border border-[#FFD166]/30' : 'hover:bg-white/5'
           }`}>
             {isAuthenticated && user ? (
               <img
@@ -677,14 +677,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                 className={`w-5 h-5 rounded-full object-cover transition-all ${
                   activeTab === 'dashboard'
                     ? 'ring-2 ring-[#FFD166]'
-                    : 'ring-1 ring-slate-600 opacity-70'
+                    : 'ring-1 ring-white/30 opacity-90'
                 }`}
               />
             ) : (
-              <UserCheck className={`w-5 h-5 transition-colors ${activeTab === 'dashboard' ? 'text-[#FFD166]' : 'text-slate-500'}`} />
+              <UserCheck className={`w-5 h-5 transition-colors ${activeTab === 'dashboard' ? 'text-[#FFD166]' : 'text-slate-200'}`} />
             )}
-            <span className={`text-[10px] font-black tracking-wide transition-all ${
-              activeTab === 'dashboard' ? 'text-[#FFD166] opacity-100' : 'text-slate-500 opacity-70'
+            <span className={`text-[10px] tracking-wide transition-all ${
+              activeTab === 'dashboard' ? 'text-[#FFD166] font-black' : 'text-slate-200 font-semibold'
             }`}>
               Perfil
             </span>
