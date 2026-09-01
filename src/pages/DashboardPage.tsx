@@ -30,6 +30,7 @@ const formatPhoneMask = (val: string) => {
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog }) => {
   const { user, logout, updateUser, awardBadge } = useAuth();
+  const { showToast } = useToast();
 
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
@@ -420,7 +421,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 <button
                   onClick={() => {
                     setPendingEmail(confirmedEmail);
-                    setIsVerifyingCode(false);
                     setIsEditingProfile(true);
                   }}
                   className="ml-0 sm:ml-2 mt-2 sm:mt-0 text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 active:scale-95 shrink-0"
