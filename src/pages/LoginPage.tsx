@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth, GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { validateStrongPassword } from '../components/auth/AuthModal';
+import { ResetPasswordModal } from '../components/auth/ResetPasswordModal';
 import { RefreshCw, CheckCircle2, AlertCircle, Mail, Phone, KeyRound, ArrowLeft } from 'lucide-react';
 import logoElana from '../assets/logo-elana.png';
 
@@ -27,6 +28,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
 
   // Existing User Modal State
   const [isExistingUserModalOpen, setIsExistingUserModalOpen] = useState(false);
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
+
+  // 🔑 Detecção Automática de Link de Recuperação de Senha do Supabase
+  React.useEffect(() => {
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    if (hash.includes('type=recovery') || hash.includes('access_token=') || search.includes('type=recovery') || search.includes('code=')) {
+      setIsResetPasswordOpen(true);
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsResetPasswordOpen(true);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Statuses
   const [loading, setLoading] = useState(false);
@@ -628,6 +649,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           </div>
         </div>
       )}
+
+      {/* RESET PASSWORD MODAL */}
+      <ResetPasswordModal
+        isOpen={isResetPasswordOpen}
+        onClose={() => setIsResetPasswordOpen(false)}
+        onSuccess={async () => {
+          setIsResetPasswordOpen(false);
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData?.session?.user) {
+            const userEmail = sessionData.session.user.email || 'membro@elana.academy';
+            const userName = sessionData.session.user.user_metadata?.name || userEmail.split('@')[0];
+            await login(userEmail, userName, sessionData.session.user.id);
+            onSuccess(false);
+          }
+        }}
+      />
 
       {/* Footer copyright */}
       <footer className="text-center text-[10px] text-slate-400 z-10">
