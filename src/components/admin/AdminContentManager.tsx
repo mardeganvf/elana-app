@@ -709,53 +709,20 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       {/* DETALHES DA JORNADA SELECIONADA */}
       {activeJourney ? (
         <div className="space-y-6">
-          {/* Card Resumo da Jornada */}
-          <div 
-            className="p-6 rounded-3xl border shadow-lg relative overflow-hidden transition-all"
-            style={{ 
-              backgroundColor: '#101B1E', 
-              borderColor: `${activeJourney.themeColor}33` 
-            }}
-          >
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-              <div className="space-y-1.5">
-                <h3 className="text-xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                  {activeJourney.title}
-                </h3>
-                {activeJourney.tagline && (
-                  <p className="text-xs text-[#FF7F5B] font-bold">
-                    {activeJourney.tagline}
-                  </p>
-                )}
-                <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
-                  {activeJourney.description}
-                </p>
-              </div>
+          {/* Header da Jornada Simplificado */}
+          <div className="bg-[#101B1E] px-6 py-4 rounded-2xl border border-white/10 shadow-md flex items-center justify-between gap-4">
+            <h3 className="text-xl font-black text-white truncate" style={{ fontFamily: 'var(--font-heading)' }}>
+              {activeJourney.title}
+            </h3>
 
-              {/* Botões de Ação na Jornada */}
-              <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                <button
-                  onClick={() => openEditJourney(activeJourney)}
-                  className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
-                  title="Editar dados desta jornada"
-                >
-                  <Edit3 className="w-4 h-4" />
-                  <span>Editar Jornada</span>
-                </button>
-
-                <button
-                  onClick={() => setDeleteConfirm({
-                    type: 'journey',
-                    journeyId: activeJourney.id,
-                    title: activeJourney.title
-                  })}
-                  className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer"
-                  title="Excluir jornada"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+            <button
+              onClick={() => openEditJourney(activeJourney)}
+              className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
+              title="Editar dados desta jornada"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Editar</span>
+            </button>
           </div>
 
           {/* LISTAGEM DE CONTEÚDOS / MÓDULOS */}

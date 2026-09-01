@@ -170,17 +170,20 @@ export interface CommunityPoll {
   title: string;
   description?: string;
   category?: string;
+  isMultiSelect?: boolean;
   options: PollOption[];
   totalVotes: number;
   status: 'open' | 'closed';
   createdAt: string;
   expiresAt?: string;
   userVotedOptionId?: string;
+  userVotedOptionIds?: string[];
 }
 
 export interface NewPollPayload {
   title: string;
   description?: string;
   category?: string;
+  isMultiSelect?: boolean;
   options: string[];
 }

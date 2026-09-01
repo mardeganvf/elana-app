@@ -669,7 +669,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       id: `poll-${Date.now()}`,
       title: payload.title,
       description: payload.description,
-      category: payload.category || 'Geral',
+      category: payload.category || '',
+      isMultiSelect: payload.isMultiSelect || false,
       options: payload.options.map((text, i) => ({
         id: `opt-${i + 1}`,
         text: text.trim(),

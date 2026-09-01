@@ -116,11 +116,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const { polls, createPoll, togglePollStatus } = useCommunity();
   const [newPollTitle, setNewPollTitle] = useState('');
   const [newPollDesc, setNewPollDesc] = useState('');
-  const [newPollCategory, setNewPollCategory] = useState('Rotina & Maternidade');
-  const [newPollOptions, setNewPollOptions] = useState<string[]>(['', '', '']);
+  const [newPollOptions, setNewPollOptions] = useState<string[]>([]);
+  const [isPollMultiSelect, setIsPollMultiSelect] = useState(false);
   const [isPublishingPoll, setIsPublishingPoll] = useState(false);
   const [pollSuccessMessage, setPollSuccessMessage] = useState(false);
   const [expandedPollIds, setExpandedPollIds] = useState<Record<string, boolean>>({});
+
+  const toggleJourneyInPoll = (journeyTitle: string) => {
+    if (newPollOptions.includes(journeyTitle)) {
+      setNewPollOptions(prev => prev.filter(t => t !== journeyTitle));
+    } else {
+      setNewPollOptions(prev => [...prev, journeyTitle]);
+    }
+  };
 
   const togglePollExpansion = (pollId: string) => {
     setExpandedPollIds(prev => ({
@@ -444,11 +452,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             {/* Header da Sidebar */}
             <div className="px-2 py-1 border-b border-white/10 pb-3 flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#FF7F5B] block">
-                  Menu Administrativo
-                </span>
-                <span className="text-xs font-bold text-slate-300">
-                  Gestão & Acolhimento
+                <span className="text-sm font-bold text-white block" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Painel Administrativo
                 </span>
               </div>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Painel ativo" />
@@ -480,14 +485,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
                       return (
                         <div key={journey.id} className="space-y-0.5">
-                          {/* Linha da Jornada */}
+                          {/* Linha da Jornada com barrinha lateral indicadora */}
                           <div
-                            className={`w-full px-2.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer group ${
+                            className={`w-full px-2.5 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer group ${
                               isTrilhaSelected && !selectedModuleId
-                                ? 'bg-[#FF7F5B] text-slate-950 shadow-md font-black'
+                                ? 'text-[#FF7F5B] bg-[#FF7F5B]/10 border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
                                 : isTrilhaSelected
-                                ? 'bg-[#FF7F5B]/15 text-white border border-[#FF7F5B]/30'
-                                : 'text-slate-300 hover:text-white hover:bg-white/5'
+                                ? 'text-white bg-white/[0.04] border-l-[3px] border-white/30 rounded-r-xl rounded-l-none pl-2.5'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                             }`}
                             onClick={() => {
                               setActiveAdminTab('content');
@@ -511,8 +516,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                                     isTrilhaExpanded ? 'rotate-0' : '-rotate-90'
                                   } ${
                                     isTrilhaSelected && !selectedModuleId
-                                      ? 'text-slate-900'
-                                      : 'text-slate-400 group-hover:text-white'
+                                      ? 'text-[#FF7F5B]'
+                                      : 'text-slate-500 group-hover:text-white'
                                   }`}
                                 />
                               </div>
@@ -536,17 +541,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                                       setSelectedModuleId(mod.id);
                                       setIsMobileMenuOpen(false);
                                     }}
-                                    className={`w-full px-2 py-1.5 rounded-lg text-[11px] transition-all flex items-center justify-between text-left cursor-pointer ${
+                                    className={`w-full px-2 py-1.5 text-[11px] transition-all flex items-center justify-between text-left cursor-pointer ${
                                       isModSelected
-                                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-sm'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        ? 'text-[#FF7F5B] font-bold bg-[#FF7F5B]/10 border-l-2 border-[#FF7F5B] pl-2 rounded-r-lg rounded-l-none'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent pl-2 rounded-r-lg rounded-l-none'
                                     }`}
                                   >
                                     <span className="truncate pr-1 flex items-center gap-1.5">
                                       <span className="text-[9px] opacity-70 font-mono">#{modIdx + 1}</span>
                                       <span className="truncate">{mod.title}</span>
                                     </span>
-                                    <span className={`text-[9px] font-mono shrink-0 ${isModSelected ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
+                                    <span className={`text-[9px] font-mono shrink-0 ${isModSelected ? 'text-[#FF7F5B] font-bold' : 'text-slate-500'}`}>
                                       {lessonsCount}c
                                     </span>
                                   </button>
@@ -559,19 +564,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     })
                   )}
 
-                  {/* Botão Criar Jornada abaixo da última jornada */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('content');
-                      setIsCreateJourneyModalOpen(true);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full mt-2.5 px-3 py-2 rounded-xl border border-dashed border-white/20 hover:border-[#FF7F5B] text-slate-400 hover:text-[#FF7F5B] hover:bg-[#FF7F5B]/10 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Criar Jornada</span>
-                  </button>
+                  {/* Botão Criar Jornada abaixo da última jornada com espaçamento aumentado */}
+                  <div className="pt-6 mt-4 border-t border-white/5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveAdminTab('content');
+                        setIsCreateJourneyModalOpen(true);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl border border-dashed border-white/20 hover:border-[#FF7F5B] text-slate-400 hover:text-[#FF7F5B] hover:bg-[#FF7F5B]/10 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95 shadow-sm"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Criar Jornada</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -595,19 +602,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       setActiveAdminTab('moderation');
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                    className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                       activeAdminTab === 'moderation'
-                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
-                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                        ? 'text-white font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4" />
+                      <ShieldCheck className={`w-4 h-4 ${activeAdminTab === 'moderation' ? 'text-[#FF7F5B]' : 'text-slate-400'}`} />
                       <span>Moderação de Posts</span>
                     </span>
                     {modItems.filter(m => m.status === 'pendente').length > 0 && (
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
-                        activeAdminTab === 'moderation' ? 'bg-black/30 text-white' : 'bg-amber-500/20 text-amber-300'
+                        activeAdminTab === 'moderation' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-amber-500/20 text-amber-300'
                       }`}>
                         {modItems.filter(m => m.status === 'pendente').length}
                       </span>
@@ -620,18 +627,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       setActiveAdminTab('polls');
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                    className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                       activeAdminTab === 'polls'
-                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
-                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                        ? 'text-white font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <Vote className="w-4 h-4" />
+                      <Vote className={`w-4 h-4 ${activeAdminTab === 'polls' ? 'text-[#FF7F5B]' : 'text-slate-400'}`} />
                       <span>Enquetes</span>
                     </span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
-                      activeAdminTab === 'polls' ? 'bg-black/30 text-white' : 'bg-white/10 text-slate-300'
+                      activeAdminTab === 'polls' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-white/10 text-slate-400'
                     }`}>
                       {polls.length}
                     </span>
@@ -659,19 +666,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       setActiveAdminTab('sos');
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                    className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                       activeAdminTab === 'sos'
-                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
-                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                        ? 'text-white font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <LifeBuoy className="w-4 h-4" />
+                      <LifeBuoy className={`w-4 h-4 ${activeAdminTab === 'sos' ? 'text-[#FF7F5B]' : 'text-slate-400'}`} />
                       <span>Atendimento SOS</span>
                     </span>
                     {pendingCount > 0 && (
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
-                        activeAdminTab === 'sos' ? 'bg-black/30 text-white' : 'bg-red-500/20 text-red-300'
+                        activeAdminTab === 'sos' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-red-500/20 text-red-300'
                       }`}>
                         {pendingCount}
                       </span>
@@ -684,14 +691,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       setActiveAdminTab('analytics');
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                    className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                       activeAdminTab === 'analytics'
-                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
-                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                        ? 'text-white font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" />
+                      <TrendingUp className={`w-4 h-4 ${activeAdminTab === 'analytics' ? 'text-[#FF7F5B]' : 'text-slate-400'}`} />
                       <span>Termômetro Emocional</span>
                     </span>
                   </button>
@@ -718,18 +725,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       setActiveAdminTab('users');
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                    className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                       activeAdminTab === 'users'
-                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
-                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                        ? 'text-white font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <Users className="w-4 h-4" />
+                      <Users className={`w-4 h-4 ${activeAdminTab === 'users' ? 'text-[#FF7F5B]' : 'text-slate-400'}`} />
                       <span>Gestão de Membros</span>
                     </span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
-                      activeAdminTab === 'users' ? 'bg-black/30 text-white' : 'bg-white/10 text-slate-300'
+                      activeAdminTab === 'users' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-white/10 text-slate-400'
                     }`}>
                       {members.length}
                     </span>
@@ -1294,7 +1301,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 if (!newPollTitle.trim()) return;
                 const validOptions = newPollOptions.filter(opt => opt.trim().length > 0);
                 if (validOptions.length < 2) {
-                  alert('Por favor, preencha pelo menos 2 opções de resposta.');
+                  alert('Por favor, selecione pelo menos 2 jornadas como alternativas da enquete.');
                   return;
                 }
 
@@ -1303,12 +1310,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   await createPoll({
                     title: newPollTitle.trim(),
                     description: newPollDesc.trim() || undefined,
-                    category: newPollCategory,
+                    isMultiSelect: isPollMultiSelect,
                     options: validOptions
                   });
                   setNewPollTitle('');
                   setNewPollDesc('');
-                  setNewPollOptions(['', '', '']);
+                  setNewPollOptions([]);
+                  setIsPollMultiSelect(false);
                   setPollSuccessMessage(true);
                   setTimeout(() => setPollSuccessMessage(false), 4000);
                 } finally {
@@ -1317,37 +1325,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               }}
               className="space-y-4"
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2 space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                    Pergunta da Enquete *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newPollTitle}
-                    onChange={(e) => setNewPollTitle(e.target.value)}
-                    placeholder="Ex: Qual é o seu maior desafio na rotina noturna com os pequenos?"
-                    className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                    Categoria / Tema
-                  </label>
-                  <select
-                    value={newPollCategory}
-                    onChange={(e) => setNewPollCategory(e.target.value)}
-                    className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white focus:outline-none transition-all cursor-pointer"
-                  >
-                    <option value="Rotina & Maternidade">Rotina & Maternidade</option>
-                    <option value="Sono & Desaceleração">Sono & Desaceleração</option>
-                    <option value="Birras & Limites">Birras & Limites</option>
-                    <option value="Rede de Apoio">Rede de Apoio</option>
-                    <option value="Autocuidado & Culpa">Autocuidado & Culpa</option>
-                  </select>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                  Pergunta da Enquete *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newPollTitle}
+                  onChange={(e) => setNewPollTitle(e.target.value)}
+                  placeholder="Ex: Qual dessas jornadas você mais gostaria de aprofundar nas próximas semanas?"
+                  className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
+                />
               </div>
 
               <div className="space-y-1.5">
@@ -1358,53 +1347,94 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   type="text"
                   value={newPollDesc}
                   onChange={(e) => setNewPollDesc(e.target.value)}
-                  placeholder="Ex: Sua resposta ajuda nossa curadoria a criar os próximos conteúdos e acolhimentos."
+                  placeholder="Ex: Sua resposta ajuda nossa curadoria a priorizar os próximos encontros e conteúdos."
                   className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                  Opções de Resposta * (mínimo 2)
-                </label>
-                {newPollOptions.map((opt, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="w-6 text-center text-xs font-mono font-bold text-[#FF7F5B]">
-                      {idx + 1}.
+              {/* Caixa Seletora com as Jornadas como Alternativas */}
+              <div className="space-y-2.5 p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                      Alternativas da Enquete * (Selecione as Jornadas)
+                    </label>
+                    <span className="text-[11px] text-slate-400">
+                      Clique nas jornadas que deseja incluir como opções de voto nesta enquete (mínimo 2).
                     </span>
-                    <input
-                      type="text"
-                      value={opt}
-                      onChange={(e) => {
-                        const updated = [...newPollOptions];
-                        updated[idx] = e.target.value;
-                        setNewPollOptions(updated);
-                      }}
-                      placeholder={`Opção de resposta ${idx + 1}`}
-                      className="flex-1 bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
-                    />
-                    {newPollOptions.length > 2 && (
-                      <button
-                        type="button"
-                        onClick={() => setNewPollOptions(newPollOptions.filter((_, i) => i !== idx))}
-                        className="text-slate-500 hover:text-red-400 p-2 text-xs"
-                      >
-                        ✕
-                      </button>
-                    )}
                   </div>
-                ))}
+                  <span className="text-xs font-mono font-bold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-1 rounded-lg border border-[#FF7F5B]/20 shrink-0">
+                    {newPollOptions.length} selecionada(s)
+                  </span>
+                </div>
 
-                {newPollOptions.length < 6 && (
-                  <button
-                    type="button"
-                    onClick={() => setNewPollOptions([...newPollOptions, ''])}
-                    className="text-xs font-bold text-[#FF7F5B] hover:text-[#FFD166] flex items-center gap-1.5 pt-1 transition-colors cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Adicionar mais uma opção</span>
-                  </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-52 overflow-y-auto pr-1">
+                  {journeys.map((j) => {
+                    const isSelected = newPollOptions.includes(j.title);
+                    return (
+                      <button
+                        key={j.id}
+                        type="button"
+                        onClick={() => toggleJourneyInPoll(j.title)}
+                        className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#FF7F5B]/15 border-[#FF7F5B] text-white shadow-sm'
+                            : 'bg-[#101B1E] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        <span className="truncate flex-1">{j.title}</span>
+                        <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] shrink-0 ${
+                          isSelected ? 'bg-[#FF7F5B] text-slate-950 font-black' : 'border border-white/20'
+                        }`}>
+                          {isSelected ? '✓' : ''}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {newPollOptions.length > 0 && (
+                  <div className="pt-2 border-t border-white/5 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Alternativas selecionadas:</span>
+                    {newPollOptions.map((opt, i) => (
+                      <span key={i} className="text-[11px] bg-white/5 text-slate-300 px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
+                        <span className="text-[#FF7F5B] font-mono font-bold">{i + 1}.</span>
+                        <span>{opt}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleJourneyInPoll(opt)}
+                          className="hover:text-rose-400 text-xs ml-1 cursor-pointer"
+                          title="Remover alternativa"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
                 )}
+              </div>
+
+              {/* Switch de Múltipla Escolha */}
+              <div className="flex items-center justify-between p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
+                <div>
+                  <span className="text-xs font-bold text-white block">Possibilidade de Múltipla Escolha?</span>
+                  <span className="text-[11px] text-slate-400 block mt-0.5">
+                    Quando ativo, os membros da comunidade poderão selecionar mais de uma alternativa ao votar.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPollMultiSelect(!isPollMultiSelect)}
+                  className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                    isPollMultiSelect ? 'bg-[#FF7F5B]' : 'bg-white/20'
+                  }`}
+                >
+                  <span
+                    className={`w-5 h-5 rounded-full bg-white transition-transform absolute top-0.5 left-0.5 shadow-md ${
+                      isPollMultiSelect ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
 
               <div className="pt-2">
@@ -1454,9 +1484,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                           }`}>
                             {isOpen ? '🟢 Aberta para Votação' : '⚪ Encerrada'}
                           </span>
-                          {poll.category && (
-                            <span className="text-[10px] text-slate-400 font-bold">
-                              {poll.category}
+                          {poll.isMultiSelect && (
+                            <span className="text-[10px] font-bold bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 px-2 py-0.5 rounded-full">
+                              ☑️ Múltipla Escolha
                             </span>
                           )}
                           <span className="text-[10px] text-slate-500 font-mono">
