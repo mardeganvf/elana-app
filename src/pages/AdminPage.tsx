@@ -121,6 +121,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [isPublishingPoll, setIsPublishingPoll] = useState(false);
   const [pollSuccessMessage, setPollSuccessMessage] = useState(false);
   const [expandedPollIds, setExpandedPollIds] = useState<Record<string, boolean>>({});
+  const [visiblePollsCount, setVisiblePollsCount] = useState(5);
 
   const toggleJourneyInPoll = (journeyTitle: string) => {
     if (newPollOptions.includes(journeyTitle)) {
@@ -467,7 +468,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   onClick={() => toggleMenuGroup('content')}
                   className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
                 >
-                  <BookOpen className="w-3.5 h-3.5 text-[#FF7F5B]" />
                   <span>Jornadas</span>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.content ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
@@ -529,7 +529,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                             <div className="pl-3.5 space-y-0.5 border-l border-white/10 ml-3 my-1">
                               {(journey.modules || []).map((mod, modIdx) => {
                                 const isModSelected = isTrilhaSelected && selectedModuleId === mod.id;
-                                const lessonsCount = mod.lessons?.length || 0;
 
                                 return (
                                   <button
@@ -550,9 +549,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                                     <span className="truncate pr-1 flex items-center gap-1.5">
                                       <span className="text-[9px] opacity-70 font-mono">#{modIdx + 1}</span>
                                       <span className="truncate">{mod.title}</span>
-                                    </span>
-                                    <span className={`text-[9px] font-mono shrink-0 ${isModSelected ? 'text-[#FF7F5B] font-bold' : 'text-slate-500'}`}>
-                                      {lessonsCount}c
                                     </span>
                                   </button>
                                 );
@@ -608,10 +604,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <ShieldCheck className={`w-4 h-4 ${activeAdminTab === 'moderation' ? 'text-[#FF7F5B]' : 'text-slate-400'}`} />
-                      <span>Moderação de Posts</span>
-                    </span>
+                    <span>Moderação de Posts</span>
                     {modItems.filter(m => m.status === 'pendente').length > 0 && (
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
                         activeAdminTab === 'moderation' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-amber-500/20 text-amber-300'
@@ -633,10 +626,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <Vote className={`w-4 h-4 ${activeAdminTab === 'polls' ? 'text-[#FF7F5B]' : 'text-slate-400'}`} />
-                      <span>Enquetes</span>
-                    </span>
+                    <span>Enquetes</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
                       activeAdminTab === 'polls' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-white/10 text-slate-400'
                     }`}>
@@ -672,10 +662,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <LifeBuoy className={`w-4 h-4 ${activeAdminTab === 'sos' ? 'text-[#FF7F5B]' : 'text-slate-400'}`} />
-                      <span>Atendimento SOS</span>
-                    </span>
+                    <span>Atendimento SOS</span>
                     {pendingCount > 0 && (
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
                         activeAdminTab === 'sos' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-red-500/20 text-red-300'
@@ -697,10 +684,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <TrendingUp className={`w-4 h-4 ${activeAdminTab === 'analytics' ? 'text-[#FF7F5B]' : 'text-slate-400'}`} />
-                      <span>Termômetro Emocional</span>
-                    </span>
+                    <span>Termômetro Emocional</span>
                   </button>
                 </div>
               )}
@@ -731,10 +715,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <Users className={`w-4 h-4 ${activeAdminTab === 'users' ? 'text-[#FF7F5B]' : 'text-slate-400'}`} />
-                      <span>Gestão de Membros</span>
-                    </span>
+                    <span>Gestão de Membros</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
                       activeAdminTab === 'users' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-white/10 text-slate-400'
                     }`}>
@@ -1464,7 +1445,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             </div>
 
             <div className="space-y-4">
-              {polls.map((poll) => {
+              {polls.slice(0, visiblePollsCount).map((poll) => {
                 const total = Math.max(1, poll.totalVotes);
                 const isOpen = poll.status === 'open';
                 const isExpanded = !!expandedPollIds[poll.id];
@@ -1562,6 +1543,20 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   </div>
                 );
               })}
+
+              {/* Botão Carregar Mais Enquetes */}
+              {polls.length > visiblePollsCount && (
+                <div className="pt-4 flex justify-center border-t border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => setVisiblePollsCount(prev => prev + 5)}
+                    className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold rounded-xl border border-white/10 transition-all cursor-pointer flex items-center gap-2 active:scale-95 shadow-sm"
+                  >
+                    <span>Carregar Mais ({polls.length - visiblePollsCount} restantes)</span>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           </section>
         </div>
