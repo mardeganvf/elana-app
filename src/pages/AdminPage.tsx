@@ -1606,14 +1606,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                           Alternativas & Resultados:
                         </span>
-                        {poll.options.map((opt) => {
-                          const pct = Math.round((opt.votesCount / total) * 100);
+                        {(poll.options || []).map((opt) => {
+                          const pct = Math.round(((opt?.votesCount || 0) / total) * 100);
                           return (
                             <div key={opt.id} className="space-y-1">
                               <div className="flex items-center justify-between text-xs text-slate-300">
                                 <span>{opt.text}</span>
                                 <span className="font-mono font-bold text-[#FFD166]">
-                                  {opt.votesCount} ({pct}%)
+                                  {opt.votesCount || 0} ({pct}%)
                                 </span>
                               </div>
                               <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">

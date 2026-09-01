@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Vote, X, CheckCircle2, Sparkles, ChevronRight, BarChart2 } from 'lucide-react';
 import { useCommunity } from '../../context/CommunityContext';
-import { CommunityPoll } from '../../types';
+import { CommunityPoll, PollOption } from '../../types';
 
 interface CommunityPollModalProps {
   isOpen: boolean;
@@ -36,7 +36,7 @@ export const CommunityPollModal: React.FC<CommunityPollModalProps> = ({
     rawOptions = [];
   }
 
-  const safeOptions = rawOptions.map((option: any, idx: number) => {
+  const safeOptions: PollOption[] = rawOptions.map((option: any, idx: number): PollOption => {
     if (typeof option === 'string') {
       return { id: `opt-${idx + 1}`, text: option, votesCount: 0 };
     }
@@ -102,7 +102,7 @@ export const CommunityPollModal: React.FC<CommunityPollModalProps> = ({
 
         {/* Options */}
         <div className="space-y-3 relative z-10">
-          {safeOptions.map((option) => {
+          {safeOptions.map((option: PollOption) => {
             const isSelected = votedOptionId === option.id;
             const percentage = Math.round((option.votesCount / total) * 100);
 
