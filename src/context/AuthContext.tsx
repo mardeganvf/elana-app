@@ -134,27 +134,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }).catch(err => {
         console.warn('Error rehydrating user session from backend:', err);
       });
-    }
-
-    // Escutar eventos de atualização de usuário e e-mail do Supabase Auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'USER_UPDATED' || event === 'SIGNED_IN') && session?.user) {
-        const updatedEmail = session.user.email;
-        if (updatedEmail) {
-          const refreshed = await fetchFullUserProfile(session.user.id, updatedEmail, session.user.user_metadata?.name);
-          if (refreshed) {
-            setUser(refreshed);
-            try {
-              localStorage.setItem('elana_user_session', JSON.stringify(refreshed));
-            } catch (e) {}
-          }
-        }
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
 
       // Carregar último chamado SOS do usuário direto do Supabase
       const fetchUserSosTicket = async () => {
@@ -181,6 +160,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       fetchUserSosTicket();
     }
+
+    // Escutar eventos de atualização de usuário e e-mail do Supabase Auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === 'USER_UPDATED' || event === 'SIGNED_IN') && session?.user) {
+        const updatedEmail = session.user.email;
+        if (updatedEmail) {
+          const refreshed = await fetchFullUserProfile(session.user.id, updatedEmail, session.user.user_metadata?.name);
+          if (refreshed) {
+            setUser(refreshed);
+            try {
+              localStorage.setItem('elana_user_session', JSON.stringify(refreshed));
+            } catch (e) {}
+          }
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Salvar no localStorage sempre que o estado user mudar
