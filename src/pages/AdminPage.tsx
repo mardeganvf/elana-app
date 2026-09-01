@@ -396,37 +396,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   return (
     <div className="space-y-8 pb-20 animate-fade-in max-w-6xl mx-auto text-white -mt-4">
       
-      {/* Admin Header Hero */}
-      <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="p-3.5 bg-[#FF7F5B]/20 text-[#FF7F5B] rounded-2xl border border-[#FF7F5B]/30">
-            <ShieldCheck className="w-8 h-8" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                Painel do Administrador & Guardião
-              </h1>
-              <span className="bg-[#FF7F5B] text-slate-950 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                Elana Admin
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Atendimento SOS, Moderação Antijulgamento, Gestão de Áreas e Saúde da Comunidade.
-            </p>
-          </div>
-        </div>
-
-        {/* Quick SOS Badge Counter */}
-        <div className="flex items-center gap-3 bg-[#070D0F] px-4 py-2.5 rounded-2xl border border-white/10 shrink-0">
-          <LifeBuoy className="w-5 h-5 text-[#FF7F5B] animate-pulse" />
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Chamados SOS Pendentes</span>
-            <span className="text-sm font-black text-amber-400">
-              {pendingCount} aguardando atendimento
-            </span>
-          </div>
-        </div>
+      {/* Admin Header */}
+      <section className="bg-[#101B1E] px-6 py-5 sm:px-8 sm:py-6 rounded-3xl border border-white/10 shadow-xl">
+        <h1 className="text-2xl sm:text-3xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+          Painel Administrativo
+        </h1>
       </section>
 
       {/* Botão Mobile para abrir/fechar menu lateral */}
@@ -467,7 +441,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 <button
                   type="button"
                   onClick={() => toggleMenuGroup('content')}
-                  className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
+                  className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
                 >
                   <span>Jornadas</span>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.content ? 'rotate-0' : '-rotate-90'}`} />
@@ -493,7 +467,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                                 ? 'text-[#FF7F5B] bg-[#FF7F5B]/10 border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
                                 : isTrilhaSelected
                                 ? 'text-white bg-white/[0.04] border-l-[3px] border-white/30 rounded-r-xl rounded-l-none pl-2.5'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                                : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                             }`}
                             onClick={() => {
                               setActiveAdminTab('content');
@@ -518,7 +492,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                                   } ${
                                     isTrilhaSelected && !selectedModuleId
                                       ? 'text-[#FF7F5B]'
-                                      : 'text-slate-500 group-hover:text-white'
+                                      : 'text-slate-400 group-hover:text-white'
                                   }`}
                                 />
                               </div>
@@ -544,11 +518,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                                     className={`w-full px-2 py-1.5 text-[11px] transition-all flex items-center justify-between text-left cursor-pointer ${
                                       isModSelected
                                         ? 'text-[#FF7F5B] font-bold bg-[#FF7F5B]/10 border-l-2 border-[#FF7F5B] pl-2 rounded-r-lg rounded-l-none'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent pl-2 rounded-r-lg rounded-l-none'
+                                        : 'text-white/90 hover:text-white hover:bg-white/5 border-l-2 border-transparent pl-2 rounded-r-lg rounded-l-none'
                                     }`}
                                   >
                                     <span className="truncate pr-1 flex items-center gap-1.5">
-                                      <span className="text-[9px] opacity-70 font-mono">#{modIdx + 1}</span>
+                                      <span className="text-[9px] opacity-70 font-mono text-white/70">#{modIdx + 1}</span>
                                       <span className="truncate">{mod.title}</span>
                                     </span>
                                   </button>
@@ -570,7 +544,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         setIsCreateJourneyModalOpen(true);
                         setIsMobileMenuOpen(false);
                       }}
-                      className="w-full px-3 py-2.5 rounded-xl border border-dashed border-white/20 hover:border-[#FF7F5B] text-slate-400 hover:text-[#FF7F5B] hover:bg-[#FF7F5B]/10 text-xs font-bold transition-all cursor-pointer flex items-center justify-center active:scale-95 shadow-sm"
+                      className="w-full px-3 py-2.5 rounded-xl border border-dashed border-white/20 hover:border-[#FF7F5B] text-white hover:text-[#FF7F5B] hover:bg-[#FF7F5B]/10 text-xs font-bold transition-all cursor-pointer flex items-center justify-center active:scale-95 shadow-sm"
                     >
                       <span>+ Criar Jornada</span>
                     </button>
@@ -584,7 +558,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               <button
                 type="button"
                 onClick={() => toggleMenuGroup('community')}
-                className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
+                className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
               >
                 <span>Comunidade & Moderação</span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.community ? 'rotate-0' : '-rotate-90'}`} />
@@ -600,8 +574,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     }}
                     className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                       activeAdminTab === 'moderation'
-                        ? 'text-white font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                        ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                        : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
                     <span>Moderação de Posts</span>
@@ -622,8 +596,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     }}
                     className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                       activeAdminTab === 'polls'
-                        ? 'text-white font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                        ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                        : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
                     <span>Enquetes</span>
@@ -642,7 +616,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               <button
                 type="button"
                 onClick={() => toggleMenuGroup('support')}
-                className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
+                className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
               >
                 <span>Acolhimento & SOS</span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.support ? 'rotate-0' : '-rotate-90'}`} />
@@ -658,8 +632,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     }}
                     className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                       activeAdminTab === 'sos'
-                        ? 'text-white font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                        ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                        : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
                     <span>Atendimento SOS</span>
@@ -680,8 +654,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     }}
                     className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                       activeAdminTab === 'analytics'
-                        ? 'text-white font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                        ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                        : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
                     <span>Termômetro Emocional</span>
@@ -690,14 +664,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               )}
             </div>
 
-            {/* GRUPO 4: MEMBROS DA COMUNIDADE */}
+            {/* GRUPO 4: MEMBROS */}
             <div className="space-y-1 pt-2 border-t border-white/5">
               <button
                 type="button"
                 onClick={() => toggleMenuGroup('users')}
-                className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
+                className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
               >
-                <span>Membros da Comunidade</span>
+                <span>Membros</span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.users ? 'rotate-0' : '-rotate-90'}`} />
               </button>
 
@@ -711,8 +685,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     }}
                     className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                       activeAdminTab === 'users'
-                        ? 'text-white font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                        ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                        : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
                     }`}
                   >
                     <span>Gestão de Membros</span>
