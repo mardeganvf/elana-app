@@ -826,9 +826,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           updated_at: new Date().toISOString()
         };
 
+        // Se o e-mail foi alterado, limpar/fundir qualquer registro abandonado com o novo e-mail
+        if (updates.email && updates.email.toLowerCase().trim() !== baseUser.email.toLowerCase().trim()) {
+          try {
+            const cleanNewEmail = updates.email.toLowerCase().trim();
+            const { data: conflictProfile } = await supabase
+              .from('profiles')
+              .select('id, xp')
+              .eq('email', cleanNewEmail)
+              .maybeSingle();
+
+            if (conflictProfile && conflictProfile.id !== updatedUser.id) {
+              if ((conflictProfile.xp || 0) === 0) {
+                await supabase.from('profiles').delete().eq('id', conflictProfile.id);
+              }
+            }
+          } catch (e) {
+            console.warn('Notice resolving email conflict before update:', e);
+          }
+        }
+
         const { error: profileErr } = await supabase
           .from('profiles')
-          .upsert(profilePayload, { onConflict: 'email' });
+          .upsert(profilePayload, { onConflict: 'id' });
 
         if (profileErr) {
           console.error('Supabase profile update error:', profileErr.message);

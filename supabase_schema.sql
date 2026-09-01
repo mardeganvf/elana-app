@@ -578,6 +578,24 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
+-- GATILHO AUTOMÁTICO: ATUALIZAÇÃO DE E-MAIL EM AUTH -> PROFILES
+CREATE OR REPLACE FUNCTION public.handle_user_email_updated()
+RETURNS trigger AS $$
+BEGIN
+  IF old.email IS DISTINCT FROM new.email THEN
+    UPDATE public.profiles
+    SET email = new.email, updated_at = now()
+    WHERE id = new.id;
+  END IF;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_updated ON auth.users;
+CREATE TRIGGER on_auth_user_updated
+  AFTER UPDATE OF email ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_user_email_updated();
+
 -- --------------------------------------------------------
 -- 13. TABELA DE ENQUETES DA COMUNIDADE (SUA VOZ IMPORTA)
 -- --------------------------------------------------------

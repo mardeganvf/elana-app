@@ -153,18 +153,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
     setLoading(true);
     try {
-      const inputVal = email.trim();
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const inputVal = email.trim().toLowerCase();
+      const token = inputCode.trim();
+
+      // Validar código OTP real via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.verifyOtp({
         email: inputVal,
-        password,
-        options: { data: { name: name.trim() } }
+        token,
+        type: 'email'
       });
 
       if (authError) {
-        console.error('Supabase Auth SignUp Error:', authError.message);
+        const { data: signupData, error: signupErr } = await supabase.auth.verifyOtp({
+          email: inputVal,
+          token,
+          type: 'signup'
+        });
+        if (signupErr) {
+          throw new Error('Código inválido ou expirado. Verifique os dígitos e tente novamente.');
+        }
       }
 
-      const supabaseUserId = authData?.user?.id;
+      // Se informou senha no cadastro, define a senha na conta criada
+      if (password) {
+        try {
+          await supabase.auth.updateUser({ password });
+        } catch (pwdErr) {
+          console.warn('Could not set password after OTP verify:', pwdErr);
+        }
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const supabaseUserId = sessionData?.session?.user?.id || authData?.user?.id;
 
       const validId = (supabaseUserId && supabaseUserId.length > 20) ? supabaseUserId : crypto.randomUUID();
       const profilePayload = {

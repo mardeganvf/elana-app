@@ -29,7 +29,7 @@ const formatPhoneMask = (val: string) => {
 };
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog }) => {
-  const { user, logout, updateUser, awardBadge } = useAuth();
+  const { user, logout, updateUser, awardBadge, refreshUserFromBackend } = useAuth();
   const { showToast } = useToast();
 
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -538,6 +538,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                             });
                             setConfirmedEmail(pendingEmail.trim().toLowerCase());
                             checkCriandoRaizes();
+                          }
+
+                          if (refreshUserFromBackend) {
+                            await refreshUserFromBackend();
                           }
 
                           setIsVerifyingEmailCode(false);
