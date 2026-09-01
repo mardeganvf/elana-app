@@ -87,6 +87,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
   const [moduleFormDesc, setModuleFormDesc] = useState('');
 
   // Form states for Content Modal
+  const [contentFormSubgroup, setContentFormSubgroup] = useState('');
   const [contentFormTitle, setContentFormTitle] = useState('');
   const [contentFormDesc, setContentFormDesc] = useState('');
   const [contentFormDuration, setContentFormDuration] = useState('15 min');
@@ -229,6 +230,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
   // ----------------------------------------------------
   const openCreateContent = (journeyId: string, moduleId: string) => {
     setEditingContent({ journeyId, moduleId });
+    setContentFormSubgroup('');
     setContentFormTitle('');
     setContentFormDesc('');
     setContentFormDuration('15 min');
@@ -241,7 +243,14 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
 
   const openEditContent = (journeyId: string, moduleId: string, content: Lesson) => {
     setEditingContent({ journeyId, moduleId, content });
-    setContentFormTitle(content.title);
+    if (content.title.includes(': ')) {
+      const parts = content.title.split(': ');
+      setContentFormSubgroup(parts[0].trim());
+      setContentFormTitle(parts.slice(1).join(': ').trim());
+    } else {
+      setContentFormSubgroup('');
+      setContentFormTitle(content.title);
+    }
     setContentFormDesc(content.description || '');
     setContentFormDuration(content.duration || '15 min');
     setContentFormVideoUrl(content.videoUrl || '');
@@ -306,6 +315,10 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
       return;
     }
 
+    const finalTitle = contentFormSubgroup.trim()
+      ? `${contentFormSubgroup.trim()}: ${contentFormTitle.trim()}`
+      : contentFormTitle.trim();
+
     const resources: LessonResource[] = [];
     if (contentFormPdfUrl.trim()) {
       resources.push({
@@ -318,7 +331,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
     let ok = false;
     if (editingContent.content) {
       ok = await updateContent(editingContent.journeyId, editingContent.moduleId, editingContent.content.id, {
-        title: contentFormTitle.trim(),
+        title: finalTitle,
         description: contentFormDesc.trim(),
         duration: contentFormDuration.trim() || '15 min',
         videoUrl: contentFormVideoUrl.trim(),
@@ -326,7 +339,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
       });
     } else {
       ok = await addContent(editingContent.journeyId, editingContent.moduleId, {
-        title: contentFormTitle.trim(),
+        title: finalTitle,
         description: contentFormDesc.trim(),
         duration: contentFormDuration.trim() || '15 min',
         videoUrl: contentFormVideoUrl.trim(),
@@ -684,9 +697,14 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
                                       <Video className="w-4 h-4" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        {lesson.title.includes(': ') && (
+                                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 shrink-0">
+                                            {lesson.title.split(': ')[0]}
+                                          </span>
+                                        )}
                                         <h6 className="text-xs font-bold text-white truncate">
-                                          {lesson.title}
+                                          {lesson.title.includes(': ') ? lesson.title.split(': ').slice(1).join(': ') : lesson.title}
                                         </h6>
                                       </div>
 
@@ -787,7 +805,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
 
             <form onSubmit={handleSaveJourney} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Título da Jornada:</label>
+                <label className="text-xs font-bold text-slate-300 block">Título:</label>
                 <input
                   type="text"
                   value={journeyFormTitle}
@@ -798,34 +816,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 block">Subtítulo / Grupo:</label>
-                  <input
-                    type="text"
-                    value={journeyFormSubtitle}
-                    onChange={(e) => setJourneyFormSubtitle(e.target.value)}
-                    placeholder="Ex: Jornadas que Começam"
-                    className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 block">Pilar Temático:</label>
-                  <select
-                    value={journeyFormPillar}
-                    onChange={(e) => setJourneyFormPillar(e.target.value as any)}
-                    className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                  >
-                    <option value="movimento">Movimento (Evolução / Rotina)</option>
-                    <option value="raizes">Raízes (Presença / Conexão)</option>
-                    <option value="luz">Luz (Clareza / Propósito)</option>
-                  </select>
-                </div>
-              </div>
-
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Frase de Destaque (Tagline):</label>
+                <label className="text-xs font-bold text-slate-300 block">Chamada:</label>
                 <input
                   type="text"
                   value={journeyFormTagline}
@@ -836,7 +828,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Descrição Acolhedora:</label>
+                <label className="text-xs font-bold text-slate-300 block">Descrição:</label>
                 <textarea
                   value={journeyFormDesc}
                   onChange={(e) => setJourneyFormDesc(e.target.value)}
@@ -859,7 +851,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 block">Preço de Acesso (R$):</label>
+                  <label className="text-xs font-bold text-slate-300 block">Investimento (R$):</label>
                   <input
                     type="number"
                     value={journeyFormPrice}
@@ -1032,13 +1024,42 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
             <form onSubmit={handleSaveContent} className="space-y-4">
               {contentModalTab === 'details' ? (
                 <>
+                  {/* Campo de Subgrupo Temático */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-300">
+                        Subgrupo Temático (opcional):
+                      </label>
+                      <span className="text-[10px] text-slate-500">
+                        Ex: Uma Nova Identidade, A Dinâmica do Casal
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      list="subgroup-suggestions-list"
+                      value={contentFormSubgroup}
+                      onChange={(e) => setContentFormSubgroup(e.target.value)}
+                      placeholder="Selecione da lista ou digite um novo subgrupo..."
+                      className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
+                    />
+                    <datalist id="subgroup-suggestions-list">
+                      {Array.from(new Set(
+                        (activeJourney?.modules?.find(m => m.id === editingContent?.moduleId)?.lessons || [])
+                          .filter(l => l.title.includes(': '))
+                          .map(l => l.title.split(': ')[0].trim())
+                      )).map(sg => (
+                        <option key={sg} value={sg} />
+                      ))}
+                    </datalist>
+                  </div>
+
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-300 block">Título do Conteúdo:</label>
                     <input
                       type="text"
                       value={contentFormTitle}
                       onChange={(e) => setContentFormTitle(e.target.value)}
-                      placeholder="Ex: Uma Nova Identidade: Quem sou eu agora?"
+                      placeholder="Ex: Quem sou eu agora?"
                       className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
                       required
                     />
