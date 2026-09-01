@@ -424,17 +424,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         {/* SIDEBAR LATERAL ESQUERDA COM DROP-DOWNS */}
         <aside className={`w-full lg:w-72 shrink-0 ${isMobileMenuOpen ? 'block' : 'hidden lg:block'}`}>
           <div className="bg-[#101B1E] border border-white/10 rounded-3xl p-4 sm:p-5 shadow-xl space-y-4 lg:sticky lg:top-24">
-            
-            {/* Header da Sidebar */}
-            <div className="px-2 py-1 border-b border-white/10 pb-3 flex items-center justify-between">
-              <div>
-                <span className="text-sm font-bold text-white block" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Painel Administrativo
-                </span>
-              </div>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Painel ativo" />
-            </div>
-
             {/* GRUPO 1: JORNADAS */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between px-2.5 py-1">
