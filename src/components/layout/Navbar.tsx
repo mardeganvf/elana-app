@@ -574,6 +574,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               setIsSosSent(false);
               setSosMessage('');
             }}
+            data-tour="sos-button"
             className={`flex items-center gap-1 font-black text-[11px] uppercase tracking-wider py-1.5 px-3 rounded-full transition-all active:scale-95 border relative cursor-pointer shadow-sm ${
               hasUnreadSosReply
                 ? 'bg-rose-500 text-white border-rose-400 animate-pulse'
@@ -603,6 +604,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         {/* Tab 1: Conteúdos */}
         <button
           onClick={() => setActiveTab('home')}
+          data-tour="contents-nav"
           className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
         >
           <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
@@ -620,6 +622,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         {/* Tab 2: Comunidade */}
         <button
           onClick={() => setActiveTab('community')}
+          data-tour="community-nav"
           className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
         >
           <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
@@ -641,6 +644,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             awardBadge('b21'); // Olhar Para Dentro
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
           }}
+          data-tour="emotions-button"
           className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
         >
           <div className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all">
@@ -660,6 +664,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               onOpenAuthModal();
             }
           }}
+          data-tour="profile-nav"
           className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
         >
           <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${

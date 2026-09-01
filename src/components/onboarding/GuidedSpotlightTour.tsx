@@ -34,7 +34,7 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
       ]
     },
     {
-      targetSelector: '[data-tour="profile-avatar"]',
+      targetSelector: '[data-tour="profile-avatar"], [data-tour="profile-nav"]',
       badge: 'Seu Perfil',
       titleLines: ['Um cantinho todinho sobre você!'],
       messageLines: [
@@ -115,9 +115,15 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
         return;
       }
 
-      const element = document.querySelector(step.targetSelector);
-      if (element) {
-        setTargetRect(element.getBoundingClientRect());
+      // Procura todos os elementos correspondentes e seleciona o que está realmente visível na tela
+      const elements = Array.from(document.querySelectorAll(step.targetSelector));
+      const visibleElement = elements.find(el => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      });
+
+      if (visibleElement) {
+        setTargetRect(visibleElement.getBoundingClientRect());
       } else {
         setTargetRect(null);
       }
@@ -157,21 +163,67 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
     }
   };
 
+  const getCardStyle = (): React.CSSProperties => {
+    if (!targetRect || targetRect.width === 0 || targetRect.height === 0) {
+      return {
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)'
+      };
+    }
+
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const isTargetInBottomHalf = targetRect.top > window.innerHeight * 0.5;
+
+    if (isMobile) {
+      // No celular: SEMPRE centralizado com margens seguras (16px em cada lado), nunca corta!
+      if (isTargetInBottomHalf) {
+        return {
+          bottom: `${Math.max(16, window.innerHeight - targetRect.top + 16)}px`,
+          left: '50%',
+          transform: 'translateX(-50%)'
+        };
+      } else {
+        return {
+          top: `${Math.max(16, targetRect.bottom + 16)}px`,
+          left: '50%',
+          transform: 'translateX(-50%)'
+        };
+      }
+    }
+
+    // No desktop: alinha com o alvo preservando margens mínimas na tela
+    const cardWidth = 448;
+    const left = Math.max(24, Math.min(window.innerWidth - cardWidth - 24, targetRect.left));
+
+    if (isTargetInBottomHalf) {
+      return {
+        bottom: `${Math.max(24, window.innerHeight - targetRect.top + 16)}px`,
+        left: `${left}px`
+      };
+    } else {
+      return {
+        top: `${Math.min(window.innerHeight - 340, Math.max(80, targetRect.bottom + 16))}px`,
+        left: `${left}px`
+      };
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[999999] pointer-events-auto select-none overflow-hidden">
       
       {/* Full Backdrop if no target selected (Step 0) */}
-      {!targetRect && (
+      {(!targetRect || targetRect.width === 0 || targetRect.height === 0) && (
         <div className="absolute inset-0 bg-[#03070A]/85 backdrop-blur-md transition-all duration-300" />
       )}
 
       {/* Target Glowing Spotlight Box over the avatar or element */}
-      {targetRect && (
+      {targetRect && targetRect.width > 0 && targetRect.height > 0 && (
         <div
           className="absolute z-[1000000] border-2 border-[#FF7F5B] rounded-full transition-all duration-300 pointer-events-none"
           style={{
-            top: `${Math.max(8, targetRect.top - 4)}px`,
-            left: `${Math.max(8, targetRect.left - 4)}px`,
+            top: `${Math.max(4, targetRect.top - 4)}px`,
+            left: `${Math.max(4, targetRect.left - 4)}px`,
             width: `${targetRect.width + 8}px`,
             height: `${targetRect.height + 8}px`,
             boxShadow: '0 0 0 9999px rgba(3, 7, 10, 0.82), 0 0 30px rgba(255, 127, 91, 0.9)'
@@ -179,14 +231,10 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
         />
       )}
 
-      {/* Floating Card (Strict 100% Flush Left Vertical Alignment) */}
+      {/* Floating Card (Strictly bounded and centered on mobile) */}
       <div 
-        className="fixed z-[1000001] w-full max-w-md bg-[#101B1E] border border-[#FF7F5B]/40 rounded-3xl p-6 shadow-2xl text-white space-y-4 transition-all duration-300 text-left"
-        style={{
-          top: targetRect ? `${Math.min(window.innerHeight - 300, Math.max(90, targetRect.bottom + 20))}px` : '50%',
-          left: targetRect ? `${Math.min(window.innerWidth - 450, Math.max(20, targetRect.left))}px` : '50%',
-          transform: targetRect ? 'none' : 'translate(-50%, -50%)'
-        }}
+        className="fixed z-[1000001] w-[calc(100vw-32px)] max-w-sm sm:max-w-md bg-[#101B1E] border border-[#FF7F5B]/40 rounded-3xl p-5 sm:p-6 shadow-2xl text-white space-y-4 transition-all duration-300 text-left"
+        style={getCardStyle()}
       >
         
         {/* Top Header Icon (No Close Button) */}
