@@ -266,8 +266,11 @@ DROP TABLE IF EXISTS public.user_photos CASCADE;
 DROP POLICY IF EXISTS "Allow public read emotional_checkins" ON public.emotional_checkins;
 DROP POLICY IF EXISTS "Allow public insert emotional_checkins" ON public.emotional_checkins;
 DROP POLICY IF EXISTS "Allow public update emotional_checkins" ON public.emotional_checkins;
+DROP POLICY IF EXISTS "Allow public delete emotional_checkins" ON public.emotional_checkins;
 DROP POLICY IF EXISTS "checkins_select_own" ON public.emotional_checkins;
 DROP POLICY IF EXISTS "checkins_insert_own" ON public.emotional_checkins;
+DROP POLICY IF EXISTS "checkins_update_own" ON public.emotional_checkins;
+DROP POLICY IF EXISTS "checkins_delete_own" ON public.emotional_checkins;
 
 CREATE POLICY "checkins_select_own"
   ON public.emotional_checkins FOR SELECT
@@ -276,6 +279,15 @@ CREATE POLICY "checkins_select_own"
 CREATE POLICY "checkins_insert_own"
   ON public.emotional_checkins FOR INSERT
   WITH CHECK (auth.uid() = profile_id);
+
+CREATE POLICY "checkins_update_own"
+  ON public.emotional_checkins FOR UPDATE
+  USING (auth.uid() = profile_id)
+  WITH CHECK (auth.uid() = profile_id);
+
+CREATE POLICY "checkins_delete_own"
+  ON public.emotional_checkins FOR DELETE
+  USING (auth.uid() = profile_id);
 
 -- --------------------------------------------------------
 -- COMMUNITY POSTS: leitura para todos autenticados,
@@ -565,6 +577,79 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- --------------------------------------------------------
+-- 13. TABELA DE ENQUETES DA COMUNIDADE (SUA VOZ IMPORTA)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.community_polls (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT,
+  category TEXT,
+  options JSONB NOT NULL DEFAULT '[]'::jsonb,
+  total_votes INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'open', -- 'open', 'closed'
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.community_polls ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read community_polls" ON public.community_polls;
+DROP POLICY IF EXISTS "Allow public insert community_polls" ON public.community_polls;
+DROP POLICY IF EXISTS "Allow public update community_polls" ON public.community_polls;
+DROP POLICY IF EXISTS "polls_select_auth" ON public.community_polls;
+DROP POLICY IF EXISTS "polls_insert_auth" ON public.community_polls;
+DROP POLICY IF EXISTS "polls_update_auth" ON public.community_polls;
+
+CREATE POLICY "polls_select_auth"
+  ON public.community_polls FOR SELECT
+  USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "polls_insert_auth"
+  ON public.community_polls FOR INSERT
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "polls_update_auth"
+  ON public.community_polls FOR UPDATE
+  USING (auth.uid() IS NOT NULL);
+
+-- ========================================================
+-- ÍNDICES DE BANCO DE DADOS PARA ALTA ESCALA & PERFORMANCE
+-- ========================================================
+
+-- 1. Perfis de Usuários
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+CREATE INDEX IF NOT EXISTS idx_profiles_xp ON public.profiles(xp DESC);
+CREATE INDEX IF NOT EXISTS idx_profiles_last_active ON public.profiles(last_active_date DESC);
+
+-- 2. Check-ins Emocionais (Índice Composto + Integridade Diária)
+CREATE INDEX IF NOT EXISTS idx_emotional_checkins_profile_date ON public.emotional_checkins(profile_id, checkin_date DESC);
+CREATE INDEX IF NOT EXISTS idx_emotional_checkins_date ON public.emotional_checkins(checkin_date DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_emotional_checkin_per_day ON public.emotional_checkins(profile_id, checkin_date) WHERE profile_id IS NOT NULL;
+
+-- 3. Postagens da Comunidade
+CREATE INDEX IF NOT EXISTS idx_community_posts_created_at ON public.community_posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_community_posts_transversal_room ON public.community_posts(transversal_room_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_community_posts_journey ON public.community_posts(journey_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_community_posts_age ON public.community_posts(age_bracket_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_community_posts_author ON public.community_posts(author_id);
+
+-- 4. Comentários da Comunidade
+CREATE INDEX IF NOT EXISTS idx_community_comments_post_id ON public.community_comments(post_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_community_comments_author_id ON public.community_comments(author_id);
+
+-- 5. Gamificação & Progresso do Aluno
+CREATE INDEX IF NOT EXISTS idx_user_badges_profile_id ON public.user_badges(profile_id);
+CREATE INDEX IF NOT EXISTS idx_user_purchased_journeys_profile_id ON public.user_purchased_journeys(profile_id);
+CREATE INDEX IF NOT EXISTS idx_user_completed_lessons_profile_id ON public.user_completed_lessons(profile_id);
+CREATE INDEX IF NOT EXISTS idx_user_lesson_notes_profile_id ON public.user_lesson_notes(profile_id);
+
+-- 6. Família, Depoimentos, SOS & Enquetes
+CREATE INDEX IF NOT EXISTS idx_family_members_profile_id ON public.family_members(profile_id);
+CREATE INDEX IF NOT EXISTS idx_profile_testimonials_recipient ON public.profile_testimonials(recipient_profile_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sos_tickets_profile_id ON public.sos_tickets(profile_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_community_polls_status ON public.community_polls(status, created_at DESC);
 
 -- ========================================================
 -- POVOAR DADOS INICIAIS DE TESTE (SEED DATA)
