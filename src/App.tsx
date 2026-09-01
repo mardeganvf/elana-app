@@ -50,6 +50,7 @@ const AppContent: React.FC = () => {
   const [isSpotlightTourOpen, setIsSpotlightTourOpen] = useState(false);
   const [isBadgeRewardOpen, setIsBadgeRewardOpen] = useState(false);
   const [isProfileInviteOpen, setIsProfileInviteOpen] = useState(false);
+  const [isUserLevelsListOpen, setIsUserLevelsListOpen] = useState(false);
   const [isPollModalOpen, setIsPollModalOpen] = useState(false);
   const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
 
