@@ -359,7 +359,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
                         const isEmailChanged = pendingEmail.trim().toLowerCase() !== confirmedEmail.trim().toLowerCase();
 
-                        // Se o e-mail foi alterado, dispara o envio do código OTP via Supabase
+                        // Se o e-mail foi alterado, dispara a alteração oficial no Supabase Auth
                         if (isEmailChanged) {
                           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                           if (!emailRegex.test(pendingEmail.trim())) {
@@ -378,17 +378,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                               });
                             }
 
-                            // Dispara envio do código OTP real pelo Supabase Auth
-                            const { error: otpError } = await supabase.auth.signInWithOtp({
-                              email: pendingEmail.trim().toLowerCase(),
-                              options: {
-                                data: { name: userName.trim() }
-                              }
+                            // Dispara envio do template oficial de Alteração de E-mail (Change Email Address)
+                            const { error: updateAuthErr } = await supabase.auth.updateUser({
+                              email: pendingEmail.trim().toLowerCase()
                             });
 
-                            if (otpError) {
-                              showToast('error', `Erro ao enviar código: ${otpError.message}`);
-                              return;
+                            if (updateAuthErr) {
+                              // Se falhar (ex: sessão desconectada), tenta via signInWithOtp
+                              const { error: otpError } = await supabase.auth.signInWithOtp({
+                                email: pendingEmail.trim().toLowerCase(),
+                                options: {
+                                  data: { name: userName.trim() }
+                                }
+                              });
+                              if (otpError) throw updateAuthErr;
                             }
 
                             setIsVerifyingEmailCode(true);
@@ -396,7 +399,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                             setResendCooldown(60);
                             showToast('success', `Código enviado para ${pendingEmail.trim()}! Verifique sua caixa de entrada.`);
                           } catch (err: any) {
-                            showToast('error', err.message || 'Erro ao enviar código.');
+                            showToast('error', err.message || 'Erro ao enviar código de alteração.');
                           } finally {
                             setIsSendingOtp(false);
                           }
@@ -500,27 +503,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                         setIsVerifyingOtp(true);
                         setEmailVerificationError('');
                         try {
-                          // Validação real do token OTP via Supabase Auth
+                          // Validação real do token OTP para alteração de e-mail via Supabase Auth
                           const { data: authData, error: authError } = await supabase.auth.verifyOtp({
                             email: pendingEmail.trim().toLowerCase(),
                             token,
-                            type: 'email'
+                            type: 'email_change'
                           });
 
                           if (authError) {
                             const { error: retryError } = await supabase.auth.verifyOtp({
                               email: pendingEmail.trim().toLowerCase(),
                               token,
-                              type: 'signup'
+                              type: 'email'
                             });
 
                             if (retryError) {
-                              const { error: changeErr } = await supabase.auth.verifyOtp({
+                              const { error: signupErr } = await supabase.auth.verifyOtp({
                                 email: pendingEmail.trim().toLowerCase(),
                                 token,
-                                type: 'email_change'
+                                type: 'signup'
                               });
-                              if (changeErr) {
+                              if (signupErr) {
                                 throw new Error('Código inválido ou expirado. Verifique os dígitos e tente novamente.');
                               }
                             }
@@ -567,16 +570,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                         setIsSendingOtp(true);
                         setEmailVerificationError('');
                         try {
-                          const { error: otpError } = await supabase.auth.signInWithOtp({
-                            email: pendingEmail.trim().toLowerCase(),
-                            options: {
-                              data: { name: userName.trim() }
-                            }
+                          const { error: resendErr } = await supabase.auth.updateUser({
+                            email: pendingEmail.trim().toLowerCase()
                           });
 
-                          if (otpError) {
-                            setEmailVerificationError(`Erro ao reenviar: ${otpError.message}`);
-                            return;
+                          if (resendErr) {
+                            const { error: otpError } = await supabase.auth.signInWithOtp({
+                              email: pendingEmail.trim().toLowerCase(),
+                              options: {
+                                data: { name: userName.trim() }
+                              }
+                            });
+                            if (otpError) {
+                              setEmailVerificationError(`Erro ao reenviar: ${otpError.message}`);
+                              return;
+                            }
                           }
 
                           setResendCooldown(60);
