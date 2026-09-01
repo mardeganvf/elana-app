@@ -28,9 +28,23 @@ import { uploadFileToStorage } from '../../lib/storage';
 
 interface AdminContentManagerProps {
   showToast?: (type: 'success' | 'error' | 'info', msg: string) => void;
+  selectedJourneyId?: string;
+  onSelectJourneyId?: (id: string) => void;
+  selectedModuleId?: string | null;
+  onSelectModuleId?: (id: string | null) => void;
+  isCreateJourneyModalOpen?: boolean;
+  onCloseCreateJourneyModal?: () => void;
 }
 
-export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showToast }) => {
+export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ 
+  showToast,
+  selectedJourneyId: propSelectedJourneyId,
+  onSelectJourneyId: propOnSelectJourneyId,
+  selectedModuleId: propSelectedModuleId,
+  onSelectModuleId: propOnSelectModuleId,
+  isCreateJourneyModalOpen: propIsCreateJourneyModalOpen,
+  onCloseCreateJourneyModal: propOnCloseCreateJourneyModal
+}) => {
   const { 
     journeys, 
     isLoading, 
@@ -44,13 +58,25 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
     deleteContent 
   } = useJourneys();
 
-  const [selectedJourneyId, setSelectedJourneyId] = useState<string>(() => journeys[0]?.id || '');
+  const [internalSelectedJourneyId, setInternalSelectedJourneyId] = useState<string>(() => journeys[0]?.id || '');
+  const activeJourneyId = propSelectedJourneyId || internalSelectedJourneyId || journeys[0]?.id || '';
+
+  const setSelectedJourneyId = (id: string) => {
+    setInternalSelectedJourneyId(id);
+    propOnSelectJourneyId?.(id);
+  };
+
   const [expandedModuleIds, setExpandedModuleIds] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals state
   const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
   const [editingJourney, setEditingJourney] = useState<Journey | null>(null);
+
+  // Switch "Possui módulo?" e lista dinâmica de módulos no modal de jornada
+  const [journeyFormHasModules, setJourneyFormHasModules] = useState(false);
+  const [journeyFormModulesList, setJourneyFormModulesList] = useState<{ id?: string; title: string; lessons?: Lesson[] }[]>([]);
+  const [newModuleInput, setNewModuleInput] = useState('');
 
   const [isModuleModalOpen, setIsModuleModalOpen] = useState(false);
   const [editingModule, setEditingModule] = useState<{ journeyId: string; module?: CourseModule } | null>(null);
@@ -103,7 +129,25 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
   };
 
   // Garante que a jornada selecionada seja válida
-  const activeJourney = journeys.find(j => j.id === selectedJourneyId) || journeys[0];
+  const activeJourney = journeys.find(j => j.id === activeJourneyId) || journeys[0];
+
+  // Sincroniza abertura do modal disparado pela sidebar lateral
+  useEffect(() => {
+    if (propIsCreateJourneyModalOpen) {
+      openCreateJourney();
+      propOnCloseCreateJourneyModal?.();
+    }
+  }, [propIsCreateJourneyModalOpen]);
+
+  // Se um módulo for selecionado na sidebar lateral, expande ele
+  useEffect(() => {
+    if (propSelectedModuleId) {
+      setExpandedModuleIds(prev => ({
+        ...prev,
+        [propSelectedModuleId]: true
+      }));
+    }
+  }, [propSelectedModuleId]);
 
   const toggleModule = (modId: string) => {
     setExpandedModuleIds(prev => ({
@@ -120,8 +164,26 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
   }, [isContentModalOpen, isJourneyModalOpen, isModuleModalOpen, deleteConfirm]);
 
   // ----------------------------------------------------
-  // HANDLERS: JORNADA
+  // HANDLERS: JORNADA / TRILHA
   // ----------------------------------------------------
+  const handleAddModuleToJourney = () => {
+    const trimmed = newModuleInput.trim();
+    if (!trimmed) return;
+    setJourneyFormModulesList(prev => [
+      ...prev,
+      {
+        id: `mod-${Date.now()}-${prev.length + 1}`,
+        title: trimmed,
+        lessons: []
+      }
+    ]);
+    setNewModuleInput('');
+  };
+
+  const handleRemoveModuleFromJourney = (index: number) => {
+    setJourneyFormModulesList(prev => prev.filter((_, i) => i !== index));
+  };
+
   const openCreateJourney = () => {
     setEditingJourney(null);
     setJourneyFormTitle('');
@@ -134,6 +196,9 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
     setJourneyFormAudience('Pais de 0 a 3 anos');
     setJourneyFormThemeColor('#FF7F5B');
     setJourneyFormPrice(197);
+    setJourneyFormHasModules(false);
+    setJourneyFormModulesList([]);
+    setNewModuleInput('');
     setIsJourneyModalOpen(true);
   };
 
@@ -149,44 +214,84 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
     setJourneyFormAudience(journey.targetAudience || '');
     setJourneyFormThemeColor(journey.themeColor || '#FF7F5B');
     setJourneyFormPrice(journey.price || 197);
+
+    const existingMods = journey.modules || [];
+    setJourneyFormHasModules(existingMods.length > 0);
+    setJourneyFormModulesList(
+      existingMods.map(m => ({
+        id: m.id,
+        title: m.title,
+        lessons: m.lessons || []
+      }))
+    );
+    setNewModuleInput('');
     setIsJourneyModalOpen(true);
   };
 
   const handleSaveJourney = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!journeyFormTitle.trim()) {
-      notify('error', 'Por favor, informe o título da Jornada.');
+      notify('error', 'Por favor, informe o título da Trilha.');
       return;
     }
 
     const journeyId = editingJourney 
       ? editingJourney.id 
-      : journeyFormTitle.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `jornada-${Date.now()}`;
+      : journeyFormTitle.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `trilha-${Date.now()}`;
+
+    let finalModules: CourseModule[] = [];
+    if (journeyFormHasModules) {
+      if (journeyFormModulesList.length > 0) {
+        finalModules = journeyFormModulesList.map((m, idx) => ({
+          id: m.id || `mod-${journeyId}-${idx + 1}`,
+          number: idx + 1,
+          title: m.title.trim(),
+          description: '',
+          lessons: m.lessons || []
+        }));
+      } else {
+        finalModules = [{
+          id: `mod-${journeyId}-1`,
+          number: 1,
+          title: 'Módulo 1: Primeiros Passos',
+          description: '',
+          lessons: editingJourney?.modules?.[0]?.lessons || []
+        }];
+      }
+    } else {
+      finalModules = [{
+        id: `mod-${journeyId}-1`,
+        number: 1,
+        title: 'Conteúdos da Trilha',
+        description: '',
+        lessons: editingJourney?.modules?.[0]?.lessons || []
+      }];
+    }
 
     const newJourney: Journey = {
       id: journeyId,
       title: journeyFormTitle.trim(),
-      subtitle: journeyFormSubtitle.trim(),
+      subtitle: journeyFormSubtitle.trim() || 'Jornadas que Começam',
       tagline: journeyFormTagline.trim(),
       description: journeyFormDesc.trim(),
       pillar: journeyFormPillar,
-      pillarAttribute: journeyFormPillarAttr.trim() || (journeyFormPillar === 'luz' ? 'Clareza' : journeyFormPillar === 'raizes' ? 'Presença' : 'Evolução'),
+      pillarAttribute: journeyFormPillarAttr.trim() || 'Evolução',
       category: journeyFormCategory,
       targetAudience: journeyFormAudience.trim(),
       themeColor: journeyFormThemeColor,
       bgLight: '#fff0eb',
       iconName: 'Sun',
       price: journeyFormPrice,
-      modules: editingJourney?.modules || []
+      modules: finalModules
     };
 
     const ok = await saveJourney(newJourney);
     if (ok) {
       setSelectedJourneyId(journeyId);
       setIsJourneyModalOpen(false);
-      notify('success', editingJourney ? 'Jornada atualizada com sucesso! ✨' : 'Nova Jornada criada com sucesso! 🌿');
+      notify('success', editingJourney ? 'Trilha atualizada com sucesso! ✨' : 'Nova Trilha criada com sucesso! 🌿');
     } else {
-      notify('error', 'Erro ao salvar jornada. Tente novamente.');
+      notify('error', 'Erro ao salvar trilha. Tente novamente.');
     }
   };
 
@@ -450,52 +555,35 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
         </div>
       </div>
 
-      {/* BARRA DE SELEÇÃO DE JORNADAS & BUSCA */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <label className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-[#FF7F5B]" />
-            Selecione a Jornada para Gerenciar:
-          </label>
-
-          {/* Busca rápida */}
-          <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar conteúdos ou subtemas..."
-              className="w-full pl-8 pr-3 py-1.5 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B]"
+      {/* BARRA DE BUSCA & INDICADOR DA TRILHA */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Trilha Ativa:</span>
+          <span 
+            className="text-xs font-black px-2.5 py-1 rounded-lg border text-white flex items-center gap-1.5"
+            style={{ 
+              backgroundColor: `${activeJourney?.themeColor || '#FF7F5B'}22`,
+              borderColor: `${activeJourney?.themeColor || '#FF7F5B'}55`
+            }}
+          >
+            <span 
+              className="w-2 h-2 rounded-full" 
+              style={{ backgroundColor: activeJourney?.themeColor || '#FF7F5B' }}
             />
-          </div>
+            <span>{activeJourney?.title || 'Selecione uma Trilha na barra lateral'}</span>
+          </span>
         </div>
 
-        {/* Chips de Jornadas */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {journeys.map(j => {
-            const isSelected = activeJourney?.id === j.id;
-            return (
-              <button
-                key={j.id}
-                onClick={() => setSelectedJourneyId(j.id)}
-                className={`px-4 py-2.5 rounded-2xl border text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 ${
-                  isSelected 
-                    ? 'bg-[#FF7F5B]/15 border-[#FF7F5B] text-white shadow-md' 
-                    : 'bg-[#101B1E] border-white/10 text-slate-400 hover:text-white hover:border-white/20'
-                }`}
-              >
-                <span 
-                  className="w-2.5 h-2.5 rounded-full shrink-0" 
-                  style={{ backgroundColor: j.themeColor || '#FF7F5B' }} 
-                />
-                <span>{j.title}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/10 text-slate-300 font-mono">
-                  {j.modules?.length || 0}
-                </span>
-              </button>
-            );
-          })}
+        {/* Busca rápida */}
+        <div className="relative w-full sm:w-72">
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar conteúdos ou módulos..."
+            className="w-full pl-8 pr-3 py-2 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B]"
+          />
         </div>
       </div>
 
@@ -544,14 +632,22 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
               </div>
 
               {/* Botões de Ação na Jornada */}
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 <button
                   onClick={() => openEditJourney(activeJourney)}
-                  className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Editar dados da jornada"
+                  className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+                  title="Editar dados desta trilha"
                 >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Editar Jornada</span>
+                  <Edit3 className="w-4 h-4" />
+                  <span>Editar Trilha</span>
+                </button>
+
+                <button
+                  onClick={() => openCreateModule(activeJourney.id)}
+                  className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/15 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5 text-[#FF7F5B]" />
+                  <span>Novo Módulo</span>
                 </button>
 
                 <button
@@ -561,21 +657,32 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
                     title: activeJourney.title
                   })}
                   className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer"
-                  title="Excluir jornada"
+                  title="Excluir trilha"
                 >
                   <Trash2 className="w-4 h-4" />
-                </button>
-
-                <button
-                  onClick={() => openCreateModule(activeJourney.id)}
-                  className="px-3.5 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Novo Subtema</span>
                 </button>
               </div>
             </div>
           </div>
+
+          {/* Banner quando um módulo específico foi focado na barra lateral */}
+          {propSelectedModuleId && (
+            <div className="p-3.5 bg-[#FF7F5B]/10 border border-[#FF7F5B]/30 rounded-2xl flex items-center justify-between gap-3 animate-fade-in">
+              <span className="text-xs font-bold text-white flex items-center gap-2">
+                <span>Visualizando Módulo:</span>
+                <span className="text-[#FF7F5B] font-black">
+                  {activeJourney?.modules?.find(m => m.id === propSelectedModuleId)?.title || 'Módulo Selecionado'}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => propOnSelectModuleId?.(null)}
+                className="text-xs text-slate-400 hover:text-white underline cursor-pointer"
+              >
+                Ver todos os módulos da trilha
+              </button>
+            </div>
+          )}
 
           {/* LISTAGEM DE SUBTEMAS E CONTEÚDOS */}
           <div className="space-y-4">
@@ -617,7 +724,12 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
                   return (
                     <div 
                       key={mod.id}
-                      className="bg-[#101B1E] border border-white/10 rounded-2xl overflow-hidden transition-all shadow-sm"
+                      id={`module-card-${mod.id}`}
+                      className={`bg-[#101B1E] rounded-2xl overflow-hidden transition-all shadow-sm ${
+                        propSelectedModuleId === mod.id
+                          ? 'border-2 border-[#FF7F5B] ring-2 ring-[#FF7F5B]/30 shadow-lg shadow-[#FF7F5B]/10'
+                          : 'border border-white/10'
+                      }`}
                     >
                       {/* BARRA DO SUBTEMA */}
                       <div className="p-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between gap-3">
@@ -800,7 +912,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
           <div className="bg-[#101B1E] border border-white/15 rounded-3xl w-full max-w-xl p-6 sm:p-8 space-y-5 shadow-2xl my-2 sm:my-8 animate-scale-in">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-lg font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                {editingJourney ? 'Editar Jornada' : 'Criar Nova Jornada'}
+                {editingJourney ? 'Editar Trilha' : 'Criar Nova Trilha'}
               </h3>
               <button
                 onClick={() => setIsJourneyModalOpen(false)}
@@ -894,6 +1006,94 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
                 </div>
               </div>
 
+              {/* Switch: Possui módulo? */}
+              <div className="p-4 bg-[#070D0F] border border-white/10 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-white block">Possui módulos?</span>
+                    <span className="text-[11px] text-slate-400 block">
+                      Ative se esta trilha for dividida em múltiplos módulos temáticos.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setJourneyFormHasModules(!journeyFormHasModules)}
+                    className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
+                      journeyFormHasModules ? 'bg-[#FF7F5B]' : 'bg-white/20'
+                    }`}
+                  >
+                    <span
+                      className={`w-5 h-5 rounded-full bg-white transition-transform absolute top-0.5 left-0.5 shadow-md ${
+                        journeyFormHasModules ? 'translate-x-6' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Se o switch for acionado: abre a janela para inserir o nome do módulo e salvar */}
+                {journeyFormHasModules && (
+                  <div className="pt-3 border-t border-white/10 space-y-3 animate-fade-in">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newModuleInput}
+                        onChange={(e) => setNewModuleInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddModuleToJourney();
+                          }
+                        }}
+                        placeholder="Digite o nome do módulo (ex: Módulo 1: Boas-vindas)..."
+                        className="flex-1 p-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddModuleToJourney}
+                        className="px-3.5 py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-bold text-xs rounded-xl transition-all shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Adicionar</span>
+                      </button>
+                    </div>
+
+                    {/* Lista de módulos adicionados */}
+                    {journeyFormModulesList.length > 0 ? (
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          Módulos definidos ({journeyFormModulesList.length}):
+                        </span>
+                        {journeyFormModulesList.map((m, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between gap-2 p-2.5 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white"
+                          >
+                            <span className="truncate flex items-center gap-2">
+                              <span className="w-5 h-5 rounded-md bg-[#FF7F5B]/15 text-[#FF7F5B] flex items-center justify-center font-mono text-[10px] font-bold shrink-0">
+                                {idx + 1}
+                              </span>
+                              <span className="font-semibold">{m.title}</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveModuleFromJourney(idx)}
+                              className="p-1 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                              title="Remover módulo"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-amber-300/80 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
+                        💡 Digite o nome do módulo acima e clique em "Adicionar" (você pode inserir quantos módulos quiser).
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
                 <button
                   type="button"
@@ -906,7 +1106,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({ showTo
                   type="submit"
                   className="px-5 py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer"
                 >
-                  {editingJourney ? 'Salvar Alterações' : 'Criar Jornada'}
+                  {editingJourney ? 'Salvar Alterações' : 'Criar Trilha'}
                 </button>
               </div>
             </form>

@@ -28,6 +28,7 @@ import {
 import { useAuth, isAdminUser } from '../context/AuthContext';
 import { useCommunity } from '../context/CommunityContext';
 import { useToast } from '../context/ToastContext';
+import { useJourneys } from '../context/JourneysContext';
 import { supabase } from '../lib/supabase';
 import { AdminContentManager } from '../components/admin/AdminContentManager';
 
@@ -94,6 +95,20 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     setOpenMenuGroups(prev => ({
       ...prev,
       [groupKey]: !prev[groupKey]
+    }));
+  };
+
+  // 📚 Trilhas & Módulos State (Sincronizado com a barra lateral)
+  const { journeys } = useJourneys();
+  const [selectedJourneyId, setSelectedJourneyId] = useState<string>(() => journeys[0]?.id || '');
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
+  const [openTrilhas, setOpenTrilhas] = useState<Record<string, boolean>>({});
+  const [isCreateJourneyModalOpen, setIsCreateJourneyModalOpen] = useState(false);
+
+  const toggleTrilha = (journeyId: string) => {
+    setOpenTrilhas(prev => ({
+      ...prev,
+      [journeyId]: !(prev[journeyId] ?? (selectedJourneyId === journeyId))
     }));
   };
 
@@ -431,36 +446,131 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Painel ativo" />
             </div>
 
-            {/* GRUPO 1: CONTEÚDOS & JORNADAS */}
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={() => toggleMenuGroup('content')}
-                className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
-              >
-                <span>Conteúdos & Jornadas</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.content ? 'rotate-0' : '-rotate-90'}`} />
-              </button>
+            {/* GRUPO 1: CONTEÚDOS & JORNADAS (TRILHAS & MÓDULOS) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between px-2.5 py-1">
+                <button
+                  type="button"
+                  onClick={() => toggleMenuGroup('content')}
+                  className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-[#FF7F5B]" />
+                  <span>Trilhas & Módulos</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.content ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+
+                {/* Botão para criar nova trilha diretamente na barra lateral */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveAdminTab('content');
+                    setIsCreateJourneyModalOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="text-[10px] font-bold px-2 py-1 rounded-lg bg-[#FF7F5B]/15 text-[#FF7F5B] hover:bg-[#FF7F5B] hover:text-slate-950 border border-[#FF7F5B]/30 transition-all cursor-pointer flex items-center gap-1 shadow-sm active:scale-95"
+                  title="Criar nova trilha"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Nova Trilha</span>
+                </button>
+              </div>
 
               {openMenuGroups.content && (
-                <div className="space-y-1 pl-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('content');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'content'
-                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
-                        : 'text-slate-300 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4" />
-                      <span>Gestão de Conteúdos</span>
-                    </span>
-                  </button>
+                <div className="space-y-1 pl-1 max-h-[46vh] overflow-y-auto pr-1 scrollbar-thin">
+                  {journeys.length === 0 ? (
+                    <p className="text-[11px] text-slate-500 p-2">Nenhuma trilha cadastrada.</p>
+                  ) : (
+                    journeys.map(journey => {
+                      const isTrilhaSelected = activeAdminTab === 'content' && (selectedJourneyId === journey.id || (!selectedJourneyId && journeys[0]?.id === journey.id));
+                      const isTrilhaExpanded = openTrilhas[journey.id] ?? isTrilhaSelected;
+                      const modulesCount = journey.modules?.length || 0;
+
+                      return (
+                        <div key={journey.id} className="space-y-0.5">
+                          {/* Linha da Trilha */}
+                          <div
+                            className={`w-full px-2.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer group ${
+                              isTrilhaSelected && !selectedModuleId
+                                ? 'bg-[#FF7F5B] text-slate-950 shadow-md font-black'
+                                : isTrilhaSelected
+                                ? 'bg-[#FF7F5B]/15 text-white border border-[#FF7F5B]/30'
+                                : 'text-slate-300 hover:text-white hover:bg-white/5'
+                            }`}
+                            onClick={() => {
+                              setActiveAdminTab('content');
+                              setSelectedJourneyId(journey.id);
+                              setSelectedModuleId(null);
+                              setIsMobileMenuOpen(false);
+                            }}
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span
+                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: journey.themeColor || '#FF7F5B' }}
+                              />
+                              <span className="truncate">{journey.title}</span>
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0 ml-1.5">
+                              <span className={`text-[10px] font-mono ${isTrilhaSelected && !selectedModuleId ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
+                                {modulesCount} {modulesCount === 1 ? 'mód' : 'móds'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleTrilha(journey.id);
+                                }}
+                                className={`p-1 rounded cursor-pointer ${
+                                  isTrilhaSelected && !selectedModuleId
+                                    ? 'text-slate-900 hover:bg-black/10'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/10'
+                                }`}
+                              >
+                                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isTrilhaExpanded ? 'rotate-0' : '-rotate-90'}`} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Módulos aninhados da Trilha */}
+                          {isTrilhaExpanded && (
+                            <div className="pl-3.5 space-y-0.5 border-l border-white/10 ml-3 my-1">
+                              {(journey.modules || []).map((mod, modIdx) => {
+                                const isModSelected = isTrilhaSelected && selectedModuleId === mod.id;
+                                const lessonsCount = mod.lessons?.length || 0;
+
+                                return (
+                                  <button
+                                    key={mod.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveAdminTab('content');
+                                      setSelectedJourneyId(journey.id);
+                                      setSelectedModuleId(mod.id);
+                                      setIsMobileMenuOpen(false);
+                                    }}
+                                    className={`w-full px-2 py-1.5 rounded-lg text-[11px] transition-all flex items-center justify-between text-left cursor-pointer ${
+                                      isModSelected
+                                        ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-sm'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                                  >
+                                    <span className="truncate pr-1 flex items-center gap-1.5">
+                                      <span className="text-[9px] opacity-70 font-mono">#{modIdx + 1}</span>
+                                      <span className="truncate">{mod.title}</span>
+                                    </span>
+                                    <span className={`text-[9px] font-mono shrink-0 ${isModSelected ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
+                                      {lessonsCount}c
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               )}
             </div>
@@ -1084,7 +1194,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
       {/* TAB 4: 🎬 GESTÃO DE CONTEÚDOS & JORNADAS */}
       {activeAdminTab === 'content' && (
-        <AdminContentManager showToast={showToast} />
+        <AdminContentManager 
+          showToast={showToast}
+          selectedJourneyId={selectedJourneyId}
+          onSelectJourneyId={setSelectedJourneyId}
+          selectedModuleId={selectedModuleId}
+          onSelectModuleId={setSelectedModuleId}
+          isCreateJourneyModalOpen={isCreateJourneyModalOpen}
+          onCloseCreateJourneyModal={() => setIsCreateJourneyModalOpen(false)}
+        />
       )}
 
       {/* TAB 5: 👥 GESTÃO DE MEMBROS */}
