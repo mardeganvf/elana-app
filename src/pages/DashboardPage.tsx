@@ -11,6 +11,7 @@ import { getLevelFromXP, ALL_BADGES } from '../data/gamificationData';
 import { uploadImageToStorage } from '../lib/storage';
 import { supabase } from '../lib/supabase';
 import { GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 interface DashboardPageProps {
   onStartLearning: (journey: Journey) => void;
@@ -91,10 +92,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const [userPhone, setUserPhone] = useState(formatPhoneMask(user?.phone || ''));
   const [confirmedEmail, setConfirmedEmail] = useState(user?.email || '');
   const [pendingEmail, setPendingEmail] = useState(user?.email || '');
-  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [inputCode, setInputCode] = useState('');
-  const [codeError, setCodeError] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(!!user?.notificationsEnabled);
 
   // Meus Filhos state
@@ -308,129 +306,84 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
           </div>
 
           {isEditingProfile ? (
-            <div className="space-y-2.5 pt-1">
-              {!isVerifyingCode ? (
-                <div className="flex flex-col gap-2 bg-[#070D0F] p-3.5 rounded-2xl border border-[#FF7F5B]/30">
-                  <span className="text-[10px] font-bold text-[#FF7F5B] uppercase tracking-wider">Editar Perfil</span>
-                  <div className="flex flex-col sm:flex-row items-center gap-2 flex-wrap">
+            <div className="space-y-2.5 pt-1 animate-fade-in">
+              <div className="flex flex-col gap-2.5 bg-[#070D0F] p-4 rounded-2xl border border-[#FF7F5B]/40 shadow-lg">
+                <span className="text-[10px] font-bold text-[#FF7F5B] uppercase tracking-wider">Editar Perfil & Dados de Contato</span>
+                <div className="flex flex-col sm:flex-row items-center gap-2 flex-wrap">
+                  <div className="w-full sm:w-auto flex-1 min-w-[160px]">
+                    <label className="text-[10px] text-slate-400 font-bold block mb-1">Nome</label>
                     <input
                       type="text"
                       value={userName}
                       onChange={(e) => setUserName(e.target.value)}
                       placeholder="Seu nome"
-                      className="px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none w-full sm:w-auto font-bold"
+                      className="w-full px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none font-bold focus:border-[#FF7F5B]"
                     />
+                  </div>
+                  <div className="w-full sm:w-auto flex-1 min-w-[180px]">
+                    <label className="text-[10px] text-slate-400 font-bold block mb-1">E-mail</label>
                     <input
                       type="email"
                       value={pendingEmail}
                       onChange={(e) => setPendingEmail(e.target.value)}
-                      placeholder="Novo e-mail"
-                      className="px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none w-full sm:w-auto"
+                      placeholder="seu@email.com"
+                      className="w-full px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
                     />
+                  </div>
+                  <div className="w-full sm:w-auto flex-1 min-w-[160px]">
+                    <label className="text-[10px] text-slate-400 font-bold block mb-1">Celular</label>
                     <input
                       type="tel"
                       value={userPhone}
                       onChange={(e) => setUserPhone(formatPhoneMask(e.target.value))}
-                      placeholder="Celular (00) 00000-0000"
+                      placeholder="(00) 00000-0000"
                       maxLength={15}
-                      className="px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none w-full sm:w-auto font-medium"
+                      className="w-full px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none font-medium focus:border-[#FF7F5B]"
                     />
-                    <button
-                      onClick={async () => {
-                        if (!userName.trim()) return;
-                        if (pendingEmail.trim().toLowerCase() !== confirmedEmail.toLowerCase()) {
-                          const mockCode = Math.floor(100000 + Math.random() * 900000).toString();
-                          setVerificationCode(mockCode);
-                          setInputCode('');
-                          setCodeError(false);
-                          setIsVerifyingCode(true);
-                        } else {
-                          if (updateUser) {
-                            await updateUser({ name: userName.trim(), phone: userPhone.trim() });
-                            checkCriandoRaizes();
-                          }
-                          setIsEditingProfile(false);
-                        }
-                      }}
-                      className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider px-4 py-1.5 rounded-xl shadow-md transition-all active:scale-95 shrink-0"
-                    >
-                      {pendingEmail.trim().toLowerCase() !== confirmedEmail.toLowerCase() ? 'Enviar Código' : 'Salvar'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setPendingEmail(confirmedEmail);
-                        setIsEditingProfile(false);
-                      }}
-                      className="text-xs text-slate-400 hover:text-white px-2 py-1"
-                    >
-                      Cancelar
-                    </button>
                   </div>
                 </div>
-              ) : (
-                /* Step 2: Verification Code Entry */
-                <div className="flex flex-col gap-2.5 bg-[#070D0F] p-4 rounded-2xl border border-purple-500/40 animate-fade-in">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
-                      <span>✉️</span> Validação de Segurança do Novo E-mail
-                    </span>
-                    <button
-                      onClick={() => setIsVerifyingCode(false)}
-                      className="text-[10px] text-slate-400 hover:text-white underline"
-                    >
-                      Voltar
-                    </button>
-                  </div>
 
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Enviamos um código de 6 dígitos para <strong className="text-white">{pendingEmail}</strong>. Digite-o abaixo para confirmar:
-                  </p>
-
-                  <div className="bg-purple-500/10 border border-purple-500/20 p-2 rounded-xl text-center">
-                    <span className="text-[10px] text-purple-200 block">Código enviado para testes:</span>
-                    <span className="text-sm font-black text-[#FFD166] tracking-widest">{verificationCode}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      maxLength={6}
-                      value={inputCode}
-                      onChange={(e) => {
-                        setInputCode(e.target.value);
-                        if (codeError) setCodeError(false);
-                      }}
-                      placeholder="000000"
-                      className="px-3.5 py-2.5 bg-[#101B1E] border border-white/20 rounded-xl text-base sm:text-sm font-black text-center text-white tracking-widest focus:outline-none focus:border-[#FF7F5B] w-36"
-                    />
-
-                    <button
-                      onClick={() => {
-                        if (inputCode.trim() === verificationCode) {
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    disabled={isSavingProfile}
+                    onClick={async () => {
+                      if (!userName.trim()) return;
+                      setIsSavingProfile(true);
+                      try {
+                        if (updateUser) {
+                          await updateUser({
+                            name: userName.trim(),
+                            email: pendingEmail.trim(),
+                            phone: userPhone.trim()
+                          });
                           setConfirmedEmail(pendingEmail.trim());
-                          if (updateUser) {
-                            updateUser({ name: userName.trim(), phone: userPhone.trim(), email: pendingEmail.trim() });
-                          }
-                          setIsVerifyingCode(false);
-                          setIsEditingProfile(false);
-                          setCodeError(false);
-                        } else {
-                          setCodeError(true);
+                          checkCriandoRaizes();
+                          showToast('success', 'Perfil e dados atualizados com sucesso! ✨');
                         }
-                      }}
-                      className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl shadow-md transition-all active:scale-95"
-                    >
-                      Confirmar E-mail ✨
-                    </button>
-                  </div>
-
-                  {codeError && (
-                    <p className="text-[11px] font-bold text-rose-400 animate-fade-in">
-                      ⚠️ Código incorreto. Digite os 6 dígitos exibidos acima para confirmar.
-                    </p>
-                  )}
+                        setIsEditingProfile(false);
+                      } catch (err) {
+                        showToast('error', 'Erro ao salvar perfil. Tente novamente.');
+                      } finally {
+                        setIsSavingProfile(false);
+                      }
+                    }}
+                    className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 shrink-0 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSavingProfile ? 'Salvando...' : 'Salvar Alterações'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPendingEmail(confirmedEmail);
+                      setUserName(user?.name || '');
+                      setUserPhone(formatPhoneMask(user?.phone || ''));
+                      setIsEditingProfile(false);
+                    }}
+                    className="text-xs text-slate-400 hover:text-white px-3 py-2 cursor-pointer transition-colors"
+                  >
+                    Cancelar
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           ) : (
             <div>
