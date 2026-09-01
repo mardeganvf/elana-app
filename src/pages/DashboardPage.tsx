@@ -384,20 +384,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                             });
 
                             if (updateAuthErr) {
-                              // Se falhar (ex: sessão desconectada), tenta via signInWithOtp
-                              const { error: otpError } = await supabase.auth.signInWithOtp({
-                                email: pendingEmail.trim().toLowerCase(),
-                                options: {
-                                  data: { name: userName.trim() }
-                                }
-                              });
-                              if (otpError) throw updateAuthErr;
+                              const msg = updateAuthErr.message.toLowerCase();
+                              if (msg.includes('session missing') || msg.includes('auth session')) {
+                                throw new Error('Sua sessão expirou. Por favor, saia e faça login novamente para alterar seu e-mail com segurança.');
+                              } else if (msg.includes('already registered') || msg.includes('unique constraint') || msg.includes('user already exists')) {
+                                throw new Error('Este endereço de e-mail já pertence a outra conta cadastrada.');
+                              } else {
+                                throw updateAuthErr;
+                              }
                             }
 
                             setIsVerifyingEmailCode(true);
                             setInputEmailCode('');
                             setResendCooldown(60);
-                            showToast('success', `Código enviado para ${pendingEmail.trim()}! Verifique sua caixa de entrada.`);
+                            showToast('success', `Código de alteração enviado para ${pendingEmail.trim()}! Verifique sua caixa de entrada.`);
                           } catch (err: any) {
                             showToast('error', err.message || 'Erro ao enviar código de alteração.');
                           } finally {
@@ -575,16 +575,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           });
 
                           if (resendErr) {
-                            const { error: otpError } = await supabase.auth.signInWithOtp({
-                              email: pendingEmail.trim().toLowerCase(),
-                              options: {
-                                data: { name: userName.trim() }
-                              }
-                            });
-                            if (otpError) {
-                              setEmailVerificationError(`Erro ao reenviar: ${otpError.message}`);
-                              return;
-                            }
+                            throw resendErr;
                           }
 
                           setResendCooldown(60);
