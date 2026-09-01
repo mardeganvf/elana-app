@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Vote, CheckCircle2, BarChart2, Sparkles, ChevronRight } from 'lucide-react';
+import { Vote, CheckCircle2, BarChart2, Sparkles, ChevronRight, ChevronDown } from 'lucide-react';
 import { useCommunity } from '../../context/CommunityContext';
 import { CommunityPoll, PollOption } from '../../types';
 

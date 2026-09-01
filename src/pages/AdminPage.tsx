@@ -1196,7 +1196,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       {activeAdminTab === 'content' && (
         <AdminContentManager 
           showToast={showToast}
-          selectedJourneyId={selectedJourneyId}
+          selectedJourneyId={selectedJourneyId || undefined}
           onSelectJourneyId={setSelectedJourneyId}
           selectedModuleId={selectedModuleId}
           onSelectModuleId={setSelectedModuleId}
