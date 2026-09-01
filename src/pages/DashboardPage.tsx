@@ -503,33 +503,39 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                         setIsVerifyingOtp(true);
                         setEmailVerificationError('');
                         try {
-                          // Validação real do token OTP para alteração de e-mail via Supabase Auth
-                          const { data: authData, error: authError } = await supabase.auth.verifyOtp({
+                          // Tentar validar como email_change primeiro (fluxo correto)
+                          const { error: changeErr } = await supabase.auth.verifyOtp({
                             email: pendingEmail.trim().toLowerCase(),
                             token,
                             type: 'email_change'
                           });
 
-                          if (authError) {
-                            const { error: retryError } = await supabase.auth.verifyOtp({
+                          if (changeErr) {
+                            // Se falhou, pode ser que Secure Email Change está desligado
+                            // e o token chegou como magic link (type: 'email')
+                            const { error: emailErr } = await supabase.auth.verifyOtp({
                               email: pendingEmail.trim().toLowerCase(),
                               token,
                               type: 'email'
                             });
 
-                            if (retryError) {
-                              const { error: signupErr } = await supabase.auth.verifyOtp({
-                                email: pendingEmail.trim().toLowerCase(),
-                                token,
-                                type: 'signup'
-                              });
-                              if (signupErr) {
-                                throw new Error('Código inválido ou expirado. Verifique os dígitos e tente novamente.');
-                              }
+                            if (emailErr) {
+                              throw new Error('Código inválido ou expirado. Verifique os dígitos e tente novamente.');
+                            }
+
+                            // Verificou como magic link: auth.users NÃO foi atualizado ainda
+                            // Forçamos a atualização do e-mail no Authentication agora
+                            const { error: forceUpdateErr } = await supabase.auth.updateUser({
+                              email: pendingEmail.trim().toLowerCase()
+                            });
+
+                            if (forceUpdateErr) {
+                              console.warn('Notice forcing auth email update after magic link verify:', forceUpdateErr.message);
                             }
                           }
+                          // Se email_change verificou com sucesso: auth.users já foi atualizado automaticamente pelo Supabase
 
-                          // Código validado com sucesso! Atualiza no banco Supabase e no AuthContext
+                          // Atualiza o profiles e o AuthContext local
                           if (updateUser) {
                             await updateUser({
                               name: userName.trim(),
