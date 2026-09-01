@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { JOURNEYS_DATA } from '../data/journeysData';
+import { JOURNEYS_DATA as STATIC_JOURNEYS } from '../data/journeysData';
 import { STORIES_DATA } from '../data/storiesData';
 import { Journey, Lesson, CourseModule } from '../types';
 import { JourneyCard } from '../components/catalog/JourneyCard';
 import { StoryViewerModal } from '../components/stories/StoryViewerModal';
 import { useAuth } from '../context/AuthContext';
+import { useJourneys } from '../context/JourneysContext';
 import { Play, Flame, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Lock, Sparkles, Instagram } from 'lucide-react';
 
 interface HomePageProps {
@@ -65,6 +66,9 @@ const LESSON_THUMBS: Record<string, string> = {
 
 export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLearning }) => {
   const { user } = useAuth();
+  const { journeys: dynamicJourneys } = useJourneys();
+  const JOURNEYS_DATA = dynamicJourneys && dynamicJourneys.length > 0 ? dynamicJourneys : STATIC_JOURNEYS;
+
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 

@@ -116,3 +116,39 @@ export function fileToBase64(file: File | Blob): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+/**
+ * Faz upload de arquivos genéricos (PDFs de apoio, áudios ou vídeos) para o Supabase Storage.
+ */
+export async function uploadFileToStorage(
+  file: File,
+  folder: 'materials' | 'videos' | 'contents' = 'materials'
+): Promise<string> {
+  try {
+    const fileExt = file.name.split('.').pop() || 'dat';
+    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const path = `${folder}/${Date.now()}-${crypto.randomUUID().slice(0, 6)}_${cleanFileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('user-media')
+      .upload(path, file, {
+        contentType: file.type || 'application/octet-stream',
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (error) {
+      console.warn('Storage uploadFile error:', error.message);
+      return '';
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('user-media')
+      .getPublicUrl(data.path);
+
+    return publicUrlData.publicUrl || '';
+  } catch (err) {
+    console.error('Exception in uploadFileToStorage:', err);
+    return '';
+  }
+}

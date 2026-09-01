@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { JOURNEYS_DATA } from '../data/journeysData';
+import { useJourneys } from '../context/JourneysContext';
+import { JOURNEYS_DATA as STATIC_JOURNEYS } from '../data/journeysData';
 import { Journey } from '../types';
 import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle } from 'lucide-react';
 import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
@@ -255,7 +256,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     }
   };
 
-  const purchasedJourneys = JOURNEYS_DATA.filter(j => user.purchasedJourneyIds.includes(j.id));
+  const { journeys: dynamicJourneys } = useJourneys();
+  const allJourneys = dynamicJourneys && dynamicJourneys.length > 0 ? dynamicJourneys : STATIC_JOURNEYS;
+  const purchasedJourneys = allJourneys.filter(j => user.purchasedJourneyIds.includes(j.id));
 
   const userLevelInfo = getLevelFromXP(user.xp);
 

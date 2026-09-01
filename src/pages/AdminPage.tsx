@@ -23,7 +23,9 @@ import {
 } from 'lucide-react';
 import { useAuth, isAdminUser } from '../context/AuthContext';
 import { useCommunity } from '../context/CommunityContext';
+import { useToast } from '../context/ToastContext';
 import { supabase } from '../lib/supabase';
+import { AdminContentManager } from '../components/admin/AdminContentManager';
 
 // Types for Admin Data
 interface SOSTicket {
@@ -70,6 +72,7 @@ export interface AdminPageProps {
 
 export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin }) => {
   const { user, isAuthenticated, replySosTicket } = useAuth();
+  const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
 
   const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'polls'>('sos');
@@ -167,16 +170,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     loadMembers();
   }, []);
 
-  // 🎬 Upload Form State
-  const [selectedArea, setSelectedArea] = useState('Comunicação Não-Violenta');
-  const [lessonTitle, setLessonTitle] = useState('');
-  const [lessonDesc, setLessonDesc] = useState('');
-  const [videoFile, setVideoFile] = useState<string | null>(null);
-  const [pdfFile, setPdfFile] = useState<string | null>(null);
-  const [rewardPoints, setRewardPoints] = useState(15);
-  const [hasCertificate, setHasCertificate] = useState(true);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-
   // 🛟 SOS Ticket Handlers
   const handleSendSosReply = async () => {
     if (!selectedSosTicket || !sosReplyText.trim()) return;
@@ -244,20 +237,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     } catch (err) {
       console.warn('Error updating member role in Supabase:', err);
     }
-  };
-
-  // Upload Submit Handler
-  const handlePublishLesson = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!lessonTitle.trim()) return;
-    setUploadSuccess(true);
-    setTimeout(() => {
-      setUploadSuccess(false);
-      setLessonTitle('');
-      setLessonDesc('');
-      setVideoFile(null);
-      setPdfFile(null);
-    }, 3000);
   };
 
   // Filtered SOS Tickets for Email Inbox
@@ -444,7 +423,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           }`}
         >
           <Upload className="w-4 h-4" />
-          <span>Upload de Aulas & Áreas</span>
+          <span>Gestão de Conteúdos & Jornadas</span>
         </button>
 
         <button
@@ -921,122 +900,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         </section>
       )}
 
-      {/* TAB 4: 🎬 UPLOAD DE AULAS & ÁREAS */}
+      {/* TAB 4: 🎬 GESTÃO DE CONTEÚDOS & JORNADAS */}
       {activeAdminTab === 'content' && (
-        <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
-                <Upload className="w-5 h-5 text-[#FF7F5B]" />
-                Upload de Vídeo-Aulas & Cadastro de Áreas
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Adicione novos conteúdos pedagógicos, defina recompensas em pontos e anexe PDFs de apoio.
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={handlePublishLesson} className="bg-[#070D0F] p-6 rounded-2xl border border-white/10 space-y-5">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-[#FF7F5B] uppercase tracking-wider block">
-                1. Selecione a Área / Trilha Temática:
-              </label>
-              <select
-                value={selectedArea}
-                onChange={(e) => setSelectedArea(e.target.value)}
-                className="w-full p-3 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-              >
-                <option value="Comunicação Não-Violenta">Comunicação Não-Violenta e Birras Infantis</option>
-                <option value="Sono do Bebê">Sono do Bebê e Rotinas Noturnas</option>
-                <option value="Espaço a Dois">Espaço a Dois & Parceria no Lar</option>
-                <option value="Introdução Alimentar">Introdução Alimentar com Leveza</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Título da Vídeo-Aula:</label>
-                <input
-                  type="text"
-                  value={lessonTitle}
-                  onChange={(e) => setLessonTitle(e.target.value)}
-                  placeholder="Ex: O que acontece durante o pico da birra?"
-                  className="w-full p-3 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Pontos Concedidos ao Assistir:</label>
-                <input
-                  type="number"
-                  value={rewardPoints}
-                  onChange={(e) => setRewardPoints(Number(e.target.value))}
-                  className="w-full p-3 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 block">Descrição Resumida da Aula:</label>
-              <textarea
-                value={lessonDesc}
-                onChange={(e) => setLessonDesc(e.target.value)}
-                placeholder="Descreva brevemente o que os pais vão aprender nesta aula..."
-                rows={3}
-                className="w-full p-3 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B] resize-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              <div className="border-2 border-dashed border-white/15 p-5 rounded-2xl bg-[#101B1E] text-center space-y-2 cursor-pointer hover:border-[#FF7F5B]/50 transition-colors">
-                <Video className="w-8 h-8 text-[#FF7F5B] mx-auto" />
-                <span className="text-xs font-bold text-white block">Upload do Vídeo da Aula (MP4/WebM)</span>
-                <span className="text-[10px] text-slate-400 block">Arraste o arquivo ou selecione no seu computador</span>
-                <button type="button" onClick={() => setVideoFile('aula_birras_modulo1.mp4')} className="text-[10px] bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-lg">
-                  {videoFile ? `✓ Vídeo Selecionado: ${videoFile}` : 'Selecionar Arquivo de Vídeo'}
-                </button>
-              </div>
-
-              <div className="border-2 border-dashed border-white/15 p-5 rounded-2xl bg-[#101B1E] text-center space-y-2 cursor-pointer hover:border-[#FFD166]/50 transition-colors">
-                <FileText className="w-8 h-8 text-[#FFD166] mx-auto" />
-                <span className="text-xs font-bold text-white block">Anexar Material de Apoio em PDF</span>
-                <span className="text-[10px] text-slate-400 block">Checklists, resumos práticos e guias</span>
-                <button type="button" onClick={() => setPdfFile('guia_pratico_birras.pdf')} className="text-[10px] bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-lg">
-                  {pdfFile ? `✓ PDF Anetado: ${pdfFile}` : 'Selecionar PDF de Apoio'}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 pt-2">
-              <input
-                type="checkbox"
-                id="certCheck"
-                checked={hasCertificate}
-                onChange={(e) => setHasCertificate(e.target.checked)}
-                className="w-4 h-4 accent-[#FF7F5B] rounded cursor-pointer"
-              />
-              <label htmlFor="certCheck" className="text-xs text-slate-300 font-bold cursor-pointer">
-                Concluir esta aula/trilha gera Certificado Digital de Conclusão para o aluno
-              </label>
-            </div>
-
-            {uploadSuccess && (
-              <div className="p-3.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Vídeo-aula publicada com sucesso na área "{selectedArea}"!</span>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="w-full py-3 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Upload className="w-4 h-4" />
-              <span>Publicar Vídeo-Aula na Trilha</span>
-            </button>
-          </form>
-        </section>
+        <AdminContentManager showToast={showToast} />
       )}
 
       {/* TAB 5: 👥 GESTÃO DE MEMBROS */}

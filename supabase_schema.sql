@@ -680,6 +680,54 @@ CREATE POLICY "polls_update_auth"
   ON public.community_polls FOR UPDATE
   USING (auth.uid() IS NOT NULL);
 
+-- --------------------------------------------------------
+-- 14. TABELA DE JORNADAS, SUBTEMAS E CONTEÚDOS DINÂMICOS
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.journeys (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  subtitle TEXT NOT NULL DEFAULT '',
+  tagline TEXT NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
+  pillar TEXT NOT NULL DEFAULT 'movimento', -- 'luz' | 'raizes' | 'movimento'
+  pillar_attribute TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT 'comecam', -- 'comecam' | 'transformam'
+  target_audience TEXT NOT NULL DEFAULT '',
+  theme_color TEXT NOT NULL DEFAULT '#FF7F5B',
+  bg_light TEXT NOT NULL DEFAULT '#fff0eb',
+  icon_name TEXT NOT NULL DEFAULT 'Sun',
+  price NUMERIC NOT NULL DEFAULT 197,
+  modules JSONB NOT NULL DEFAULT '[]'::jsonb,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.journeys ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "journeys_select_all" ON public.journeys;
+DROP POLICY IF EXISTS "journeys_insert_auth" ON public.journeys;
+DROP POLICY IF EXISTS "journeys_update_auth" ON public.journeys;
+DROP POLICY IF EXISTS "journeys_delete_auth" ON public.journeys;
+
+-- Leitura permitida para todos (catálogo de jornadas)
+CREATE POLICY "journeys_select_all"
+  ON public.journeys FOR SELECT
+  USING (true);
+
+-- Escrita permitida para usuários autenticados (administradores/guias)
+CREATE POLICY "journeys_insert_auth"
+  ON public.journeys FOR INSERT
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "journeys_update_auth"
+  ON public.journeys FOR UPDATE
+  USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "journeys_delete_auth"
+  ON public.journeys FOR DELETE
+  USING (auth.uid() IS NOT NULL);
+
 -- ========================================================
 -- ÍNDICES DE BANCO DE DADOS PARA ALTA ESCALA & PERFORMANCE
 -- ========================================================

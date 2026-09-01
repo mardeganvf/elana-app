@@ -2,6 +2,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CommunityProvider, useCommunity } from './context/CommunityContext';
 import { FontSizeProvider } from './context/FontSizeContext';
+import { JourneysProvider } from './context/JourneysContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
@@ -330,11 +331,13 @@ export function App() {
   return (
     <FontSizeProvider>
       <AuthProvider>
-        <CommunityProvider>
-          <ToastProvider>
-            <AppContent />
-          </ToastProvider>
-        </CommunityProvider>
+        <JourneysProvider>
+          <CommunityProvider>
+            <ToastProvider>
+              <AppContent />
+            </ToastProvider>
+          </CommunityProvider>
+        </JourneysProvider>
       </AuthProvider>
     </FontSizeProvider>
   );
