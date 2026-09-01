@@ -18,7 +18,9 @@ export const ADMIN_EMAILS = [
   'vitor@elana.com.br',
   'helena@elana.com.br',
   'mardeganvf@gmail.com',
-  'vitormardegan@gmail.com'
+  'vitormardegan@gmail.com',
+  'vitor.mardegan@redetv.com.br',
+  'vitormardegan@redetv.com.br'
 ];
 
 export const isAdminUser = (user: UserProfile | null): boolean => {
@@ -372,25 +374,125 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // 🔒 Isolamento Rigoroso de Dados: Nenhum dado de outro usuário ou sessão deve ser herdado!
-      // Se não for admin, verificar e limpar caso tenha herdado bio de admin indevidamente
+      // 🔒 Isolamento Rigoroso de Dados:
+      // Usuários comuns NUNCA herdam dados de terceiros.
+      // Apenas administradores autorizados (ADMIN_EMAILS) sincronizam seus próprios dados caso acessem por outro de seus e-mails de admin.
       const isUserAdmin = isAdminUser({ email: emailClean, role: profile.role } as any);
       let userBio = profile.bio;
+      let adminRecoveredXp = 0;
+      let adminRecoveredBio = userBio;
+      let adminRecoveredPhone = profile.phone;
+      let adminRecoveredChildren = children;
 
-      if (!isUserAdmin && userBio) {
+      if (isUserAdmin && ((profile.xp || 0) === 0 || !userBio || unlockedBadgeIds.size === 0 || children.length === 0)) {
         try {
           const { data: adminProfiles } = await supabase
             .from('profiles')
-            .select('bio')
-            .in('email', ADMIN_EMAILS);
-          
-          const adminBios = (adminProfiles || []).map(a => a.bio).filter(Boolean);
-          if (adminBios.includes(userBio)) {
-            userBio = null;
-            supabase.from('profiles').update({ bio: null }).eq('id', profileId).then();
+            .select('*')
+            .in('email', ADMIN_EMAILS)
+            .neq('id', profileId)
+            .gt('xp', 0);
+
+          if (adminProfiles && adminProfiles.length > 0) {
+            const bestAdmin = adminProfiles.sort((a, b) => (b.xp || 0) - (a.xp || 0))[0];
+            if (bestAdmin) {
+              adminRecoveredXp = Math.max(adminRecoveredXp, bestAdmin.xp || 0);
+              if (!adminRecoveredBio && bestAdmin.bio) adminRecoveredBio = bestAdmin.bio;
+              if (!adminRecoveredPhone && bestAdmin.phone) adminRecoveredPhone = bestAdmin.phone;
+
+              // Recuperar filhos de admin se o perfil atual estiver sem
+              if (adminRecoveredChildren.length === 0) {
+                const { data: adminFamily } = await supabase
+                  .from('family_members')
+                  .select('*')
+                  .eq('profile_id', bestAdmin.id);
+                if (adminFamily && adminFamily.length > 0) {
+                  adminRecoveredChildren = adminFamily.map((f: any) => ({
+                    id: f.id,
+                    emoji: f.emoji || '👶',
+                    name: f.name || '',
+                    age: f.age || '',
+                    birthdate: f.birthdate || undefined,
+                    isPregnancy: !!f.is_pregnancy
+                  }));
+                }
+              }
+
+              // Recuperar badges de admin
+              const { data: oldBadges } = await supabase
+                .from('user_badges')
+                .select('badge_id')
+                .eq('profile_id', bestAdmin.id);
+              if (oldBadges) {
+                oldBadges.forEach(b => {
+                  if (!unlockedBadgeIds.has(b.badge_id)) {
+                    unlockedBadgeIds.add(b.badge_id);
+                    supabase.from('user_badges').upsert({
+                      profile_id: profileId,
+                      badge_id: b.badge_id,
+                      unlocked_at: new Date().toISOString()
+                    }, { onConflict: 'profile_id, badge_id' }).then();
+                  }
+                });
+              }
+
+              // Recuperar aulas concluídas de admin
+              const { data: oldLessons } = await supabase
+                .from('user_completed_lessons')
+                .select('lesson_id')
+                .eq('profile_id', bestAdmin.id);
+              if (oldLessons) {
+                oldLessons.forEach(l => {
+                  if (!completedLessonIds.includes(l.lesson_id)) {
+                    completedLessonIds.push(l.lesson_id);
+                    supabase.from('user_completed_lessons').upsert({
+                      profile_id: profileId,
+                      lesson_id: l.lesson_id,
+                      completed_at: new Date().toISOString()
+                    }, { onConflict: 'profile_id, lesson_id' }).then();
+                  }
+                });
+              }
+
+              // Recuperar jornadas adquiridas de admin
+              const { data: oldJourneys } = await supabase
+                .from('user_purchased_journeys')
+                .select('journey_id')
+                .eq('profile_id', bestAdmin.id);
+              if (oldJourneys) {
+                oldJourneys.forEach(j => {
+                  if (!purchasedJourneyIds.includes(j.journey_id)) {
+                    purchasedJourneyIds.push(j.journey_id);
+                    supabase.from('user_purchased_journeys').upsert({
+                      profile_id: profileId,
+                      journey_id: j.journey_id
+                    }, { onConflict: 'profile_id, journey_id' }).then();
+                  }
+                });
+              }
+
+              // Recuperar anotações de admin
+              const { data: oldNotes } = await supabase
+                .from('user_lesson_notes')
+                .select('lesson_id, note')
+                .eq('profile_id', bestAdmin.id);
+              if (oldNotes) {
+                oldNotes.forEach(n => {
+                  if (n.lesson_id && n.note && !lessonNotes[n.lesson_id]) {
+                    lessonNotes[n.lesson_id] = n.note;
+                    supabase.from('user_lesson_notes').upsert({
+                      profile_id: profileId,
+                      lesson_id: n.lesson_id,
+                      note: n.note,
+                      updated_at: new Date().toISOString()
+                    }, { onConflict: 'profile_id, lesson_id' }).then();
+                  }
+                });
+              }
+            }
           }
         } catch (e) {
-          console.warn('Notice checking admin bio leak:', e);
+          console.warn('Notice syncing admin profile data across admin emails:', e);
         }
       }
 
@@ -504,12 +606,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const badgeXpSum = badges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
       const calculatedMinimumXp = badgeXpSum;
-      const xp = Math.max(profile.xp || 0, calculatedMinimumXp);
+      const xp = Math.max(profile.xp || 0, adminRecoveredXp, calculatedMinimumXp);
       const levelInfo = getLevelFromXP(xp);
-      const isTourFinished = profile.tag === 'onboarded' || xp >= 25;
+      const isTourFinished = profile.tag === 'onboarded' || xp >= 25 || (isUserAdmin && xp > 0);
 
-      // Auto-heal Supabase se profiles.xp ou profiles.streak_days estiverem desatualizados
-      if ((xp > (profile.xp || 0) || calculatedStreak > (profile.streak_days || 1)) && profileId) {
+      const finalBio = userBio || adminRecoveredBio || undefined;
+      const finalPhone = profile.phone || adminRecoveredPhone || undefined;
+      const finalChildren = children.length > 0 ? children : adminRecoveredChildren;
+
+      // Auto-heal Supabase se profiles.xp, bio ou streak_days de admin estiverem desatualizados
+      if ((xp > (profile.xp || 0) || calculatedStreak > (profile.streak_days || 1) || (isUserAdmin && adminRecoveredBio && !profile.bio)) && profileId) {
         supabase
           .from('profiles')
           .update({
@@ -518,6 +624,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             level_name: levelInfo.title,
             level_icon: levelInfo.icon,
             streak_days: calculatedStreak,
+            bio: profile.bio || adminRecoveredBio || null,
+            phone: profile.phone || adminRecoveredPhone || null,
             updated_at: new Date().toISOString()
           })
           .eq('id', profileId)
@@ -528,11 +636,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: profileId,
         email: profile.email || emailClean,
         name: profile.name || fallbackName || emailClean.split('@')[0],
-        phone: profile.phone || undefined,
+        phone: finalPhone,
         avatar: profile.avatar || GENERIC_DEFAULT_AVATAR,
-        role: profile.role || 'Membro da Comunidade',
+        role: profile.role || (isUserAdmin ? 'Administrador' : 'Membro da Comunidade'),
         familyTag: profile.family_tag || profile.tag || 'Mãe / Pai de 1ª viagem',
-        bio: userBio || undefined,
+        bio: finalBio,
         notificationsEnabled: !!profile.notifications_enabled,
         onboardingCompleted: isTourFinished,
         xp,
@@ -544,7 +652,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         completedLessonIds,
         lessonNotes,
         badges,
-        children
+        children: finalChildren
       };
 
       return hydratedUser;
