@@ -82,12 +82,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'polls'>('content');
 
-  // Grupos expansíveis (drop-downs) do menu lateral
+  // Grupos expansíveis (drop-downs) do menu lateral - iniciam todos recolhidos
   const [openMenuGroups, setOpenMenuGroups] = useState<Record<string, boolean>>({
-    content: true,
-    community: true,
-    support: true,
-    users: true
+    content: false,
+    community: false,
+    support: false,
+    users: false
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -105,10 +105,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [openTrilhas, setOpenTrilhas] = useState<Record<string, boolean>>({});
   const [isCreateJourneyModalOpen, setIsCreateJourneyModalOpen] = useState(false);
 
-  const toggleTrilha = (journeyId: string) => {
+  const toggleTrilha = (trilhaId: string) => {
     setOpenTrilhas(prev => ({
       ...prev,
-      [journeyId]: !(prev[journeyId] ?? (selectedJourneyId === journeyId))
+      [trilhaId]: !prev[trilhaId]
     }));
   };
 
@@ -116,7 +116,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const { polls, createPoll, togglePollStatus } = useCommunity();
   const [newPollTitle, setNewPollTitle] = useState('');
   const [newPollDesc, setNewPollDesc] = useState('');
-  const [newPollOptions, setNewPollOptions] = useState<string[]>([]);
+  const [newPollOptions, setNewPollOptions] = useState<string[]>(['', '']);
+  const [selectedPollJourneys, setSelectedPollJourneys] = useState<string[]>([]);
   const [isPollMultiSelect, setIsPollMultiSelect] = useState(false);
   const [isPublishingPoll, setIsPublishingPoll] = useState(false);
   const [pollSuccessMessage, setPollSuccessMessage] = useState(false);
@@ -125,11 +126,28 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [isCreatePollOpen, setIsCreatePollOpen] = useState(false);
 
   const toggleJourneyInPoll = (journeyTitle: string) => {
-    if (newPollOptions.includes(journeyTitle)) {
-      setNewPollOptions(prev => prev.filter(t => t !== journeyTitle));
+    if (selectedPollJourneys.includes(journeyTitle)) {
+      setSelectedPollJourneys(prev => prev.filter(t => t !== journeyTitle));
     } else {
-      setNewPollOptions(prev => [...prev, journeyTitle]);
+      setSelectedPollJourneys(prev => [...prev, journeyTitle]);
     }
+  };
+
+  const handleAddPollOption = () => {
+    setNewPollOptions(prev => [...prev, '']);
+  };
+
+  const handleUpdatePollOption = (index: number, value: string) => {
+    setNewPollOptions(prev => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
+
+  const handleRemovePollOption = (index: number) => {
+    if (newPollOptions.length <= 2) return;
+    setNewPollOptions(prev => prev.filter((_, i) => i !== index));
   };
 
   const togglePollExpansion = (pollId: string) => {
@@ -511,7 +529,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                                     }`}
                                   >
                                     <span className="truncate pr-1 flex items-center gap-1.5">
-                                      <span className="text-[9px] opacity-70 font-mono text-white/70">#{modIdx + 1}</span>
+                                      <span className="text-[10px] opacity-70 font-mono text-white/70">{modIdx + 1}.</span>
                                       <span className="truncate">{mod.title}</span>
                                     </span>
                                   </button>
@@ -524,8 +542,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     })
                   )}
 
-                  {/* Botão Criar Jornada abaixo da última jornada com espaçamento aumentado */}
-                  <div className="pt-6 mt-4 border-t border-white/5">
+                  {/* Botão Criar Jornada abaixo da última jornada com espaçamento equilibrado */}
+                  <div className="pt-2.5 mt-2 border-t border-white/5">
                     <button
                       type="button"
                       onClick={() => {
@@ -1261,9 +1279,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!newPollTitle.trim()) return;
-                    const validOptions = newPollOptions.filter(opt => opt.trim().length > 0);
+                    const validOptions = newPollOptions.map(opt => opt.trim()).filter(Boolean);
                     if (validOptions.length < 2) {
-                      alert('Por favor, selecione pelo menos 2 jornadas como alternativas da enquete.');
+                      alert('Por favor, preencha pelo menos 2 alternativas de voto para a enquete.');
                       return;
                     }
 
@@ -1272,12 +1290,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       await createPoll({
                         title: newPollTitle.trim(),
                         description: newPollDesc.trim() || undefined,
+                        category: selectedPollJourneys.length > 0 ? selectedPollJourneys.join(', ') : undefined,
                         isMultiSelect: isPollMultiSelect,
                         options: validOptions
                       });
                       setNewPollTitle('');
                       setNewPollDesc('');
-                      setNewPollOptions([]);
+                      setNewPollOptions(['', '']);
+                      setSelectedPollJourneys([]);
                       setIsPollMultiSelect(false);
                       setPollSuccessMessage(true);
                       setTimeout(() => {
@@ -1288,8 +1308,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       setIsPublishingPoll(false);
                     }
                   }}
-                  className="space-y-4 pt-4"
+                  className="space-y-5 pt-4"
                 >
+                  {/* 1. Pergunta da Enquete */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
                       Pergunta da Enquete *
@@ -1299,11 +1320,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       required
                       value={newPollTitle}
                       onChange={(e) => setNewPollTitle(e.target.value)}
-                      placeholder="Ex: Qual dessas jornadas você mais gostaria de aprofundar nas próximas semanas?"
+                      placeholder="Ex: Qual o maior desafio na rotina com o seu filho atualmente?"
                       className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
                     />
                   </div>
 
+                  {/* 2. Descrição ou Contexto */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
                       Descrição ou Contexto (Opcional)
@@ -1312,30 +1334,86 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       type="text"
                       value={newPollDesc}
                       onChange={(e) => setNewPollDesc(e.target.value)}
-                      placeholder="Ex: Sua resposta ajuda nossa curadoria a priorizar os próximos encontros e conteúdos."
+                      placeholder="Ex: Sua resposta ajuda nossa curadoria a priorizar os próximos conteúdos e encontros."
                       className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
                     />
                   </div>
 
-                  {/* Caixa Seletora com as Jornadas como Alternativas */}
+                  {/* 3. Alternativas de Voto da Enquete (Onde o admin digita as opções) */}
+                  <div className="space-y-3 p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                          Alternativas de Voto *
+                        </label>
+                        <span className="text-[11px] text-slate-400">
+                          Digite as opções que ficarão disponíveis para os membros votarem (mínimo 2).
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-1 rounded-lg border border-[#FF7F5B]/20 shrink-0">
+                        {newPollOptions.filter(o => o.trim().length > 0).length} preenchida(s)
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {newPollOptions.map((opt, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-bold text-[#FF7F5B] w-6 shrink-0 text-right">
+                            {idx + 1}.
+                          </span>
+                          <input
+                            type="text"
+                            required
+                            value={opt}
+                            onChange={(e) => handleUpdatePollOption(idx, e.target.value)}
+                            placeholder={`Alternativa ${idx + 1} (ex: Dificuldades com o sono noturno)`}
+                            className="flex-1 bg-[#101B1E] border border-white/10 focus:border-[#FF7F5B] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
+                          />
+                          {newPollOptions.length > 2 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePollOption(idx)}
+                              className="p-2 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 rounded-xl transition-all cursor-pointer shrink-0"
+                              title="Remover esta alternativa"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={handleAddPollOption}
+                        className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl text-xs font-bold border border-white/10 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-[#FF7F5B]" />
+                        <span>Adicionar Outra Alternativa</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 4. Categorias / Jornadas Relacionadas (Caixa Seletora para Organização) */}
                   <div className="space-y-2.5 p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
                     <div className="flex items-center justify-between">
                       <div>
                         <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                          Alternativas da Enquete * (Selecione as Jornadas)
+                          Categorias / Jornadas Relacionadas (Organização em Grupos)
                         </label>
                         <span className="text-[11px] text-slate-400">
-                          Clique nas jornadas que deseja incluir como opções de voto nesta enquete (mínimo 2).
+                          Selecione as jornadas para categorizar esta enquete e facilitar a organização.
                         </span>
                       </div>
-                      <span className="text-xs font-mono font-bold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-1 rounded-lg border border-[#FF7F5B]/20 shrink-0">
-                        {newPollOptions.length} selecionada(s)
+                      <span className="text-xs font-mono font-bold text-slate-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10 shrink-0">
+                        {selectedPollJourneys.length} vinculada(s)
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-52 overflow-y-auto pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
                       {journeys.map((j) => {
-                        const isSelected = newPollOptions.includes(j.title);
+                        const isSelected = selectedPollJourneys.includes(j.title);
                         return (
                           <button
                             key={j.id}
@@ -1358,18 +1436,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       })}
                     </div>
 
-                    {newPollOptions.length > 0 && (
+                    {selectedPollJourneys.length > 0 && (
                       <div className="pt-2 border-t border-white/5 flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Alternativas selecionadas:</span>
-                        {newPollOptions.map((opt, i) => (
+                        <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Grupos vinculados:</span>
+                        {selectedPollJourneys.map((tag, i) => (
                           <span key={i} className="text-[11px] bg-white/5 text-slate-300 px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
-                            <span className="text-[#FF7F5B] font-mono font-bold">{i + 1}.</span>
-                            <span>{opt}</span>
+                            <span className="text-[#FF7F5B] font-mono font-bold">#</span>
+                            <span>{tag}</span>
                             <button
                               type="button"
-                              onClick={() => toggleJourneyInPoll(opt)}
+                              onClick={() => toggleJourneyInPoll(tag)}
                               className="hover:text-rose-400 text-xs ml-1 cursor-pointer"
-                              title="Remover alternativa"
+                              title="Desvincular grupo"
                             >
                               ✕
                             </button>
@@ -1379,7 +1457,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     )}
                   </div>
 
-                  {/* Switch de Múltipla Escolha */}
+                  {/* 5. Switch de Múltipla Escolha */}
                   <div className="flex items-center justify-between p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
                     <div>
                       <span className="text-xs font-bold text-white block">Possibilidade de Múltipla Escolha?</span>
@@ -1454,6 +1532,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                           {poll.isMultiSelect && (
                             <span className="text-[10px] font-bold bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 px-2 py-0.5 rounded-full">
                               ☑️ Múltipla Escolha
+                            </span>
+                          )}
+                          {poll.category && (
+                            <span className="text-[10px] font-medium bg-white/5 text-slate-300 border border-white/10 px-2 py-0.5 rounded-full truncate max-w-xs">
+                              📂 {poll.category}
                             </span>
                           )}
                           <span className="text-[10px] text-slate-500 font-mono">
