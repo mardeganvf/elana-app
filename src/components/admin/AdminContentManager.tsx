@@ -20,7 +20,8 @@ import {
   Eye,
   ExternalLink,
   Layers,
-  FileCheck
+  FileCheck,
+  ArrowLeft
 } from 'lucide-react';
 import { useJourneys } from '../../context/JourneysContext';
 import { Journey, CourseModule, Lesson, LessonResource } from '../../types';
@@ -508,85 +509,202 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     return text.toLowerCase().includes(searchQuery.toLowerCase().trim());
   };
 
+  // Renderizador de um módulo com seus conteúdos/vídeos (reutilizável para módulo focado ou jornada de módulo único)
+  const renderModuleWithLessons = (mod: CourseModule, modIdx: number, showModuleHeader: boolean) => {
+    const lessonsList = mod.lessons || [];
+    const filteredLessons = lessonsList.filter(l => 
+      matchesSearch(l.title) || matchesSearch(l.description) || matchesSearch(mod.title)
+    );
+
+    return (
+      <div 
+        key={mod.id}
+        id={`module-card-${mod.id}`}
+        className="bg-[#101B1E] border border-white/10 rounded-2xl overflow-hidden shadow-sm"
+      >
+        {/* BARRA DO MÓDULO */}
+        {showModuleHeader && (
+          <div className="p-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 select-none flex-1">
+              <span className="w-7 h-7 rounded-xl bg-[#FF7F5B]/15 text-[#FF7F5B] font-black text-xs flex items-center justify-center border border-[#FF7F5B]/30">
+                #{modIdx + 1}
+              </span>
+              <div>
+                <h5 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>{mod.title}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-300 font-mono">
+                    {lessonsList.length} {lessonsList.length === 1 ? 'conteúdo' : 'conteúdos'}
+                  </span>
+                </h5>
+                {mod.description && (
+                  <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+                    {mod.description}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Ações do Módulo */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => openCreateContent(activeJourney.id, mod.id)}
+                className="px-2.5 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Novo Conteúdo</span>
+              </button>
+
+              <button
+                onClick={() => openEditModule(activeJourney.id, mod)}
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                title="Editar título do módulo"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                onClick={() => setDeleteConfirm({
+                  type: 'module',
+                  journeyId: activeJourney.id,
+                  moduleId: mod.id,
+                  title: mod.title
+                })}
+                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                title="Excluir módulo"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* CONTEÚDOS DO MÓDULO (SEMPRE VISÍVEIS) */}
+        <div className="p-4 space-y-2.5 bg-[#070D0F]">
+          <div className="flex items-center justify-between pb-1">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              Vídeos & Materiais ({filteredLessons.length}):
+            </span>
+            {!showModuleHeader && (
+              <button
+                onClick={() => openCreateContent(activeJourney.id, mod.id)}
+                className="px-2.5 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Novo Conteúdo</span>
+              </button>
+            )}
+          </div>
+
+          {filteredLessons.length === 0 ? (
+            <div className="py-8 text-center text-slate-500 text-xs bg-[#101B1E]/40 border border-dashed border-white/10 rounded-xl space-y-2">
+              <p>{searchQuery ? 'Nenhum conteúdo encontrado nesta busca.' : 'Nenhum conteúdo adicionado a este módulo ainda.'}</p>
+              <button
+                onClick={() => openCreateContent(activeJourney.id, mod.id)}
+                className="px-3 py-1.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-bold text-xs rounded-xl cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Adicionar Primeiro Conteúdo</span>
+              </button>
+            </div>
+          ) : (
+            filteredLessons.map((lesson) => {
+              const hasPdf = lesson.resources?.some(r => r.type === 'pdf');
+
+              return (
+                <div
+                  key={lesson.id}
+                  className="p-3.5 bg-[#101B1E] border border-white/5 hover:border-white/15 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
+                >
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#FF7F5B]/10 text-[#FF7F5B] flex items-center justify-center shrink-0 mt-0.5">
+                      <Video className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {lesson.title.includes(': ') && (
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 shrink-0">
+                            {lesson.title.split(': ')[0]}
+                          </span>
+                        )}
+                        <h6 className="text-xs font-bold text-white truncate">
+                          {lesson.title.includes(': ') ? lesson.title.split(': ').slice(1).join(': ') : lesson.title}
+                        </h6>
+                      </div>
+
+                      <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+                        {lesson.description || 'Sem descrição pedagógica.'}
+                      </p>
+
+                      {/* Tags e Materiais */}
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <span className="text-[10px] text-slate-400 flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-md font-mono">
+                          <Clock className="w-3 h-3 text-slate-500" />
+                          {lesson.duration || '15 min'}
+                        </span>
+
+                        {lesson.videoUrl && (
+                          <a
+                            href={lesson.videoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-blue-500/10 px-2 py-0.5 rounded-md font-bold transition-colors"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Ver Vídeo</span>
+                          </a>
+                        )}
+
+                        {hasPdf && (
+                          <span className="text-[10px] text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-md font-bold">
+                            <FileCheck className="w-3 h-3" />
+                            <span>PDF Anexo</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Botões de Edição do Conteúdo */}
+                  <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                    <button
+                      onClick={() => openEditContent(activeJourney.id, mod.id, lesson)}
+                      className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                      title="Editar conteúdo"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline text-[11px]">Editar</span>
+                    </button>
+
+                    <button
+                      onClick={() => setDeleteConfirm({
+                        type: 'content',
+                        journeyId: activeJourney.id,
+                        moduleId: mod.id,
+                        contentId: lesson.id,
+                        title: lesson.title
+                      })}
+                      className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                      title="Excluir conteúdo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const hasMultipleModules = (activeJourney?.modules?.length || 0) > 1;
+  const selectedModule = propSelectedModuleId 
+    ? activeJourney?.modules?.find(m => m.id === propSelectedModuleId)
+    : null;
+
   return (
     <div className="space-y-6">
-      {/* CABEÇALHO DA CENTRAL DE CONTEÚDOS */}
-      <div className="bg-[#070D0F] p-6 rounded-3xl border border-white/10 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30">
-              <BookOpen className="w-5 h-5" />
-            </span>
-            <h2 className="text-xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-              Gestão de Conteúdos & Jornadas
-            </h2>
-          </div>
-          <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Cadastre novas jornadas, estruture subtemas acolhedores e adicione vídeos e materiais de apoio para as famílias da Aldeia.
-          </p>
-        </div>
-
-        {/* Estatísticas Rápidas & Botão Principal */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-[#101B1E] border border-white/10 rounded-2xl text-center">
-            <div>
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Jornadas</span>
-              <span className="text-sm font-black text-white">{totalJourneysCount}</span>
-            </div>
-            <div className="w-px h-6 bg-white/10" />
-            <div>
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Subtemas</span>
-              <span className="text-sm font-black text-white">{totalModulesCount}</span>
-            </div>
-            <div className="w-px h-6 bg-white/10" />
-            <div>
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Conteúdos</span>
-              <span className="text-sm font-black text-[#FF7F5B]">{totalContentsCount}</span>
-            </div>
-          </div>
-
-          <button
-            onClick={openCreateJourney}
-            className="px-4 py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
-          >
-            <FolderPlus className="w-4 h-4" />
-            <span>Nova Jornada</span>
-          </button>
-        </div>
-      </div>
-
-      {/* BARRA DE BUSCA & INDICADOR DA TRILHA */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Trilha Ativa:</span>
-          <span 
-            className="text-xs font-black px-2.5 py-1 rounded-lg border text-white flex items-center gap-1.5"
-            style={{ 
-              backgroundColor: `${activeJourney?.themeColor || '#FF7F5B'}22`,
-              borderColor: `${activeJourney?.themeColor || '#FF7F5B'}55`
-            }}
-          >
-            <span 
-              className="w-2 h-2 rounded-full" 
-              style={{ backgroundColor: activeJourney?.themeColor || '#FF7F5B' }}
-            />
-            <span>{activeJourney?.title || 'Selecione uma Trilha na barra lateral'}</span>
-          </span>
-        </div>
-
-        {/* Busca rápida */}
-        <div className="relative w-full sm:w-72">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar conteúdos ou módulos..."
-            className="w-full pl-8 pr-3 py-2 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B]"
-          />
-        </div>
-      </div>
-
       {/* DETALHES DA JORNADA SELECIONADA */}
       {activeJourney ? (
         <div className="space-y-6">
@@ -636,10 +754,10 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 <button
                   onClick={() => openEditJourney(activeJourney)}
                   className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
-                  title="Editar dados desta trilha"
+                  title="Editar dados desta jornada"
                 >
                   <Edit3 className="w-4 h-4" />
-                  <span>Editar Trilha</span>
+                  <span>Editar Jornada</span>
                 </button>
 
                 <button
@@ -657,7 +775,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                     title: activeJourney.title
                   })}
                   className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer"
-                  title="Excluir trilha"
+                  title="Excluir jornada"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -665,249 +783,169 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
             </div>
           </div>
 
-          {/* Banner quando um módulo específico foi focado na barra lateral */}
-          {propSelectedModuleId && (
-            <div className="p-3.5 bg-[#FF7F5B]/10 border border-[#FF7F5B]/30 rounded-2xl flex items-center justify-between gap-3 animate-fade-in">
-              <span className="text-xs font-bold text-white flex items-center gap-2">
-                <span>Visualizando Módulo:</span>
-                <span className="text-[#FF7F5B] font-black">
-                  {activeJourney?.modules?.find(m => m.id === propSelectedModuleId)?.title || 'Módulo Selecionado'}
-                </span>
-              </span>
-              <button
-                type="button"
-                onClick={() => propOnSelectModuleId?.(null)}
-                className="text-xs text-slate-400 hover:text-white underline cursor-pointer"
-              >
-                Ver todos os módulos da trilha
-              </button>
-            </div>
-          )}
+          {/* LISTAGEM DE CONTEÚDOS / MÓDULOS */}
+          {hasMultipleModules ? (
+            /* CASO A: JORNADA COM MÚLTIPLOS MÓDULOS */
+            selectedModule ? (
+              /* A.1: MÓDULO ESPECÍFICO SELECIONADO -> EXIBE APENAS OS VÍDEOS DESSE MÓDULO */
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => propOnSelectModuleId?.(null)}
+                    className="text-xs text-[#FF7F5B] hover:text-[#e06847] font-bold flex items-center gap-1.5 cursor-pointer w-fit"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Voltar para todos os módulos da jornada</span>
+                  </button>
 
-          {/* LISTAGEM DE MÓDULOS E CONTEÚDOS */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <span>{(activeJourney.modules?.length || 0) > 1 ? 'Módulos & Conteúdos da Trilha' : 'Conteúdos & Vídeos da Trilha'}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white font-mono">
-                  {(activeJourney.modules?.length || 0) > 1 
-                    ? `${activeJourney.modules?.length || 0} módulos cadastrados`
-                    : `${activeJourney.modules?.[0]?.lessons?.length || 0} conteúdos cadastrados`}
-                </span>
-              </h4>
-            </div>
-
-            {(!activeJourney.modules || activeJourney.modules.length === 0) ? (
-              <div className="p-8 bg-[#101B1E] border border-white/10 rounded-3xl text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 mx-auto flex items-center justify-center text-slate-400">
-                  <FolderPlus className="w-6 h-6 text-[#FF7F5B]" />
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Buscar conteúdos..."
+                      className="w-full pl-8 pr-3 py-1.5 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B]"
+                    />
+                  </div>
                 </div>
-                <h4 className="text-sm font-bold text-white">Nenhum conteúdo cadastrado nesta trilha</h4>
-                <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  Adicione o primeiro vídeo ou material de apoio para disponibilizar às famílias.
-                </p>
-                <button
-                  onClick={() => openCreateModule(activeJourney.id)}
-                  className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer inline-flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Cadastrar Primeiro Módulo</span>
-                </button>
+
+                {renderModuleWithLessons(selectedModule, activeJourney.modules.indexOf(selectedModule), true)}
               </div>
             ) : (
+              /* A.2: NENHUM MÓDULO SELECIONADO AINDA -> NÃO MOSTRA VÍDEOS, APENAS VISÃO GERAL DOS MÓDULOS */
               <div className="space-y-4">
-                {activeJourney.modules.map((mod, modIdx) => {
-                  const hasMultiple = (activeJourney.modules?.length || 0) > 1;
-                  const isExpanded = !hasMultiple || expandedModuleIds[mod.id] !== false; // Se tiver só 1 módulo, sempre aberto
-                  const lessonsList = mod.lessons || [];
-                  const filteredLessons = lessonsList.filter(l => 
-                    matchesSearch(l.title) || matchesSearch(l.description) || matchesSearch(mod.title)
-                  );
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-black text-white flex items-center gap-2">
+                      <span>Módulos da Jornada</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-300 font-mono">
+                        {activeJourney.modules?.length || 0} módulos
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Selecione um módulo na barra lateral ou clique abaixo para gerenciar seus conteúdos.
+                    </p>
+                  </div>
 
-                  return (
-                    <div 
+                  <button
+                    onClick={() => openCreateModule(activeJourney.id)}
+                    className="px-3.5 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Novo Módulo</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {activeJourney.modules?.map((mod, modIdx) => (
+                    <div
                       key={mod.id}
-                      id={`module-card-${mod.id}`}
-                      className={`bg-[#101B1E] rounded-2xl overflow-hidden transition-all shadow-sm ${
-                        propSelectedModuleId === mod.id
-                          ? 'border-2 border-[#FF7F5B] ring-2 ring-[#FF7F5B]/30 shadow-lg shadow-[#FF7F5B]/10'
-                          : 'border border-white/10'
-                      }`}
+                      onClick={() => propOnSelectModuleId?.(mod.id)}
+                      className="p-5 bg-[#101B1E] border border-white/10 hover:border-[#FF7F5B]/50 rounded-2xl transition-all cursor-pointer group flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md"
                     >
-                      {/* BARRA DO MÓDULO */}
-                      <div className="p-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between gap-3">
-                        <div 
-                          onClick={() => hasMultiple && toggleModule(mod.id)} 
-                          className={`flex items-center gap-3 flex-1 select-none ${hasMultiple ? 'cursor-pointer' : ''}`}
-                        >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
                           <span className="w-7 h-7 rounded-xl bg-[#FF7F5B]/15 text-[#FF7F5B] font-black text-xs flex items-center justify-center border border-[#FF7F5B]/30">
-                            {hasMultiple ? modIdx + 1 : <Video className="w-3.5 h-3.5" />}
+                            #{modIdx + 1}
                           </span>
-                          <div>
-                            <h5 className="text-sm font-bold text-white flex items-center gap-2">
-                              <span>{!hasMultiple && mod.title === 'Conteúdos da Trilha' ? 'Lista de Vídeos & Materiais' : mod.title}</span>
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-300 font-mono">
-                                {lessonsList.length} conteúdos
-                              </span>
-                            </h5>
-                            {mod.description && (
-                              <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
-                                {mod.description}
-                              </p>
-                            )}
+                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => openEditModule(activeJourney.id, mod)}
+                              className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                              title="Editar título do módulo"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm({
+                                type: 'module',
+                                journeyId: activeJourney.id,
+                                moduleId: mod.id,
+                                title: mod.title
+                              })}
+                              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                              title="Excluir módulo"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
 
-                        {/* Ações do Módulo */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            onClick={() => openCreateContent(activeJourney.id, mod.id)}
-                            className="px-2.5 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>Novo Conteúdo</span>
-                          </button>
-
-                          {hasMultiple && (
-                            <>
-                              <button
-                                onClick={() => openEditModule(activeJourney.id, mod)}
-                                className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-                                title="Editar título do módulo"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-
-                              <button
-                                onClick={() => setDeleteConfirm({
-                                  type: 'module',
-                                  journeyId: activeJourney.id,
-                                  moduleId: mod.id,
-                                  title: mod.title
-                                })}
-                                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
-                                title="Excluir módulo"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-
-                              <button
-                                onClick={() => toggleModule(mod.id)}
-                                className="p-1.5 text-slate-400 hover:text-white rounded-lg cursor-pointer"
-                              >
-                                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        <h5 className="text-sm font-bold text-white group-hover:text-[#FF7F5B] transition-colors line-clamp-1">
+                          {mod.title}
+                        </h5>
+                        {mod.description && (
+                          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                            {mod.description}
+                          </p>
+                        )}
                       </div>
 
-                      {/* CONTEÚDOS DO MÓDULO */}
-                      {isExpanded && (
-                        <div className="p-4 space-y-2.5 bg-[#070D0F]">
-                          {filteredLessons.length === 0 ? (
-                            <div className="py-6 text-center text-slate-500 text-xs">
-                              {searchQuery ? 'Nenhum conteúdo encontrado nesta busca.' : 'Nenhum conteúdo adicionado a este subtema ainda.'}
-                            </div>
-                          ) : (
-                            filteredLessons.map((lesson, lessonIdx) => {
-                              const hasPdf = lesson.resources?.some(r => r.type === 'pdf');
-
-                              return (
-                                <div
-                                  key={lesson.id}
-                                  className="p-3.5 bg-[#101B1E] border border-white/5 hover:border-white/15 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
-                                >
-                                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                                    <div className="w-8 h-8 rounded-lg bg-[#FF7F5B]/10 text-[#FF7F5B] flex items-center justify-center shrink-0 mt-0.5">
-                                      <Video className="w-4 h-4" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        {lesson.title.includes(': ') && (
-                                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 shrink-0">
-                                            {lesson.title.split(': ')[0]}
-                                          </span>
-                                        )}
-                                        <h6 className="text-xs font-bold text-white truncate">
-                                          {lesson.title.includes(': ') ? lesson.title.split(': ').slice(1).join(': ') : lesson.title}
-                                        </h6>
-                                      </div>
-
-                                      <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
-                                        {lesson.description || 'Sem descrição pedagógica.'}
-                                      </p>
-
-                                      {/* Tags e Materiais */}
-                                      <div className="flex flex-wrap items-center gap-2 mt-2">
-                                        <span className="text-[10px] text-slate-400 flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-md font-mono">
-                                          <Clock className="w-3 h-3 text-slate-500" />
-                                          {lesson.duration || '15 min'}
-                                        </span>
-
-                                        {lesson.videoUrl && (
-                                          <a
-                                            href={lesson.videoUrl}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-blue-500/10 px-2 py-0.5 rounded-md font-bold transition-colors"
-                                          >
-                                            <ExternalLink className="w-3 h-3" />
-                                            <span>Ver Vídeo</span>
-                                          </a>
-                                        )}
-
-                                        {hasPdf && (
-                                          <span className="text-[10px] text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-md font-bold">
-                                            <FileCheck className="w-3 h-3" />
-                                            <span>PDF Anexo</span>
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Botões de Edição do Conteúdo */}
-                                  <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
-                                    <button
-                                      onClick={() => openEditContent(activeJourney.id, mod.id, lesson)}
-                                      className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                                      title="Editar conteúdo"
-                                    >
-                                      <Edit3 className="w-3.5 h-3.5" />
-                                      <span className="hidden sm:inline text-[11px]">Editar</span>
-                                    </button>
-
-                                    <button
-                                      onClick={() => setDeleteConfirm({
-                                        type: 'content',
-                                        journeyId: activeJourney.id,
-                                        moduleId: mod.id,
-                                        contentId: lesson.id,
-                                        title: lesson.title
-                                      })}
-                                      className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
-                                      title="Excluir conteúdo"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          {mod.lessons?.length || 0} {mod.lessons?.length === 1 ? 'conteúdo' : 'conteúdos'}
+                        </span>
+                        <span className="text-xs font-bold text-[#FF7F5B] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                          <span>Acessar Conteúdos</span>
+                          <span>→</span>
+                        </span>
+                      </div>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
+            )
+          ) : (
+            /* CASO B: JORNADA COM APENAS UM MÓDULO (OU SEM MÓDULOS) -> JÁ EXPANDE OS VÍDEOS DIRETAMENTE */
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>Conteúdos & Vídeos da Jornada</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white font-mono">
+                    {activeJourney.modules?.[0]?.lessons?.length || 0} conteúdos cadastrados
+                  </span>
+                </h4>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar conteúdos..."
+                    className="w-full pl-8 pr-3 py-1.5 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B]"
+                  />
+                </div>
+              </div>
+
+              {activeJourney.modules?.[0] ? (
+                renderModuleWithLessons(activeJourney.modules[0], 0, false)
+              ) : (
+                <div className="p-8 bg-[#101B1E] border border-white/10 rounded-3xl text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 mx-auto flex items-center justify-center text-slate-400">
+                    <FolderPlus className="w-6 h-6 text-[#FF7F5B]" />
+                  </div>
+                  <h4 className="text-sm font-bold text-white">Nenhum conteúdo cadastrado nesta jornada</h4>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    Adicione o primeiro vídeo ou material de apoio para disponibilizar às famílias.
+                  </p>
+                  <button
+                    onClick={() => openCreateModule(activeJourney.id)}
+                    className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer inline-flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Cadastrar Primeiro Módulo</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <div className="p-8 text-center text-slate-400">
-          Nenhuma jornada disponível. Clique em "+ Nova Jornada" acima para começar.
+          Nenhuma jornada disponível. Clique em "Criar Jornada" na barra lateral para começar.
         </div>
       )}
 
@@ -919,7 +957,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
           <div className="bg-[#101B1E] border border-white/15 rounded-3xl w-full max-w-xl p-6 sm:p-8 space-y-5 shadow-2xl my-2 sm:my-8 animate-scale-in">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-lg font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                {editingJourney ? 'Editar Trilha' : 'Criar Nova Trilha'}
+                {editingJourney ? 'Editar Jornada' : 'Criar Nova Jornada'}
               </h3>
               <button
                 onClick={() => setIsJourneyModalOpen(false)}
@@ -1019,7 +1057,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                   <div>
                     <span className="text-xs font-bold text-white block">Possui módulos?</span>
                     <span className="text-[11px] text-slate-400 block">
-                      Ative se esta trilha for dividida em múltiplos módulos temáticos.
+                      Ative se esta jornada for dividida em múltiplos módulos temáticos.
                     </span>
                   </div>
                   <button
@@ -1113,7 +1151,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                   type="submit"
                   className="px-5 py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer"
                 >
-                  {editingJourney ? 'Salvar Alterações' : 'Criar Trilha'}
+                  {editingJourney ? 'Salvar Alterações' : 'Criar Jornada'}
                 </button>
               </div>
             </form>

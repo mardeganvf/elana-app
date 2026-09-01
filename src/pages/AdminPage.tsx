@@ -454,7 +454,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Painel ativo" />
             </div>
 
-            {/* GRUPO 1: CONTEÚDOS & JORNADAS (TRILHAS & MÓDULOS) */}
+            {/* GRUPO 1: JORNADAS */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between px-2.5 py-1">
                 <button
@@ -463,30 +463,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
                 >
                   <BookOpen className="w-3.5 h-3.5 text-[#FF7F5B]" />
-                  <span>Trilhas & Módulos</span>
+                  <span>Jornadas</span>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.content ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-
-                {/* Botão para criar nova trilha diretamente na barra lateral */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveAdminTab('content');
-                    setIsCreateJourneyModalOpen(true);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="text-[10px] font-bold px-2 py-1 rounded-lg bg-[#FF7F5B]/15 text-[#FF7F5B] hover:bg-[#FF7F5B] hover:text-slate-950 border border-[#FF7F5B]/30 transition-all cursor-pointer flex items-center gap-1 shadow-sm active:scale-95"
-                  title="Criar nova trilha"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>Nova Trilha</span>
                 </button>
               </div>
 
               {openMenuGroups.content && (
                 <div className="space-y-1 pl-1 max-h-[46vh] overflow-y-auto pr-1 scrollbar-thin">
                   {journeys.length === 0 ? (
-                    <p className="text-[11px] text-slate-500 p-2">Nenhuma trilha cadastrada.</p>
+                    <p className="text-[11px] text-slate-500 p-2">Nenhuma jornada cadastrada.</p>
                   ) : (
                     journeys.map(journey => {
                       const isTrilhaSelected = activeAdminTab === 'content' && (selectedJourneyId === journey.id || (!selectedJourneyId && journeys[0]?.id === journey.id));
@@ -495,7 +480,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
                       return (
                         <div key={journey.id} className="space-y-0.5">
-                          {/* Linha da Trilha */}
+                          {/* Linha da Jornada */}
                           <div
                             className={`w-full px-2.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer group ${
                               isTrilhaSelected && !selectedModuleId
@@ -514,11 +499,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                               setIsMobileMenuOpen(false);
                             }}
                           >
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <span
-                                className="w-2.5 h-2.5 rounded-full shrink-0"
-                                style={{ backgroundColor: journey.themeColor || '#FF7F5B' }}
-                              />
+                            <div className="flex items-center min-w-0 flex-1">
                               <span className="truncate">{journey.title}</span>
                             </div>
 
@@ -538,7 +519,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                             )}
                           </div>
 
-                          {/* Módulos aninhados da Trilha (apenas se tiver mais de 1 módulo) */}
+                          {/* Módulos aninhados da Jornada (apenas se tiver mais de 1 módulo) */}
                           {hasMultipleModules && isTrilhaExpanded && (
                             <div className="pl-3.5 space-y-0.5 border-l border-white/10 ml-3 my-1">
                               {(journey.modules || []).map((mod, modIdx) => {
@@ -577,6 +558,20 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       );
                     })
                   )}
+
+                  {/* Botão Criar Jornada abaixo da última jornada */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAdminTab('content');
+                      setIsCreateJourneyModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full mt-2.5 px-3 py-2 rounded-xl border border-dashed border-white/20 hover:border-[#FF7F5B] text-slate-400 hover:text-[#FF7F5B] hover:bg-[#FF7F5B]/10 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Criar Jornada</span>
+                  </button>
                 </div>
               )}
             </div>
