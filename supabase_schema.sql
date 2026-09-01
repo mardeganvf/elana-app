@@ -623,7 +623,13 @@ CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
 CREATE INDEX IF NOT EXISTS idx_profiles_xp ON public.profiles(xp DESC);
 CREATE INDEX IF NOT EXISTS idx_profiles_last_active ON public.profiles(last_active_date DESC);
 
--- 2. Check-ins Emocionais (Índice Composto + Integridade Diária)
+-- 2. Check-ins Emocionais (Limpeza de duplicatas antigas de teste + Índice Único)
+DELETE FROM public.emotional_checkins a
+USING public.emotional_checkins b
+WHERE a.profile_id = b.profile_id
+  AND a.checkin_date = b.checkin_date
+  AND (a.created_at < b.created_at OR (a.created_at = b.created_at AND a.id < b.id));
+
 CREATE INDEX IF NOT EXISTS idx_emotional_checkins_profile_date ON public.emotional_checkins(profile_id, checkin_date DESC);
 CREATE INDEX IF NOT EXISTS idx_emotional_checkins_date ON public.emotional_checkins(checkin_date DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_emotional_checkin_per_day ON public.emotional_checkins(profile_id, checkin_date) WHERE profile_id IS NOT NULL;
