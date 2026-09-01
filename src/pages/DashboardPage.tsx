@@ -506,7 +506,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           const newEmail = pendingEmail.trim().toLowerCase();
 
                           // 1. Verificar o código OTP recebido no e-mail
-                          //    Tentar email_change (fluxo correto) ou email (magic link fallback)
                           const { error: changeErr } = await supabase.auth.verifyOtp({
                             email: newEmail,
                             token,
@@ -525,15 +524,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                             }
                           }
 
-                          // 2. Após OTP verificado, a sessão está renovada.
-                          //    Usar RPC com SECURITY DEFINER para atualizar auth.users + profiles
-                          //    de forma atômica e segura (só altera o próprio usuário via auth.uid())
-                          const { error: rpcErr } = await supabase.rpc('update_own_email', {
-                            new_email: newEmail
+                          // 2. Chamar Edge Function com API Admin para garantir
+                          //    que auth.users.email é atualizado com a service role key
+                          const { data: fnData, error: fnErr } = await supabase.functions.invoke('update-user-email', {
+                            body: { new_email: newEmail }
                           });
 
-                          if (rpcErr) {
-                            throw new Error(rpcErr.message || 'Erro ao atualizar e-mail. Tente novamente.');
+                          if (fnErr || fnData?.error) {
+                            throw new Error(fnData?.error || fnErr?.message || 'Erro ao atualizar e-mail no servidor. Tente novamente.');
                           }
 
                           // 3. Atualizar o AuthContext local
