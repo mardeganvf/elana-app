@@ -1367,18 +1367,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     />
                   </div>
 
-                  {/* 3. Alternativas de Voto da Enquete (Onde o admin digita as opções) */}
-                  <div className="space-y-3 p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
+                  {/* 3. Alternativas de Voto da Enquete */}
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                          Alternativas de Voto *
-                        </label>
-                        <span className="text-[11px] text-slate-400">
-                          Digite as opções que ficarão disponíveis para os membros votarem (mínimo 2).
-                        </span>
-                      </div>
-                      <span className="text-xs font-mono font-bold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-1 rounded-lg border border-[#FF7F5B]/20 shrink-0">
+                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                        Alternativas de Voto *
+                      </label>
+                      <span className="text-xs font-mono font-bold text-[#FF7F5B]">
                         {newPollOptions.filter(o => o.trim().length > 0).length} preenchida(s)
                       </span>
                     </div>
@@ -1395,13 +1390,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                             value={opt}
                             onChange={(e) => handleUpdatePollOption(idx, e.target.value)}
                             placeholder={`Alternativa ${idx + 1} (ex: Dificuldades com o sono noturno)`}
-                            className="flex-1 bg-[#101B1E] border border-white/10 focus:border-[#FF7F5B] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
+                            className="flex-1 bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
                           />
                           {newPollOptions.length > 2 && (
                             <button
                               type="button"
                               onClick={() => handleRemovePollOption(idx)}
-                              className="p-2 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 rounded-xl transition-all cursor-pointer shrink-0"
+                              className="p-2.5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 rounded-xl transition-all cursor-pointer shrink-0"
                               title="Remover esta alternativa"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1423,18 +1418,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     </div>
                   </div>
 
-                  {/* 4. Categorias / Jornadas Relacionadas (Caixa Seletora para Organização) */}
-                  <div className="space-y-2.5 p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
+                  {/* 4. Jornadas de Conhecimento */}
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                          Categorias / Jornadas Relacionadas (Organização em Grupos)
-                        </label>
-                        <span className="text-[11px] text-slate-400">
-                          Selecione as jornadas para categorizar esta enquete e facilitar a organização.
-                        </span>
-                      </div>
-                      <span className="text-xs font-mono font-bold text-slate-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10 shrink-0">
+                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                        Jornadas de Conhecimento
+                      </label>
+                      <span className="text-xs font-mono font-bold text-slate-400">
                         {selectedPollJourneys.length} vinculada(s)
                       </span>
                     </div>
@@ -1447,10 +1437,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                             key={j.id}
                             type="button"
                             onClick={() => toggleJourneyInPoll(j.title)}
-                            className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                            className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
                               isSelected
                                 ? 'bg-[#FF7F5B]/15 border-[#FF7F5B] text-white shadow-sm'
-                                : 'bg-[#101B1E] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
+                                : 'bg-[#070D0F] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                           >
                             <span className="truncate flex-1">{j.title}</span>
@@ -1465,8 +1455,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     </div>
 
                     {selectedPollJourneys.length > 0 && (
-                      <div className="pt-2 border-t border-white/5 flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Grupos vinculados:</span>
+                      <div className="pt-2 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Jornadas vinculadas:</span>
                         {selectedPollJourneys.map((tag, i) => (
                           <span key={i} className="text-[11px] bg-white/5 text-slate-300 px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
                             <span className="text-[#FF7F5B] font-mono font-bold">#</span>
@@ -1475,7 +1465,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                               type="button"
                               onClick={() => toggleJourneyInPoll(tag)}
                               className="hover:text-rose-400 text-xs ml-1 cursor-pointer"
-                              title="Desvincular grupo"
+                              title="Desvincular jornada"
                             >
                               ✕
                             </button>
