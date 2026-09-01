@@ -237,19 +237,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 2. Buscar Badges conquistadas
       const { data: userBadgesData } = await supabase
         .from('user_badges')
-        .select('badge_id')
+        .select('badge_id, unlocked_at')
         .eq('profile_id', profileId);
 
       const unlockedBadgeIds = new Set((userBadgesData || []).map(b => b.badge_id));
 
       // Sincronizar Conquistas Emocionais retroativamente a partir de emotional_checkins
+      let rawCheckinsData: any[] = [];
       try {
         const { data: checkinsData } = await supabase
           .from('emotional_checkins')
-          .select('emotion_id')
+          .select('emotion_id, checkin_date, created_at')
           .eq('profile_id', profileId);
 
         if (checkinsData && checkinsData.length > 0) {
+          rawCheckinsData = checkinsData;
           const autoBadges: string[] = ['b11']; // b11 = Sinal de Cuidado (1º check-in)
           checkinsData.forEach(c => {
             if (c.emotion_id === 'sem_energia') autoBadges.push('b12');
@@ -379,13 +381,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         checkAndAddBadge('b9'); // Minhas Reflexões
       }
 
+      // 🌿 Cálculo Preciso de Dias de Caminhada Conosco (Streak / Dias Conosco)
+      let earliestActivityTimestamp = profile.created_at ? new Date(profile.created_at).getTime() : Date.now();
+      
+      if (userBadgesData && userBadgesData.length > 0) {
+        userBadgesData.forEach((b: any) => {
+          if (b.unlocked_at) {
+            const t = new Date(b.unlocked_at).getTime();
+            if (t > 0 && t < earliestActivityTimestamp) earliestActivityTimestamp = t;
+          }
+        });
+      }
+
+      if (rawCheckinsData && rawCheckinsData.length > 0) {
+        rawCheckinsData.forEach((c: any) => {
+          const dateVal = c.created_at || c.checkin_date;
+          if (dateVal) {
+            const t = new Date(dateVal).getTime();
+            if (t > 0 && t < earliestActivityTimestamp) earliestActivityTimestamp = t;
+          }
+        });
+      }
+
+      const diffCalendarDays = Math.max(1, Math.floor((Date.now() - earliestActivityTimestamp) / (1000 * 60 * 60 * 24)) + 1);
+      const calculatedStreak = Math.max(profile.streak_days || 1, diffCalendarDays);
+
       // ⚡ 4. Evolução Constante (b24, b25, b26, b27, b28)
-      const streak = profile.streak_days || 1;
-      if (streak >= 10) checkAndAddBadge('b24');
-      if (streak >= 20) checkAndAddBadge('b25');
-      if (streak >= 30) checkAndAddBadge('b26');
-      if (streak >= 60) checkAndAddBadge('b27');
-      if (streak >= 90) checkAndAddBadge('b28');
+      if (calculatedStreak >= 10) checkAndAddBadge('b24');
+      if (calculatedStreak >= 20) checkAndAddBadge('b25');
+      if (calculatedStreak >= 30) checkAndAddBadge('b26');
+      if (calculatedStreak >= 60) checkAndAddBadge('b27');
+      if (calculatedStreak >= 90) checkAndAddBadge('b28');
 
       // 💬 5. Espaços de Troca & 🤝 6. Rede de Apoio & 💖 8. Acolhimento
       try {
@@ -430,8 +456,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const levelInfo = getLevelFromXP(xp);
       const isTourFinished = profile.tag === 'onboarded' || unlockedBadgeIds.has('b1') || xp >= 25;
 
-      // Auto-heal Supabase se profiles.xp estiver desatualizado
-      if (xp > (profile.xp || 0) && profileId) {
+      // Auto-heal Supabase se profiles.xp ou profiles.streak_days estiverem desatualizados
+      if ((xp > (profile.xp || 0) || calculatedStreak > (profile.streak_days || 1)) && profileId) {
         supabase
           .from('profiles')
           .update({
@@ -439,6 +465,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             level_number: levelInfo.level,
             level_name: levelInfo.title,
             level_icon: levelInfo.icon,
+            streak_days: calculatedStreak,
             updated_at: new Date().toISOString()
           })
           .eq('id', profileId)
@@ -459,7 +486,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         xp,
         level: profile.level_number || levelInfo.level,
         levelTitle: profile.level_name || levelInfo.title,
-        streakDays: profile.streak_days || 1,
+        streakDays: calculatedStreak,
         lastActiveDate: profile.last_active_date || new Date().toISOString(),
         purchasedJourneyIds,
         completedLessonIds,
