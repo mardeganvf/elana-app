@@ -21,7 +21,7 @@ import {
   Vote,
   Plus
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, isAdminUser } from '../context/AuthContext';
 import { useCommunity } from '../context/CommunityContext';
 import { supabase } from '../lib/supabase';
 
@@ -70,16 +70,7 @@ export interface AdminPageProps {
 
 export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin }) => {
   const { user, isAuthenticated, replySosTicket } = useAuth();
-
-  const isAdmin = Boolean(
-    user && (
-      user.role?.toLowerCase().includes('admin') || 
-      user.role?.toLowerCase().includes('guia') ||
-      user.email?.toLowerCase().includes('admin') ||
-      user.email?.toLowerCase().includes('mardegan') ||
-      user.email === 'helena@elana.com.br'
-    )
-  );
+  const isAdmin = isAdminUser(user);
 
   const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'polls'>('sos');
 

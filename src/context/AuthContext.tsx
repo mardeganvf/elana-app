@@ -16,13 +16,18 @@ export const ADMIN_EMAILS = [
   'admin@elana.com.br',
   'mariana@elana.com.br',
   'vitor@elana.com.br',
-  'helena@elana.com.br'
+  'helena@elana.com.br',
+  'mardeganvf@gmail.com',
+  'vitormardegan@gmail.com'
 ];
 
 export const isAdminUser = (user: UserProfile | null): boolean => {
-  if (!user || !user.email) return false;
+  if (!user) return false;
+  const roleLower = (user.role || '').toLowerCase();
+  if (roleLower.includes('admin') || roleLower.includes('guia')) return true;
+  if (!user.email) return false;
   const emailLower = user.email.toLowerCase();
-  return ADMIN_EMAILS.includes(emailLower) || user.role === 'admin' || emailLower.includes('admin');
+  return ADMIN_EMAILS.includes(emailLower) || emailLower.includes('admin') || emailLower.includes('mardegan');
 };
 
 export const GENERIC_DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23101B1E'/><circle cx='60' cy='45' r='22' fill='%23FF7F5B'/><path d='M25 105 C 25 75, 95 75, 95 105 Z' fill='%23FF7F5B'/></svg>";
