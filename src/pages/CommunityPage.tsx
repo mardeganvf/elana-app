@@ -142,7 +142,7 @@ const splitTextIntoTwoLines = (text: string) => {
 };
 
 export const CommunityPage: React.FC = () => {
-  const { posts, isLoading, refreshPosts, toggleReaction, toggleCommentReaction, addComment } = useCommunity();
+  const { posts, isLoading, hasMorePosts, isLoadingMore, loadMorePosts, refreshPosts, toggleReaction, toggleCommentReaction, addComment } = useCommunity();
   const { user, isAuthenticated, awardBadge } = useAuth();
   const { showToast } = useToast();
 
@@ -1543,17 +1543,33 @@ export const CommunityPage: React.FC = () => {
                   );
                 })}
 
-                {/* Carregar Mais Button (Brings next 15 topics) */}
-                {visibleCount < filteredPosts.length && (
+                {/* Carregar Mais Button (Brings next 15 topics from local or remote Supabase) */}
+                {(visibleCount < filteredPosts.length || hasMorePosts) && (
                   <div className="pt-6 pb-4 text-center">
                     <button
-                      onClick={() => setVisibleCount(prev => prev + 15)}
-                      className="bg-[#101B1E] hover:bg-white/10 text-white border border-white/20 px-8 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mx-auto"
+                      onClick={async () => {
+                        if (visibleCount < filteredPosts.length) {
+                          setVisibleCount(prev => prev + 15);
+                        } else if (hasMorePosts) {
+                          await loadMorePosts();
+                          setVisibleCount(prev => prev + 15);
+                        }
+                      }}
+                      disabled={isLoadingMore}
+                      className="bg-[#101B1E] hover:bg-white/10 text-white border border-white/20 px-8 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mx-auto disabled:opacity-50"
                     >
-                      <span>Carregar Mais Tópicos</span>
-                      <span className="bg-[#FF7F5B] text-white px-2.5 py-0.5 rounded-full text-[10px] font-extrabold">
-                        +{Math.min(15, filteredPosts.length - visibleCount)} de {filteredPosts.length - visibleCount} restantes
-                      </span>
+                      {isLoadingMore ? (
+                        <span className="flex items-center gap-2">
+                          <span className="animate-spin">🌀</span> Carregando conversas...
+                        </span>
+                      ) : (
+                        <>
+                          <span>Carregar Mais Conversas</span>
+                          <span className="bg-[#FF7F5B] text-white px-2.5 py-0.5 rounded-full text-[10px] font-extrabold">
+                            +15
+                          </span>
+                        </>
+                      )}
                     </button>
                   </div>
                 )}

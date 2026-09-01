@@ -1,27 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CommunityProvider } from './context/CommunityContext';
 import { FontSizeProvider } from './context/FontSizeContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
-import { ClassroomPage } from './pages/ClassroomPage';
-import { CommunityPage } from './pages/CommunityPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { AdminPage } from './pages/AdminPage';
-import { LoginPage } from './pages/LoginPage';
-import { CheckoutModal } from './components/catalog/CheckoutModal';
-import { BadgeModal } from './components/gamification/BadgeModal';
-import { CertificateModal } from './components/gamification/CertificateModal';
-import { LevelUpModal } from './components/gamification/LevelUpModal';
-import { UserLevelsModal } from './components/gamification/UserLevelsModal';
-import { AuthModal } from './components/auth/AuthModal';
-import { GuidedSpotlightTour } from './components/onboarding/GuidedSpotlightTour';
-import { BadgeRewardModal } from './components/onboarding/BadgeRewardModal';
-import { ProfileCompletionInviteModal } from './components/onboarding/ProfileCompletionInviteModal';
 import { PwaInstallBanner } from './components/pwa/PwaInstallBanner';
 import { ToastProvider } from './context/ToastContext';
 import { Journey } from './types';
+
+// ⚡ Code Splitting: Lazy loading de rotas e modais secundários
+const ClassroomPage = React.lazy(() => import('./pages/ClassroomPage').then(m => ({ default: m.ClassroomPage })));
+const CommunityPage = React.lazy(() => import('./pages/CommunityPage').then(m => ({ default: m.CommunityPage })));
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const AdminPage = React.lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+const LoginPage = React.lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+
+const CheckoutModal = React.lazy(() => import('./components/catalog/CheckoutModal').then(m => ({ default: m.CheckoutModal })));
+const BadgeModal = React.lazy(() => import('./components/gamification/BadgeModal').then(m => ({ default: m.BadgeModal })));
+const CertificateModal = React.lazy(() => import('./components/gamification/CertificateModal').then(m => ({ default: m.CertificateModal })));
+const LevelUpModal = React.lazy(() => import('./components/gamification/LevelUpModal').then(m => ({ default: m.LevelUpModal })));
+const UserLevelsModal = React.lazy(() => import('./components/gamification/UserLevelsModal').then(m => ({ default: m.UserLevelsModal })));
+const AuthModal = React.lazy(() => import('./components/auth/AuthModal').then(m => ({ default: m.AuthModal })));
+const GuidedSpotlightTour = React.lazy(() => import('./components/onboarding/GuidedSpotlightTour').then(m => ({ default: m.GuidedSpotlightTour })));
+const BadgeRewardModal = React.lazy(() => import('./components/onboarding/BadgeRewardModal').then(m => ({ default: m.BadgeRewardModal })));
+const ProfileCompletionInviteModal = React.lazy(() => import('./components/onboarding/ProfileCompletionInviteModal').then(m => ({ default: m.ProfileCompletionInviteModal })));
+
+const PageLoadingFallback: React.FC = () => (
+  <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 space-y-4 animate-fade-in">
+    <div className="w-12 h-12 rounded-2xl bg-[#FF7F5B]/10 border border-[#FF7F5B]/30 flex items-center justify-center animate-pulse shadow-lg">
+      <span className="text-2xl animate-spin">🌿</span>
+    </div>
+    <p className="text-xs font-bold text-slate-400 tracking-wider uppercase">Carregando espaço acolhedor...</p>
+  </div>
+);
 
 const AppContent: React.FC = () => {
   const { user, login, unlockedBadgeModal, closeBadgeModal, unlockedLevelUpModal, closeLevelUpModal } = useAuth();
@@ -76,15 +88,17 @@ const AppContent: React.FC = () => {
 
   if (!user || activeTab === 'login') {
     return (
-      <LoginPage
-        onSuccess={(isNewUser) => {
-          setActiveTab('home');
-          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-          if (isNewUser) {
-            setIsSpotlightTourOpen(true);
-          }
-        }}
-      />
+      <Suspense fallback={<PageLoadingFallback />}>
+        <LoginPage
+          onSuccess={(isNewUser) => {
+            setActiveTab('home');
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            if (isNewUser) {
+              setIsSpotlightTourOpen(true);
+            }
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -104,141 +118,151 @@ const AppContent: React.FC = () => {
         />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-safe-nav md:pb-0">
-          {activeTab === 'home' && (
-            <HomePage
-              onSelectJourney={handleSelectJourney}
-              onStartLearning={handleStartLearning}
-            />
-          )}
+          <Suspense fallback={<PageLoadingFallback />}>
+            {activeTab === 'home' && (
+              <HomePage
+                onSelectJourney={handleSelectJourney}
+                onStartLearning={handleStartLearning}
+              />
+            )}
 
-          {activeTab === 'classroom' && selectedJourneyForClassroom && (
-            <ClassroomPage
-              journey={selectedJourneyForClassroom}
-              onBack={() => {
-                setActiveTab('home');
-                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-              }}
-              onOpenCertificate={(journey: Journey) => setCertificateJourney(journey)}
-            />
-          )}
+            {activeTab === 'classroom' && selectedJourneyForClassroom && (
+              <ClassroomPage
+                journey={selectedJourneyForClassroom}
+                onBack={() => {
+                  setActiveTab('home');
+                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                }}
+                onOpenCertificate={(journey: Journey) => setCertificateJourney(journey)}
+              />
+            )}
 
-          {activeTab === 'community' && <CommunityPage />}
+            {activeTab === 'community' && <CommunityPage />}
 
-          {activeTab === 'dashboard' && (
-            <DashboardPage
-              onStartLearning={handleStartLearning}
-              onOpenCertificate={(journey: Journey) => setCertificateJourney(journey)}
-              onExploreCatalog={() => {
-                setActiveTab('home');
-                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-              }}
-            />
-          )}
+            {activeTab === 'dashboard' && (
+              <DashboardPage
+                onStartLearning={handleStartLearning}
+                onOpenCertificate={(journey: Journey) => setCertificateJourney(journey)}
+                onExploreCatalog={() => {
+                  setActiveTab('home');
+                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                }}
+              />
+            )}
 
-          {activeTab === 'admin' && (
-            <AdminPage
-              onBackToHome={() => {
-                setActiveTab('home');
-                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-              }}
-              onOpenLogin={() => {
-                setActiveTab('login');
-                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-              }}
-            />
-          )}
+            {activeTab === 'admin' && (
+              <AdminPage
+                onBackToHome={() => {
+                  setActiveTab('home');
+                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                }}
+                onOpenLogin={() => {
+                  setActiveTab('login');
+                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                }}
+              />
+            )}
+          </Suspense>
         </main>
       </div>
 
       <Footer />
 
-      {/* Checkout Modal */}
-      {selectedJourneyForCheckout && (
-        <CheckoutModal
-          journey={selectedJourneyForCheckout}
-          onClose={() => setSelectedJourneyForCheckout(null)}
-          onSuccess={handleCheckoutSuccess}
+      {/* Modais carregados sob demanda */}
+      <Suspense fallback={null}>
+        {/* Checkout Modal */}
+        {selectedJourneyForCheckout && (
+          <CheckoutModal
+            journey={selectedJourneyForCheckout}
+            onClose={() => setSelectedJourneyForCheckout(null)}
+            onSuccess={handleCheckoutSuccess}
+          />
+        )}
+
+        {/* Gamification Badge Modal */}
+        {unlockedBadgeModal && (
+          <BadgeModal
+            badge={unlockedBadgeModal}
+            onClose={closeBadgeModal}
+          />
+        )}
+
+        {/* Gamification Level Up Ranking Promotion Celebration Modal */}
+        {!unlockedBadgeModal && unlockedLevelUpModal && (
+          <LevelUpModal
+            levelInfo={unlockedLevelUpModal.levelInfo}
+            previousLevel={unlockedLevelUpModal.previousLevel}
+            onClose={closeLevelUpModal}
+            onOpenAllLevels={() => setIsUserLevelsListOpen(true)}
+          />
+        )}
+
+        {/* 15 Levels Tree Timeline Modal */}
+        {isUserLevelsListOpen && user && (
+          <UserLevelsModal
+            currentXp={user.xp}
+            onClose={() => setIsUserLevelsListOpen(false)}
+          />
+        )}
+
+        {/* Certificate Modal */}
+        {certificateJourney && (
+          <CertificateModal
+            journey={certificateJourney}
+            user={user}
+            onClose={() => setCertificateJourney(null)}
+          />
+        )}
+
+        {/* Complete Auth Modal */}
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onSuccess={({ email, name, id }) => {
+            login(email, name, id);
+            setIsAuthModalOpen(false);
+            setIsSpotlightTourOpen(true);
+          }}
         />
-      )}
 
-      {/* Gamification Badge Modal */}
-      {unlockedBadgeModal && (
-        <BadgeModal
-          badge={unlockedBadgeModal}
-          onClose={closeBadgeModal}
+        {/* Interactive Guided Spotlight Tour */}
+        <GuidedSpotlightTour
+          isOpen={isSpotlightTourOpen && user !== null}
+          onClose={() => setIsSpotlightTourOpen(false)}
+          onComplete={() => {
+            setIsSpotlightTourOpen(false);
+            setIsBadgeRewardOpen(true);
+          }}
         />
-      )}
 
-      {/* Gamification Level Up Ranking Promotion Celebration Modal */}
-      {!unlockedBadgeModal && unlockedLevelUpModal && (
-        <LevelUpModal
-          levelInfo={unlockedLevelUpModal.levelInfo}
-          previousLevel={unlockedLevelUpModal.previousLevel}
-          onClose={closeLevelUpModal}
-          onOpenAllLevels={() => setIsUserLevelsListOpen(true)}
+        {/* High-Impact Semente Plantada Badge Reward Modal */}
+        <BadgeRewardModal
+          isOpen={isBadgeRewardOpen}
+          onClose={() => {
+            setIsBadgeRewardOpen(false);
+            setIsProfileInviteOpen(true);
+          }}
         />
-      )}
 
-      {/* 15 Levels Tree Timeline Modal */}
-      {isUserLevelsListOpen && user && (
-        <UserLevelsModal
-          currentXp={user.xp}
-          onClose={() => setIsUserLevelsListOpen(false)}
+        {/* Complete Profile Invitation Modal */}
+        <ProfileCompletionInviteModal
+          isOpen={isProfileInviteOpen}
+          onClose={() => {
+            setIsProfileInviteOpen(false);
+            setActiveTab('home');
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+          }}
+          onGoToProfile={() => {
+            setActiveTab('dashboard');
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+          }}
         />
-      )}
+      </Suspense>
 
-      {/* Certificate Modal */}
-      {certificateJourney && (
-        <CertificateModal
-          journey={certificateJourney}
-          user={user}
-          onClose={() => setCertificateJourney(null)}
-        />
-      )}
-
-      {/* Complete Auth Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onSuccess={({ email, name, id }) => {
-          login(email, name, id);
-          setIsAuthModalOpen(false);
-          setIsSpotlightTourOpen(true);
-        }}
-      />
-
-      {/* Interactive Guided Spotlight Tour */}
-      <GuidedSpotlightTour
-        isOpen={isSpotlightTourOpen && user !== null}
-        onClose={() => setIsSpotlightTourOpen(false)}
-        onComplete={() => {
-          setIsSpotlightTourOpen(false);
-          setIsBadgeRewardOpen(true);
-        }}
-      />
-
-      {/* High-Impact Semente Plantada Badge Reward Modal */}
-      <BadgeRewardModal
-        isOpen={isBadgeRewardOpen}
-        onClose={() => {
-          setIsBadgeRewardOpen(false);
-          setIsProfileInviteOpen(true);
-        }}
-      />
-
-      {/* Complete Profile Invitation Modal */}
-      <ProfileCompletionInviteModal
-        isOpen={isProfileInviteOpen}
-        onClose={() => {
-          setIsProfileInviteOpen(false);
-          setActiveTab('home');
-          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        }}
-        onGoToProfile={() => {
-          setActiveTab('dashboard');
-          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        }}
-      />
+      {/* PWA Install Banner */}
+      <PwaInstallBanner />
+    </div>
+  );
 
       {/* PWA Install Banner */}
       <PwaInstallBanner />

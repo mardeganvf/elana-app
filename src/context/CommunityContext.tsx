@@ -63,6 +63,9 @@ export const getRandomAnonymousName = () => {
 interface CommunityContextType {
   posts: CommunityPost[];
   isLoading: boolean;
+  hasMorePosts: boolean;
+  isLoadingMore: boolean;
+  loadMorePosts: () => Promise<void>;
   createPost: (payload: CreatePostPayload) => void;
   toggleReaction: (postId: string, reactionKey: string) => void;
   toggleCommentReaction: (postId: string, commentId: string, reactionKey: string) => void;
@@ -96,10 +99,34 @@ const sanitizePost = (post: CommunityPost): CommunityPost => {
   return post;
 };
 
+const PAGE_SIZE = 15;
+
 export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, addXP, awardBadge } = useAuth();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [hasMorePosts, setHasMorePosts] = useState<boolean>(true);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+
+  const mapPostFromDb = (item: any): CommunityPost => ({
+    id: item.id,
+    journeyId: item.journey_id,
+    transversalRoomId: item.transversal_room_id,
+    ageBracketId: item.age_bracket_id,
+    emotionalIntention: item.emotional_intention,
+    authorId: item.author_id || 'demo-user',
+    authorName: item.author_name,
+    authorAvatar: item.author_avatar,
+    authorRole: 'membro',
+    isAnonymous: item.is_anonymous,
+    sensitivityLevel: item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
+    title: item.title,
+    content: item.content,
+    createdAt: new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    reactions: {},
+    userReactions: {},
+    comments: []
+  });
 
   const fetchSupabasePosts = async (showLoading = false) => {
     if (showLoading) setIsLoading(true);
@@ -107,49 +134,60 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const { data, error } = await supabase
         .from('community_posts')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(0, PAGE_SIZE - 1);
 
       if (error) {
         console.warn('Supabase fetch notice:', error.message);
         return;
       }
 
-      if (data && data.length > 0) {
-        const remotePosts: CommunityPost[] = data.map((item: any) => ({
-          id: item.id,
-          journeyId: item.journey_id,
-          transversalRoomId: item.transversal_room_id,
-          ageBracketId: item.age_bracket_id,
-          emotionalIntention: item.emotional_intention,
-          authorId: item.author_id || 'demo-user',
-          authorName: item.author_name,
-          authorAvatar: item.author_avatar,
-          authorRole: 'membro',
-          isAnonymous: item.is_anonymous,
-          sensitivityLevel: item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
-          title: item.title,
-          content: item.content,
-          createdAt: new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          reactions: {},
-          userReactions: {},
-          comments: []
-        }));
-
-        setPosts(prev => {
-          const combined = [...remotePosts];
-          // Add local posts that aren't in remote
-          prev.forEach(p => {
-            if (!combined.some(r => r.id === p.id)) {
-              combined.push(p);
-            }
-          });
-          return combined.map(sanitizePost);
-        });
+      if (data) {
+        const remotePosts: CommunityPost[] = data.map(mapPostFromDb);
+        setPosts(remotePosts.map(sanitizePost));
+        setHasMorePosts(data.length >= PAGE_SIZE);
       }
     } catch (err) {
       console.warn('Supabase connection fallback to local state:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMorePosts = async () => {
+    if (isLoadingMore || !hasMorePosts) return;
+    setIsLoadingMore(true);
+    try {
+      const from = posts.length;
+      const to = from + PAGE_SIZE - 1;
+      const { data, error } = await supabase
+        .from('community_posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) {
+        console.warn('Supabase load more notice:', error.message);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const newPosts: CommunityPost[] = data.map(mapPostFromDb);
+        setPosts(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const filtered = newPosts.filter(p => !existingIds.has(p.id));
+          return [...prev, ...filtered].map(sanitizePost);
+        });
+        if (data.length < PAGE_SIZE) {
+          setHasMorePosts(false);
+        }
+      } else {
+        setHasMorePosts(false);
+      }
+    } catch (err) {
+      console.warn('Error loading more posts:', err);
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -477,6 +515,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     <CommunityContext.Provider value={{
       posts,
       isLoading,
+      hasMorePosts,
+      isLoadingMore,
+      loadMorePosts,
       createPost,
       toggleReaction,
       toggleCommentReaction,
