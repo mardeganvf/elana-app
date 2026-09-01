@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { CommunityProvider } from './context/CommunityContext';
+import { CommunityProvider, useCommunity } from './context/CommunityContext';
 import { FontSizeProvider } from './context/FontSizeContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
@@ -25,6 +25,7 @@ const AuthModal = React.lazy(() => import('./components/auth/AuthModal').then(m 
 const GuidedSpotlightTour = React.lazy(() => import('./components/onboarding/GuidedSpotlightTour').then(m => ({ default: m.GuidedSpotlightTour })));
 const BadgeRewardModal = React.lazy(() => import('./components/onboarding/BadgeRewardModal').then(m => ({ default: m.BadgeRewardModal })));
 const ProfileCompletionInviteModal = React.lazy(() => import('./components/onboarding/ProfileCompletionInviteModal').then(m => ({ default: m.ProfileCompletionInviteModal })));
+const CommunityPollModal = React.lazy(() => import('./components/community/CommunityPollModal').then(m => ({ default: m.CommunityPollModal })));
 
 const PageLoadingFallback: React.FC = () => (
   <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 space-y-4 animate-fade-in">
@@ -37,6 +38,7 @@ const PageLoadingFallback: React.FC = () => (
 
 const AppContent: React.FC = () => {
   const { user, login, unlockedBadgeModal, closeBadgeModal, unlockedLevelUpModal, closeLevelUpModal } = useAuth();
+  const { activePoll, userVotedPollsMap } = useCommunity();
   
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedJourneyForCheckout, setSelectedJourneyForCheckout] = useState<Journey | null>(null);
@@ -47,6 +49,29 @@ const AppContent: React.FC = () => {
   const [isBadgeRewardOpen, setIsBadgeRewardOpen] = useState(false);
   const [isProfileInviteOpen, setIsProfileInviteOpen] = useState(false);
   const [isUserLevelsListOpen, setIsUserLevelsListOpen] = useState(false);
+  const [isPollModalOpen, setIsPollModalOpen] = useState(false);
+
+  // 🗳️ Disparo da Enquete no 1º Acesso Geral do Dia (Aba Conteúdos / Home)
+  useEffect(() => {
+    if (!user || activeTab !== 'home' || isSpotlightTourOpen || isBadgeRewardOpen || isProfileInviteOpen) return;
+    if (!activePoll || activePoll.status !== 'open') return;
+
+    const userKey = user.id;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const pollDailySeenKey = `elana_poll_daily_seen_${userKey}_${todayStr}_${activePoll.id}`;
+
+    const hasSeenToday = localStorage.getItem(pollDailySeenKey) === 'true';
+    const hasVoted = !!userVotedPollsMap[activePoll.id];
+
+    if (!hasSeenToday && !hasVoted) {
+      const timer = setTimeout(() => {
+        setIsPollModalOpen(true);
+        localStorage.setItem(pollDailySeenKey, 'true');
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id, activeTab, activePoll?.id, userVotedPollsMap, isSpotlightTourOpen, isBadgeRewardOpen, isProfileInviteOpen]);
 
   useEffect(() => {
     if (user?.email) {
@@ -257,6 +282,15 @@ const AppContent: React.FC = () => {
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
           }}
         />
+
+        {/* 🗳️ Modal Pop-up de Enquete Interativa no 1º Acesso Geral do Dia (Aba Conteúdos) */}
+        {activePoll && activePoll.status === 'open' && (
+          <CommunityPollModal
+            isOpen={isPollModalOpen}
+            onClose={() => setIsPollModalOpen(false)}
+            poll={activePoll}
+          />
+        )}
       </Suspense>
 
       {/* PWA Install Banner */}

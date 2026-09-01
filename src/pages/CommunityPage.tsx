@@ -12,7 +12,6 @@ import {
 import { CreatePostModal } from '../components/community/CreatePostModal';
 import { PublicProfileModal, PublicUserProfile, ChildInfo, ProfileTestimonial } from '../components/community/PublicProfileModal';
 import { CommunityPollBanner } from '../components/community/CommunityPollBanner';
-import { CommunityPollModal } from '../components/community/CommunityPollModal';
 import { PostSkeleton } from '../components/common/SkeletonLoader';
 import { getLevelFromXP } from '../data/gamificationData';
 import { useToast } from '../context/ToastContext';
@@ -159,9 +158,6 @@ export const CommunityPage: React.FC = () => {
   } = useCommunity();
   const { user, isAuthenticated, awardBadge } = useAuth();
   const { showToast } = useToast();
-
-  // 🗳️ Enquetes Pop-up State
-  const [isPollModalOpen, setIsPollModalOpen] = useState(false);
 
   // Pull-to-Refresh State
   const [pullDistance, setPullDistance] = useState(0);
@@ -408,24 +404,6 @@ export const CommunityPage: React.FC = () => {
       isCancelled = true;
     };
   }, [user?.id]);
-
-  // Disparo do Pop-up de Enquete Interativa (após check-in emocional concluído/dispensado)
-  useEffect(() => {
-    if (isDailyCheckinModalOpen || !activePoll || activePoll.status !== 'open') return;
-
-    const userKey = user?.id || 'anon';
-    const pollSeenKey = `elana_poll_modal_seen_${userKey}_${activePoll.id}`;
-    const hasSeenModal = localStorage.getItem(pollSeenKey) === 'true';
-    const hasVoted = !!userVotedPollsMap[activePoll.id];
-
-    if (!hasSeenModal && !hasVoted) {
-      const timer = setTimeout(() => {
-        setIsPollModalOpen(true);
-        localStorage.setItem(pollSeenKey, 'true');
-      }, 700);
-      return () => clearTimeout(timer);
-    }
-  }, [isDailyCheckinModalOpen, activePoll?.id, user?.id, userVotedPollsMap]);
 
   const [activeRandomPhrase, setActiveRandomPhrase] = useState<string>('');
 
@@ -1673,15 +1651,6 @@ export const CommunityPage: React.FC = () => {
         <PublicProfileModal
           profile={selectedPublicProfile}
           onClose={() => setSelectedPublicProfile(null)}
-        />
-      )}
-
-      {/* 🗳️ Modal Pop-up de Enquete Interativa no 1º Acesso */}
-      {activePoll && activePoll.status === 'open' && (
-        <CommunityPollModal
-          isOpen={isPollModalOpen}
-          onClose={() => setIsPollModalOpen(false)}
-          poll={activePoll}
         />
       )}
 
