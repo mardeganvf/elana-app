@@ -350,7 +350,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               }`}
               title="Painel do Administrador & Guardião"
             >
-              <ShieldCheck className="w-4 h-4 text-[#FF7F5B] shrink-0" />
+              <ShieldCheck className={`w-4 h-4 shrink-0 transition-colors ${activeTab === 'admin' ? 'text-slate-950' : 'text-[#FF7F5B]'}`} />
               <span>Painel Admin</span>
             </button>
           )}
