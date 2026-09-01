@@ -8,6 +8,7 @@ import { HomePage } from './pages/HomePage';
 import { PwaInstallBanner } from './components/pwa/PwaInstallBanner';
 import { ToastProvider } from './context/ToastContext';
 import { Journey } from './types';
+import { supabase } from './lib/supabase';
 
 // ⚡ Code Splitting: Lazy loading de rotas e modais secundários
 const ClassroomPage = React.lazy(() => import('./pages/ClassroomPage').then(m => ({ default: m.ClassroomPage })));
@@ -22,6 +23,7 @@ const CertificateModal = React.lazy(() => import('./components/gamification/Cert
 const LevelUpModal = React.lazy(() => import('./components/gamification/LevelUpModal').then(m => ({ default: m.LevelUpModal })));
 const UserLevelsModal = React.lazy(() => import('./components/gamification/UserLevelsModal').then(m => ({ default: m.UserLevelsModal })));
 const AuthModal = React.lazy(() => import('./components/auth/AuthModal').then(m => ({ default: m.AuthModal })));
+const ResetPasswordModal = React.lazy(() => import('./components/auth/ResetPasswordModal').then(m => ({ default: m.ResetPasswordModal })));
 const GuidedSpotlightTour = React.lazy(() => import('./components/onboarding/GuidedSpotlightTour').then(m => ({ default: m.GuidedSpotlightTour })));
 const BadgeRewardModal = React.lazy(() => import('./components/onboarding/BadgeRewardModal').then(m => ({ default: m.BadgeRewardModal })));
 const ProfileCompletionInviteModal = React.lazy(() => import('./components/onboarding/ProfileCompletionInviteModal').then(m => ({ default: m.ProfileCompletionInviteModal })));
@@ -48,8 +50,26 @@ const AppContent: React.FC = () => {
   const [isSpotlightTourOpen, setIsSpotlightTourOpen] = useState(false);
   const [isBadgeRewardOpen, setIsBadgeRewardOpen] = useState(false);
   const [isProfileInviteOpen, setIsProfileInviteOpen] = useState(false);
-  const [isUserLevelsListOpen, setIsUserLevelsListOpen] = useState(false);
   const [isPollModalOpen, setIsPollModalOpen] = useState(false);
+  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
+
+  // 🔑 Detecção Automática de Link de Recuperação de Senha do Supabase
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    if (hash.includes('type=recovery') || hash.includes('access_token=')) {
+      setIsResetPasswordModalOpen(true);
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsResetPasswordModalOpen(true);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // 🗳️ Disparo da Enquete no 1º Acesso Geral do Dia (Aba Conteúdos / Home)
   useEffect(() => {
@@ -291,6 +311,12 @@ const AppContent: React.FC = () => {
             poll={activePoll}
           />
         )}
+
+        {/* 🔑 Modal de Redefinição de Senha via Link de E-mail */}
+        <ResetPasswordModal
+          isOpen={isResetPasswordModalOpen}
+          onClose={() => setIsResetPasswordModalOpen(false)}
+        />
       </Suspense>
 
       {/* PWA Install Banner */}
