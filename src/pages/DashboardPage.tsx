@@ -505,7 +505,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                         try {
                           const newEmail = pendingEmail.trim().toLowerCase();
 
-                          // 1. Tentar validar como email_change (fluxo oficial de troca de e-mail)
+                          // 1. Verificar o código OTP recebido no e-mail
+                          //    Tentar email_change (fluxo correto) ou email (magic link fallback)
                           const { error: changeErr } = await supabase.auth.verifyOtp({
                             email: newEmail,
                             token,
@@ -513,7 +514,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           });
 
                           if (changeErr) {
-                            // 2. Fallback: verificar como magic link OTP
                             const { error: emailErr } = await supabase.auth.verifyOtp({
                               email: newEmail,
                               token,
@@ -525,24 +525,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                             }
                           }
 
-                          // 3. Nesse ponto a sessão está 100% renovada (verifyOtp atualiza a sessão).
-                          //    Forçar a atualização do e-mail no Authentication com a sessão fresca.
-                          //    Isso garante que auth.users.email = newEmail sempre, independente
-                          //    do tipo de token que foi validado acima.
-                          const { error: authUpdateErr } = await supabase.auth.updateUser({
-                            email: newEmail
+                          // 2. Após OTP verificado, a sessão está renovada.
+                          //    Usar RPC com SECURITY DEFINER para atualizar auth.users + profiles
+                          //    de forma atômica e segura (só altera o próprio usuário via auth.uid())
+                          const { error: rpcErr } = await supabase.rpc('update_own_email', {
+                            new_email: newEmail
                           });
 
-                          if (authUpdateErr) {
-                            // Se retornar "Email address already registered" é porque já está certo no auth.users.
-                            // Qualquer outro erro é ignorado silenciosamente para não bloquear o fluxo.
-                            const msg = authUpdateErr.message.toLowerCase();
-                            if (!msg.includes('already') && !msg.includes('same email')) {
-                              console.warn('Notice syncing email to auth.users after verify:', authUpdateErr.message);
-                            }
+                          if (rpcErr) {
+                            throw new Error(rpcErr.message || 'Erro ao atualizar e-mail. Tente novamente.');
                           }
 
-                          // 4. Atualiza o profiles e o AuthContext local
+                          // 3. Atualizar o AuthContext local
                           if (updateUser) {
                             await updateUser({
                               name: userName.trim(),
