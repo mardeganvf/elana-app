@@ -17,9 +17,12 @@ import {
   Inbox,
   Trash2,
   RotateCcw,
-  Search
+  Search,
+  Vote,
+  Plus
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCommunity } from '../context/CommunityContext';
 import { supabase } from '../lib/supabase';
 
 // Types for Admin Data
@@ -78,7 +81,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     )
   );
 
-  const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users'>('sos');
+  const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'polls'>('sos');
+
+  // 🗳️ Enquetes State
+  const { polls, createPoll, togglePollStatus } = useCommunity();
+  const [newPollTitle, setNewPollTitle] = useState('');
+  const [newPollDesc, setNewPollDesc] = useState('');
+  const [newPollCategory, setNewPollCategory] = useState('Rotina & Maternidade');
+  const [newPollOptions, setNewPollOptions] = useState<string[]>(['', '', '']);
+  const [isPublishingPoll, setIsPublishingPoll] = useState(false);
+  const [pollSuccessMessage, setPollSuccessMessage] = useState(false);
 
   // 🛟 SOS Email Inbox Folder State
   const [sosFolder, setSosFolder] = useState<'inbox' | 'completed' | 'trash'>('inbox');
@@ -454,6 +466,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         >
           <Users className="w-4 h-4" />
           <span>Gestão de Membros ({members.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveAdminTab('polls')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-xs transition-all shrink-0 border ${
+            activeAdminTab === 'polls'
+              ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-lg scale-[1.02]'
+              : 'bg-[#101B1E] text-slate-300 border-white/10 hover:bg-white/10'
+          }`}
+        >
+          <Vote className="w-4 h-4" />
+          <span>Enquetes Interativas ({polls.length})</span>
         </button>
       </div>
 
@@ -1080,6 +1104,258 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             ))}
           </div>
         </section>
+      )}
+
+      {/* TAB 6: 🗳️ GESTÃO DE ENQUETES (SUA VOZ IMPORTA) */}
+      {activeAdminTab === 'polls' && (
+        <div className="space-y-8">
+          {/* Card 1: Criar Nova Enquete */}
+          <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
+                  <Vote className="w-5 h-5 text-[#FF7F5B]" />
+                  Lançar Nova Enquete na Comunidade (Sua Voz Importa)
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  As enquetes publicadas aparecem em destaque no topo do feed e como pop-up de boas-vindas para os membros.
+                </p>
+              </div>
+            </div>
+
+            {pollSuccessMessage && (
+              <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fade-in">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Enquete publicada com sucesso na Comunidade! 🎉</span>
+              </div>
+            )}
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!newPollTitle.trim()) return;
+                const validOptions = newPollOptions.filter(opt => opt.trim().length > 0);
+                if (validOptions.length < 2) {
+                  alert('Por favor, preencha pelo menos 2 opções de resposta.');
+                  return;
+                }
+
+                setIsPublishingPoll(true);
+                try {
+                  await createPoll({
+                    title: newPollTitle.trim(),
+                    description: newPollDesc.trim() || undefined,
+                    category: newPollCategory,
+                    options: validOptions
+                  });
+                  setNewPollTitle('');
+                  setNewPollDesc('');
+                  setNewPollOptions(['', '', '']);
+                  setPollSuccessMessage(true);
+                  setTimeout(() => setPollSuccessMessage(false), 4000);
+                } finally {
+                  setIsPublishingPoll(false);
+                }
+              }}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2 space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                    Pergunta da Enquete *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newPollTitle}
+                    onChange={(e) => setNewPollTitle(e.target.value)}
+                    placeholder="Ex: Qual é o seu maior desafio na rotina noturna com os pequenos?"
+                    className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                    Categoria / Tema
+                  </label>
+                  <select
+                    value={newPollCategory}
+                    onChange={(e) => setNewPollCategory(e.target.value)}
+                    className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white focus:outline-none transition-all cursor-pointer"
+                  >
+                    <option value="Rotina & Maternidade">Rotina & Maternidade</option>
+                    <option value="Sono & Desaceleração">Sono & Desaceleração</option>
+                    <option value="Birras & Limites">Birras & Limites</option>
+                    <option value="Rede de Apoio">Rede de Apoio</option>
+                    <option value="Autocuidado & Culpa">Autocuidado & Culpa</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                  Descrição ou Contexto (Opcional)
+                </label>
+                <input
+                  type="text"
+                  value={newPollDesc}
+                  onChange={(e) => setNewPollDesc(e.target.value)}
+                  placeholder="Ex: Sua resposta ajuda nossa curadoria a criar os próximos conteúdos e acolhimentos."
+                  className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                  Opções de Resposta * (mínimo 2)
+                </label>
+                {newPollOptions.map((opt, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="w-6 text-center text-xs font-mono font-bold text-[#FF7F5B]">
+                      {idx + 1}.
+                    </span>
+                    <input
+                      type="text"
+                      value={opt}
+                      onChange={(e) => {
+                        const updated = [...newPollOptions];
+                        updated[idx] = e.target.value;
+                        setNewPollOptions(updated);
+                      }}
+                      placeholder={`Opção de resposta ${idx + 1}`}
+                      className="flex-1 bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
+                    />
+                    {newPollOptions.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => setNewPollOptions(newPollOptions.filter((_, i) => i !== idx))}
+                        className="text-slate-500 hover:text-red-400 p-2 text-xs"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+
+                {newPollOptions.length < 6 && (
+                  <button
+                    type="button"
+                    onClick={() => setNewPollOptions([...newPollOptions, ''])}
+                    className="text-xs font-bold text-[#FF7F5B] hover:text-[#FFD166] flex items-center gap-1.5 pt-1 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Adicionar mais uma opção</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isPublishingPoll}
+                  className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-3.5 px-6 rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>{isPublishingPoll ? 'Publicando...' : 'Publicar Enquete na Comunidade'}</span>
+                </button>
+              </div>
+            </form>
+          </section>
+
+          {/* Card 2: Lista e Histórico de Enquetes */}
+          <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span>Enquetes Cadastradas & Resultados em Tempo Real</span>
+                  <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full text-slate-300">
+                    {polls.length}
+                  </span>
+                </h3>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {polls.map((poll) => {
+                const total = Math.max(1, poll.totalVotes);
+                const isOpen = poll.status === 'open';
+
+                return (
+                  <div
+                    key={poll.id}
+                    className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 space-y-4 shadow-md"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                            isOpen
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                          }`}>
+                            {isOpen ? '🟢 Aberta para Votação' : '⚪ Encerrada'}
+                          </span>
+                          {poll.category && (
+                            <span className="text-[10px] text-slate-400 font-bold">
+                              {poll.category}
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-bold text-white mt-1.5">
+                          {poll.title}
+                        </h4>
+                        {poll.description && (
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {poll.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-xs font-bold text-slate-300">
+                          {poll.totalVotes} votos
+                        </span>
+                        <button
+                          onClick={() => togglePollStatus(poll.id)}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                            isOpen
+                              ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          }`}
+                        >
+                          {isOpen ? 'Encerrar Votação' : 'Reabrir Enquete'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Progress bars per option */}
+                    <div className="space-y-2">
+                      {poll.options.map((opt) => {
+                        const pct = Math.round((opt.votesCount / total) * 100);
+                        return (
+                          <div key={opt.id} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs text-slate-300">
+                              <span>{opt.text}</span>
+                              <span className="font-mono font-bold text-[#FFD166]">
+                                {opt.votesCount} ({pct}%)
+                              </span>
+                            </div>
+                            <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
+                              <div
+                                className="bg-[#FF7F5B] h-full rounded-full transition-all duration-500"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </div>
       )}
 
     </div>

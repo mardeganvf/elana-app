@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { CommunityPost, CommunityComment, EmotionalIntention, SensitivityLevel } from '../types';
+import { CommunityPost, CommunityComment, EmotionalIntention, SensitivityLevel, CommunityPoll, NewPollPayload } from '../types';
 
 import { useAuth } from './AuthContext';
 import { supabase } from '../lib/supabase';
@@ -71,6 +71,13 @@ interface CommunityContextType {
   toggleCommentReaction: (postId: string, commentId: string, reactionKey: string) => void;
   addComment: (postId: string, content: string, isAnonymous?: boolean) => { isFlagged: boolean; matchedWord?: string };
   refreshPosts: () => Promise<void>;
+  // 🗳️ Enquetes da Comunidade ("Sua Voz Importa")
+  polls: CommunityPoll[];
+  activePoll: CommunityPoll | null;
+  userVotedPollsMap: Record<string, string>;
+  votePoll: (pollId: string, optionId: string) => Promise<void>;
+  createPoll: (payload: NewPollPayload) => Promise<void>;
+  togglePollStatus: (pollId: string) => Promise<void>;
 }
 
 const CommunityContext = createContext<CommunityContextType | undefined>(undefined);
@@ -99,6 +106,24 @@ const sanitizePost = (post: CommunityPost): CommunityPost => {
   return post;
 };
 
+const INITIAL_POLLS: CommunityPoll[] = [
+  {
+    id: 'poll-rotina-sono',
+    title: 'Qual é o seu maior desafio na rotina noturna com os pequenos?',
+    description: 'Sua resposta ajuda nossa curadoria a criar os próximos conteúdos e acolhimentos.',
+    category: 'Sono & Rotina',
+    options: [
+      { id: 'opt-1', text: 'Resistência para ir para a cama e desacelerar', votesCount: 142 },
+      { id: 'opt-2', text: 'Despertares noturnos múltiplos ou madrugada longa', votesCount: 98 },
+      { id: 'opt-3', text: 'Minha própria exaustão e falta de paciência ao final do dia', votesCount: 184 },
+      { id: 'opt-4', text: 'Dificuldade de manter consistência nos horários', votesCount: 65 }
+    ],
+    totalVotes: 489,
+    status: 'open',
+    createdAt: 'Hoje'
+  }
+];
+
 const PAGE_SIZE = 15;
 
 export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -107,6 +132,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasMorePosts, setHasMorePosts] = useState<boolean>(true);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+
+  // 🗳️ Enquetes da Comunidade ("Sua Voz Importa")
+  const [polls, setPolls] = useState<CommunityPoll[]>(INITIAL_POLLS);
+  const [activePoll, setActivePoll] = useState<CommunityPoll | null>(INITIAL_POLLS[0]);
+  const [userVotedPollsMap, setUserVotedPollsMap] = useState<Record<string, string>>({});
 
   const mapPostFromDb = (item: any): CommunityPost => ({
     id: item.id,
@@ -191,6 +221,39 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  // Carregar enquetes e votos locais/remotos
+  useEffect(() => {
+    const userKey = user?.id || 'anon';
+    try {
+      const stored = localStorage.getItem(`elana_poll_votes_${userKey}`);
+      if (stored) {
+        setUserVotedPollsMap(JSON.parse(stored));
+      }
+    } catch {}
+
+    supabase
+      .from('community_polls')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data && data.length > 0) {
+          const remotePolls: CommunityPoll[] = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            category: item.category,
+            options: item.options || [],
+            totalVotes: item.total_votes || 0,
+            status: item.status || 'open',
+            createdAt: new Date(item.created_at).toLocaleDateString('pt-BR')
+          }));
+          setPolls(remotePolls);
+          const openPoll = remotePolls.find(p => p.status === 'open');
+          if (openPoll) setActivePoll(openPoll);
+        }
+      });
+  }, [user?.id]);
+
   // Fetch posts from Supabase on mount
   useEffect(() => {
     fetchSupabasePosts(true);
@@ -200,7 +263,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     await fetchSupabasePosts(false);
   };
 
-  // Supabase Realtime: live posts and comments via WebSockets
+  // Supabase Realtime: live posts, reactions, comments and polls via WebSockets
   useEffect(() => {
     const channel = supabase
       .channel('community-realtime')
@@ -210,30 +273,30 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         (payload: any) => {
           const item = payload.new;
           if (!item) return;
-          const newPost: CommunityPost = {
-            id: item.id,
-            journeyId: item.journey_id,
-            transversalRoomId: item.transversal_room_id,
-            ageBracketId: item.age_bracket_id,
-            emotionalIntention: item.emotional_intention,
-            authorId: item.author_id || 'unknown',
-            authorName: item.author_name,
-            authorAvatar: item.author_avatar,
-            authorRole: 'membro',
-            isAnonymous: item.is_anonymous,
-            sensitivityLevel: item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
-            title: item.title,
-            content: item.content,
-            createdAt: new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-            reactions: {},
-            userReactions: {},
-            comments: []
-          };
+          const newPost = mapPostFromDb(item);
           setPosts(prev => {
-            // Avoid duplicates (we may have added it optimistically)
             if (prev.some(p => p.id === newPost.id)) return prev;
             return [sanitizePost(newPost), ...prev];
           });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'community_posts' },
+        (payload: any) => {
+          const updated = payload.new;
+          if (!updated) return;
+          setPosts(prev => prev.map(p => {
+            if (p.id === updated.id) {
+              return {
+                ...p,
+                reactions: updated.reactions || p.reactions,
+                title: updated.title,
+                content: updated.content
+              };
+            }
+            return p;
+          }));
         }
       )
       .on(
@@ -263,6 +326,36 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             }
             return post;
           }));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'community_polls' },
+        (payload: any) => {
+          if (payload.new) {
+            const remotePoll: CommunityPoll = {
+              id: payload.new.id,
+              title: payload.new.title,
+              description: payload.new.description,
+              category: payload.new.category,
+              options: payload.new.options || [],
+              totalVotes: payload.new.total_votes || 0,
+              status: payload.new.status || 'open',
+              createdAt: new Date(payload.new.created_at).toLocaleDateString('pt-BR')
+            };
+            setPolls(prev => {
+              const existingIdx = prev.findIndex(p => p.id === remotePoll.id);
+              if (existingIdx >= 0) {
+                const copy = [...prev];
+                copy[existingIdx] = remotePoll;
+                return copy;
+              }
+              return [remotePoll, ...prev];
+            });
+            if (remotePoll.status === 'open') {
+              setActivePoll(remotePoll);
+            }
+          }
         }
       )
       .subscribe();
@@ -511,6 +604,133 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return { isFlagged, matchedWord };
   };
 
+  const votePoll = async (pollId: string, optionId: string) => {
+    const userKey = user?.id || 'anon';
+    if (userVotedPollsMap[pollId]) return;
+
+    const nextVotedMap = { ...userVotedPollsMap, [pollId]: optionId };
+    setUserVotedPollsMap(nextVotedMap);
+    try {
+      localStorage.setItem(`elana_poll_votes_${userKey}`, JSON.stringify(nextVotedMap));
+    } catch {}
+
+    let updatedPollObj: CommunityPoll | null = null;
+    setPolls(prev => prev.map(poll => {
+      if (poll.id === pollId) {
+        const updatedOptions = poll.options.map(opt => {
+          if (opt.id === optionId) {
+            return { ...opt, votesCount: opt.votesCount + 1 };
+          }
+          return opt;
+        });
+        const total = poll.totalVotes + 1;
+        const updated = {
+          ...poll,
+          options: updatedOptions,
+          totalVotes: total,
+          userVotedOptionId: optionId
+        };
+        updatedPollObj = updated;
+        return updated;
+      }
+      return poll;
+    }));
+
+    if (activePoll && activePoll.id === pollId && updatedPollObj) {
+      setActivePoll(updatedPollObj);
+    }
+
+    if (updatedPollObj && pollId.length > 20) {
+      try {
+        await supabase
+          .from('community_polls')
+          .update({
+            options: (updatedPollObj as CommunityPoll).options,
+            total_votes: (updatedPollObj as CommunityPoll).totalVotes
+          })
+          .eq('id', pollId);
+      } catch (err) {
+        console.warn('Supabase poll vote notice:', err);
+      }
+    }
+
+    addXP(10);
+
+    // 🏆 Conquistas da categoria "Sua Voz Importa":
+    awardBadge('b42'); // Primeiro Palpite (1º voto em enquete)
+    const votedCount = Object.keys(nextVotedMap).length;
+    if (votedCount >= 100) awardBadge('b47');
+    else if (votedCount >= 50) awardBadge('b46');
+    else if (votedCount >= 25) awardBadge('b45');
+    else if (votedCount >= 10) awardBadge('b44');
+    else if (votedCount >= 5) awardBadge('b43');
+  };
+
+  const createPoll = async (payload: NewPollPayload) => {
+    const newPoll: CommunityPoll = {
+      id: `poll-${Date.now()}`,
+      title: payload.title,
+      description: payload.description,
+      category: payload.category || 'Geral',
+      options: payload.options.map((text, i) => ({
+        id: `opt-${i + 1}`,
+        text: text.trim(),
+        votesCount: 0
+      })),
+      totalVotes: 0,
+      status: 'open',
+      createdAt: 'Agora mesmo'
+    };
+
+    setPolls(prev => [newPoll, ...prev]);
+    setActivePoll(newPoll);
+
+    try {
+      const { data } = await supabase
+        .from('community_polls')
+        .insert([{
+          title: newPoll.title,
+          description: newPoll.description,
+          category: newPoll.category,
+          options: newPoll.options,
+          total_votes: 0,
+          status: 'open'
+        }])
+        .select();
+
+      if (data && data[0]) {
+        newPoll.id = data[0].id;
+      }
+    } catch (err) {
+      console.warn('Supabase create poll notice:', err);
+    }
+  };
+
+  const togglePollStatus = async (pollId: string) => {
+    setPolls(prev => prev.map(poll => {
+      if (poll.id === pollId) {
+        const nextStatus = poll.status === 'open' ? 'closed' : 'open';
+        return { ...poll, status: nextStatus };
+      }
+      return poll;
+    }));
+
+    if (activePoll && activePoll.id === pollId) {
+      setActivePoll(prev => prev ? { ...prev, status: prev.status === 'open' ? 'closed' : 'open' } : null);
+    }
+
+    if (pollId.length > 20) {
+      try {
+        const current = polls.find(p => p.id === pollId);
+        const nextStatus = current?.status === 'open' ? 'closed' : 'open';
+        await supabase
+          .from('community_polls')
+          .update({ status: nextStatus })
+          .eq('id', pollId);
+      } catch {}
+    }
+  };
+
   return (
     <CommunityContext.Provider value={{
       posts,
@@ -522,7 +742,13 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       toggleReaction,
       toggleCommentReaction,
       addComment,
-      refreshPosts
+      refreshPosts,
+      polls,
+      activePoll,
+      userVotedPollsMap,
+      votePoll,
+      createPoll,
+      togglePollStatus
     }}>
       {children}
     </CommunityContext.Provider>

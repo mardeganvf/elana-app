@@ -158,3 +158,29 @@ export interface StoryItem {
   date: string;
   likes: number;
 }
+
+export interface PollOption {
+  id: string;
+  text: string;
+  votesCount: number;
+}
+
+export interface CommunityPoll {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  options: PollOption[];
+  totalVotes: number;
+  status: 'open' | 'closed';
+  createdAt: string;
+  expiresAt?: string;
+  userVotedOptionId?: string;
+}
+
+export interface NewPollPayload {
+  title: string;
+  description?: string;
+  category?: string;
+  options: string[];
+}
