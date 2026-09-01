@@ -10,6 +10,7 @@ import { PwaInstallBanner } from './components/pwa/PwaInstallBanner';
 import { ToastProvider } from './context/ToastContext';
 import { Journey } from './types';
 import { supabase } from './lib/supabase';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // ⚡ Code Splitting: Lazy loading de rotas e modais secundários
 const ClassroomPage = React.lazy(() => import('./pages/ClassroomPage').then(m => ({ default: m.ClassroomPage })));
@@ -165,51 +166,53 @@ const AppContent: React.FC = () => {
         />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-safe-nav md:pb-0">
-          <Suspense fallback={<PageLoadingFallback />}>
-            {activeTab === 'home' && (
-              <HomePage
-                onSelectJourney={handleSelectJourney}
-                onStartLearning={handleStartLearning}
-              />
-            )}
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoadingFallback />}>
+              {activeTab === 'home' && (
+                <HomePage
+                  onSelectJourney={handleSelectJourney}
+                  onStartLearning={handleStartLearning}
+                />
+              )}
 
-            {activeTab === 'classroom' && selectedJourneyForClassroom && (
-              <ClassroomPage
-                journey={selectedJourneyForClassroom}
-                onBack={() => {
-                  setActiveTab('home');
-                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                }}
-                onOpenCertificate={(journey: Journey) => setCertificateJourney(journey)}
-              />
-            )}
+              {activeTab === 'classroom' && selectedJourneyForClassroom && (
+                <ClassroomPage
+                  journey={selectedJourneyForClassroom}
+                  onBack={() => {
+                    setActiveTab('home');
+                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  }}
+                  onOpenCertificate={(journey: Journey) => setCertificateJourney(journey)}
+                />
+              )}
 
-            {activeTab === 'community' && <CommunityPage />}
+              {activeTab === 'community' && <CommunityPage />}
 
-            {activeTab === 'dashboard' && (
-              <DashboardPage
-                onStartLearning={handleStartLearning}
-                onOpenCertificate={(journey: Journey) => setCertificateJourney(journey)}
-                onExploreCatalog={() => {
-                  setActiveTab('home');
-                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                }}
-              />
-            )}
+              {activeTab === 'dashboard' && (
+                <DashboardPage
+                  onStartLearning={handleStartLearning}
+                  onOpenCertificate={(journey: Journey) => setCertificateJourney(journey)}
+                  onExploreCatalog={() => {
+                    setActiveTab('home');
+                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  }}
+                />
+              )}
 
-            {activeTab === 'admin' && (
-              <AdminPage
-                onBackToHome={() => {
-                  setActiveTab('home');
-                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                }}
-                onOpenLogin={() => {
-                  setActiveTab('login');
-                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                }}
-              />
-            )}
-          </Suspense>
+              {activeTab === 'admin' && (
+                <AdminPage
+                  onBackToHome={() => {
+                    setActiveTab('home');
+                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  }}
+                  onOpenLogin={() => {
+                    setActiveTab('login');
+                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  }}
+                />
+              )}
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
 

@@ -20,8 +20,34 @@ export const CommunityPollModal: React.FC<CommunityPollModalProps> = ({
 
   if (!isOpen || !poll || poll.status !== 'open') return null;
 
-  const votedOptionId = userVotedPollsMap[poll.id] || poll.userVotedOptionId;
+  const votedOptionId = (userVotedPollsMap && poll.id && userVotedPollsMap[poll.id]) || poll.userVotedOptionId;
   const hasVoted = !!votedOptionId;
+
+  // Garantir que options seja sempre um array válido de objetos { id, text, votesCount }
+  let rawOptions: any = poll.options;
+  if (typeof rawOptions === 'string') {
+    try {
+      rawOptions = JSON.parse(rawOptions);
+    } catch {
+      rawOptions = [];
+    }
+  }
+  if (!Array.isArray(rawOptions)) {
+    rawOptions = [];
+  }
+
+  const safeOptions = rawOptions.map((option: any, idx: number) => {
+    if (typeof option === 'string') {
+      return { id: `opt-${idx + 1}`, text: option, votesCount: 0 };
+    }
+    return {
+      id: option?.id || `opt-${idx + 1}`,
+      text: option?.text || '',
+      votesCount: Number(option?.votesCount || 0)
+    };
+  });
+
+  if (safeOptions.length === 0) return null;
 
   const handleVote = async (optionId: string) => {
     if (hasVoted || isSubmitting) return;
@@ -36,7 +62,7 @@ export const CommunityPollModal: React.FC<CommunityPollModalProps> = ({
     }
   };
 
-  const total = Math.max(1, poll.totalVotes);
+  const total = Math.max(1, poll.totalVotes || 0);
 
   return (
     <div 
@@ -76,7 +102,7 @@ export const CommunityPollModal: React.FC<CommunityPollModalProps> = ({
 
         {/* Options */}
         <div className="space-y-3 relative z-10">
-          {poll.options.map((option) => {
+          {safeOptions.map((option) => {
             const isSelected = votedOptionId === option.id;
             const percentage = Math.round((option.votesCount / total) * 100);
 

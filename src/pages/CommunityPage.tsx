@@ -544,7 +544,10 @@ export const CommunityPage: React.FC = () => {
   };
 
   // Filter Posts based on active selection, search query & emotional check-in
-  const filteredPosts = posts.filter(post => {
+  const safePosts = Array.isArray(posts) ? posts : [];
+  const filteredPosts = safePosts.filter(post => {
+    if (!post) return false;
+
     // Selection filter (if null, show all posts)
     if (activeSelection) {
       if (activeSelection.type === 'jornada') {
@@ -570,9 +573,9 @@ export const CommunityPage: React.FC = () => {
     // Search query filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const titleMatch = post.title.toLowerCase().includes(q);
-      const contentMatch = post.content.toLowerCase().includes(q);
-      const authorMatch = post.authorName.toLowerCase().includes(q);
+      const titleMatch = (post.title || '').toLowerCase().includes(q);
+      const contentMatch = (post.content || '').toLowerCase().includes(q);
+      const authorMatch = (post.authorName || '').toLowerCase().includes(q);
       return titleMatch || contentMatch || authorMatch;
     }
 
@@ -1411,7 +1414,8 @@ export const CommunityPage: React.FC = () => {
                       {/* Reaction Bar */}
                       <div className="pt-3 border-t border-white/10 flex items-center gap-2 flex-wrap">
                         {BRAND_REACTIONS.map(reaction => {
-                          const count = post.reactions[reaction.id] || 0;
+                          const postReactions = post.reactions || {};
+                          const count = postReactions[reaction.id] || 0;
                           const isReacted = !!(post.userReactions && post.userReactions[reaction.id]);
 
                           return (
@@ -1435,128 +1439,136 @@ export const CommunityPage: React.FC = () => {
                       </div>
 
                       {/* Rede de Apoio com X Respostas Button (Inline Expand Toggle) */}
-                      <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-                        <button
-                          onClick={() => toggleCommentsExpansion(post.id)}
-                          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm border ${
-                            isInlineExpanded
-                              ? 'bg-[#FF7F5B] text-white border-[#FF7F5B]'
-                              : 'bg-[#070D0F] text-slate-300 border-white/10 hover:bg-white/10 hover:text-white'
-                          }`}
-                        >
-                          <MessageSquare className="w-4 h-4 text-[#8A9A5B]" />
-                          <span>Rede de Apoio ({post.comments.length})</span>
-                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isInlineExpanded ? 'rotate-180' : ''}`} />
-                        </button>
+                      {(() => {
+                        const postComments = Array.isArray(post.comments) ? post.comments : [];
+                        return (
+                          <>
+                            <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                              <button
+                                onClick={() => toggleCommentsExpansion(post.id)}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm border ${
+                                  isInlineExpanded
+                                    ? 'bg-[#FF7F5B] text-white border-[#FF7F5B]'
+                                    : 'bg-[#070D0F] text-slate-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                }`}
+                              >
+                                <MessageSquare className="w-4 h-4 text-[#8A9A5B]" />
+                                <span>Rede de Apoio ({postComments.length})</span>
+                                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isInlineExpanded ? 'rotate-180' : ''}`} />
+                              </button>
 
-                        <span className="text-[11px] text-slate-400">
-                          {post.comments.length === 0 ? 'Seja o primeiro a acolher' : `${post.comments.length} respostas empáticas`}
-                        </span>
-                      </div>
+                              <span className="text-[11px] text-slate-400">
+                                {postComments.length === 0 ? 'Seja o primeiro a acolher' : `${postComments.length} respostas empáticas`}
+                              </span>
+                            </div>
 
-                      {/* Inline Expanded Comments Thread */}
-                      {isInlineExpanded && (
-                        <div className="pt-4 border-t border-white/10 space-y-4 animate-fade-in">
-                          <h5 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
-                            Rede de Acolhimento & Respostas
-                          </h5>
+                            {/* Inline Expanded Comments Thread */}
+                            {isInlineExpanded && (
+                              <div className="pt-4 border-t border-white/10 space-y-4 animate-fade-in">
+                                <h5 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+                                  Rede de Acolhimento & Respostas
+                                </h5>
 
-                          <div className="space-y-3">
-                            {post.comments.length === 0 ? (
-                              <p className="text-xs text-slate-400 italic bg-[#070D0F] p-4 rounded-2xl border border-white/5 text-center">
-                                Nenhuma resposta ainda nesta conversa. Deixe um desabafo ou palavra de acolhimento abaixo! 💬
-                              </p>
-                            ) : (
-                              post.comments.map(c => (
-                                <div key={c.id} className="flex gap-3 bg-[#070D0F] p-3.5 rounded-2xl border border-white/5">
-                                  <img
-                                    src={c.authorAvatar}
-                                    alt={c.authorName}
-                                    onClick={(c.isAnonymous || post.isAnonymous) ? undefined : () => openAuthorProfile({ id: c.authorId, name: c.authorName, avatar: c.authorAvatar, role: c.authorRole, tag: c.authorTag, isAnonymous: c.isAnonymous })}
-                                    className={`w-8 h-8 rounded-full object-cover shrink-0 border border-white/10 ${(c.isAnonymous || post.isAnonymous) ? '' : 'cursor-pointer hover:scale-105 transition-transform'}`}
-                                  />
-                                  <div className="space-y-1 flex-1">
-                                    <div className="flex items-center justify-between">
-                                      <div 
-                                        onClick={(c.isAnonymous || post.isAnonymous) ? undefined : () => openAuthorProfile({ id: c.authorId, name: c.authorName, avatar: c.authorAvatar, role: c.authorRole, tag: c.authorTag, isAnonymous: c.isAnonymous })}
-                                        className={`flex items-center gap-2 ${(c.isAnonymous || post.isAnonymous) ? '' : 'cursor-pointer group'}`}
-                                      >
-                                        <span className={`font-bold text-xs text-white ${(c.isAnonymous || post.isAnonymous) ? '' : 'group-hover:text-[#FF7F5B] transition-colors'}`}>{c.authorName}</span>
-                                      </div>
-                                      <span className="text-[10px] text-slate-400">{c.createdAt}</span>
-                                    </div>
-                                    <p className="text-slate-300 leading-relaxed">{c.content}</p>
+                                <div className="space-y-3">
+                                  {postComments.length === 0 ? (
+                                    <p className="text-xs text-slate-400 italic bg-[#070D0F] p-4 rounded-2xl border border-white/5 text-center">
+                                      Nenhuma resposta ainda nesta conversa. Deixe um desabafo ou palavra de acolhimento abaixo! 💬
+                                    </p>
+                                  ) : (
+                                    postComments.map(c => {
+                                      const commentReactions = c.reactions || {};
+                                      return (
+                                        <div key={c.id} className="flex gap-3 bg-[#070D0F] p-3.5 rounded-2xl border border-white/5">
+                                          <img
+                                            src={c.authorAvatar || ''}
+                                            alt={c.authorName || 'Membro'}
+                                            onClick={(c.isAnonymous || post.isAnonymous) ? undefined : () => openAuthorProfile({ id: c.authorId, name: c.authorName, avatar: c.authorAvatar, role: c.authorRole, tag: c.authorTag, isAnonymous: c.isAnonymous })}
+                                            className={`w-8 h-8 rounded-full object-cover shrink-0 border border-white/10 ${(c.isAnonymous || post.isAnonymous) ? '' : 'cursor-pointer hover:scale-105 transition-transform'}`}
+                                          />
+                                          <div className="space-y-1 flex-1">
+                                            <div className="flex items-center justify-between">
+                                              <div 
+                                                onClick={(c.isAnonymous || post.isAnonymous) ? undefined : () => openAuthorProfile({ id: c.authorId, name: c.authorName, avatar: c.authorAvatar, role: c.authorRole, tag: c.authorTag, isAnonymous: c.isAnonymous })}
+                                                className={`flex items-center gap-2 ${(c.isAnonymous || post.isAnonymous) ? '' : 'cursor-pointer group'}`}
+                                              >
+                                                <span className={`font-bold text-xs text-white ${(c.isAnonymous || post.isAnonymous) ? '' : 'group-hover:text-[#FF7F5B] transition-colors'}`}>{c.authorName}</span>
+                                              </div>
+                                              <span className="text-[10px] text-slate-400">{c.createdAt}</span>
+                                            </div>
+                                            <p className="text-slate-300 leading-relaxed">{c.content}</p>
 
-                                    {/* IA Antijulgamento Moderation Alert Badge */}
-                                    {c.status === 'sob_moderacao' && (
-                                      <div className="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl flex items-center gap-2 text-amber-300 text-[11px] my-1.5">
-                                        <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400 animate-pulse" />
-                                        <span><strong>IA Antijulgamento:</strong> Comentário retido para moderação preventiva da equipe.</span>
-                                      </div>
-                                    )}
+                                            {/* IA Antijulgamento Moderation Alert Badge */}
+                                            {c.status === 'sob_moderacao' && (
+                                              <div className="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl flex items-center gap-2 text-amber-300 text-[11px] my-1.5">
+                                                <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400 animate-pulse" />
+                                                <span><strong>IA Antijulgamento:</strong> Comentário retido para moderação preventiva da equipe.</span>
+                                              </div>
+                                            )}
 
-                                    {/* Simple Heart Reaction for Comments */}
-                                    <div className="pt-1.5 flex items-center">
+                                            {/* Simple Heart Reaction for Comments */}
+                                            <div className="pt-1.5 flex items-center">
+                                              <button
+                                                type="button"
+                                                onClick={() => toggleCommentReaction(post.id, c.id, 'apoio')}
+                                                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-bold transition-all border select-none ${
+                                                  c.userReactions?.['apoio']
+                                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm'
+                                                    : 'bg-[#101B1E] text-slate-400 border-white/10 hover:bg-white/10 hover:text-slate-200'
+                                                }`}
+                                                title="Coração"
+                                              >
+                                                <Heart className={`w-3.5 h-3.5 ${c.userReactions?.['apoio'] ? 'fill-current text-rose-400' : 'text-slate-400 hover:text-rose-400'}`} />
+                                                {(commentReactions['apoio'] || 0) > 0 && (
+                                                  <span className="text-[10px] font-extrabold text-rose-400">
+                                                    {commentReactions['apoio']}
+                                                  </span>
+                                                )}
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })
+                                  )}
+                                </div>
+
+                                {/* Add Inline Comment Form */}
+                                {isAuthenticated && (
+                                  <form onSubmit={(e) => handleInlineCommentSubmit(post.id, e)} className="space-y-2 pt-2">
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="text"
+                                        placeholder="Escreva uma resposta com empatia e respeito..."
+                                        value={commentInputs[post.id] || ''}
+                                        onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
+                                        className="flex-1 p-3 rounded-xl border border-white/10 text-base sm:text-xs bg-[#101B1E] text-white focus:outline-none focus:border-[#FF7F5B]"
+                                      />
                                       <button
-                                        type="button"
-                                        onClick={() => toggleCommentReaction(post.id, c.id, 'apoio')}
-                                        className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-bold transition-all border select-none ${
-                                          c.userReactions?.['apoio']
-                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm'
-                                            : 'bg-[#101B1E] text-slate-400 border-white/10 hover:bg-white/10 hover:text-slate-200'
-                                        }`}
-                                        title="Coração"
+                                        type="submit"
+                                        className="bg-[#FF7F5B] hover:bg-[#e06847] text-white p-3 rounded-xl transition-all shadow-md shrink-0"
                                       >
-                                        <Heart className={`w-3.5 h-3.5 ${c.userReactions?.['apoio'] ? 'fill-current text-rose-400' : 'text-slate-400 hover:text-rose-400'}`} />
-                                        {(c.reactions?.['apoio'] || 0) > 0 && (
-                                          <span className="text-[10px] font-extrabold text-rose-400">
-                                            {c.reactions?.['apoio']}
-                                          </span>
-                                        )}
+                                        <Send className="w-4 h-4" />
                                       </button>
                                     </div>
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                          </div>
 
-                          {/* Add Inline Comment Form */}
-                          {isAuthenticated && (
-                            <form onSubmit={(e) => handleInlineCommentSubmit(post.id, e)} className="space-y-2 pt-2">
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="text"
-                                  placeholder="Escreva uma resposta com empatia e respeito..."
-                                  value={commentInputs[post.id] || ''}
-                                  onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
-                                  className="flex-1 p-3 rounded-xl border border-white/10 text-base sm:text-xs bg-[#101B1E] text-white focus:outline-none focus:border-[#FF7F5B]"
-                                />
-                                <button
-                                  type="submit"
-                                  className="bg-[#FF7F5B] hover:bg-[#e06847] text-white p-3 rounded-xl transition-all shadow-md shrink-0"
-                                >
-                                  <Send className="w-4 h-4" />
-                                </button>
+                                    {post.transversalRoomId === 'confessionario' && (
+                                      <label className="flex items-center gap-2 text-[11px] text-purple-300 cursor-pointer select-none">
+                                        <input
+                                          type="checkbox"
+                                          checked={commentAnonMap[post.id] || false}
+                                          onChange={(e) => setCommentAnonMap({ ...commentAnonMap, [post.id]: e.target.checked })}
+                                          className="rounded border-purple-500 bg-[#101B1E] text-purple-500 focus:ring-0"
+                                        />
+                                        <span>Responder anonimamente como "Luz em Aprendizado"</span>
+                                      </label>
+                                    )}
+                                  </form>
+                                )}
                               </div>
-
-                              {post.transversalRoomId === 'confessionario' && (
-                                <label className="flex items-center gap-2 text-[11px] text-purple-300 cursor-pointer select-none">
-                                  <input
-                                    type="checkbox"
-                                    checked={commentAnonMap[post.id] || false}
-                                    onChange={(e) => setCommentAnonMap({ ...commentAnonMap, [post.id]: e.target.checked })}
-                                    className="rounded border-purple-500 bg-[#101B1E] text-purple-500 focus:ring-0"
-                                  />
-                                  <span>Responder anonimamente como "Luz em Aprendizado"</span>
-                                </label>
-                              )}
-                            </form>
-                          )}
-
-                        </div>
-                      )}
-
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   );
                 })}

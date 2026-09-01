@@ -14,8 +14,35 @@ export const CommunityPollBanner: React.FC<CommunityPollBannerProps> = ({ poll: 
 
   if (!poll || poll.status !== 'open') return null;
 
-  const votedOptionId = userVotedPollsMap[poll.id] || poll.userVotedOptionId;
+  // Garantir que userVotedPollsMap seja seguro
+  const votedOptionId = (userVotedPollsMap && poll.id && userVotedPollsMap[poll.id]) || poll.userVotedOptionId;
   const hasVoted = !!votedOptionId;
+
+  // Garantir que options seja sempre um array válido de objetos { id, text, votesCount }
+  let rawOptions: any = poll.options;
+  if (typeof rawOptions === 'string') {
+    try {
+      rawOptions = JSON.parse(rawOptions);
+    } catch {
+      rawOptions = [];
+    }
+  }
+  if (!Array.isArray(rawOptions)) {
+    rawOptions = [];
+  }
+
+  const safeOptions = rawOptions.map((option: any, idx: number) => {
+    if (typeof option === 'string') {
+      return { id: `opt-${idx + 1}`, text: option, votesCount: 0 };
+    }
+    return {
+      id: option?.id || `opt-${idx + 1}`,
+      text: option?.text || '',
+      votesCount: Number(option?.votesCount || 0)
+    };
+  });
+
+  if (safeOptions.length === 0) return null;
 
   const handleVote = async (optionId: string) => {
     if (hasVoted || isSubmitting) return;
@@ -27,7 +54,7 @@ export const CommunityPollBanner: React.FC<CommunityPollBannerProps> = ({ poll: 
     }
   };
 
-  const total = Math.max(1, poll.totalVotes);
+  const total = Math.max(1, poll.totalVotes || 0);
 
   return (
     <div className="bg-gradient-to-br from-[#101B1E] via-[#0E1618] to-[#070D0F] border border-[#FF7F5B]/30 rounded-3xl p-4 sm:p-6 shadow-xl relative overflow-hidden animate-fade-in group">
@@ -45,7 +72,7 @@ export const CommunityPollBanner: React.FC<CommunityPollBannerProps> = ({ poll: 
 
         <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
           <BarChart2 className="w-3.5 h-3.5 text-[#FFD166]" />
-          <span>{poll.totalVotes} {poll.totalVotes === 1 ? 'voto' : 'votos'}</span>
+          <span>{poll.totalVotes || 0} {(poll.totalVotes || 0) === 1 ? 'voto' : 'votos'}</span>
         </div>
       </div>
 
@@ -58,7 +85,7 @@ export const CommunityPollBanner: React.FC<CommunityPollBannerProps> = ({ poll: 
 
       {/* Options List */}
       <div className="space-y-2.5">
-        {poll.options.map((option) => {
+        {safeOptions.map((option) => {
           const isSelected = votedOptionId === option.id;
           const percentage = Math.round((option.votesCount / total) * 100);
 

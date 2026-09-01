@@ -138,6 +138,29 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [activePoll, setActivePoll] = useState<CommunityPoll | null>(INITIAL_POLLS[0]);
   const [userVotedPollsMap, setUserVotedPollsMap] = useState<Record<string, string>>({});
 
+  const parsePollOptions = (raw: any) => {
+    if (!raw) return [];
+    let opts = raw;
+    if (typeof opts === 'string') {
+      try {
+        opts = JSON.parse(opts);
+      } catch {
+        return [];
+      }
+    }
+    if (!Array.isArray(opts)) return [];
+    return opts.map((opt: any, idx: number) => {
+      if (typeof opt === 'string') {
+        return { id: `opt-${idx + 1}`, text: opt, votesCount: 0 };
+      }
+      return {
+        id: opt?.id || `opt-${idx + 1}`,
+        text: opt?.text || '',
+        votesCount: Number(opt?.votesCount || 0)
+      };
+    });
+  };
+
   const mapPostFromDb = (item: any): CommunityPost => ({
     id: item.id,
     journeyId: item.journey_id,
@@ -145,17 +168,17 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     ageBracketId: item.age_bracket_id,
     emotionalIntention: item.emotional_intention,
     authorId: item.author_id || 'demo-user',
-    authorName: item.author_name,
-    authorAvatar: item.author_avatar,
+    authorName: item.author_name || 'Membro da Comunidade',
+    authorAvatar: item.author_avatar || '',
     authorRole: 'membro',
-    isAnonymous: item.is_anonymous,
+    isAnonymous: !!item.is_anonymous,
     sensitivityLevel: item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
-    title: item.title,
-    content: item.content,
-    createdAt: new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-    reactions: {},
+    title: item.title || '',
+    content: item.content || '',
+    createdAt: item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora',
+    reactions: item.reactions && typeof item.reactions === 'object' ? item.reactions : {},
     userReactions: {},
-    comments: []
+    comments: Array.isArray(item.comments) ? item.comments : []
   });
 
   const fetchSupabasePosts = async (showLoading = false) => {
@@ -242,10 +265,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             title: item.title,
             description: item.description,
             category: item.category,
-            options: item.options || [],
+            options: parsePollOptions(item.options),
             totalVotes: item.total_votes || 0,
             status: item.status || 'open',
-            createdAt: new Date(item.created_at).toLocaleDateString('pt-BR')
+            createdAt: item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : 'Hoje'
           }));
           setPolls(remotePolls);
           const openPoll = remotePolls.find(p => p.status === 'open');
@@ -338,10 +361,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               title: payload.new.title,
               description: payload.new.description,
               category: payload.new.category,
-              options: payload.new.options || [],
+              options: parsePollOptions(payload.new.options),
               totalVotes: payload.new.total_votes || 0,
               status: payload.new.status || 'open',
-              createdAt: new Date(payload.new.created_at).toLocaleDateString('pt-BR')
+              createdAt: payload.new.created_at ? new Date(payload.new.created_at).toLocaleDateString('pt-BR') : 'Hoje'
             };
             setPolls(prev => {
               const existingIdx = prev.findIndex(p => p.id === remotePoll.id);
