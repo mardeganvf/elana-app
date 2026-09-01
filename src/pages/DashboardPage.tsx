@@ -359,7 +359,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
                         const isEmailChanged = pendingEmail.trim().toLowerCase() !== confirmedEmail.trim().toLowerCase();
 
-                        // Se o e-mail foi alterado, dispara o envio do código real via Supabase OTP
+                        // Se o e-mail foi alterado, dispara a alteração oficial no Supabase Auth
                         if (isEmailChanged) {
                           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                           if (!emailRegex.test(pendingEmail.trim())) {
@@ -370,24 +370,35 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           setIsSendingOtp(true);
                           setEmailVerificationError('');
                           try {
-                            const { error: otpError } = await supabase.auth.signInWithOtp({
-                              email: pendingEmail.trim().toLowerCase(),
-                              options: {
-                                data: { name: userName.trim() }
-                              }
+                            // Salva nome e telefone atualizados primeiro
+                            if (updateUser) {
+                              await updateUser({
+                                name: userName.trim(),
+                                phone: userPhone.trim()
+                              });
+                            }
+
+                            // Dispara envio oficial de confirmação de e-mail via Supabase Auth
+                            const { error: updateAuthErr } = await supabase.auth.updateUser({
+                              email: pendingEmail.trim().toLowerCase()
                             });
 
-                            if (otpError) {
-                              showToast('error', `Erro ao enviar código: ${otpError.message}`);
-                              return;
+                            if (updateAuthErr) {
+                              // Fallback via OTP se a sessão exigir reautenticação
+                              await supabase.auth.signInWithOtp({
+                                email: pendingEmail.trim().toLowerCase(),
+                                options: {
+                                  data: { name: userName.trim() }
+                                }
+                              });
                             }
 
                             setIsVerifyingEmailCode(true);
                             setInputEmailCode('');
                             setResendCooldown(60);
-                            showToast('success', `Código enviado para ${pendingEmail.trim()}! Verifique seu e-mail.`);
+                            showToast('success', `E-mail de confirmação enviado para ${pendingEmail.trim()}!`);
                           } catch (err: any) {
-                            showToast('error', err.message || 'Erro ao enviar código de verificação.');
+                            showToast('error', err.message || 'Erro ao enviar confirmação de e-mail.');
                           } finally {
                             setIsSendingOtp(false);
                           }
@@ -416,14 +427,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       {isSendingOtp ? (
                         <>
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          <span>Enviando Código...</span>
+                          <span>Enviando Confirmação...</span>
                         </>
                       ) : isSavingProfile ? (
                         <span>Salvando...</span>
                       ) : pendingEmail.trim().toLowerCase() !== confirmedEmail.trim().toLowerCase() ? (
                         <>
                           <Mail className="w-3.5 h-3.5" />
-                          <span>Enviar Código de Confirmação</span>
+                          <span>Enviar Confirmação por E-mail</span>
                         </>
                       ) : (
                         <span>Salvar Alterações</span>
@@ -444,12 +455,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   </div>
                 </div>
               ) : (
-                /* Step 2: Digitação e Validação do Código Real Recebido por E-mail */
+                /* Step 2: Card de Confirmação de E-mail (Link ou Código) */
                 <div className="flex flex-col gap-3 bg-[#070D0F] p-5 rounded-2xl border border-[#FF7F5B]/50 shadow-xl animate-fade-in">
                   <div className="flex items-center justify-between border-b border-white/10 pb-2">
                     <span className="text-xs font-black text-[#FF7F5B] uppercase tracking-wider flex items-center gap-1.5">
                       <Mail className="w-4 h-4 text-[#FF7F5B]" />
-                      <span>Validação de Segurança do Novo E-mail</span>
+                      <span>Confirmação Enviada por E-mail</span>
                     </span>
                     <button
                       onClick={() => {
@@ -462,9 +473,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                     </button>
                   </div>
 
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Enviamos um código de verificação para <strong className="text-white font-bold">{pendingEmail}</strong>. Digite o código recebido no seu e-mail para validar e confirmar a alteração:
-                  </p>
+                  <div className="bg-[#101B1E] p-4 rounded-xl border border-white/10 space-y-2">
+                    <p className="text-xs text-slate-200 leading-relaxed">
+                      Enviamos uma mensagem de segurança para <strong className="text-[#FF7F5B] font-bold">{pendingEmail}</strong>.
+                    </p>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      👉 <strong>Basta abrir o seu e-mail e clicar no link de confirmação</strong>. Ao clicar, seu novo e-mail será validado e ativado imediatamente!
+                    </p>
+                  </div>
 
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-1">
                     <input
@@ -475,7 +491,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                         setInputEmailCode(e.target.value);
                         if (emailVerificationError) setEmailVerificationError('');
                       }}
-                      placeholder="Código do e-mail"
+                      placeholder="Código (se recebido)"
                       className="px-4 py-2.5 bg-[#101B1E] border border-white/20 rounded-xl text-base sm:text-sm font-black text-center text-white tracking-widest focus:outline-none focus:border-[#FF7F5B] w-full sm:w-48 placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-600"
                     />
 
@@ -484,7 +500,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       onClick={async () => {
                         const token = inputEmailCode.trim();
                         if (!token) {
-                          setEmailVerificationError('Por favor, digite o código recebido no seu e-mail.');
+                          setEmailVerificationError('Clique no link recebido no seu e-mail ou digite o código de verificação.');
                           return;
                         }
 
@@ -495,25 +511,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           const { data: authData, error: authError } = await supabase.auth.verifyOtp({
                             email: pendingEmail.trim().toLowerCase(),
                             token,
-                            type: 'email'
+                            type: 'email_change'
                           });
 
                           if (authError) {
-                            // Tenta como signup caso o novo e-mail seja uma nova conta Auth
                             const { error: retryError } = await supabase.auth.verifyOtp({
                               email: pendingEmail.trim().toLowerCase(),
                               token,
-                              type: 'signup'
+                              type: 'email'
                             });
 
                             if (retryError) {
-                              setEmailVerificationError('Código inválido ou expirado. Verifique o e-mail recebido e tente novamente.');
-                              setIsVerifyingOtp(false);
-                              return;
+                              throw new Error('Código incorreto. Você também pode validar clicando diretamente no link enviado para o seu e-mail.');
                             }
                           }
 
-                          // Código 100% validado com sucesso! Atualiza no banco Supabase e no AuthContext
+                          // Código validado com sucesso! Atualiza no banco Supabase e no AuthContext
                           if (updateUser) {
                             await updateUser({
                               name: userName.trim(),
@@ -528,7 +541,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           setIsEditingProfile(false);
                           showToast('success', 'Novo e-mail confirmado e atualizado com sucesso! ✨');
                         } catch (err: any) {
-                          setEmailVerificationError(err.message || 'Erro ao validar código. Tente novamente.');
+                          setEmailVerificationError(err.message || 'Erro ao validar código.');
                         } finally {
                           setIsVerifyingOtp(false);
                         }
@@ -538,12 +551,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       {isVerifyingOtp ? (
                         <>
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          <span>Validando Código...</span>
+                          <span>Validando...</span>
                         </>
                       ) : (
                         <>
                           <CheckCircle2 className="w-4 h-4" />
-                          <span>Confirmar Novo E-mail</span>
+                          <span>Confirmar com Código</span>
                         </>
                       )}
                     </button>
@@ -554,29 +567,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                         setIsSendingOtp(true);
                         setEmailVerificationError('');
                         try {
-                          const { error: otpError } = await supabase.auth.signInWithOtp({
-                            email: pendingEmail.trim().toLowerCase(),
-                            options: {
-                              data: { name: userName.trim() }
-                            }
+                          await supabase.auth.updateUser({
+                            email: pendingEmail.trim().toLowerCase()
                           });
-
-                          if (otpError) {
-                            setEmailVerificationError(`Erro ao reenviar: ${otpError.message}`);
-                            return;
-                          }
-
                           setResendCooldown(60);
-                          showToast('success', 'Novo código enviado para sua caixa de entrada!');
+                          showToast('success', 'Novo e-mail de confirmação enviado para sua caixa de entrada!');
                         } catch (err: any) {
-                          setEmailVerificationError(err.message || 'Erro ao reenviar código.');
+                          setEmailVerificationError(err.message || 'Erro ao reenviar e-mail.');
                         } finally {
                           setIsSendingOtp(false);
                         }
                       }}
                       className="text-xs text-slate-400 hover:text-white px-2 py-2 cursor-pointer disabled:opacity-40 transition-colors"
                     >
-                      {resendCooldown > 0 ? `Reenviar em ${resendCooldown}s` : 'Reenviar Código'}
+                      {resendCooldown > 0 ? `Reenviar em ${resendCooldown}s` : 'Reenviar E-mail'}
                     </button>
                   </div>
 
