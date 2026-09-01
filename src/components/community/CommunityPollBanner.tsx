@@ -69,7 +69,8 @@ export const CommunityPollBanner: React.FC<CommunityPollBannerProps> = ({ poll: 
       >
         <div className="flex-1 min-w-0 pr-2">
           <h3 className="text-sm sm:text-base font-extrabold text-white leading-snug">
-            {poll.title}
+            <span className="text-[#FF7F5B] font-black uppercase tracking-wider mr-1.5">ENQUETE:</span>
+            <span>{poll.title}</span>
           </h3>
         </div>
 

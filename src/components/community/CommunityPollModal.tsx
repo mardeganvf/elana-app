@@ -96,7 +96,8 @@ export const CommunityPollModal: React.FC<CommunityPollModalProps> = ({
         {/* Title */}
         <div className="space-y-2 relative z-10">
           <h2 className="text-lg sm:text-xl font-black text-white leading-tight">
-            {poll.title}
+            <span className="text-[#FF7F5B] font-black uppercase tracking-wider mr-1.5">ENQUETE:</span>
+            <span>{poll.title}</span>
           </h2>
         </div>
 
