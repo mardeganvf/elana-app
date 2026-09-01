@@ -122,6 +122,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [pollSuccessMessage, setPollSuccessMessage] = useState(false);
   const [expandedPollIds, setExpandedPollIds] = useState<Record<string, boolean>>({});
   const [visiblePollsCount, setVisiblePollsCount] = useState(5);
+  const [isCreatePollOpen, setIsCreatePollOpen] = useState(false);
 
   const toggleJourneyInPoll = (journeyTitle: string) => {
     if (newPollOptions.includes(journeyTitle)) {
@@ -569,10 +570,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         setIsCreateJourneyModalOpen(true);
                         setIsMobileMenuOpen(false);
                       }}
-                      className="w-full px-3 py-2.5 rounded-xl border border-dashed border-white/20 hover:border-[#FF7F5B] text-slate-400 hover:text-[#FF7F5B] hover:bg-[#FF7F5B]/10 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95 shadow-sm"
+                      className="w-full px-3 py-2.5 rounded-xl border border-dashed border-white/20 hover:border-[#FF7F5B] text-slate-400 hover:text-[#FF7F5B] hover:bg-[#FF7F5B]/10 text-xs font-bold transition-all cursor-pointer flex items-center justify-center active:scale-95 shadow-sm"
                     >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Criar Jornada</span>
+                      <span>+ Criar Jornada</span>
                     </button>
                   </div>
                 </div>
@@ -1255,180 +1255,203 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       {/* TAB 6: 🗳️ GESTÃO DE ENQUETES (SUA VOZ IMPORTA) */}
       {activeAdminTab === 'polls' && (
         <div className="space-y-8">
-          {/* Card 1: Criar Nova Enquete */}
-          <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          {/* Card 1: Criar Nova Enquete (Expansível / Retrátil) */}
+          <section className="bg-[#101B1E] rounded-3xl border border-white/10 shadow-xl overflow-hidden transition-all">
+            <button
+              type="button"
+              onClick={() => setIsCreatePollOpen(!isCreatePollOpen)}
+              className="w-full p-5 sm:p-6 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors cursor-pointer select-none"
+            >
               <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
-                  <Vote className="w-5 h-5 text-[#FF7F5B]" />
-                  Lançar Nova Enquete na Comunidade (Sua Voz Importa)
+                <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
+                  <span>Criar Nova Enquete</span>
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  As enquetes publicadas aparecem em destaque no topo do feed e como pop-up de boas-vindas para os membros.
+                  {isCreatePollOpen
+                    ? 'Preencha os campos abaixo para publicar uma nova enquete na comunidade.'
+                    : 'Clique para expandir e lançar uma nova enquete para os membros.'}
                 </p>
               </div>
-            </div>
 
-            {pollSuccessMessage && (
-              <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fade-in">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Enquete publicada com sucesso na Comunidade! 🎉</span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`text-xs font-bold px-3.5 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 ${
+                  isCreatePollOpen
+                    ? 'bg-white/5 text-slate-300 border-white/10'
+                    : 'bg-[#FF7F5B]/15 text-[#FF7F5B] border-[#FF7F5B]/30'
+                }`}>
+                  <span>{isCreatePollOpen ? 'Recolher' : '+ Nova Enquete'}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isCreatePollOpen ? 'rotate-180' : 'rotate-0'}`} />
+                </span>
               </div>
-            )}
+            </button>
 
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!newPollTitle.trim()) return;
-                const validOptions = newPollOptions.filter(opt => opt.trim().length > 0);
-                if (validOptions.length < 2) {
-                  alert('Por favor, selecione pelo menos 2 jornadas como alternativas da enquete.');
-                  return;
-                }
-
-                setIsPublishingPoll(true);
-                try {
-                  await createPoll({
-                    title: newPollTitle.trim(),
-                    description: newPollDesc.trim() || undefined,
-                    isMultiSelect: isPollMultiSelect,
-                    options: validOptions
-                  });
-                  setNewPollTitle('');
-                  setNewPollDesc('');
-                  setNewPollOptions([]);
-                  setIsPollMultiSelect(false);
-                  setPollSuccessMessage(true);
-                  setTimeout(() => setPollSuccessMessage(false), 4000);
-                } finally {
-                  setIsPublishingPoll(false);
-                }
-              }}
-              className="space-y-4"
-            >
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                  Pergunta da Enquete *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newPollTitle}
-                  onChange={(e) => setNewPollTitle(e.target.value)}
-                  placeholder="Ex: Qual dessas jornadas você mais gostaria de aprofundar nas próximas semanas?"
-                  className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                  Descrição ou Contexto (Opcional)
-                </label>
-                <input
-                  type="text"
-                  value={newPollDesc}
-                  onChange={(e) => setNewPollDesc(e.target.value)}
-                  placeholder="Ex: Sua resposta ajuda nossa curadoria a priorizar os próximos encontros e conteúdos."
-                  className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
-                />
-              </div>
-
-              {/* Caixa Seletora com as Jornadas como Alternativas */}
-              <div className="space-y-2.5 p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                      Alternativas da Enquete * (Selecione as Jornadas)
-                    </label>
-                    <span className="text-[11px] text-slate-400">
-                      Clique nas jornadas que deseja incluir como opções de voto nesta enquete (mínimo 2).
-                    </span>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-1 rounded-lg border border-[#FF7F5B]/20 shrink-0">
-                    {newPollOptions.length} selecionada(s)
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-52 overflow-y-auto pr-1">
-                  {journeys.map((j) => {
-                    const isSelected = newPollOptions.includes(j.title);
-                    return (
-                      <button
-                        key={j.id}
-                        type="button"
-                        onClick={() => toggleJourneyInPoll(j.title)}
-                        className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#FF7F5B]/15 border-[#FF7F5B] text-white shadow-sm'
-                            : 'bg-[#101B1E] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
-                        }`}
-                      >
-                        <span className="truncate flex-1">{j.title}</span>
-                        <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] shrink-0 ${
-                          isSelected ? 'bg-[#FF7F5B] text-slate-950 font-black' : 'border border-white/20'
-                        }`}>
-                          {isSelected ? '✓' : ''}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {newPollOptions.length > 0 && (
-                  <div className="pt-2 border-t border-white/5 flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Alternativas selecionadas:</span>
-                    {newPollOptions.map((opt, i) => (
-                      <span key={i} className="text-[11px] bg-white/5 text-slate-300 px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
-                        <span className="text-[#FF7F5B] font-mono font-bold">{i + 1}.</span>
-                        <span>{opt}</span>
-                        <button
-                          type="button"
-                          onClick={() => toggleJourneyInPoll(opt)}
-                          className="hover:text-rose-400 text-xs ml-1 cursor-pointer"
-                          title="Remover alternativa"
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    ))}
+            {isCreatePollOpen && (
+              <div className="p-6 sm:p-8 pt-0 border-t border-white/5 space-y-4 animate-fade-in">
+                {pollSuccessMessage && (
+                  <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fade-in mt-4">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Enquete publicada com sucesso na Comunidade! 🎉</span>
                   </div>
                 )}
-              </div>
 
-              {/* Switch de Múltipla Escolha */}
-              <div className="flex items-center justify-between p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
-                <div>
-                  <span className="text-xs font-bold text-white block">Possibilidade de Múltipla Escolha?</span>
-                  <span className="text-[11px] text-slate-400 block mt-0.5">
-                    Quando ativo, os membros da comunidade poderão selecionar mais de uma alternativa ao votar.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsPollMultiSelect(!isPollMultiSelect)}
-                  className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                    isPollMultiSelect ? 'bg-[#FF7F5B]' : 'bg-white/20'
-                  }`}
-                >
-                  <span
-                    className={`w-5 h-5 rounded-full bg-white transition-transform absolute top-0.5 left-0.5 shadow-md ${
-                      isPollMultiSelect ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-              </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!newPollTitle.trim()) return;
+                    const validOptions = newPollOptions.filter(opt => opt.trim().length > 0);
+                    if (validOptions.length < 2) {
+                      alert('Por favor, selecione pelo menos 2 jornadas como alternativas da enquete.');
+                      return;
+                    }
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isPublishingPoll}
-                  className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-3.5 px-6 rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                    setIsPublishingPoll(true);
+                    try {
+                      await createPoll({
+                        title: newPollTitle.trim(),
+                        description: newPollDesc.trim() || undefined,
+                        isMultiSelect: isPollMultiSelect,
+                        options: validOptions
+                      });
+                      setNewPollTitle('');
+                      setNewPollDesc('');
+                      setNewPollOptions([]);
+                      setIsPollMultiSelect(false);
+                      setPollSuccessMessage(true);
+                      setTimeout(() => {
+                        setPollSuccessMessage(false);
+                        setIsCreatePollOpen(false);
+                      }, 2000);
+                    } finally {
+                      setIsPublishingPoll(false);
+                    }
+                  }}
+                  className="space-y-4 pt-4"
                 >
-                  <Send className="w-4 h-4" />
-                  <span>{isPublishingPoll ? 'Publicando...' : 'Publicar Enquete na Comunidade'}</span>
-                </button>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                      Pergunta da Enquete *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newPollTitle}
+                      onChange={(e) => setNewPollTitle(e.target.value)}
+                      placeholder="Ex: Qual dessas jornadas você mais gostaria de aprofundar nas próximas semanas?"
+                      className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                      Descrição ou Contexto (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      value={newPollDesc}
+                      onChange={(e) => setNewPollDesc(e.target.value)}
+                      placeholder="Ex: Sua resposta ajuda nossa curadoria a priorizar os próximos encontros e conteúdos."
+                      className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
+                    />
+                  </div>
+
+                  {/* Caixa Seletora com as Jornadas como Alternativas */}
+                  <div className="space-y-2.5 p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                          Alternativas da Enquete * (Selecione as Jornadas)
+                        </label>
+                        <span className="text-[11px] text-slate-400">
+                          Clique nas jornadas que deseja incluir como opções de voto nesta enquete (mínimo 2).
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-1 rounded-lg border border-[#FF7F5B]/20 shrink-0">
+                        {newPollOptions.length} selecionada(s)
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-52 overflow-y-auto pr-1">
+                      {journeys.map((j) => {
+                        const isSelected = newPollOptions.includes(j.title);
+                        return (
+                          <button
+                            key={j.id}
+                            type="button"
+                            onClick={() => toggleJourneyInPoll(j.title)}
+                            className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#FF7F5B]/15 border-[#FF7F5B] text-white shadow-sm'
+                                : 'bg-[#101B1E] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
+                            }`}
+                          >
+                            <span className="truncate flex-1">{j.title}</span>
+                            <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] shrink-0 ${
+                              isSelected ? 'bg-[#FF7F5B] text-slate-950 font-black' : 'border border-white/20'
+                            }`}>
+                              {isSelected ? '✓' : ''}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {newPollOptions.length > 0 && (
+                      <div className="pt-2 border-t border-white/5 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Alternativas selecionadas:</span>
+                        {newPollOptions.map((opt, i) => (
+                          <span key={i} className="text-[11px] bg-white/5 text-slate-300 px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
+                            <span className="text-[#FF7F5B] font-mono font-bold">{i + 1}.</span>
+                            <span>{opt}</span>
+                            <button
+                              type="button"
+                              onClick={() => toggleJourneyInPoll(opt)}
+                              className="hover:text-rose-400 text-xs ml-1 cursor-pointer"
+                              title="Remover alternativa"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Switch de Múltipla Escolha */}
+                  <div className="flex items-center justify-between p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
+                    <div>
+                      <span className="text-xs font-bold text-white block">Possibilidade de Múltipla Escolha?</span>
+                      <span className="text-[11px] text-slate-400 block mt-0.5">
+                        Quando ativo, os membros da comunidade poderão selecionar mais de uma alternativa ao votar.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsPollMultiSelect(!isPollMultiSelect)}
+                      className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                        isPollMultiSelect ? 'bg-[#FF7F5B]' : 'bg-white/20'
+                      }`}
+                    >
+                      <span
+                        className={`w-5 h-5 rounded-full bg-white transition-transform absolute top-0.5 left-0.5 shadow-md ${
+                          isPollMultiSelect ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={isPublishingPoll}
+                      className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-3.5 px-6 rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                    >
+                      <Send className="w-4 h-4" />
+                      <span>{isPublishingPoll ? 'Publicando...' : 'Publicar Enquete na Comunidade'}</span>
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
+            )}
           </section>
 
           {/* Card 2: Lista e Histórico de Enquetes */}
