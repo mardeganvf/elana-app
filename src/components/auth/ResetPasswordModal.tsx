@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { validateStrongPassword } from './AuthModal';
+import { validateStrongPassword } from '../../utils/validators';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, RefreshCw, X } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
@@ -11,7 +11,12 @@ interface ResetPasswordModalProps {
 }
 
 export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  const { showToast } = useToast();
+  let showToast: (type: string, msg: string) => void = () => {};
+  try {
+    const toast = useToast();
+    if (toast) showToast = toast.showToast;
+  } catch (e) {}
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

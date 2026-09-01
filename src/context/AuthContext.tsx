@@ -126,47 +126,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Re-hidratar dados atualizados do Supabase no carregamento inicial e em mudanças de sessão
   useEffect(() => {
+    // 1. Hidratar usuário atual se já houver sessão salva
     if (user?.email && user?.id) {
-      fetchFullUserProfile(user.id, user.email, user.name).then(refreshed => {
-        if (refreshed) {
-          setUser(refreshed);
-        }
-      }).catch(err => {
-        console.warn('Error rehydrating user session from backend:', err);
-      });
-
-      // Carregar último chamado SOS do usuário direto do Supabase
-      const fetchUserSosTicket = async () => {
-        try {
-          const { data: ticketData } = await supabase
-            .from('sos_tickets')
-            .select('*')
-            .eq('profile_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (ticketData && ticketData.admin_reply) {
-            setSosResponse({
-              userMessage: ticketData.user_message || '',
-              adminReply: ticketData.admin_reply,
-              repliedAt: ticketData.replied_at ? new Date(ticketData.replied_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-              isRead: Boolean(ticketData.is_read)
-            });
-          }
-        } catch (err) {
-          console.warn('Error fetching SOS ticket from Supabase:', err);
-        }
-      };
-      fetchUserSosTicket();
+      fetchFullUserProfile(user.id, user.email, user.name)
+        .then(refreshed => {
+          if (refreshed) setUser(refreshed);
+        })
+        .catch(err => {
+          console.warn('Notice rehydrating user session:', err);
+        });
     }
 
-    // Escutar eventos de atualização de usuário e e-mail do Supabase Auth
+    // 2. Escutar eventos de atualização de usuário e e-mail do Supabase Auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'USER_UPDATED' || event === 'SIGNED_IN') && session?.user) {
-        const updatedEmail = session.user.email;
-        if (updatedEmail) {
-          const refreshed = await fetchFullUserProfile(session.user.id, updatedEmail, session.user.user_metadata?.name);
+      try {
+        if ((event === 'USER_UPDATED' || event === 'SIGNED_IN') && session?.user?.email) {
+          const refreshed = await fetchFullUserProfile(
+            session.user.id,
+            session.user.email,
+            session.user.user_metadata?.name
+          );
           if (refreshed) {
             setUser(refreshed);
             try {
@@ -174,6 +153,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } catch (e) {}
           }
         }
+      } catch (err) {
+        console.warn('Notice in onAuthStateChange handler:', err);
       }
     });
 
@@ -181,6 +162,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
     };
   }, []);
+
+  // Carregar último chamado SOS do usuário direto do Supabase
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchUserSosTicket = async () => {
+      try {
+        const { data: ticketData } = await supabase
+          .from('sos_tickets')
+          .select('*')
+          .eq('profile_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (ticketData && ticketData.admin_reply) {
+          setSosResponse({
+            userMessage: ticketData.user_message || '',
+            adminReply: ticketData.admin_reply,
+            repliedAt: ticketData.replied_at
+              ? new Date(ticketData.replied_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+              : new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            isRead: Boolean(ticketData.is_read)
+          });
+        }
+      } catch (err) {
+        console.warn('Notice fetching SOS ticket:', err);
+      }
+    };
+    fetchUserSosTicket();
+  }, [user?.id]);
 
   // Salvar no localStorage sempre que o estado user mudar
   useEffect(() => {

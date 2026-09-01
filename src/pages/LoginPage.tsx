@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth, GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { validateStrongPassword } from '../components/auth/AuthModal';
+import { validateStrongPassword } from '../utils/validators';
 import { ResetPasswordModal } from '../components/auth/ResetPasswordModal';
 import { RefreshCw, CheckCircle2, AlertCircle, Mail, Phone, KeyRound, ArrowLeft } from 'lucide-react';
 import logoElana from '../assets/logo-elana.png';
