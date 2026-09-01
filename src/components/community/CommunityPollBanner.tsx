@@ -41,11 +41,6 @@ export const CommunityPollBanner: React.FC<CommunityPollBannerProps> = ({ poll: 
             <Vote className="w-3 h-3 animate-pulse" />
             <span>Sua Voz Importa</span>
           </div>
-          {poll.category && (
-            <span className="text-[10px] text-slate-400 font-bold hidden sm:inline">
-              • {poll.category}
-            </span>
-          )}
         </div>
 
         <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
@@ -54,16 +49,11 @@ export const CommunityPollBanner: React.FC<CommunityPollBannerProps> = ({ poll: 
         </div>
       </div>
 
-      {/* Question Title & Description */}
+      {/* Question Title */}
       <div className="mb-4">
         <h3 className="text-sm sm:text-base font-extrabold text-white leading-snug">
           {poll.title}
         </h3>
-        {poll.description && (
-          <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-            {poll.description}
-          </p>
-        )}
       </div>
 
       {/* Options List */}
@@ -131,14 +121,14 @@ export const CommunityPollBanner: React.FC<CommunityPollBannerProps> = ({ poll: 
         <div className="mt-3.5 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
           <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Voto registrado (+10 pts) ✨</span>
+            <span>Voto registrado com sucesso! ✨</span>
           </div>
           <span className="text-[10px] text-slate-500">Obrigado por fortalecer nossa comunidade</span>
         </div>
       ) : (
         <div className="mt-3 text-[11px] text-slate-400 flex items-center gap-1">
           <Sparkles className="w-3 h-3 text-[#FFD166]" />
-          <span>Vote e ganhe <strong>+10 pontos</strong> para sua jornada.</span>
+          <span>Sua opinião fortalece a nossa comunidade.</span>
         </div>
       )}
     </div>

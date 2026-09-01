@@ -654,9 +654,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     }
 
-    addXP(10);
-
-    // 🏆 Conquistas da categoria "Sua Voz Importa":
+    // 🏆 Conquistas da categoria "Sua Voz Importa" (sem pontos diretos, apenas desbloqueio de badges):
     awardBadge('b42'); // Primeiro Palpite (1º voto em enquete)
     const votedCount = Object.keys(nextVotedMap).length;
     if (votedCount >= 100) awardBadge('b47');

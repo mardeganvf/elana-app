@@ -57,11 +57,6 @@ export const CommunityPollModal: React.FC<CommunityPollModalProps> = ({
               <Vote className="w-3.5 h-3.5 animate-pulse" />
               <span>Sua Voz Importa</span>
             </div>
-            {poll.category && (
-              <span className="text-xs text-slate-400 font-bold">
-                • {poll.category}
-              </span>
-            )}
           </div>
 
           <button
@@ -72,16 +67,11 @@ export const CommunityPollModal: React.FC<CommunityPollModalProps> = ({
           </button>
         </div>
 
-        {/* Title & Description */}
+        {/* Title */}
         <div className="space-y-2 relative z-10">
           <h2 className="text-lg sm:text-xl font-black text-white leading-tight">
             {poll.title}
           </h2>
-          {poll.description && (
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              {poll.description}
-            </p>
-          )}
         </div>
 
         {/* Options */}
@@ -147,12 +137,12 @@ export const CommunityPollModal: React.FC<CommunityPollModalProps> = ({
           {hasVoted ? (
             <div className="flex items-center gap-2 text-emerald-400 font-bold">
               <CheckCircle2 className="w-4 h-4" />
-              <span>Voto registrado! +10 pontos creditados ✨</span>
+              <span>Voto registrado com sucesso! ✨</span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 text-slate-400">
               <Sparkles className="w-3.5 h-3.5 text-[#FFD166]" />
-              <span>Ganhe <strong>+10 pontos</strong> ao registrar seu voto</span>
+              <span>Sua opinião fortalece nossa comunidade</span>
             </div>
           )}
 
