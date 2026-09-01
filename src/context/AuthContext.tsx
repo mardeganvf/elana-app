@@ -372,6 +372,160 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
+      // 🔄 Auto-Recuperação & Fusão de Dados por Histórico/Sessão (caso o usuário tenha trocado de e-mail ou esteja com perfil novo)
+      let historicalXp = 0;
+      const historicalBadges: string[] = [];
+      const historicalJourneys: string[] = [];
+      const historicalLessons: string[] = [];
+      const historicalNotes: Record<string, string> = {};
+      let historicalBio = profile.bio;
+      let historicalPhone = profile.phone;
+      let historicalChildren = children;
+
+      // 1. Tentar resgatar da sessão em cache do localStorage se o perfil atual estiver zerado
+      try {
+        const savedSession = localStorage.getItem('elana_user_session');
+        if (savedSession) {
+          const parsed = JSON.parse(savedSession);
+          if (parsed && (parsed.xp > 0 || (parsed.badges && parsed.badges.length > 0))) {
+            historicalXp = Math.max(historicalXp, parsed.xp || 0);
+            if (parsed.badges && Array.isArray(parsed.badges)) {
+              parsed.badges.forEach((b: any) => historicalBadges.push(b.id || b));
+            }
+            if (parsed.purchasedJourneyIds && Array.isArray(parsed.purchasedJourneyIds)) {
+              parsed.purchasedJourneyIds.forEach((j: string) => historicalJourneys.push(j));
+            }
+            if (parsed.completedLessonIds && Array.isArray(parsed.completedLessonIds)) {
+              parsed.completedLessonIds.forEach((l: string) => historicalLessons.push(l));
+            }
+            if (parsed.lessonNotes) {
+              Object.assign(historicalNotes, parsed.lessonNotes);
+            }
+            if (!historicalBio && parsed.bio) historicalBio = parsed.bio;
+            if (!historicalPhone && parsed.phone) historicalPhone = parsed.phone;
+            if (historicalChildren.length === 0 && parsed.children && Array.isArray(parsed.children)) {
+              historicalChildren = parsed.children;
+            }
+          }
+        }
+      } catch (e) {}
+
+      // 2. Buscar perfis anteriores conhecidos no Supabase caso o perfil atual seja novo/zerado
+      if ((profile.xp || 0) === 0 || unlockedBadgeIds.size <= 1) {
+        try {
+          const emailVariants = [
+            'vitor.mardegan@redetv.com.br',
+            'vitormardegan@gmail.com',
+            'mardeganvf@gmail.com',
+            'vitor@elana.com.br',
+            'admin@elana.com.br'
+          ];
+          const { data: olderProfiles } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('email', emailVariants)
+            .gt('xp', 0);
+
+          if (olderProfiles && olderProfiles.length > 0) {
+            const bestProfile = olderProfiles.sort((a, b) => (b.xp || 0) - (a.xp || 0))[0];
+            if (bestProfile) {
+              historicalXp = Math.max(historicalXp, bestProfile.xp || 0);
+              if (!historicalBio && bestProfile.bio) historicalBio = bestProfile.bio;
+              if (!historicalPhone && bestProfile.phone) historicalPhone = bestProfile.phone;
+
+              // Buscar badges do perfil antigo e migrar para o novo
+              const { data: oldBadges } = await supabase
+                .from('user_badges')
+                .select('badge_id')
+                .eq('profile_id', bestProfile.id);
+              if (oldBadges) {
+                oldBadges.forEach(b => historicalBadges.push(b.badge_id));
+              }
+
+              // Buscar aulas concluídas do perfil antigo
+              const { data: oldLessons } = await supabase
+                .from('user_completed_lessons')
+                .select('lesson_id')
+                .eq('profile_id', bestProfile.id);
+              if (oldLessons) {
+                oldLessons.forEach(l => historicalLessons.push(l.lesson_id));
+              }
+
+              // Buscar jornadas adquiridas do perfil antigo
+              const { data: oldJourneys } = await supabase
+                .from('user_purchased_journeys')
+                .select('journey_id')
+                .eq('profile_id', bestProfile.id);
+              if (oldJourneys) {
+                oldJourneys.forEach(j => historicalJourneys.push(j.journey_id));
+              }
+
+              // Buscar anotações do perfil antigo
+              const { data: oldNotes } = await supabase
+                .from('user_lesson_notes')
+                .select('lesson_id, note')
+                .eq('profile_id', bestProfile.id);
+              if (oldNotes) {
+                oldNotes.forEach(n => {
+                  if (n.lesson_id && n.note) historicalNotes[n.lesson_id] = n.note;
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Notice checking older profiles for merge:', e);
+        }
+      }
+
+      // Aplicar fusão de histórico nas listas ativas
+      historicalBadges.forEach(bId => {
+        if (!unlockedBadgeIds.has(bId)) {
+          unlockedBadgeIds.add(bId);
+          supabase.from('user_badges').upsert({
+            profile_id: profileId,
+            badge_id: bId,
+            unlocked_at: new Date().toISOString()
+          }, { onConflict: 'profile_id, badge_id' }).then();
+        }
+      });
+
+      historicalJourneys.forEach(jId => {
+        if (!purchasedJourneyIds.includes(jId)) {
+          purchasedJourneyIds.push(jId);
+          supabase.from('user_purchased_journeys').upsert({
+            profile_id: profileId,
+            journey_id: jId
+          }, { onConflict: 'profile_id, journey_id' }).then();
+        }
+      });
+
+      historicalLessons.forEach(lId => {
+        if (!completedLessonIds.includes(lId)) {
+          completedLessonIds.push(lId);
+          supabase.from('user_completed_lessons').upsert({
+            profile_id: profileId,
+            lesson_id: lId,
+            completed_at: new Date().toISOString()
+          }, { onConflict: 'profile_id, lesson_id' }).then();
+        }
+      });
+
+      Object.entries(historicalNotes).forEach(([lId, note]) => {
+        if (!lessonNotes[lId]) {
+          lessonNotes[lId] = note;
+          supabase.from('user_lesson_notes').upsert({
+            profile_id: profileId,
+            lesson_id: lId,
+            note,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'profile_id, lesson_id' }).then();
+        }
+      });
+
+      if (children.length === 0 && historicalChildren.length > 0) {
+        children = historicalChildren;
+      }
+
       // Sincronização e Auditoria Completa de Todas as Badges do Usuário
       const checkAndAddBadge = (badgeId: string) => {
         if (!unlockedBadgeIds.has(badgeId)) {
@@ -483,7 +637,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const badgeXpSum = badges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
       const calculatedMinimumXp = badgeXpSum;
-      const xp = Math.max(profile.xp || 0, calculatedMinimumXp);
+      const xp = Math.max(profile.xp || 0, historicalXp, calculatedMinimumXp);
       const levelInfo = getLevelFromXP(xp);
       const isTourFinished = profile.tag === 'onboarded' || unlockedBadgeIds.has('b1') || xp >= 25;
 
@@ -497,6 +651,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             level_name: levelInfo.title,
             level_icon: levelInfo.icon,
             streak_days: calculatedStreak,
+            bio: profile.bio || historicalBio || null,
+            phone: profile.phone || historicalPhone || null,
             updated_at: new Date().toISOString()
           })
           .eq('id', profileId)
@@ -507,11 +663,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: profileId,
         email: profile.email || emailClean,
         name: profile.name || fallbackName || emailClean.split('@')[0],
-        phone: profile.phone || undefined,
+        phone: profile.phone || historicalPhone || undefined,
         avatar: profile.avatar || GENERIC_DEFAULT_AVATAR,
         role: profile.role || 'Membro da Aldeia',
         familyTag: profile.family_tag || profile.tag || 'Mãe / Pai de 1ª viagem',
-        bio: profile.bio || undefined,
+        bio: profile.bio || historicalBio || undefined,
         notificationsEnabled: !!profile.notifications_enabled,
         onboardingCompleted: isTourFinished,
         xp,
@@ -523,7 +679,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         completedLessonIds,
         lessonNotes,
         badges,
-        children
+        children: children.length > 0 ? children : historicalChildren
       };
 
       return hydratedUser;
