@@ -14,7 +14,10 @@ import {
   Volume2,
   ChevronDown,
   BookOpen,
-  Film
+  Film,
+  PictureInPicture2,
+  Keyboard,
+  RotateCcw
 } from 'lucide-react';
 import { NotebookModal } from '../components/gamification/NotebookModal';
 
@@ -55,6 +58,13 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     description: 'Comece respirando fundo. Aqui você não está só.'
   });
 
+  // Helper: Format seconds into MM:SS
+  const formatSecondsToTime = (totalSeconds: number): string => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = Math.floor(totalSeconds % 60);
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
   const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'resources' | 'practice'>('overview');
   const [noteText, setNoteText] = useState('');
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
@@ -66,8 +76,137 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   const [mediaMode, setMediaMode] = useState<'video' | 'audio'>('video');
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
 
+  // Picture-in-Picture & Shortcuts State
+  const [isPiPActive, setIsPiPActive] = useState(false);
+  const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
+
+  // Timestamp Resume State
+  const [resumePromptTime, setResumePromptTime] = useState<number | null>(null);
+  const lastSaveTimeRef = useRef<number>(0);
+
   // Checklist State for "Para Colocar em Prática Hoje"
   const [completedPractices, setCompletedPractices] = useState<Record<string, boolean>>({});
+
+  // Carregar práticas diárias salvas no localStorage
+  useEffect(() => {
+    try {
+      const userKey = user?.id || 'anon';
+      const saved = localStorage.getItem(`elana_practices_${userKey}`);
+      if (saved) {
+        setCompletedPractices(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.warn('Notice loading saved practices:', e);
+    }
+  }, [user?.id]);
+
+  // Carregar ponto de parada salvo do vídeo
+  useEffect(() => {
+    const userKey = user?.id || 'anon';
+    const saved = localStorage.getItem(`elana_video_resume_${userKey}_${activeLesson.id}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.time && parsed.time > 5 && (!parsed.duration || parsed.time < parsed.duration - 8)) {
+          setResumePromptTime(parsed.time);
+        } else {
+          setResumePromptTime(null);
+        }
+      } catch {
+        setResumePromptTime(null);
+      }
+    } else {
+      setResumePromptTime(null);
+    }
+  }, [activeLesson.id, user?.id]);
+
+  const saveVideoTimestamp = (currentTime: number, duration: number) => {
+    if (currentTime < 3) return;
+    const userKey = user?.id || 'anon';
+    try {
+      localStorage.setItem(
+        `elana_video_resume_${userKey}_${activeLesson.id}`,
+        JSON.stringify({ time: Math.floor(currentTime), duration: Math.floor(duration || 0) })
+      );
+    } catch {}
+  };
+
+  const handleVideoTimeUpdate = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const now = Date.now();
+    if (now - lastSaveTimeRef.current > 3000) {
+      lastSaveTimeRef.current = now;
+      saveVideoTimestamp(video.currentTime, video.duration);
+    }
+  };
+
+  const handleVideoPause = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    saveVideoTimestamp(video.currentTime, video.duration);
+  };
+
+  const handleTogglePiP = async () => {
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+        setIsPiPActive(false);
+      } else if (videoRef.current && document.pictureInPictureEnabled) {
+        await videoRef.current.requestPictureInPicture();
+        setIsPiPActive(true);
+      }
+    } catch (err) {
+      console.warn('Picture-in-Picture notice:', err);
+    }
+  };
+
+  // Atalhos de Teclado Globais para Sala de Aula
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      const video = videoRef.current;
+      if (!video) return;
+
+      if (e.code === 'Space' || e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        if (video.paused) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      } else if (e.code === 'ArrowLeft' || e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        video.currentTime = Math.max(0, video.currentTime - 10);
+        showToast('info', '⏪ -10s');
+      } else if (e.code === 'ArrowRight' || e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+        showToast('info', '⏩ +10s');
+      } else if (e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        video.muted = !video.muted;
+        showToast('info', video.muted ? '🔇 Mudo' : '🔊 Som ativado');
+      } else if (e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          video.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      } else if (e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        handleTogglePiP();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Active Module Dropdown / Accordion Expansion State (Collapsed by default)
   const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
@@ -111,6 +250,13 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   }, [autoplayTimer, nextLesson]);
 
   const triggerAutoplayCountdown = () => {
+    // Limpar ponto salvo pois a aula foi concluída
+    const userKey = user?.id || 'anon';
+    try {
+      localStorage.removeItem(`elana_video_resume_${userKey}_${activeLesson.id}`);
+    } catch {}
+    setResumePromptTime(null);
+
     // Marcar aula como concluída no Supabase
     if (completeLesson) {
       completeLesson(activeLesson.id);
@@ -142,7 +288,14 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
 
   const togglePracticeItem = (idx: number) => {
     const key = `${activeLesson.id}-practice-${idx}`;
-    setCompletedPractices(prev => ({ ...prev, [key]: !prev[key] }));
+    const userKey = user?.id || 'anon';
+    setCompletedPractices(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      try {
+        localStorage.setItem(`elana_practices_${userKey}`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   };
 
   // Compute progress percentage
@@ -245,6 +398,33 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
               </button>
             </div>
 
+            {/* Middle Controls: Picture-in-Picture & Shortcuts */}
+            <div className="flex items-center gap-1.5">
+              {mediaMode === 'video' && (
+                <button
+                  onClick={handleTogglePiP}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all border ${
+                    isPiPActive
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-[#070D0F] text-slate-300 border-white/10 hover:bg-white/5 hover:text-white'
+                  }`}
+                  title="Janela Flutuante Picture-in-Picture (Atalho: P)"
+                >
+                  <PictureInPicture2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Janela Flutuante</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => setIsShortcutsHelpOpen(prev => !prev)}
+                className="flex items-center gap-1 bg-[#070D0F] hover:bg-white/5 text-slate-400 hover:text-white px-2.5 py-1.5 rounded-xl border border-white/10 transition-all"
+                title="Ver Atalhos de Teclado"
+              >
+                <Keyboard className="w-3.5 h-3.5" />
+                <span className="hidden md:inline text-[10px] uppercase font-bold">Atalhos</span>
+              </button>
+            </div>
+
             {/* Right Controls: Playback Speed & Status */}
             <div className="flex items-center gap-2">
               {user?.completedLessonIds.includes(activeLesson.id) && (
@@ -275,6 +455,43 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
           {/* Media Player Box (Video or Audio Waveform Mode) */}
           {mediaMode === 'video' ? (
             <div className="bg-black rounded-3xl overflow-hidden shadow-2xl aspect-video relative group border border-white/10">
+              {/* Floating Timestamp Resume Prompt */}
+              {resumePromptTime !== null && (
+                <div className="absolute top-3 left-3 right-3 z-30 bg-[#070D0F]/95 backdrop-blur-md border border-[#FF7F5B]/40 p-3 rounded-2xl flex items-center justify-between shadow-2xl animate-fade-in text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-[#FF7F5B]/20 text-[#FF7F5B] flex items-center justify-center font-bold text-sm shrink-0">
+                      ⏱️
+                    </div>
+                    <div>
+                      <span className="font-extrabold text-white block">Continuar de onde parou?</span>
+                      <span className="text-[11px] text-slate-300">Você estava aos {formatSecondsToTime(resumePromptTime)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (videoRef.current) {
+                          videoRef.current.currentTime = resumePromptTime;
+                          videoRef.current.play().catch(() => {});
+                        }
+                        setResumePromptTime(null);
+                        showToast('info', `Vídeo continuado aos ${formatSecondsToTime(resumePromptTime)} 🎬`);
+                      }}
+                      className="bg-[#FF7F5B] hover:bg-[#e06847] text-white px-3.5 py-1.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                    >
+                      <span>Continuar</span>
+                    </button>
+                    <button
+                      onClick={() => setResumePromptTime(null)}
+                      className="bg-white/10 hover:bg-white/20 text-slate-300 px-2.5 py-1.5 rounded-xl transition-all font-bold text-xs"
+                      title="Fechar e assistir do início"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <video
                 ref={videoRef}
                 key={activeLesson.id}
@@ -282,6 +499,8 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                 playsInline
                 preload="metadata"
                 autoPlay={false}
+                onTimeUpdate={handleVideoTimeUpdate}
+                onPause={handleVideoPause}
                 onEnded={triggerAutoplayCountdown}
                 className="w-full h-full object-cover"
                 poster="https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=1000&auto=format&fit=crop&q=80"
@@ -676,6 +895,63 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
           initialJourneyId={journey.id}
           onClose={() => setIsNotebookModalOpen(false)}
         />
+      )}
+
+      {/* Modal de Atalhos de Teclado */}
+      {isShortcutsHelpOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setIsShortcutsHelpOpen(false)}
+        >
+          <div 
+            className="bg-[#101B1E] border border-white/15 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 text-white animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Keyboard className="w-5 h-5 text-[#FF7F5B]" />
+                <h3 className="font-extrabold text-sm">Atalhos de Teclado</h3>
+              </div>
+              <button 
+                onClick={() => setIsShortcutsHelpOpen(false)}
+                className="text-slate-400 hover:text-white text-xs px-2.5 py-1 bg-white/10 rounded-lg hover:bg-white/20 transition-colors font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#070D0F] border border-white/5">
+                <span className="text-slate-300 font-medium">Play / Pause</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-[#FFD166]">Espaço / K</span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#070D0F] border border-white/5">
+                <span className="text-slate-300 font-medium">Voltar 10 segundos</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-[#FFD166]">← / J</span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#070D0F] border border-white/5">
+                <span className="text-slate-300 font-medium">Avançar 10 segundos</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-[#FFD166]">→ / L</span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#070D0F] border border-white/5">
+                <span className="text-slate-300 font-medium">Mudo (Mute)</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-[#FFD166]">M</span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#070D0F] border border-white/5">
+                <span className="text-slate-300 font-medium">Tela Cheia (Fullscreen)</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-[#FFD166]">F</span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#070D0F] border border-white/5">
+                <span className="text-slate-300 font-medium">Janela Flutuante (PiP)</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-[#FFD166]">P</span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+              💡 Os atalhos são pausados automaticamente ao digitar nas suas anotações.
+            </p>
+          </div>
+        </div>
       )}
 
     </div>
