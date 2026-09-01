@@ -120,6 +120,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [newPollOptions, setNewPollOptions] = useState<string[]>(['', '', '']);
   const [isPublishingPoll, setIsPublishingPoll] = useState(false);
   const [pollSuccessMessage, setPollSuccessMessage] = useState(false);
+  const [expandedPollIds, setExpandedPollIds] = useState<Record<string, boolean>>({});
+
+  const togglePollExpansion = (pollId: string) => {
+    setExpandedPollIds(prev => ({
+      ...prev,
+      [pollId]: !prev[pollId]
+    }));
+  };
 
   // 🛟 SOS Email Inbox Folder State
   const [sosFolder, setSosFolder] = useState<'inbox' | 'completed' | 'trash'>('inbox');
@@ -482,8 +490,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   ) : (
                     journeys.map(journey => {
                       const isTrilhaSelected = activeAdminTab === 'content' && (selectedJourneyId === journey.id || (!selectedJourneyId && journeys[0]?.id === journey.id));
-                      const isTrilhaExpanded = openTrilhas[journey.id] ?? isTrilhaSelected;
-                      const modulesCount = journey.modules?.length || 0;
+                      const hasMultipleModules = (journey.modules?.length || 0) > 1;
+                      const isTrilhaExpanded = hasMultipleModules && (openTrilhas[journey.id] ?? isTrilhaSelected);
 
                       return (
                         <div key={journey.id} className="space-y-0.5">
@@ -500,6 +508,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                               setActiveAdminTab('content');
                               setSelectedJourneyId(journey.id);
                               setSelectedModuleId(null);
+                              if (hasMultipleModules) {
+                                toggleTrilha(journey.id);
+                              }
                               setIsMobileMenuOpen(false);
                             }}
                           >
@@ -511,29 +522,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                               <span className="truncate">{journey.title}</span>
                             </div>
 
-                            <div className="flex items-center gap-1 shrink-0 ml-1.5">
-                              <span className={`text-[10px] font-mono ${isTrilhaSelected && !selectedModuleId ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
-                                {modulesCount} {modulesCount === 1 ? 'mód' : 'móds'}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleTrilha(journey.id);
-                                }}
-                                className={`p-1 rounded cursor-pointer ${
-                                  isTrilhaSelected && !selectedModuleId
-                                    ? 'text-slate-900 hover:bg-black/10'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/10'
-                                }`}
-                              >
-                                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isTrilhaExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                              </button>
-                            </div>
+                            {/* Se tem múltiplos módulos, exibe seta do dropdown temática */}
+                            {hasMultipleModules && (
+                              <div className="flex items-center shrink-0 ml-1.5">
+                                <ChevronDown
+                                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                                    isTrilhaExpanded ? 'rotate-0' : '-rotate-90'
+                                  } ${
+                                    isTrilhaSelected && !selectedModuleId
+                                      ? 'text-slate-900'
+                                      : 'text-slate-400 group-hover:text-white'
+                                  }`}
+                                />
+                              </div>
+                            )}
                           </div>
 
-                          {/* Módulos aninhados da Trilha */}
-                          {isTrilhaExpanded && (
+                          {/* Módulos aninhados da Trilha (apenas se tiver mais de 1 módulo) */}
+                          {hasMultipleModules && isTrilhaExpanded && (
                             <div className="pl-3.5 space-y-0.5 border-l border-white/10 ml-3 my-1">
                               {(journey.modules || []).map((mod, modIdx) => {
                                 const isModSelected = isTrilhaSelected && selectedModuleId === mod.id;
@@ -1436,15 +1442,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               {polls.map((poll) => {
                 const total = Math.max(1, poll.totalVotes);
                 const isOpen = poll.status === 'open';
+                const isExpanded = !!expandedPollIds[poll.id];
 
                 return (
                   <div
                     key={poll.id}
-                    className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 space-y-4 shadow-md"
+                    className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 space-y-3 shadow-md transition-all"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                             isOpen
                               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
@@ -1457,8 +1464,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                               {poll.category}
                             </span>
                           )}
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            • {poll.totalVotes} votos
+                          </span>
                         </div>
-                        <h4 className="text-sm font-bold text-white mt-1.5">
+                        <h4 className="text-sm font-bold text-white mt-1.5 leading-snug">
                           {poll.title}
                         </h4>
                         {poll.description && (
@@ -1468,10 +1478,22 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         )}
                       </div>
 
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-xs font-bold text-slate-300">
-                          {poll.totalVotes} votos
-                        </span>
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                        {/* Botão de Expandir / Ocultar alternativas e resultados */}
+                        <button
+                          type="button"
+                          onClick={() => togglePollExpansion(poll.id)}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
+                            isExpanded
+                              ? 'bg-[#FF7F5B]/15 text-[#FF7F5B] border-[#FF7F5B]/30'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
+                          }`}
+                          title={isExpanded ? 'Ocultar alternativas e resultados' : 'Expandir alternativas e resultados'}
+                        >
+                          <span>{isExpanded ? 'Ocultar' : 'Ver Resultados'}</span>
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
+                        </button>
+
                         <button
                           onClick={() => togglePollStatus(poll.id)}
                           className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
@@ -1485,28 +1507,33 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       </div>
                     </div>
 
-                    {/* Progress bars per option */}
-                    <div className="space-y-2">
-                      {poll.options.map((opt) => {
-                        const pct = Math.round((opt.votesCount / total) * 100);
-                        return (
-                          <div key={opt.id} className="space-y-1">
-                            <div className="flex items-center justify-between text-xs text-slate-300">
-                              <span>{opt.text}</span>
-                              <span className="font-mono font-bold text-[#FFD166]">
-                                {opt.votesCount} ({pct}%)
-                              </span>
+                    {/* Progress bars per option (apenas visível quando expandido) */}
+                    {isExpanded && (
+                      <div className="space-y-2 pt-3 border-t border-white/10 animate-fade-in">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          Alternativas & Resultados:
+                        </span>
+                        {poll.options.map((opt) => {
+                          const pct = Math.round((opt.votesCount / total) * 100);
+                          return (
+                            <div key={opt.id} className="space-y-1">
+                              <div className="flex items-center justify-between text-xs text-slate-300">
+                                <span>{opt.text}</span>
+                                <span className="font-mono font-bold text-[#FFD166]">
+                                  {opt.votesCount} ({pct}%)
+                                </span>
+                              </div>
+                              <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
+                                <div
+                                  className="bg-[#FF7F5B] h-full rounded-full transition-all duration-500"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
                             </div>
-                            <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
-                              <div
-                                className="bg-[#FF7F5B] h-full rounded-full transition-all duration-500"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}

@@ -684,13 +684,15 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
             </div>
           )}
 
-          {/* LISTAGEM DE SUBTEMAS E CONTEÚDOS */}
+          {/* LISTAGEM DE MÓDULOS E CONTEÚDOS */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <span>Subtemas & Conteúdos da Jornada</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white">
-                  {activeJourney.modules?.length || 0} subtemas cadastrados
+                <span>{(activeJourney.modules?.length || 0) > 1 ? 'Módulos & Conteúdos da Trilha' : 'Conteúdos & Vídeos da Trilha'}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white font-mono">
+                  {(activeJourney.modules?.length || 0) > 1 
+                    ? `${activeJourney.modules?.length || 0} módulos cadastrados`
+                    : `${activeJourney.modules?.[0]?.lessons?.length || 0} conteúdos cadastrados`}
                 </span>
               </h4>
             </div>
@@ -700,22 +702,23 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 mx-auto flex items-center justify-center text-slate-400">
                   <FolderPlus className="w-6 h-6 text-[#FF7F5B]" />
                 </div>
-                <h4 className="text-sm font-bold text-white">Nenhum subtema cadastrado nesta jornada</h4>
+                <h4 className="text-sm font-bold text-white">Nenhum conteúdo cadastrado nesta trilha</h4>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  Subtemas organizam os encontros da jornada (ex: "Cuidando de Quem Cuida", "O Sono do Bebê").
+                  Adicione o primeiro vídeo ou material de apoio para disponibilizar às famílias.
                 </p>
                 <button
                   onClick={() => openCreateModule(activeJourney.id)}
                   className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer inline-flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Criar Primeiro Subtema</span>
+                  <span>Cadastrar Primeiro Módulo</span>
                 </button>
               </div>
             ) : (
               <div className="space-y-4">
                 {activeJourney.modules.map((mod, modIdx) => {
-                  const isExpanded = expandedModuleIds[mod.id] !== false; // Default aberto
+                  const hasMultiple = (activeJourney.modules?.length || 0) > 1;
+                  const isExpanded = !hasMultiple || expandedModuleIds[mod.id] !== false; // Se tiver só 1 módulo, sempre aberto
                   const lessonsList = mod.lessons || [];
                   const filteredLessons = lessonsList.filter(l => 
                     matchesSearch(l.title) || matchesSearch(l.description) || matchesSearch(mod.title)
@@ -731,18 +734,18 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                           : 'border border-white/10'
                       }`}
                     >
-                      {/* BARRA DO SUBTEMA */}
+                      {/* BARRA DO MÓDULO */}
                       <div className="p-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between gap-3">
                         <div 
-                          onClick={() => toggleModule(mod.id)} 
-                          className="flex items-center gap-3 cursor-pointer flex-1 select-none"
+                          onClick={() => hasMultiple && toggleModule(mod.id)} 
+                          className={`flex items-center gap-3 flex-1 select-none ${hasMultiple ? 'cursor-pointer' : ''}`}
                         >
                           <span className="w-7 h-7 rounded-xl bg-[#FF7F5B]/15 text-[#FF7F5B] font-black text-xs flex items-center justify-center border border-[#FF7F5B]/30">
-                            {modIdx + 1}
+                            {hasMultiple ? modIdx + 1 : <Video className="w-3.5 h-3.5" />}
                           </span>
                           <div>
                             <h5 className="text-sm font-bold text-white flex items-center gap-2">
-                              <span>{mod.title}</span>
+                              <span>{!hasMultiple && mod.title === 'Conteúdos da Trilha' ? 'Lista de Vídeos & Materiais' : mod.title}</span>
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-300 font-mono">
                                 {lessonsList.length} conteúdos
                               </span>
@@ -755,7 +758,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                           </div>
                         </div>
 
-                        {/* Ações do Subtema */}
+                        {/* Ações do Módulo */}
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => openCreateContent(activeJourney.id, mod.id)}
@@ -765,37 +768,41 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                             <span>Novo Conteúdo</span>
                           </button>
 
-                          <button
-                            onClick={() => openEditModule(activeJourney.id, mod)}
-                            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-                            title="Editar subtema"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
+                          {hasMultiple && (
+                            <>
+                              <button
+                                onClick={() => openEditModule(activeJourney.id, mod)}
+                                className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                                title="Editar título do módulo"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
 
-                          <button
-                            onClick={() => setDeleteConfirm({
-                              type: 'module',
-                              journeyId: activeJourney.id,
-                              moduleId: mod.id,
-                              title: mod.title
-                            })}
-                            className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
-                            title="Excluir subtema"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                              <button
+                                onClick={() => setDeleteConfirm({
+                                  type: 'module',
+                                  journeyId: activeJourney.id,
+                                  moduleId: mod.id,
+                                  title: mod.title
+                                })}
+                                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                                title="Excluir módulo"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
 
-                          <button
-                            onClick={() => toggleModule(mod.id)}
-                            className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-                          >
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </button>
+                              <button
+                                onClick={() => toggleModule(mod.id)}
+                                className="p-1.5 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                              >
+                                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
 
-                      {/* CONTEÚDOS DO SUBTEMA */}
+                      {/* CONTEÚDOS DO MÓDULO */}
                       {isExpanded && (
                         <div className="p-4 space-y-2.5 bg-[#070D0F]">
                           {filteredLessons.length === 0 ? (
