@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { JOURNEYS_DATA } from '../data/journeysData';
 import { Journey } from '../types';
-import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell } from 'lucide-react';
+import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle } from 'lucide-react';
 import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
 import { BadgeGallery, getUnlockedBadgesCount } from '../components/gamification/BadgeGallery';
 import { UserLevelsModal } from '../components/gamification/UserLevelsModal';
@@ -35,21 +35,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // Efeito reativo central: Concede a conquista "Criando Raízes" (b2) quando o perfil for completado
-  useEffect(() => {
-    if (!user || user.badges.some(b => b.id === 'b2')) return;
-
-    const hasBio = !!user.bio && user.bio.trim().length > 0;
-    const hasChildren = !!user.children && user.children.length > 0;
-
+  const checkCriandoRaizes = () => {
+    const hasBio = (user?.bio && user.bio.trim().length > 0) || (bioText && bioText.trim().length > 0);
+    const hasChildren = (user?.children && user.children.length > 0) || (childrenList && childrenList.length > 0);
     if (hasBio && hasChildren) {
       awardBadge('b2');
     }
-  }, [user?.bio, user?.children, user?.badges]);
-
-  // Função centralizada para validar e conceder a badge Criando Raízes (b2)
-  const checkCriandoRaizes = () => {
-    if (!user || user.badges.some(b => b.id === 'b2')) return;
-    
     const hasBio = !!(user.bio || bioText).trim();
     const hasFamilyMember = (childrenList || []).length > 0 || (user.children || []).length > 0;
 
@@ -87,14 +78,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [bioText, setBioText] = useState(user?.bio || '');
 
-  // Profile info editing state & Email Code Verification
+  // Profile info editing state & Real Supabase OTP Email Verification
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [userName, setUserName] = useState(user?.name || '');
   const [userPhone, setUserPhone] = useState(formatPhoneMask(user?.phone || ''));
   const [confirmedEmail, setConfirmedEmail] = useState(user?.email || '');
   const [pendingEmail, setPendingEmail] = useState(user?.email || '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // Real Email Verification Flow State
+  const [isVerifyingEmailCode, setIsVerifyingEmailCode] = useState(false);
+  const [inputEmailCode, setInputEmailCode] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [emailVerificationError, setEmailVerificationError] = useState('');
+  const [emailVerificationSuccess, setEmailVerificationSuccess] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
   const [notificationsEnabled, setNotificationsEnabled] = useState(!!user?.notificationsEnabled);
+
+  // Countdown timer para reenvio de OTP
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   // Meus Filhos state
   interface ChildInfo {
@@ -308,83 +318,284 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
           {isEditingProfile ? (
             <div className="space-y-2.5 pt-1 animate-fade-in">
-              <div className="flex flex-col gap-2.5 bg-[#070D0F] p-4 rounded-2xl border border-[#FF7F5B]/40 shadow-lg">
-                <span className="text-[10px] font-bold text-[#FF7F5B] uppercase tracking-wider">Editar Perfil & Dados de Contato</span>
-                <div className="flex flex-col sm:flex-row items-center gap-2 flex-wrap">
-                  <div className="w-full sm:w-auto flex-1 min-w-[160px]">
-                    <label className="text-[10px] text-slate-400 font-bold block mb-1">Nome</label>
+              {!isVerifyingEmailCode ? (
+                /* Step 1: Form de Edição de Perfil */
+                <div className="flex flex-col gap-2.5 bg-[#070D0F] p-4 rounded-2xl border border-[#FF7F5B]/40 shadow-lg">
+                  <span className="text-[10px] font-bold text-[#FF7F5B] uppercase tracking-wider">Editar Perfil & Dados de Contato</span>
+                  <div className="flex flex-col sm:flex-row items-center gap-2 flex-wrap">
+                    <div className="w-full sm:w-auto flex-1 min-w-[160px]">
+                      <label className="text-[10px] text-slate-400 font-bold block mb-1">Nome</label>
+                      <input
+                        type="text"
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        placeholder="Seu nome"
+                        className="w-full px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none font-bold focus:border-[#FF7F5B]"
+                      />
+                    </div>
+                    <div className="w-full sm:w-auto flex-1 min-w-[180px]">
+                      <label className="text-[10px] text-slate-400 font-bold block mb-1">E-mail</label>
+                      <input
+                        type="email"
+                        value={pendingEmail}
+                        onChange={(e) => setPendingEmail(e.target.value)}
+                        placeholder="seu@email.com"
+                        className="w-full px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
+                      />
+                    </div>
+                    <div className="w-full sm:w-auto flex-1 min-w-[160px]">
+                      <label className="text-[10px] text-slate-400 font-bold block mb-1">Celular</label>
+                      <input
+                        type="tel"
+                        value={userPhone}
+                        onChange={(e) => setUserPhone(formatPhoneMask(e.target.value))}
+                        placeholder="(00) 00000-0000"
+                        maxLength={15}
+                        className="w-full px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none font-medium focus:border-[#FF7F5B]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      disabled={isSavingProfile || isSendingOtp}
+                      onClick={async () => {
+                        if (!userName.trim()) {
+                          showToast('error', 'Por favor, preencha o seu nome.');
+                          return;
+                        }
+
+                        const isEmailChanged = pendingEmail.trim().toLowerCase() !== confirmedEmail.trim().toLowerCase();
+
+                        // Se o e-mail foi alterado, dispara o envio do código real via Supabase OTP
+                        if (isEmailChanged) {
+                          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                          if (!emailRegex.test(pendingEmail.trim())) {
+                            showToast('error', 'Por favor, digite um endereço de e-mail válido.');
+                            return;
+                          }
+
+                          setIsSendingOtp(true);
+                          setEmailVerificationError('');
+                          try {
+                            const { error: otpError } = await supabase.auth.signInWithOtp({
+                              email: pendingEmail.trim().toLowerCase(),
+                              options: {
+                                data: { name: userName.trim() }
+                              }
+                            });
+
+                            if (otpError) {
+                              showToast('error', `Erro ao enviar código: ${otpError.message}`);
+                              return;
+                            }
+
+                            setIsVerifyingEmailCode(true);
+                            setInputEmailCode('');
+                            setResendCooldown(60);
+                            showToast('success', `Código enviado para ${pendingEmail.trim()}! Verifique seu e-mail.`);
+                          } catch (err: any) {
+                            showToast('error', err.message || 'Erro ao enviar código de verificação.');
+                          } finally {
+                            setIsSendingOtp(false);
+                          }
+                        } else {
+                          // Se apenas nome ou telefone foram alterados, salva diretamente
+                          setIsSavingProfile(true);
+                          try {
+                            if (updateUser) {
+                              await updateUser({
+                                name: userName.trim(),
+                                phone: userPhone.trim()
+                              });
+                              checkCriandoRaizes();
+                              showToast('success', 'Perfil atualizado com sucesso! ✨');
+                            }
+                            setIsEditingProfile(false);
+                          } catch (err) {
+                            showToast('error', 'Erro ao salvar perfil. Tente novamente.');
+                          } finally {
+                            setIsSavingProfile(false);
+                          }
+                        }
+                      }}
+                      className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 shrink-0 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {isSendingOtp ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Enviando Código...</span>
+                        </>
+                      ) : isSavingProfile ? (
+                        <span>Salvando...</span>
+                      ) : pendingEmail.trim().toLowerCase() !== confirmedEmail.trim().toLowerCase() ? (
+                        <>
+                          <Mail className="w-3.5 h-3.5" />
+                          <span>Enviar Código de Confirmação</span>
+                        </>
+                      ) : (
+                        <span>Salvar Alterações</span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPendingEmail(confirmedEmail);
+                        setUserName(user?.name || '');
+                        setUserPhone(formatPhoneMask(user?.phone || ''));
+                        setIsEditingProfile(false);
+                        setIsVerifyingEmailCode(false);
+                      }}
+                      className="text-xs text-slate-400 hover:text-white px-3 py-2 cursor-pointer transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Step 2: Digitação e Validação do Código Real Recebido por E-mail */
+                <div className="flex flex-col gap-3 bg-[#070D0F] p-5 rounded-2xl border border-[#FF7F5B]/50 shadow-xl animate-fade-in">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <span className="text-xs font-black text-[#FF7F5B] uppercase tracking-wider flex items-center gap-1.5">
+                      <Mail className="w-4 h-4 text-[#FF7F5B]" />
+                      <span>Validação de Segurança do Novo E-mail</span>
+                    </span>
+                    <button
+                      onClick={() => {
+                        setIsVerifyingEmailCode(false);
+                        setEmailVerificationError('');
+                      }}
+                      className="text-xs text-slate-400 hover:text-white underline cursor-pointer"
+                    >
+                      Voltar e Corrigir
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Enviamos um código de verificação para <strong className="text-white font-bold">{pendingEmail}</strong>. Digite o código recebido no seu e-mail para validar e confirmar a alteração:
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-1">
                     <input
                       type="text"
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
-                      placeholder="Seu nome"
-                      className="w-full px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none font-bold focus:border-[#FF7F5B]"
+                      maxLength={8}
+                      value={inputEmailCode}
+                      onChange={(e) => {
+                        setInputEmailCode(e.target.value);
+                        if (emailVerificationError) setEmailVerificationError('');
+                      }}
+                      placeholder="Código do e-mail"
+                      className="px-4 py-2.5 bg-[#101B1E] border border-white/20 rounded-xl text-base sm:text-sm font-black text-center text-white tracking-widest focus:outline-none focus:border-[#FF7F5B] w-full sm:w-48 placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-600"
                     />
-                  </div>
-                  <div className="w-full sm:w-auto flex-1 min-w-[180px]">
-                    <label className="text-[10px] text-slate-400 font-bold block mb-1">E-mail</label>
-                    <input
-                      type="email"
-                      value={pendingEmail}
-                      onChange={(e) => setPendingEmail(e.target.value)}
-                      placeholder="seu@email.com"
-                      className="w-full px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                    />
-                  </div>
-                  <div className="w-full sm:w-auto flex-1 min-w-[160px]">
-                    <label className="text-[10px] text-slate-400 font-bold block mb-1">Celular</label>
-                    <input
-                      type="tel"
-                      value={userPhone}
-                      onChange={(e) => setUserPhone(formatPhoneMask(e.target.value))}
-                      placeholder="(00) 00000-0000"
-                      maxLength={15}
-                      className="w-full px-3.5 py-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-base sm:text-xs text-white focus:outline-none font-medium focus:border-[#FF7F5B]"
-                    />
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    disabled={isSavingProfile}
-                    onClick={async () => {
-                      if (!userName.trim()) return;
-                      setIsSavingProfile(true);
-                      try {
-                        if (updateUser) {
-                          await updateUser({
-                            name: userName.trim(),
-                            email: pendingEmail.trim(),
-                            phone: userPhone.trim()
-                          });
-                          setConfirmedEmail(pendingEmail.trim());
-                          checkCriandoRaizes();
-                          showToast('success', 'Perfil e dados atualizados com sucesso! ✨');
+                    <button
+                      disabled={isVerifyingOtp}
+                      onClick={async () => {
+                        const token = inputEmailCode.trim();
+                        if (!token) {
+                          setEmailVerificationError('Por favor, digite o código recebido no seu e-mail.');
+                          return;
                         }
-                        setIsEditingProfile(false);
-                      } catch (err) {
-                        showToast('error', 'Erro ao salvar perfil. Tente novamente.');
-                      } finally {
-                        setIsSavingProfile(false);
-                      }
-                    }}
-                    className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 shrink-0 cursor-pointer disabled:opacity-50"
-                  >
-                    {isSavingProfile ? 'Salvando...' : 'Salvar Alterações'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setPendingEmail(confirmedEmail);
-                      setUserName(user?.name || '');
-                      setUserPhone(formatPhoneMask(user?.phone || ''));
-                      setIsEditingProfile(false);
-                    }}
-                    className="text-xs text-slate-400 hover:text-white px-3 py-2 cursor-pointer transition-colors"
-                  >
-                    Cancelar
-                  </button>
+
+                        setIsVerifyingOtp(true);
+                        setEmailVerificationError('');
+                        try {
+                          // Validação real do OTP via Supabase Auth
+                          const { data: authData, error: authError } = await supabase.auth.verifyOtp({
+                            email: pendingEmail.trim().toLowerCase(),
+                            token,
+                            type: 'email'
+                          });
+
+                          if (authError) {
+                            // Tenta como signup caso o novo e-mail seja uma nova conta Auth
+                            const { error: retryError } = await supabase.auth.verifyOtp({
+                              email: pendingEmail.trim().toLowerCase(),
+                              token,
+                              type: 'signup'
+                            });
+
+                            if (retryError) {
+                              setEmailVerificationError('Código inválido ou expirado. Verifique o e-mail recebido e tente novamente.');
+                              setIsVerifyingOtp(false);
+                              return;
+                            }
+                          }
+
+                          // Código 100% validado com sucesso! Atualiza no banco Supabase e no AuthContext
+                          if (updateUser) {
+                            await updateUser({
+                              name: userName.trim(),
+                              phone: userPhone.trim(),
+                              email: pendingEmail.trim().toLowerCase()
+                            });
+                            setConfirmedEmail(pendingEmail.trim().toLowerCase());
+                            checkCriandoRaizes();
+                          }
+
+                          setIsVerifyingEmailCode(false);
+                          setIsEditingProfile(false);
+                          showToast('success', 'Novo e-mail confirmado e atualizado com sucesso! ✨');
+                        } catch (err: any) {
+                          setEmailVerificationError(err.message || 'Erro ao validar código. Tente novamente.');
+                        } finally {
+                          setIsVerifyingOtp(false);
+                        }
+                      }}
+                      className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 shrink-0 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {isVerifyingOtp ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Validando Código...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Confirmar Novo E-mail</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      disabled={resendCooldown > 0 || isSendingOtp}
+                      onClick={async () => {
+                        setIsSendingOtp(true);
+                        setEmailVerificationError('');
+                        try {
+                          const { error: otpError } = await supabase.auth.signInWithOtp({
+                            email: pendingEmail.trim().toLowerCase(),
+                            options: {
+                              data: { name: userName.trim() }
+                            }
+                          });
+
+                          if (otpError) {
+                            setEmailVerificationError(`Erro ao reenviar: ${otpError.message}`);
+                            return;
+                          }
+
+                          setResendCooldown(60);
+                          showToast('success', 'Novo código enviado para sua caixa de entrada!');
+                        } catch (err: any) {
+                          setEmailVerificationError(err.message || 'Erro ao reenviar código.');
+                        } finally {
+                          setIsSendingOtp(false);
+                        }
+                      }}
+                      className="text-xs text-slate-400 hover:text-white px-2 py-2 cursor-pointer disabled:opacity-40 transition-colors"
+                    >
+                      {resendCooldown > 0 ? `Reenviar em ${resendCooldown}s` : 'Reenviar Código'}
+                    </button>
+                  </div>
+
+                  {emailVerificationError && (
+                    <div className="flex items-center gap-2 text-rose-400 text-xs font-bold bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl animate-fade-in">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{emailVerificationError}</span>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
           ) : (
             <div>
