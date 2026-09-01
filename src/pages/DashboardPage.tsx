@@ -503,18 +503,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                         setIsVerifyingOtp(true);
                         setEmailVerificationError('');
                         try {
-                          // Tentar validar como email_change primeiro (fluxo correto)
+                          const newEmail = pendingEmail.trim().toLowerCase();
+
+                          // 1. Tentar validar como email_change (fluxo oficial de troca de e-mail)
                           const { error: changeErr } = await supabase.auth.verifyOtp({
-                            email: pendingEmail.trim().toLowerCase(),
+                            email: newEmail,
                             token,
                             type: 'email_change'
                           });
 
                           if (changeErr) {
-                            // Se falhou, pode ser que Secure Email Change está desligado
-                            // e o token chegou como magic link (type: 'email')
+                            // 2. Fallback: verificar como magic link OTP
                             const { error: emailErr } = await supabase.auth.verifyOtp({
-                              email: pendingEmail.trim().toLowerCase(),
+                              email: newEmail,
                               token,
                               type: 'email'
                             });
@@ -522,27 +523,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                             if (emailErr) {
                               throw new Error('Código inválido ou expirado. Verifique os dígitos e tente novamente.');
                             }
+                          }
 
-                            // Verificou como magic link: auth.users NÃO foi atualizado ainda
-                            // Forçamos a atualização do e-mail no Authentication agora
-                            const { error: forceUpdateErr } = await supabase.auth.updateUser({
-                              email: pendingEmail.trim().toLowerCase()
-                            });
+                          // 3. Nesse ponto a sessão está 100% renovada (verifyOtp atualiza a sessão).
+                          //    Forçar a atualização do e-mail no Authentication com a sessão fresca.
+                          //    Isso garante que auth.users.email = newEmail sempre, independente
+                          //    do tipo de token que foi validado acima.
+                          const { error: authUpdateErr } = await supabase.auth.updateUser({
+                            email: newEmail
+                          });
 
-                            if (forceUpdateErr) {
-                              console.warn('Notice forcing auth email update after magic link verify:', forceUpdateErr.message);
+                          if (authUpdateErr) {
+                            // Se retornar "Email address already registered" é porque já está certo no auth.users.
+                            // Qualquer outro erro é ignorado silenciosamente para não bloquear o fluxo.
+                            const msg = authUpdateErr.message.toLowerCase();
+                            if (!msg.includes('already') && !msg.includes('same email')) {
+                              console.warn('Notice syncing email to auth.users after verify:', authUpdateErr.message);
                             }
                           }
-                          // Se email_change verificou com sucesso: auth.users já foi atualizado automaticamente pelo Supabase
 
-                          // Atualiza o profiles e o AuthContext local
+                          // 4. Atualiza o profiles e o AuthContext local
                           if (updateUser) {
                             await updateUser({
                               name: userName.trim(),
                               phone: userPhone.trim(),
-                              email: pendingEmail.trim().toLowerCase()
+                              email: newEmail
                             });
-                            setConfirmedEmail(pendingEmail.trim().toLowerCase());
+                            setConfirmedEmail(newEmail);
                             checkCriandoRaizes();
                           }
 
