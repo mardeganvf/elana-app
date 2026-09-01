@@ -317,7 +317,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     setMembers(prev => prev.map(m => m.id === userId ? { ...m, bio: undefined } : m));
     try {
       await supabase.from('profiles').update({ bio: null }).eq('id', userId);
-      showToast('Bio do membro limpa com sucesso!');
+      showToast('success', 'Bio do membro limpa com sucesso!');
     } catch (err) {
       console.warn('Error clearing member bio in Supabase:', err);
     }
