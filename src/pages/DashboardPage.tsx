@@ -475,7 +475,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   </div>
 
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Enviamos um código de segurança para <strong className="text-[#FF7F5B] font-bold">{pendingEmail}</strong>. Digite o código de 6 a 8 dígitos recebido no seu e-mail:
+                    Enviamos um código de segurança para <strong className="text-[#FF7F5B] font-bold">{pendingEmail}</strong>. Digite o código de 8 dígitos recebido no seu e-mail:
                   </p>
 
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
@@ -487,8 +487,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                         setInputEmailCode(e.target.value.replace(/\D/g, ''));
                         if (emailVerificationError) setEmailVerificationError('');
                       }}
-                      placeholder="000000"
-                      className="px-4 py-3 bg-[#101B1E] border border-white/20 rounded-xl text-lg font-black text-center text-white tracking-widest focus:outline-none focus:border-[#FF7F5B] w-full sm:w-48 placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-600 shadow-inner"
+                      placeholder="00000000"
+                      className="px-4 py-3 bg-[#101B1E] border border-white/20 rounded-xl text-lg font-black text-center text-white tracking-widest focus:outline-none focus:border-[#FF7F5B] w-full sm:w-52 placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-600 shadow-inner"
                     />
 
                     <button
