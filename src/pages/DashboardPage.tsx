@@ -41,14 +41,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     if (hasBio && hasChildren) {
       awardBadge('b2');
     }
-    const hasBio = !!(user.bio || bioText).trim();
-    const hasFamilyMember = (childrenList || []).length > 0 || (user.children || []).length > 0;
-
-    if (hasBio && hasFamilyMember) {
-      setTimeout(() => {
-        awardBadge('b2');
-      }, 300);
-    }
   };
 
   const handleProfileAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
