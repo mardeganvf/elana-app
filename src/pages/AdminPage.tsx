@@ -81,7 +81,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
 
-  const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'polls'>('content');
+  const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'polls' | null>(null);
 
   // Grupos expansíveis (drop-downs) do menu lateral - iniciam todos recolhidos
   const [openMenuGroups, setOpenMenuGroups] = useState<Record<string, boolean>>({
@@ -101,7 +101,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // 📚 Trilhas & Módulos State (Sincronizado com a barra lateral)
   const { journeys } = useJourneys();
-  const [selectedJourneyId, setSelectedJourneyId] = useState<string>(() => journeys[0]?.id || '');
+  const [selectedJourneyId, setSelectedJourneyId] = useState<string | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [openTrilhas, setOpenTrilhas] = useState<Record<string, boolean>>({});
   const [isCreateJourneyModalOpen, setIsCreateJourneyModalOpen] = useState(false);
@@ -474,7 +474,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     <p className="text-[11px] text-slate-500 p-2">Nenhuma jornada cadastrada.</p>
                   ) : (
                     journeys.map(journey => {
-                      const isTrilhaSelected = activeAdminTab === 'content' && (selectedJourneyId === journey.id || (!selectedJourneyId && journeys[0]?.id === journey.id));
+                      const isTrilhaSelected = activeAdminTab === 'content' && selectedJourneyId === journey.id;
                       const hasMultipleModules = (journey.modules?.length || 0) > 1;
                       const isTrilhaExpanded = hasMultipleModules && (openTrilhas[journey.id] ?? isTrilhaSelected);
 
@@ -726,8 +726,25 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         {/* ÁREA DE CONTEÚDO PRINCIPAL À DIREITA */}
         <main className="flex-1 min-w-0 w-full space-y-6">
 
-      {/* TAB 1: 🛟 ATENDIMENTO SOS (EMAIL INBOX STYLE) */}
-      {activeAdminTab === 'sos' && (
+          {/* ESTADO INICIAL: NENHUM ITEM SELECIONADO NO MENU LATERAL */}
+          {!activeAdminTab && (
+            <section className="bg-[#101B1E] p-8 sm:p-12 rounded-3xl border border-white/10 shadow-xl text-center space-y-4 max-w-xl mx-auto my-8 animate-fade-in">
+              <div className="w-16 h-16 rounded-2xl bg-[#FF7F5B]/15 border border-[#FF7F5B]/30 text-[#FF7F5B] flex items-center justify-center mx-auto text-2xl shadow-lg">
+                <ShieldCheck className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-xl sm:text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Painel Administrativo
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  Selecione uma categoria no menu lateral para gerenciar as Jornadas de Conhecimento, Moderação de Posts, Atendimento SOS, Membros ou Enquetes.
+                </p>
+              </div>
+            </section>
+          )}
+
+          {/* TAB 1: 🛟 ATENDIMENTO SOS (EMAIL INBOX STYLE) */}
+          {activeAdminTab === 'sos' && (
         <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           
           {/* Header */}
