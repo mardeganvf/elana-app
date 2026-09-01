@@ -263,11 +263,6 @@ const AppContent: React.FC = () => {
       <PwaInstallBanner />
     </div>
   );
-
-      {/* PWA Install Banner */}
-      <PwaInstallBanner />
-    </div>
-  );
 };
 
 export function App() {
