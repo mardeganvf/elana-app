@@ -77,7 +77,7 @@ export const getHowToUnlock = (badge: Badge): string => {
     b52: 'Receba 1.000 reações acumuladas nas suas postagens.',
     b53: 'Receba 2.500 reações acumuladas nas suas postagens.',
     b54: 'Acompanhe a jornada de outro membro na Comunidade.',
-    b55: 'Tenha outros membros acompanhando seu perfil na aldeia.',
+    b55: 'Tenha outros membros acompanhando seu perfil na comunidade.',
     b56: 'Escreva um depoimento carinhoso no perfil de outro membro.',
     b57: 'Receba um depoimento carinhoso publicado no seu perfil.'
   };

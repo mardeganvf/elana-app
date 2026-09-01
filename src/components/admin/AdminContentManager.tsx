@@ -217,7 +217,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     setJourneyFormPrice(journey.price || 197);
 
     const existingMods = journey.modules || [];
-    setJourneyFormHasModules(existingMods.length > 0);
+    const hasMultipleMods = existingMods.length > 1 || (existingMods.length === 1 && existingMods[0].title !== 'Conteúdos da Trilha' && existingMods[0].title !== 'Conteúdos da Jornada');
+    setJourneyFormHasModules(hasMultipleMods);
     setJourneyFormModulesList(
       existingMods.map(m => ({
         id: m.id,
@@ -232,13 +233,13 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
   const handleSaveJourney = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!journeyFormTitle.trim()) {
-      notify('error', 'Por favor, informe o título da Trilha.');
+      notify('error', 'Por favor, informe o título da Jornada.');
       return;
     }
 
     const journeyId = editingJourney 
       ? editingJourney.id 
-      : journeyFormTitle.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `trilha-${Date.now()}`;
+      : journeyFormTitle.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `jornada-${Date.now()}`;
 
     let finalModules: CourseModule[] = [];
     if (journeyFormHasModules) {
@@ -246,7 +247,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
         finalModules = journeyFormModulesList.map((m, idx) => ({
           id: m.id || `mod-${journeyId}-${idx + 1}`,
           number: idx + 1,
-          title: m.title.trim(),
+          title: m.title.trim() || `Módulo ${idx + 1}`,
           description: '',
           lessons: m.lessons || []
         }));
@@ -261,9 +262,9 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       }
     } else {
       finalModules = [{
-        id: `mod-${journeyId}-1`,
+        id: editingJourney?.modules?.[0]?.id || `mod-${journeyId}-1`,
         number: 1,
-        title: 'Conteúdos da Trilha',
+        title: 'Conteúdos da Jornada',
         description: '',
         lessons: editingJourney?.modules?.[0]?.lessons || []
       }];
@@ -717,25 +718,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
             }}
           >
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span 
-                    className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
-                    style={{ 
-                      backgroundColor: `${activeJourney.themeColor}22`,
-                      color: activeJourney.themeColor 
-                    }}
-                  >
-                    Pilar {activeJourney.pillar?.toUpperCase() || 'MOVIMENTO'} • {activeJourney.pillarAttribute}
-                  </span>
-                  <span className="text-[10px] bg-white/10 text-slate-300 px-2 py-0.5 rounded-md font-bold">
-                    Público: {activeJourney.targetAudience}
-                  </span>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md font-bold">
-                    R$ {activeJourney.price || 197}
-                  </span>
-                </div>
-
+              <div className="space-y-1.5">
                 <h3 className="text-xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                   {activeJourney.title}
                 </h3>
@@ -758,14 +741,6 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 >
                   <Edit3 className="w-4 h-4" />
                   <span>Editar Jornada</span>
-                </button>
-
-                <button
-                  onClick={() => openCreateModule(activeJourney.id)}
-                  className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/15 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5 text-[#FF7F5B]" />
-                  <span>Novo Módulo</span>
                 </button>
 
                 <button
@@ -828,14 +803,6 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                       Selecione um módulo na barra lateral ou clique abaixo para gerenciar seus conteúdos.
                     </p>
                   </div>
-
-                  <button
-                    onClick={() => openCreateModule(activeJourney.id)}
-                    className="px-3.5 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Novo Módulo</span>
-                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -932,11 +899,11 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                     Adicione o primeiro vídeo ou material de apoio para disponibilizar às famílias.
                   </p>
                   <button
-                    onClick={() => openCreateModule(activeJourney.id)}
+                    onClick={() => openEditJourney(activeJourney)}
                     className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer inline-flex items-center gap-2"
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>Cadastrar Primeiro Módulo</span>
+                    <Edit3 className="w-4 h-4" />
+                    <span>Editar Jornada para Adicionar Módulos</span>
                   </button>
                 </div>
               )}
@@ -1102,30 +1069,38 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                       </button>
                     </div>
 
-                    {/* Lista de módulos adicionados */}
+                    {/* Lista de módulos adicionados com edição inline e exclusão */}
                     {journeyFormModulesList.length > 0 ? (
                       <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                          Módulos definidos ({journeyFormModulesList.length}):
+                          Módulos da Jornada ({journeyFormModulesList.length}):
                         </span>
                         {journeyFormModulesList.map((m, idx) => (
                           <div
                             key={idx}
                             className="flex items-center justify-between gap-2 p-2.5 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white"
                           >
-                            <span className="truncate flex items-center gap-2">
-                              <span className="w-5 h-5 rounded-md bg-[#FF7F5B]/15 text-[#FF7F5B] flex items-center justify-center font-mono text-[10px] font-bold shrink-0">
-                                {idx + 1}
-                              </span>
-                              <span className="font-semibold">{m.title}</span>
+                            <span className="w-5 h-5 rounded-md bg-[#FF7F5B]/15 text-[#FF7F5B] flex items-center justify-center font-mono text-[10px] font-bold shrink-0">
+                              {idx + 1}
                             </span>
+                            <input
+                              type="text"
+                              value={m.title}
+                              onChange={(e) => {
+                                const updated = [...journeyFormModulesList];
+                                updated[idx] = { ...updated[idx], title: e.target.value };
+                                setJourneyFormModulesList(updated);
+                              }}
+                              className="flex-1 bg-transparent border-0 text-xs font-semibold text-white focus:outline-none focus:bg-white/5 px-2 py-0.5 rounded"
+                              placeholder="Título do módulo"
+                            />
                             <button
                               type="button"
                               onClick={() => handleRemoveModuleFromJourney(idx)}
-                              className="p-1 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                              title="Remover módulo"
+                              className="p-1 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
+                              title="Excluir módulo"
                             >
-                              <X className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         ))}

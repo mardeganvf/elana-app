@@ -628,7 +628,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   >
                     <span className="flex items-center gap-2">
                       <Vote className="w-4 h-4" />
-                      <span>Enquetes da Aldeia</span>
+                      <span>Enquetes</span>
                     </span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
                       activeAdminTab === 'polls' ? 'bg-black/30 text-white' : 'bg-white/10 text-slate-300'
@@ -699,14 +699,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               )}
             </div>
 
-            {/* GRUPO 4: MEMBROS DA ALDEIA */}
+            {/* GRUPO 4: MEMBROS DA COMUNIDADE */}
             <div className="space-y-1 pt-2 border-t border-white/5">
               <button
                 type="button"
                 onClick={() => toggleMenuGroup('users')}
                 className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer select-none"
               >
-                <span>Membros da Aldeia</span>
+                <span>Membros da Comunidade</span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.users ? 'rotate-0' : '-rotate-90'}`} />
               </button>
 
@@ -1106,14 +1106,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         </section>
       )}
 
-      {/* TAB 3: 📊 TERMÔMETRO EMOCIONAL DA ALDEIA */}
+      {/* TAB 3: 📊 TERMÔMETRO EMOCIONAL DA COMUNIDADE */}
       {activeAdminTab === 'analytics' && (
         <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
                 <TrendingUp className="w-5 h-5 text-[#FFD166]" />
-                Termômetro Emocional da Aldeia (Saúde da Comunidade)
+                Termômetro Emocional (Saúde da Comunidade)
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
                 Acompanhe o estado emocional predominante dos pais para planejar novos conteúdos e encontros.
@@ -1247,7 +1247,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     </span>
                   ) : (
                     <span className="text-[10px] text-slate-400 font-bold bg-white/5 px-2.5 py-1 rounded-full">
-                      Membro da Aldeia
+                      Membro da Comunidade
                     </span>
                   )}
 

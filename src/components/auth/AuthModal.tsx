@@ -192,7 +192,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         email: inputVal.trim().toLowerCase(),
         name: name.trim(),
         avatar: GENERIC_DEFAULT_AVATAR,
-        role: 'Membro da Aldeia',
+        role: 'Membro da Comunidade',
         family_tag: 'Mãe / Pai de 1ª viagem',
         xp: 0,
         level_number: 1,
@@ -247,7 +247,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           </h2>
           {mode !== 'verify_email' && (
             <p className="text-xs text-slate-400">
-              {mode === 'login' && 'Bem-vinda de volta à nossa aldeia de acolhimento.'}
+              {mode === 'login' && 'Bem-vinda de volta à nossa comunidade de acolhimento.'}
               {mode === 'register' && 'Preencha seus dados para se juntar à comunidade.'}
               {mode === 'recovery' && 'Enviaremos um código/link de redefinição para você.'}
             </p>

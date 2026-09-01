@@ -31,7 +31,7 @@ export const BadgeRewardModal: React.FC<BadgeRewardModalProps> = ({ isOpen, onCl
         levelTitle: levelInfo.title,
         badges: updatedBadges,
         onboardingCompleted: true,
-        familyTag: user.familyTag || 'Membro da Aldeia'
+        familyTag: user.familyTag || 'Membro da Comunidade'
       });
     }
 

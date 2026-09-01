@@ -308,7 +308,7 @@ export const CommunityPage: React.FC = () => {
       name: authorProfileData?.name || author.name,
       avatar: authorProfileData?.avatar || author.avatar,
       role: authorProfileData?.role || author.role || 'membro',
-      tag: authorProfileData?.tag || author.tag || (author.role === 'guia' ? 'Guia & Mentor(a)' : 'Membro da Aldeia'),
+      tag: authorProfileData?.tag || author.tag || (author.role === 'guia' ? 'Guia & Mentor(a)' : 'Membro da Comunidade'),
       isAnonymous: author.isAnonymous,
       joinedDate: authorProfileData?.joined_date || 'Fevereiro/2026',
       levelNumber: authorProfileData?.level_number || levelInfo.level,

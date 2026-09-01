@@ -51,8 +51,8 @@ export const ALL_BADGES: Badge[] = [
   { id: 'b37', title: 'Mão Estendida', icon: '🤝', category: 'Rede de Apoio', rewardXp: 10, targetCount: 5, unitLabel: 'usuários', description: 'Já são 5 usuários que ganharam um quentinho no coração com as suas respostas.' },
   { id: 'b38', title: 'Guia de Acolhimento', icon: '⚓', category: 'Rede de Apoio', rewardXp: 25, targetCount: 25, unitLabel: 'vezes', description: '25 vezes em que uma palavra sua trouxe alívio pra quem tava aflito.' },
   { id: 'b39', title: 'Pilar da Comunidade', icon: '🏛️', category: 'Rede de Apoio', rewardXp: 50, targetCount: 100, unitLabel: 'usuários', description: 'Apoiou 100 usuários! Você virou um porto seguro pra muita gente por aqui.' },
-  { id: 'b40', title: 'Abraço Coletivo', icon: '🤗', category: 'Rede de Apoio', rewardXp: 100, targetCount: 250, unitLabel: 'usuários', description: '250 usuários acolhidos. Seu carinho transforma este app numa aldeia de verdade.' },
-  { id: 'b41', title: 'Farol da Aldeia', icon: '🏮', category: 'Rede de Apoio', rewardXp: 200, targetCount: 500, unitLabel: 'vidas', description: '500 vidas tocadas! Sua empatia ilumina o caminho de todo mundo ao redor.' },
+  { id: 'b40', title: 'Abraço Coletivo', icon: '🤗', category: 'Rede de Apoio', rewardXp: 100, targetCount: 250, unitLabel: 'usuários', description: '250 usuários acolhidos. Seu carinho transforma este app numa comunidade de verdade.' },
+  { id: 'b41', title: 'Farol da Comunidade', icon: '🏮', category: 'Rede de Apoio', rewardXp: 200, targetCount: 500, unitLabel: 'vidas', description: '500 vidas tocadas! Sua empatia ilumina o caminho de todo mundo ao redor.' },
 
   // 7. 🗳️ Sua Voz Importa (6 Conquistas)
   { id: 'b42', title: 'Primeiro Palpite', icon: '🗳️', category: 'Sua Voz Importa', rewardXp: 10, description: 'Deixou seu voto na primeira enquete. Sua vivência ajuda a guiar nossa conversa!' },

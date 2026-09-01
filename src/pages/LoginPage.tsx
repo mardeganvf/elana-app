@@ -259,7 +259,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
         email: inputVal.trim().toLowerCase(),
         name: name.trim(),
         avatar: GENERIC_DEFAULT_AVATAR,
-        role: 'Membro da Aldeia',
+        role: 'Membro da Comunidade',
         xp: 0,
         updated_at: new Date().toISOString()
       };
@@ -336,8 +336,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           </h1>
           {mode !== 'verify_email' && (
             <p className="text-xs text-slate-400">
-              {mode === 'login' && 'Acesse sua aldeia e acompanhe seu diário parental.'}
-              {mode === 'register' && 'Preencha seus dados com atenção para se juntar à aldeia.'}
+              {mode === 'login' && 'Acesse sua comunidade e acompanhe seu diário parental.'}
+              {mode === 'register' && 'Preencha seus dados com atenção para se juntar à comunidade.'}
               {mode === 'recovery' && 'Receba um link de recuperação no seu e-mail.'}
             </p>
           )}
