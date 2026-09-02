@@ -1,7 +1,8 @@
 import React from 'react';
 import { Journey } from '../../types';
 import { useAuth } from '../../context/AuthContext';
-import { Play, Lock, Info, Sparkles } from 'lucide-react';
+import { Play, Lock, Info, Sparkles, Bell, Check } from 'lucide-react';
+import { useJourneyNotifications } from '../../hooks/useJourneyNotifications';
 
 interface JourneyCardProps {
   journey: Journey;
@@ -25,7 +26,9 @@ const toSentenceCase = (str: string, addPeriod = false) => {
 
 export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onStartLearning }) => {
   const { user } = useAuth();
+  const { isJourneyNotified, toggleJourneyNotification } = useJourneyNotifications();
   const isPurchased = user?.purchasedJourneyIds.includes(journey.id);
+  const isNotified = isJourneyNotified(journey.id);
 
   // Calculate progress
   const allLessons = journey.modules.flatMap(m => m.lessons);
@@ -77,7 +80,15 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
   return (
     <div 
       className="group relative bg-[#101B1E] rounded-2xl overflow-hidden border border-white/10 shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between hover:-translate-y-1.5 cursor-pointer active:scale-[0.98]"
-      onClick={() => isPurchased && onStartLearning ? onStartLearning(journey) : onSelect(journey)}
+      onClick={() => {
+        if (journey.isComingSoon) {
+          toggleJourneyNotification(journey.id, journey.title);
+        } else if (isPurchased && onStartLearning) {
+          onStartLearning(journey);
+        } else {
+          onSelect(journey);
+        }
+      }}
     >
       
       {/* Poster Image with Dark Vignette Gradient */}
@@ -93,26 +104,50 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
         {/* Top Badges (Only on catalog cards) */}
         {!isPurchased && (
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
-            <span 
-              className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md shadow-md backdrop-blur-md text-white"
-              style={{ backgroundColor: `${journey.themeColor}dd` }}
-            >
-              {journey.subtitle}
-            </span>
+            {journey.isComingSoon ? (
+              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md shadow-md backdrop-blur-md bg-amber-500 text-slate-950">
+                EM BREVE
+              </span>
+            ) : (
+              <span 
+                className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md shadow-md backdrop-blur-md text-white"
+                style={{ backgroundColor: `${journey.themeColor}dd` }}
+              >
+                {journey.subtitle}
+              </span>
+            )}
             <span className="text-[10px] font-bold text-white bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10">
               {journey.pillarAttribute}
             </span>
           </div>
         )}
 
-        {/* Hover Play Button Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 backdrop-blur-[2px]">
-          <div 
-            className="w-14 h-14 rounded-full flex items-center justify-center text-white shadow-2xl transform group-hover:scale-110 transition-transform"
-            style={{ backgroundColor: journey.themeColor }}
-          >
-            <Play className="w-6 h-6 fill-current translate-x-0.5" />
-          </div>
+        {/* Hover Action Overlay */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
+          {journey.isComingSoon ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleJourneyNotification(journey.id, journey.title);
+              }}
+              className={`px-4 py-2.5 rounded-xl text-xs font-black shadow-2xl flex items-center gap-2 transition-transform hover:scale-105 cursor-pointer ${
+                isNotified
+                  ? 'bg-emerald-500 text-slate-950'
+                  : 'bg-amber-400 text-slate-950 hover:bg-amber-300'
+              }`}
+            >
+              {isNotified ? <Check className="w-4 h-4 stroke-[3]" /> : <Bell className="w-4 h-4 fill-current" />}
+              <span>{isNotified ? 'Avisaremos você!' : 'Me avisa quando chegar?'}</span>
+            </button>
+          ) : (
+            <div 
+              className="w-14 h-14 rounded-full flex items-center justify-center text-white shadow-2xl transform group-hover:scale-110 transition-transform"
+              style={{ backgroundColor: journey.themeColor }}
+            >
+              <Play className="w-6 h-6 fill-current translate-x-0.5" />
+            </div>
+          )}
         </div>
 
         {/* Purchased Progress Bar Overlay on Poster */}
@@ -193,7 +228,23 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
             </div>
           )}
 
-          {isPurchased ? (
+          {journey.isComingSoon ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleJourneyNotification(journey.id, journey.title);
+              }}
+              className={`w-full flex items-center justify-center gap-2 text-xs uppercase tracking-wider py-3 px-4 rounded-xl shadow-md transition-all cursor-pointer ${
+                isNotified
+                  ? 'bg-emerald-500 text-slate-950 font-black'
+                  : 'bg-amber-400 hover:bg-amber-300 text-slate-950 font-black'
+              }`}
+            >
+              {isNotified ? <Check className="w-4 h-4 stroke-[3]" /> : <Bell className="w-4 h-4 fill-current" />}
+              <span>{isNotified ? 'Avisaremos você!' : 'Me avisa quando chegar?'}</span>
+            </button>
+          ) : isPurchased ? (
             <button
               onClick={(e) => {
                 e.stopPropagation();

@@ -15,6 +15,7 @@ export const JOURNEYS_DATA: Journey[] = [
     bgLight: '#fff0eb',
     iconName: 'Sun',
     price: 197,
+    isComingSoon: false,
     modules: [
       {
         id: 'prn-mod-1',
@@ -99,6 +100,7 @@ export const JOURNEYS_DATA: Journey[] = [
     bgLight: '#f3f6ec',
     iconName: 'Users',
     price: 227,
+    isComingSoon: false,
     modules: [
       {
         id: 'cp-mod-1',
@@ -185,6 +187,7 @@ export const JOURNEYS_DATA: Journey[] = [
     bgLight: '#e6f1f3',
     iconName: 'Palette',
     price: 247,
+    isComingSoon: true,
     modules: [
       {
         id: 'sing-mod-1',
@@ -234,6 +237,7 @@ export const JOURNEYS_DATA: Journey[] = [
     bgLight: '#fcebf2',
     iconName: 'HeartHandshake',
     price: 217,
+    isComingSoon: true,
     modules: [
       {
         id: 'ae-mod-1',
@@ -279,6 +283,7 @@ export const JOURNEYS_DATA: Journey[] = [
     bgLight: '#f8efe9',
     iconName: 'Compass',
     price: 187,
+    isComingSoon: true,
     modules: [
       {
         id: 'nc-mod-1',
@@ -324,6 +329,7 @@ export const JOURNEYS_DATA: Journey[] = [
     bgLight: '#fff9e6',
     iconName: 'Sparkles',
     price: 197,
+    isComingSoon: true,
     modules: [
       {
         id: 'dds-mod-1',

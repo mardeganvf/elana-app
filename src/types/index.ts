@@ -41,6 +41,7 @@ export interface Journey {
   iconName: string;
   price: number;
   modules: CourseModule[];
+  isComingSoon?: boolean;
 }
 
 export interface UserLevel {

@@ -501,8 +501,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                               setIsMobileMenuOpen(false);
                             }}
                           >
-                            <div className="flex items-center min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
                               <span className="truncate">{journey.title}</span>
+                              {journey.isComingSoon && (
+                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase shrink-0">
+                                  Em breve
+                                </span>
+                              )}
                             </div>
 
                             {/* Se tem múltiplos módulos, exibe seta do dropdown temática */}

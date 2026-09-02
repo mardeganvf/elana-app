@@ -7,7 +7,8 @@ import { StoryViewerModal } from '../components/stories/StoryViewerModal';
 import { useAuth } from '../context/AuthContext';
 import { useJourneys } from '../context/JourneysContext';
 import { useDestaques } from '../context/DestaquesContext';
-import { Play, Flame, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Lock, Sparkles, Instagram } from 'lucide-react';
+import { Play, Flame, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Lock, Sparkles, Instagram, Bell, Check } from 'lucide-react';
+import { useJourneyNotifications } from '../hooks/useJourneyNotifications';
 
 interface HomePageProps {
   onSelectJourney: (journey: Journey) => void;
@@ -79,6 +80,7 @@ const LESSON_THUMBS: Record<string, string> = {
 export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLearning }) => {
   const { user } = useAuth();
   const { journeys: dynamicJourneys } = useJourneys();
+  const { isJourneyNotified, toggleJourneyNotification } = useJourneyNotifications();
   const { destaques: dynamicDestaques } = useDestaques();
   const JOURNEYS_DATA = dynamicJourneys && dynamicJourneys.length > 0 ? dynamicJourneys : STATIC_JOURNEYS;
   const rawStories = dynamicDestaques && dynamicDestaques.length > 0 ? dynamicDestaques : STATIC_STORIES_DATA;
@@ -264,11 +266,28 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                 {/* Content Box */}
                 <div className="relative z-20 max-w-2xl space-y-3 sm:space-y-4 pb-8 sm:pb-2">
 
+                  {/* Badge EM BREVE se for jornada futura */}
+                  {journey.isComingSoon && (
+                    <div>
+                      <span className="inline-block text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-md shadow-md bg-amber-500 text-slate-950">
+                        EM BREVE
+                      </span>
+                    </div>
+                  )}
+
                   {/* Journey Title */}
                   <h1 
                     className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-none drop-shadow-md cursor-pointer hover:text-[#FF7F5B] transition-colors"
                     style={{ fontFamily: 'var(--font-heading)' }}
-                    onClick={() => isPurchased ? onStartLearning(journey) : onSelectJourney(journey)}
+                    onClick={() => {
+                      if (journey.isComingSoon) {
+                        toggleJourneyNotification(journey.id, journey.title);
+                      } else if (isPurchased) {
+                        onStartLearning(journey);
+                      } else {
+                        onSelectJourney(journey);
+                      }
+                    }}
                   >
                     {journey.title}
                   </h1>
@@ -285,13 +304,31 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
                   {/* CTA Button */}
                   <div className="pt-1">
-                    <button
-                      onClick={() => isPurchased ? onStartLearning(journey) : onSelectJourney(journey)}
-                      className="flex items-center gap-2 px-5 py-2.5 sm:py-3 rounded-2xl font-extrabold text-xs uppercase tracking-wider text-slate-950 bg-white hover:bg-slate-100 shadow-xl transition-all active:scale-95 cursor-pointer"
-                    >
-                      <Play className="w-4 h-4 fill-current text-slate-950" />
-                      <span>{isPurchased ? 'Continuar Assistindo' : 'Conhecer Jornada'}</span>
-                    </button>
+                    {journey.isComingSoon ? (
+                      <button
+                        onClick={() => toggleJourneyNotification(journey.id, journey.title)}
+                        className={`flex items-center gap-2 px-5 py-2.5 sm:py-3 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl transition-all active:scale-95 cursor-pointer ${
+                          isJourneyNotified(journey.id)
+                            ? 'bg-emerald-500 text-slate-950'
+                            : 'bg-amber-400 hover:bg-amber-300 text-slate-950'
+                        }`}
+                      >
+                        {isJourneyNotified(journey.id) ? (
+                          <Check className="w-4 h-4 stroke-[3]" />
+                        ) : (
+                          <Bell className="w-4 h-4 fill-current" />
+                        )}
+                        <span>{isJourneyNotified(journey.id) ? 'Avisaremos você!' : 'Me avisa quando chegar?'}</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => isPurchased ? onStartLearning(journey) : onSelectJourney(journey)}
+                        className="flex items-center gap-2 px-5 py-2.5 sm:py-3 rounded-2xl font-extrabold text-xs uppercase tracking-wider text-slate-950 bg-white hover:bg-slate-100 shadow-xl transition-all active:scale-95 cursor-pointer"
+                      >
+                        <Play className="w-4 h-4 fill-current text-slate-950" />
+                        <span>{isPurchased ? 'Continuar Assistindo' : 'Conhecer Jornada'}</span>
+                      </button>
+                    )}
                   </div>
 
                 </div>
@@ -481,7 +518,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
               <div className="flex items-center justify-between gap-4">
                 <div 
                   className="flex items-center gap-3 cursor-pointer group/title"
-                  onClick={() => isPurchased ? onStartLearning(journey) : onSelectJourney(journey)}
+                  onClick={() => {
+                    if (journey.isComingSoon) {
+                      toggleJourneyNotification(journey.id, journey.title);
+                    } else if (isPurchased) {
+                      onStartLearning(journey);
+                    } else {
+                      onSelectJourney(journey);
+                    }
+                  }}
                 >
                   <div 
                     className="w-3.5 h-8 rounded-full shrink-0" 
@@ -493,6 +538,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                   >
                     {journey.title}
                   </h2>
+
+                  {/* Badge EM BREVE se for jornada futura */}
+                  {journey.isComingSoon && (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md shadow-md bg-amber-500 text-slate-950 ml-1">
+                      EM BREVE
+                    </span>
+                  )}
                 </div>
 
                 {/* Sinalização de Progresso Geral da Jornada Adquirida */}
@@ -560,7 +612,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                 return (
                   <div
                     key={lesson.id}
-                    onClick={() => isUnlocked ? onStartLearning(journey, lesson.id) : onSelectJourney(journey)}
+                    onClick={() => {
+                      if (journey.isComingSoon) {
+                        toggleJourneyNotification(journey.id, journey.title);
+                      } else if (isUnlocked) {
+                        onStartLearning(journey, lesson.id);
+                      } else {
+                        onSelectJourney(journey);
+                      }
+                    }}
                     className={`group flex-none w-64 sm:w-72 bg-[#101B1E] rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer flex flex-col justify-between hover:-translate-y-1 ${
                       isCompleted ? 'border-[#8A9A5B]/40 bg-[#101B1E]/90' : 'border-white/10 hover:border-white/20'
                     }`}
@@ -571,13 +631,20 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                         src={thumb}
                         alt={lesson.title}
                         className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
-                          !isUnlocked ? 'opacity-50 grayscale-[30%]' : isCompleted ? 'opacity-65 group-hover:opacity-85' : 'opacity-85 group-hover:opacity-100'
+                          journey.isComingSoon ? 'opacity-70' : !isUnlocked ? 'opacity-50 grayscale-[30%]' : isCompleted ? 'opacity-65 group-hover:opacity-85' : 'opacity-85 group-hover:opacity-100'
                         }`}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#101B1E] via-transparent to-transparent"></div>
 
+                      {/* Top-Left 'EM BREVE' Badge for coming soon journeys */}
+                      {journey.isComingSoon && (
+                        <div className="absolute top-2 left-2 z-10 bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-md shadow-md uppercase tracking-wider">
+                          EM BREVE
+                        </div>
+                      )}
+
                       {/* Top-Left '100% Assistido' Container Badge */}
-                      {isCompleted && (
+                      {!journey.isComingSoon && isCompleted && (
                         <div className="absolute top-2 left-2 z-10 bg-emerald-600/95 text-white text-[10px] font-black px-2.5 py-1 rounded-lg shadow-lg backdrop-blur-md flex items-center gap-1.5 border border-emerald-400/40 uppercase tracking-wider">
                           <CheckCircle2 className="w-3.5 h-3.5 fill-current" />
                           <span>100% Assistido</span>
@@ -585,23 +652,43 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                       )}
 
                       {/* Top-Left 'Assista agora' Badge for 1st video of unpurchased journeys */}
-                      {!isPurchased && isFirstVideo && !isCompleted && (
+                      {!journey.isComingSoon && !isPurchased && isFirstVideo && !isCompleted && (
                         <div className="absolute top-2 left-2 z-10 bg-emerald-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-md shadow-md backdrop-blur-md flex items-center gap-1">
                           <Sparkles className="w-3 h-3 fill-current" />
                           <span>Assista agora</span>
                         </div>
                       )}
 
-                      {/* Top-Right ONLY Lock Icon Badge for locked videos (without text) */}
-                      {!isUnlocked && (
+                      {/* Top-Right ONLY Lock Icon Badge for locked videos */}
+                      {!journey.isComingSoon && !isUnlocked && (
                         <div className="absolute top-2 right-2 z-10 bg-black/80 text-amber-400 p-1.5 rounded-md border border-amber-500/30 backdrop-blur-md flex items-center justify-center shadow-md">
                           <Lock className="w-3.5 h-3.5 text-amber-400" />
                         </div>
                       )}
 
-                      {/* Play or Lock Overlay on hover */}
+                      {/* Play, Lock or 1-Click Notification Overlay on hover */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
-                        {isUnlocked ? (
+                        {journey.isComingSoon ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleJourneyNotification(journey.id, journey.title);
+                            }}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-black shadow-2xl flex items-center gap-2 transition-transform hover:scale-105 cursor-pointer ${
+                              isJourneyNotified(journey.id)
+                                ? 'bg-emerald-500 text-slate-950'
+                                : 'bg-amber-400 text-slate-950 hover:bg-amber-300'
+                            }`}
+                          >
+                            {isJourneyNotified(journey.id) ? (
+                              <Check className="w-4 h-4 stroke-[3]" />
+                            ) : (
+                              <Bell className="w-4 h-4 fill-current" />
+                            )}
+                            <span>{isJourneyNotified(journey.id) ? 'Avisaremos você!' : 'Me avisa quando chegar?'}</span>
+                          </button>
+                        ) : isUnlocked ? (
                           <div 
                             className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-xl transform group-hover:scale-110 transition-transform"
                             style={{ backgroundColor: journey.themeColor }}
@@ -629,9 +716,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                     {/* Lesson Text Below Thumbnail (Fixed h-[142px] for uniform card height with 2-line description) */}
                     <div className="p-4 bg-[#101B1E] h-[142px] flex flex-col justify-between space-y-1.5">
                       <div className="space-y-0.5">
-                        {/* Fixed h-4 slot for 'Assista agora' / 'Conteúdo exclusivo' line so height never changes */}
+                        {/* Fixed h-4 slot for 'Assista agora' / 'Conteúdo exclusivo' / 'Em breve' line */}
                         <div className="h-4 flex items-center">
-                          {!isPurchased && isFirstVideo ? (
+                          {journey.isComingSoon ? (
+                            <span className={`text-[10px] font-bold flex items-center gap-1 tracking-wide ${
+                              isJourneyNotified(journey.id) ? 'text-emerald-400' : 'text-amber-400'
+                            }`}>
+                              {isJourneyNotified(journey.id) ? (
+                                <>
+                                  <Check className="w-3 h-3 stroke-[3]" /> Aviso ativado
+                                </>
+                              ) : (
+                                <>
+                                  <Bell className="w-3 h-3 fill-current" /> Em breve
+                                </>
+                              )}
+                            </span>
+                          ) : !isPurchased && isFirstVideo ? (
                             <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 tracking-wide">
                               <Sparkles className="w-3 h-3 shrink-0 fill-current" /> Assista agora
                             </span>

@@ -109,6 +109,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
   const [journeyFormAudience, setJourneyFormAudience] = useState('');
   const [journeyFormThemeColor, setJourneyFormThemeColor] = useState('#FF7F5B');
   const [journeyFormPrice, setJourneyFormPrice] = useState(197);
+  const [journeyFormIsComingSoon, setJourneyFormIsComingSoon] = useState(false);
 
   // Form states for Module Modal
   const [moduleFormTitle, setModuleFormTitle] = useState('');
@@ -204,6 +205,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     setJourneyFormHasModules(false);
     setJourneyFormModulesList([]);
     setNewModuleInput('');
+    setJourneyFormIsComingSoon(false);
     setIsJourneyModalOpen(true);
   };
 
@@ -219,6 +221,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     setJourneyFormAudience(journey.targetAudience || '');
     setJourneyFormThemeColor(journey.themeColor || '#FF7F5B');
     setJourneyFormPrice(journey.price || 197);
+    setJourneyFormIsComingSoon(Boolean(journey.isComingSoon));
 
     const existingMods = journey.modules || [];
     const hasMultipleMods = existingMods.length > 1 || (existingMods.length === 1 && existingMods[0].title !== 'Conteúdos da Trilha' && existingMods[0].title !== 'Conteúdos da Jornada');
@@ -288,6 +291,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       bgLight: '#fff0eb',
       iconName: 'Sun',
       price: journeyFormPrice,
+      isComingSoon: journeyFormIsComingSoon,
       modules: finalModules
     };
 
@@ -1055,6 +1059,49 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                     className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
                     title="Escolher outra cor"
                   />
+                </div>
+              </div>
+
+              {/* Seletor Slider: Jornada Ativa e Em Breve */}
+              <div className="p-3.5 bg-[#070D0F] border border-white/10 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-300 block">Status da Jornada:</label>
+                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
+                    journeyFormIsComingSoon 
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
+                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  }`}>
+                    {journeyFormIsComingSoon ? 'Em Breve' : 'Jornada Ativa'}
+                  </span>
+                </div>
+                
+                {/* Slider de 2 posições */}
+                <div className="relative bg-[#101B1E] p-1 rounded-xl border border-white/10 flex items-center">
+                  <div 
+                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-all duration-300 ease-out shadow-md ${
+                      journeyFormIsComingSoon 
+                        ? 'left-[calc(50%+2px)] bg-amber-500' 
+                        : 'left-1 bg-emerald-500'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setJourneyFormIsComingSoon(false)}
+                    className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
+                      !journeyFormIsComingSoon ? 'text-slate-950' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Jornada Ativa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setJourneyFormIsComingSoon(true)}
+                    className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
+                      journeyFormIsComingSoon ? 'text-slate-950' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Em Breve
+                  </button>
                 </div>
               </div>
 
