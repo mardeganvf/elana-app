@@ -98,7 +98,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
     const matchesJourneyId = story.journeyIds?.includes(targetJourney.id);
     const matchesCategory = story.category === targetJourney.title;
     return matchesJourneyId || matchesCategory;
-  });
+  }).sort((a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999));
 
   // Selected module index state for each journey
   const [selectedModuleMap, setSelectedModuleMap] = useState<Record<string, number>>({});

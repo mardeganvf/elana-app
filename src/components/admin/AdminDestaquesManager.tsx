@@ -11,7 +11,9 @@ import {
   AlertCircle,
   Video,
   Image as ImageIcon,
-  User
+  User,
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-react';
 import { StoryItem } from '../../types';
 import { useDestaques } from '../../context/DestaquesContext';
@@ -19,7 +21,7 @@ import { useJourneys } from '../../context/JourneysContext';
 import { useToast } from '../../context/ToastContext';
 
 export const AdminDestaquesManager: React.FC = () => {
-  const { destaques, addDestaque, updateDestaque, deleteDestaque } = useDestaques();
+  const { destaques, addDestaque, updateDestaque, deleteDestaque, reorderDestaques } = useDestaques();
   const { journeys } = useJourneys();
   const { showToast } = useToast();
 
@@ -27,6 +29,18 @@ export const AdminDestaquesManager: React.FC = () => {
   const [editingDestaque, setEditingDestaque] = useState<StoryItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const handleMove = async (index: number, direction: 'prev' | 'next') => {
+    const targetIndex = direction === 'prev' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= destaques.length) return;
+
+    const reordered = [...destaques];
+    const [movedItem] = reordered.splice(index, 1);
+    reordered.splice(targetIndex, 0, movedItem);
+
+    await reorderDestaques(reordered);
+    showToast('success', 'Ordem dos destaques atualizada!');
+  };
 
   // Garante que a tela comece no topo absoluto ao abrir qualquer janela de cadastro/edição
   useEffect(() => {
@@ -202,7 +216,7 @@ export const AdminDestaquesManager: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#101B1E] via-transparent to-black/40 pointer-events-none" />
 
-                {/* Author Avatar & Handle */}
+                {/* Author Avatar & Handle + Order Badge */}
                 <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
                   <div className="flex items-center gap-2 min-w-0">
                     <img
@@ -219,6 +233,14 @@ export const AdminDestaquesManager: React.FC = () => {
                       </span>
                     </div>
                   </div>
+
+                  {/* Número da Ordem */}
+                  <span 
+                    className="text-[10px] font-black bg-[#FF7F5B] text-slate-950 px-2 py-0.5 rounded-md shadow-md shrink-0"
+                    title={`Posição ${idx + 1} na ordem de exibição`}
+                  >
+                    #{idx + 1}
+                  </span>
                 </div>
 
                 {/* Play Icon Preview */}
@@ -266,12 +288,34 @@ export const AdminDestaquesManager: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Actions: Edit & Delete */}
-                <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2">
+                {/* Actions: Reorder, Edit & Delete */}
+                <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-1.5">
+                  {/* Botões de Mover Ordem */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() => handleMove(idx, 'prev')}
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
+                      title="Mover para a esquerda (anterior)"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={idx === destaques.length - 1}
+                      onClick={() => handleMove(idx, 'next')}
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
+                      title="Mover para a direita (próximo)"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => openEditModal(destaque)}
-                    className="flex-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="flex-1 px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                     <span>Editar</span>
@@ -280,7 +324,7 @@ export const AdminDestaquesManager: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setDeleteConfirmId(destaque.id)}
-                    className="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center transition-colors cursor-pointer"
+                    className="px-2 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center transition-colors cursor-pointer"
                     title="Excluir este destaque"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

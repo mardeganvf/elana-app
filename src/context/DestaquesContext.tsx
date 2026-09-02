@@ -9,6 +9,7 @@ interface DestaquesContextType {
   addDestaque: (destaque: Omit<StoryItem, 'id'>) => Promise<boolean>;
   updateDestaque: (id: string, updates: Partial<StoryItem>) => Promise<boolean>;
   deleteDestaque: (id: string) => Promise<boolean>;
+  reorderDestaques: (newOrderedList: StoryItem[]) => Promise<boolean>;
   refreshDestaques: () => Promise<void>;
 }
 
@@ -65,6 +66,7 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           displayOrder: Number(d.display_order) || 0
         }));
 
+        mapped.sort((a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999));
         setDestaques(mapped);
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
       } else {
@@ -203,6 +205,46 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  // Reordenar destaques
+  const reorderDestaques = async (newOrderedList: StoryItem[]): Promise<boolean> => {
+    const normalized = newOrderedList.map((item, index) => ({
+      ...item,
+      displayOrder: index + 1
+    }));
+
+    setDestaques(normalized);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(normalized));
+    } catch (e) {}
+
+    try {
+      const updates = normalized.map(d => ({
+        id: d.id,
+        title: d.title,
+        category: d.category,
+        journey_ids: d.journeyIds || [],
+        author_name: d.authorName,
+        author_handle: d.authorHandle,
+        author_avatar: d.authorAvatar,
+        video_url: d.videoUrl,
+        poster_url: d.posterUrl,
+        duration: d.duration,
+        date: d.date,
+        likes: d.likes,
+        display_order: d.displayOrder
+      }));
+
+      const { error } = await supabase.from('destaques').upsert(updates, { onConflict: 'id' });
+      if (error) {
+        console.warn('Erro ao salvar nova ordem de destaques no Supabase:', error.message);
+      }
+      return true;
+    } catch (e) {
+      console.error('Erro de conexão ao reordenar destaques no Supabase:', e);
+      return true;
+    }
+  };
+
   return (
     <DestaquesContext.Provider
       value={{
@@ -211,6 +253,7 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addDestaque,
         updateDestaque,
         deleteDestaque,
+        reorderDestaques,
         refreshDestaques: fetchDestaquesFromSupabase
       }}
     >
