@@ -1199,10 +1199,10 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="text-xs font-bold text-slate-300 block">
-                      Imagem de Fundo do Carrossel (Poster):
+                      Imagem de Fundo do Carrossel Inicial:
                     </label>
                     <span className="text-[11px] text-slate-500 block">
-                      Foto exibida no topo da tela inicial como fundo deste slide.
+                      Exibida exclusivamente como fundo deste slide no topo da página inicial.
                     </span>
                   </div>
                   {journeyFormCoverUrl && (
