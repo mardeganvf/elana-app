@@ -74,7 +74,7 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       } else {
         // Se a tabela estiver vazia, tenta fazer o seed inicial dos dados
         try {
-          const toInsert = destaques.map((d, index) => ({
+          const toInsert = STORIES_DATA.map((d, index) => ({
             id: d.id,
             title: d.title,
             category: d.category,
@@ -100,7 +100,7 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } finally {
       setIsLoading(false);
     }
-  }, [destaques]);
+  }, []);
 
   useEffect(() => {
     fetchDestaquesFromSupabase();
@@ -222,27 +222,13 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch (e) {}
 
     try {
-      const updates = normalized.map(d => ({
-        id: d.id,
-        title: d.title,
-        category: d.category,
-        journey_ids: d.journeyIds || [],
-        author_name: d.authorName,
-        author_handle: d.authorHandle,
-        author_avatar: d.authorAvatar,
-        video_url: d.videoUrl,
-        poster_url: d.posterUrl,
-        duration: d.duration,
-        date: d.date,
-        likes: d.likes,
-        display_order: d.displayOrder,
-        is_archived: Boolean(d.isArchived ?? false)
-      }));
-
-      const { error } = await supabase.from('destaques').upsert(updates, { onConflict: 'id' });
-      if (error) {
-        console.warn('Erro ao salvar nova ordem de destaques no Supabase:', error.message);
-      }
+      const updates = normalized.map(d =>
+        supabase
+          .from('destaques')
+          .update({ display_order: d.displayOrder })
+          .eq('id', d.id)
+      );
+      await Promise.all(updates);
       return true;
     } catch (e) {
       console.error('Erro de conexão ao reordenar destaques no Supabase:', e);
