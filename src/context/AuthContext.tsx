@@ -140,18 +140,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const newBadges = refreshed.badges.filter(b => !initialBadgeIds.has(b.id));
             if (newBadges.length > 0) {
               const b12 = newBadges.find(b => b.id === 'b12');
-              const badgeToShow = b12 || newBadges[0];
-              setTimeout(() => {
-                if (activeBadgeModalRef.current === null) {
-                  activeBadgeModalRef.current = badgeToShow;
-                  setUnlockedBadgeModal(badgeToShow);
-                  confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                  });
-                }
-              }, 800);
+              const badgeToShow: Badge | null = b12 || (newBadges[0] ?? null);
+              if (badgeToShow) {
+                setTimeout(() => {
+                  if (activeBadgeModalRef.current === null) {
+                    activeBadgeModalRef.current = badgeToShow;
+                    setUnlockedBadgeModal(badgeToShow);
+                    try {
+                      confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                      });
+                    } catch (e) {}
+                  }
+                }, 800);
+              }
             }
           }
         })

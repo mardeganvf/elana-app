@@ -424,17 +424,17 @@ export const CommunityPage: React.FC = () => {
     const elabel = (item.label || '').toLowerCase();
 
     // 1. Conquista Geral: Sinal de Cuidado (1º check-in realizado) -> b11
-    awardBadge('b11');
+    await awardBadge('b11');
 
     // 2. Conquistas Específicas por Sentimento:
     if (eid === 'sem_energia' || eid === 'exausto' || elabel.includes('energia') || elabel.includes('bateria')) {
-      awardBadge('b12'); // Tudo Bem Parar
+      await awardBadge('b12'); // Tudo Bem Parar
     } else if (eid === 'esperanca' || elabel.includes('esperança') || elabel.includes('esperanca')) {
-      awardBadge('b13'); // Luz no Caminho
+      await awardBadge('b13'); // Luz no Caminho
     } else if (eid === 'celebrando' || elabel.includes('celebrando')) {
-      awardBadge('b14'); // Pequenas Vitórias
+      await awardBadge('b14'); // Pequenas Vitórias
     } else if (eid === 'precisando_luz' || eid === 'preciso_luz' || elabel.includes('luz') || elabel.includes('ajuda')) {
-      awardBadge('b15'); // Pedido de Colo
+      await awardBadge('b15'); // Pedido de Colo
     }
 
     // Save or Update check-in into Supabase (at most 1 row per user per calendar day)
