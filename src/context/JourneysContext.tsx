@@ -97,7 +97,8 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           iconName: row.icon_name || 'Sun',
           price: Number(row.price) || 197,
           modules: Array.isArray(row.modules) ? row.modules : [],
-          isComingSoon: Boolean(row.is_coming_soon)
+          isComingSoon: Boolean(row.is_coming_soon),
+          coverImageUrl: row.cover_image_url || ''
         }));
 
         setJourneys(mapped);
@@ -135,6 +136,7 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             price: Number(j.price) || 197,
             modules: j.modules || [],
             is_coming_soon: Boolean(j.isComingSoon ?? false),
+            cover_image_url: j.coverImageUrl || '',
             display_order: i,
             updated_at: new Date().toISOString()
           }, { onConflict: 'id' }).then();
@@ -185,6 +187,7 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         price: journey.price || 197,
         modules: journey.modules || [],
         is_coming_soon: Boolean(journey.isComingSoon ?? false),
+        cover_image_url: journey.coverImageUrl || '',
         updated_at: new Date().toISOString()
       }, { onConflict: 'id' });
 

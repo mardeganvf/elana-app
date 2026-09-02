@@ -181,12 +181,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
     touchEndX.current = null;
   };
 
-  // Auto-advance hero slider every 6 seconds unless user hovers / touches
+  // Auto-advance hero slider every 7 seconds unless user hovers / touches
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
       nextSlide();
-    }, 6000);
+    }, 7000);
     return () => clearInterval(interval);
   }, [isPaused, displayIndex]);
 
@@ -255,7 +255,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
               >
                 {/* Background Image */}
                 <img
-                  src={SLIDE_POSTERS[journey.id]}
+                  src={journey.coverImageUrl || SLIDE_POSTERS[journey.id] || 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1600&auto=format&fit=crop&q=80'}
                   alt={journey.title}
                   className="absolute inset-0 w-full h-full object-cover object-center"
                 />

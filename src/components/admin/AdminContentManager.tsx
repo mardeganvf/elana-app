@@ -113,6 +113,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
   const [journeyFormThemeColor, setJourneyFormThemeColor] = useState('#FF7F5B');
   const [journeyFormPrice, setJourneyFormPrice] = useState(197);
   const [journeyFormIsComingSoon, setJourneyFormIsComingSoon] = useState(false);
+  const [journeyFormCoverUrl, setJourneyFormCoverUrl] = useState('');
+  const [isUploadingJourneyCover, setIsUploadingJourneyCover] = useState(false);
 
   // Form states for Module Modal
   const [moduleFormTitle, setModuleFormTitle] = useState('');
@@ -268,6 +270,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     setJourneyFormModulesList([]);
     setNewModuleInput('');
     setJourneyFormIsComingSoon(false);
+    setJourneyFormCoverUrl('');
     setIsJourneyModalOpen(true);
   };
 
@@ -284,6 +287,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     setJourneyFormThemeColor(journey.themeColor || '#FF7F5B');
     setJourneyFormPrice(journey.price || 197);
     setJourneyFormIsComingSoon(Boolean(journey.isComingSoon));
+    setJourneyFormCoverUrl(journey.coverImageUrl || '');
 
     const existingMods = journey.modules || [];
     const hasMultipleMods = existingMods.length > 1 || (existingMods.length === 1 && existingMods[0].title !== 'Conteúdos da Trilha' && existingMods[0].title !== 'Conteúdos da Jornada');
@@ -354,6 +358,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       iconName: 'Sun',
       price: journeyFormPrice,
       isComingSoon: journeyFormIsComingSoon,
+      coverImageUrl: journeyFormCoverUrl.trim(),
       modules: finalModules
     };
 
@@ -1186,6 +1191,80 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                   >
                     Em Breve
                   </button>
+                </div>
+              </div>
+
+              {/* Imagem de Fundo do Carrossel (Poster) */}
+              <div className="p-4 bg-[#070D0F] border border-white/10 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block">
+                      Imagem de Fundo do Carrossel (Poster):
+                    </label>
+                    <span className="text-[11px] text-slate-500 block">
+                      Foto exibida no topo da tela inicial como fundo deste slide.
+                    </span>
+                  </div>
+                  {journeyFormCoverUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setJourneyFormCoverUrl('')}
+                      className="text-[11px] text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+                    >
+                      Remover Imagem
+                    </button>
+                  )}
+                </div>
+
+                {/* Preview se houver imagem informada */}
+                {journeyFormCoverUrl && (
+                  <div className="relative aspect-[16/7] rounded-xl overflow-hidden border border-white/15 bg-black/40">
+                    <img
+                      src={journeyFormCoverUrl}
+                      alt="Capa do Carrossel"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
+                {/* Ações: Upload do Computador ou Colar Link */}
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <label className="w-full sm:w-auto px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-white/10 shrink-0">
+                    <UploadCloud className="w-4 h-4 text-[#FF7F5B]" />
+                    <span>{isUploadingJourneyCover ? 'Enviando foto...' : 'Fazer Upload de Foto'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isUploadingJourneyCover}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setIsUploadingJourneyCover(true);
+                        try {
+                          const url = await uploadImageToStorage(file, 'community');
+                          if (url) {
+                            setJourneyFormCoverUrl(url);
+                            notify('success', 'Foto do carrossel carregada com sucesso! 🖼️');
+                          } else {
+                            notify('error', 'Erro ao processar imagem.');
+                          }
+                        } catch (err) {
+                          notify('error', 'Falha no envio da imagem.');
+                        } finally {
+                          setIsUploadingJourneyCover(false);
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <input
+                    type="url"
+                    value={journeyFormCoverUrl}
+                    onChange={(e) => setJourneyFormCoverUrl(e.target.value)}
+                    placeholder="Ou cole o link direto da imagem..."
+                    className="w-full flex-1 p-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B]"
+                  />
                 </div>
               </div>
 

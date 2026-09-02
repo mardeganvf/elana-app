@@ -700,6 +700,7 @@ CREATE TABLE IF NOT EXISTS public.journeys (
   modules JSONB NOT NULL DEFAULT '[]'::jsonb,
   display_order INTEGER NOT NULL DEFAULT 0,
   is_coming_soon BOOLEAN NOT NULL DEFAULT FALSE,
+  cover_image_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

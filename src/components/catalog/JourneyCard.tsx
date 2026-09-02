@@ -75,7 +75,7 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
     'depois-do-silencio': 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=600&auto=format&fit=crop&q=80'
   };
 
-  const posterImage = POSTERS[journey.id] || POSTERS['pais-recem-nascidos'];
+  const posterImage = journey.coverImageUrl || POSTERS[journey.id] || POSTERS['pais-recem-nascidos'];
 
   return (
     <div 
