@@ -620,13 +620,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                     {/* Lesson Text Below Thumbnail (Fixed h-[142px] for uniform card height with 2-line description) */}
                     <div className="p-4 bg-[#101B1E] h-[142px] flex flex-col justify-between space-y-1.5">
                       <div className="space-y-0.5">
-                        {/* Fixed h-4 slot for 'Já assistido' / 'Assista agora' / 'Conteúdo exclusivo' line so height never changes */}
+                        {/* Fixed h-4 slot for 'Assista agora' / 'Conteúdo exclusivo' line so height never changes */}
                         <div className="h-4 flex items-center">
-                          {isCompleted ? (
-                            <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/25 flex items-center gap-1 tracking-wide">
-                              <CheckCircle2 className="w-3 h-3 shrink-0 fill-current" /> 100% Concluído
-                            </span>
-                          ) : !isPurchased && isFirstVideo ? (
+                          {!isPurchased && isFirstVideo ? (
                             <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 tracking-wide">
                               <Sparkles className="w-3 h-3 shrink-0 fill-current" /> Assista agora
                             </span>
@@ -636,7 +632,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                             </span>
                           ) : (
                             <span className="text-[10px] opacity-0 select-none flex items-center gap-1 pointer-events-none" aria-hidden="true">
-                              <CheckCircle2 className="w-3 h-3 shrink-0" /> Placeholder
+                              Placeholder
                             </span>
                           )}
                         </div>
