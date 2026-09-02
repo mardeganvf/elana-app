@@ -10,8 +10,19 @@ import { Play, Flame, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Lock
 
 interface HomePageProps {
   onSelectJourney: (journey: Journey) => void;
-  onStartLearning: (journey: Journey) => void;
+  onStartLearning: (journey: Journey, lessonId?: string) => void;
 }
+
+// Helper: Extrair automaticamente a thumbnail padrão do Panda Video
+export const getPandaThumbnail = (videoUrl?: string): string | null => {
+  if (!videoUrl) return null;
+  const vzMatch = videoUrl.match(/vz-([a-z0-9-]+)/i);
+  const vMatch = videoUrl.match(/[?&]v=([a-z0-9-]+)/i);
+  if (vzMatch && vMatch) {
+    return `https://thumbs.tv.pandavideo.com.br/vz-${vzMatch[1]}/${vMatch[1]}/cover.jpg`;
+  }
+  return null;
+};
 
 // Background posters matched for each slide (static — outside component to avoid re-creation)
 const SLIDE_POSTERS: Record<string, string> = {
@@ -25,7 +36,7 @@ const SLIDE_POSTERS: Record<string, string> = {
 
 // Lesson thumbnails mapping (static — outside component to avoid re-creation)
 const LESSON_THUMBS: Record<string, string> = {
-  'prn-1-1': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
+  'prn-1-1': 'https://thumbs.tv.pandavideo.com.br/vz-d4a6702a-293/00afb826-b01c-437d-80d6-e51467d34974/cover.jpg',
   'prn-1-2': 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=500&auto=format&fit=crop&q=80',
   'prn-1-3': 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=500&auto=format&fit=crop&q=80',
   'prn-1-4': 'https://images.unsplash.com/photo-1543269664-76bc3997d9ea?w=500&auto=format&fit=crop&q=80',
@@ -507,7 +518,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
             >
               {displayLessons.map((lesson, lessonIndex) => {
                 const { subgroup, videoName } = formatLessonText(currentModule, lesson);
-                const thumb = lesson.thumbnailUrl || LESSON_THUMBS[lesson.id] || SLIDE_POSTERS[journey.id];
+                const thumb = lesson.thumbnailUrl || getPandaThumbnail(lesson.videoUrl) || LESSON_THUMBS[lesson.id] || SLIDE_POSTERS[journey.id];
                 const isCompleted = user?.completedLessonIds.includes(lesson.id);
 
                 // Lock rule:
@@ -519,7 +530,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                 return (
                   <div
                     key={lesson.id}
-                    onClick={() => isUnlocked ? onStartLearning(journey) : onSelectJourney(journey)}
+                    onClick={() => isUnlocked ? onStartLearning(journey, lesson.id) : onSelectJourney(journey)}
                     className={`group flex-none w-64 sm:w-72 bg-[#101B1E] rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer flex flex-col justify-between hover:-translate-y-1 ${
                       isCompleted ? 'border-[#8A9A5B]/40 bg-[#101B1E]/90' : 'border-white/10 hover:border-white/20'
                     }`}

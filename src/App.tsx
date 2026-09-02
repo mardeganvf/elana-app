@@ -48,6 +48,7 @@ const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedJourneyForCheckout, setSelectedJourneyForCheckout] = useState<Journey | null>(null);
   const [selectedJourneyForClassroom, setSelectedJourneyForClassroom] = useState<Journey | null>(null);
+  const [selectedLessonIdForClassroom, setSelectedLessonIdForClassroom] = useState<string | undefined>(undefined);
   const [certificateJourney, setCertificateJourney] = useState<Journey | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSpotlightTourOpen, setIsSpotlightTourOpen] = useState(false);
@@ -122,9 +123,10 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleStartLearning = (journey: Journey) => {
+  const handleStartLearning = (journey: Journey, lessonId?: string) => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setSelectedJourneyForClassroom(journey);
+    setSelectedLessonIdForClassroom(lessonId);
     setActiveTab('classroom');
   };
 
@@ -179,6 +181,7 @@ const AppContent: React.FC = () => {
               {activeTab === 'classroom' && selectedJourneyForClassroom && (
                 <ClassroomPage
                   journey={journeys.find(j => j.id === selectedJourneyForClassroom.id) || selectedJourneyForClassroom}
+                  initialLessonId={selectedLessonIdForClassroom}
                   onBack={() => {
                     setActiveTab('home');
                     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });

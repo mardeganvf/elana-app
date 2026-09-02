@@ -48,6 +48,13 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
 
   const [activeLessonId, setActiveLessonId] = useState<string>(initialLesson?.id || 'prn-1-1');
 
+  // Sincroniza a lição ativa quando o usuário clica em um card específico na Home
+  useEffect(() => {
+    if (initialLessonId) {
+      setActiveLessonId(initialLessonId);
+    }
+  }, [initialLessonId]);
+
   // Sincroniza dinamicamente a lição ativa com as alterações em tempo real da jornada
   const activeLesson: Lesson = allLessons.find(l => l.id === activeLessonId) || allLessons[0] || initialLesson || {
     id: 'intro',
@@ -500,12 +507,15 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
             <div className="bg-black rounded-3xl overflow-hidden shadow-2xl aspect-video relative group border border-white/10">
               {getEmbedUrl(activeLesson.videoUrl) ? (
                 <iframe
+                  id="panda-player"
                   key={activeLesson.id + '-' + activeLesson.videoUrl}
                   src={getEmbedUrl(activeLesson.videoUrl)!}
                   title={activeLesson.title}
-                  className="w-full h-full border-0 rounded-2xl block"
-                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                  className="absolute inset-0 w-full h-full border-0 rounded-3xl"
+                  style={{ border: 'none', position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
                   allowFullScreen
+                  referrerPolicy="origin"
                 />
               ) : (
                 <>

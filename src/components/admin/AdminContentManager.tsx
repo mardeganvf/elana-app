@@ -483,6 +483,17 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     };
     const processedVideoUrl = cleanVideoUrl(contentFormVideoUrl);
 
+    const getPandaThumbFromUrl = (url: string): string | null => {
+      if (!url) return null;
+      const vzMatch = url.match(/vz-([a-z0-9-]+)/i);
+      const vMatch = url.match(/[?&]v=([a-z0-9-]+)/i);
+      if (vzMatch && vMatch) {
+        return `https://thumbs.tv.pandavideo.com.br/vz-${vzMatch[1]}/${vMatch[1]}/cover.jpg`;
+      }
+      return null;
+    };
+    const finalThumbnailUrl = contentFormThumbnailUrl.trim() || getPandaThumbFromUrl(processedVideoUrl) || undefined;
+
     let ok = false;
     if (editingContent.content) {
       ok = await updateContent(editingContent.journeyId, editingContent.moduleId, editingContent.content.id, {
@@ -490,7 +501,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
         description: contentFormDesc.trim(),
         duration: contentFormDuration.trim() || '15 min',
         videoUrl: processedVideoUrl,
-        thumbnailUrl: contentFormThumbnailUrl.trim() || undefined,
+        thumbnailUrl: finalThumbnailUrl,
         resources
       });
     } else {
@@ -499,7 +510,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
         description: contentFormDesc.trim(),
         duration: contentFormDuration.trim() || '15 min',
         videoUrl: processedVideoUrl,
-        thumbnailUrl: contentFormThumbnailUrl.trim() || undefined,
+        thumbnailUrl: finalThumbnailUrl,
         resources
       });
     }
@@ -1394,18 +1405,36 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                     </p>
 
                     {/* Preview da Thumbnail */}
-                    {contentFormThumbnailUrl && (
-                      <div className="relative aspect-video w-full max-w-sm mx-auto rounded-xl overflow-hidden border border-white/20 bg-slate-950 shadow-md">
-                        <img
-                          src={contentFormThumbnailUrl}
-                          alt="Pré-visualização da Thumbnail"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] text-white font-bold">
-                          16:9
+                    {(() => {
+                      const autoPandaThumb = (() => {
+                        const vzMatch = contentFormVideoUrl.match(/vz-([a-z0-9-]+)/i);
+                        const vMatch = contentFormVideoUrl.match(/[?&]v=([a-z0-9-]+)/i);
+                        if (vzMatch && vMatch) {
+                          return `https://thumbs.tv.pandavideo.com.br/vz-${vzMatch[1]}/${vMatch[1]}/cover.jpg`;
+                        }
+                        return null;
+                      })();
+                      const activeThumb = contentFormThumbnailUrl || autoPandaThumb;
+                      if (!activeThumb) return null;
+
+                      return (
+                        <div className="relative aspect-video w-full max-w-sm mx-auto rounded-xl overflow-hidden border border-white/20 bg-slate-950 shadow-md">
+                          <img
+                            src={activeThumb}
+                            alt="Pré-visualização da Thumbnail"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] text-white font-bold">
+                            16:9
+                          </div>
+                          {!contentFormThumbnailUrl && autoPandaThumb && (
+                            <div className="absolute bottom-2 left-2 right-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded-md text-[10px] text-emerald-300 font-bold border border-emerald-500/30 flex items-center justify-center gap-1">
+                              <span>✓ Capa oficial detectada do Panda Video</span>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     <div className="space-y-2">
                       <label className="text-[11px] text-slate-400 block">Link direto da Imagem (opcional):</label>
