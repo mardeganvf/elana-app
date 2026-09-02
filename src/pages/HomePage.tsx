@@ -100,7 +100,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   // 8-slide revolving track: [Clone 6, Slide 1..6, Clone 1]
   const EXTENDED_JOURNEYS = React.useMemo(() => {
     return [JOURNEYS_DATA[JOURNEYS_DATA.length - 1], ...JOURNEYS_DATA, JOURNEYS_DATA[0]];
-  }, []);
+  }, [JOURNEYS_DATA]);
 
   const [displayIndex, setDisplayIndex] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(true);

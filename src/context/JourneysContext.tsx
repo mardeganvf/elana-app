@@ -33,17 +33,29 @@ interface JourneysContextType {
   refreshJourneys: () => Promise<void>;
 }
 
-const LOCAL_STORAGE_KEY = 'elana_journeys_cache';
+const LOCAL_STORAGE_KEY = 'elana_journeys_cache_v4';
 
 const JourneysContext = createContext<JourneysContextType | undefined>(undefined);
 
 export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [journeys, setJourneys] = useState<Journey[]>(() => {
     try {
+      // Limpa chaves de cache anteriores para garantir sincronização com os novos vídeos e thumbnails
+      localStorage.removeItem('elana_journeys_cache');
+      localStorage.removeItem('elana_journeys_cache_v2');
+      localStorage.removeItem('elana_journeys_cache_v3');
+
       const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const prn = parsed.find((j: any) => j.id === 'pais-recem-nascidos');
+          const firstLesson = prn?.modules?.[0]?.lessons?.[0];
+          // Se o cache local estiver com o link mock antigo, descarta e usa o código atualizado
+          if (firstLesson && firstLesson.videoUrl && firstLesson.videoUrl.includes('pandavideo')) {
+            return parsed;
+          }
+        }
       }
     } catch (e) {
       console.warn('Could not read cached journeys:', e);

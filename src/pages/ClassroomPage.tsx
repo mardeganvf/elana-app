@@ -515,7 +515,6 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                   style={{ border: 'none', position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
                   allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
                   allowFullScreen
-                  referrerPolicy="origin"
                 />
               ) : (
                 <>
