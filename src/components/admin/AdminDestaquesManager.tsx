@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   Plus, 
@@ -11,9 +11,7 @@ import {
   AlertCircle,
   Video,
   Image as ImageIcon,
-  User,
-  Clock,
-  Instagram
+  User
 } from 'lucide-react';
 import { StoryItem } from '../../types';
 import { useDestaques } from '../../context/DestaquesContext';
@@ -29,6 +27,15 @@ export const AdminDestaquesManager: React.FC = () => {
   const [editingDestaque, setEditingDestaque] = useState<StoryItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Garante que a tela comece no topo absoluto ao abrir qualquer janela de cadastro/edição
+  useEffect(() => {
+    if (isModalOpen || deleteConfirmId) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+    }
+  }, [isModalOpen, deleteConfirmId]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -158,22 +165,10 @@ export const AdminDestaquesManager: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Bar */}
-      <div className="bg-[#101B1E] px-6 py-5 rounded-3xl border border-white/10 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] p-[2px] flex items-center justify-center shadow-lg">
-            <div className="w-full h-full bg-[#101B1E] rounded-[14px] flex items-center justify-center">
-              <Instagram className="w-5 h-5 text-[#FF7F5B]" />
-            </div>
-          </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-              Destaques
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Gerenciamento dos vídeos verticais (Stories 9:16) exibidos na tela inicial ({destaques.length} ativos)
-            </p>
-          </div>
-        </div>
+      <div className="bg-[#101B1E] px-6 py-4 rounded-2xl border border-white/10 shadow-md flex items-center justify-between gap-4">
+        <h3 className="text-xl font-black text-white truncate" style={{ fontFamily: 'var(--font-heading)' }}>
+          Destaques
+        </h3>
 
         <button
           type="button"
@@ -224,10 +219,6 @@ export const AdminDestaquesManager: React.FC = () => {
                       </span>
                     </div>
                   </div>
-
-                  <span className="text-[10px] font-bold bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-white border border-white/10 shrink-0">
-                    {destaque.duration}
-                  </span>
                 </div>
 
                 {/* Play Icon Preview */}
@@ -321,19 +312,14 @@ export const AdminDestaquesManager: React.FC = () => {
 
       {/* Modal de Cadastro / Edição */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-[#101B1E] border border-white/15 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden my-8">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6 pt-10 sm:pt-14 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="bg-[#101B1E] border border-white/15 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden my-4 mb-12">
             
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#FF7F5B]/20 text-[#FF7F5B] flex items-center justify-center font-bold text-sm">
-                  <Instagram className="w-4 h-4" />
-                </div>
-                <h3 className="text-lg font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                  {editingDestaque ? 'Editar Destaque' : 'Novo Destaque'}
-                </h3>
-              </div>
+              <h3 className="text-lg font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                {editingDestaque ? 'Editar Destaque' : 'Novo Destaque'}
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
@@ -365,17 +351,14 @@ export const AdminDestaquesManager: React.FC = () => {
               <div className="space-y-2 p-4 bg-[#070D0F] rounded-2xl border border-white/10">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black text-white uppercase tracking-wider block">
-                    A qual ou quais jornadas este destaque se conecta? <span className="text-[#FF7F5B]">*</span>
+                    JORNADAS <span className="text-[#FF7F5B]">*</span>
                   </label>
                   <span className="text-[11px] text-slate-400 font-medium">
                     {formData.journeyIds.length} selecionada(s)
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400">
-                  Marque as jornadas correspondentes. O destaque será exibido nos filtros de cada uma delas na HomePage.
-                </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                   {journeys.map((j) => {
                     const isSelected = formData.journeyIds.includes(j.id);
 
@@ -418,7 +401,7 @@ export const AdminDestaquesManager: React.FC = () => {
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                     <Video className="w-3.5 h-3.5 text-[#FF7F5B]" />
-                    <span>Link do Vídeo (Panda ou MP4) <span className="text-[#FF7F5B]">*</span></span>
+                    <span>Link do Vídeo <span className="text-[#FF7F5B]">*</span></span>
                   </label>
                   <input
                     type="url"
@@ -428,15 +411,12 @@ export const AdminDestaquesManager: React.FC = () => {
                     placeholder="https://... ou Panda Video embed URL"
                     className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
                   />
-                  <span className="text-[10px] text-slate-400 block">
-                    Suporta URL MP4 vertical ou embed do Panda Video.
-                  </span>
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                     <ImageIcon className="w-3.5 h-3.5 text-[#FF7F5B]" />
-                    <span>Capa Vertical (Poster 9:16)</span>
+                    <span>Capa 9:16</span>
                   </label>
                   <input
                     type="url"
@@ -445,16 +425,13 @@ export const AdminDestaquesManager: React.FC = () => {
                     placeholder="https://images.unsplash.com/..."
                     className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
                   />
-                  <span className="text-[10px] text-slate-400 block">
-                    Imagem vertical com proporção 9:16.
-                  </span>
                 </div>
               </div>
 
               {/* Dados do Autor / Especialista */}
               <div className="space-y-3 p-4 bg-[#070D0F] rounded-2xl border border-white/10">
                 <label className="text-xs font-black text-white uppercase tracking-wider block">
-                  Especialista / Autor do Vídeo
+                  ESPECIALISTA
                 </label>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -470,7 +447,7 @@ export const AdminDestaquesManager: React.FC = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-400">@ ou Especialidade</label>
+                    <label className="text-[11px] font-bold text-slate-400">@</label>
                     <input
                       type="text"
                       value={formData.authorHandle}
@@ -481,7 +458,7 @@ export const AdminDestaquesManager: React.FC = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-400">Foto / Avatar (URL)</label>
+                    <label className="text-[11px] font-bold text-slate-400">Avatar (URL)</label>
                     <input
                       type="url"
                       value={formData.authorAvatar}
@@ -491,21 +468,6 @@ export const AdminDestaquesManager: React.FC = () => {
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Duração */}
-              <div className="space-y-1.5 w-full sm:w-1/3">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-[#FF7F5B]" />
-                  <span>Duração Estimada</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  placeholder="Ex: 0:45"
-                  className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none"
-                />
               </div>
 
               {/* Modal Footer Actions */}

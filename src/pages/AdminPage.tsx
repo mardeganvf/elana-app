@@ -24,7 +24,6 @@ import {
   ChevronRight,
   BookOpen,
   Menu,
-  Instagram,
   Sparkles
 } from 'lucide-react';
 import { useAuth, isAdminUser } from '../context/AuthContext';
@@ -577,7 +576,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             </div>
 
             {/* SEÇÃO DESTAQUES */}
-            <div className="pt-2 border-t border-white/5">
+            <div className="space-y-1 pt-2 border-t border-white/5">
               <button
                 type="button"
                 onClick={() => {
@@ -586,16 +585,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   setSelectedModuleId(null);
                   setIsMobileMenuOpen(false);
                 }}
-                className={`w-full px-3 py-2.5 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                className={`w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer select-none ${
                   activeAdminTab === 'destaques'
-                    ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                    : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                    ? 'text-white bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                    : 'text-[#FF7F5B] hover:text-[#ff9b7d]'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <Instagram className="w-4 h-4 text-[#FF7F5B]" />
-                  <span>Destaques</span>
-                </div>
+                <span>Destaques</span>
               </button>
             </div>
 
