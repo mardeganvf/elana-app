@@ -14,6 +14,7 @@ export interface Lesson {
   videoUrl: string;
   description: string;
   xpPoints: number;
+  thumbnailUrl?: string;
   resources?: LessonResource[];
 }
 

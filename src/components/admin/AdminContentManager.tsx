@@ -21,11 +21,12 @@ import {
   ExternalLink,
   Layers,
   FileCheck,
-  ArrowLeft
+  ArrowLeft,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useJourneys } from '../../context/JourneysContext';
 import { Journey, CourseModule, Lesson, LessonResource } from '../../types';
-import { uploadFileToStorage } from '../../lib/storage';
+import { uploadFileToStorage, uploadImageToStorage } from '../../lib/storage';
 
 interface AdminContentManagerProps {
   showToast?: (type: 'success' | 'error' | 'info', msg: string) => void;
@@ -119,9 +120,12 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
   const [contentFormDesc, setContentFormDesc] = useState('');
   const [contentFormDuration, setContentFormDuration] = useState('15 min');
   const [contentFormVideoUrl, setContentFormVideoUrl] = useState('');
+  const [contentFormThumbnailUrl, setContentFormThumbnailUrl] = useState('');
+  const [contentFormHasResources, setContentFormHasResources] = useState(false);
   const [contentFormPdfUrl, setContentFormPdfUrl] = useState('');
   const [contentFormPdfTitle, setContentFormPdfTitle] = useState('');
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [isUploadingThumb, setIsUploadingThumb] = useState(false);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [contentModalTab, setContentModalTab] = useState<'details' | 'media'>('details');
 
@@ -349,6 +353,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     setContentFormDesc('');
     setContentFormDuration('15 min');
     setContentFormVideoUrl('');
+    setContentFormThumbnailUrl('');
+    setContentFormHasResources(false);
     setContentFormPdfUrl('');
     setContentFormPdfTitle('');
     setContentModalTab('details');
@@ -368,11 +374,36 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     setContentFormDesc(content.description || '');
     setContentFormDuration(content.duration || '15 min');
     setContentFormVideoUrl(content.videoUrl || '');
+    setContentFormThumbnailUrl(content.thumbnailUrl || '');
     const firstPdf = content.resources?.find(r => r.type === 'pdf');
+    const hasResources = !!(content.resources && content.resources.length > 0 && (firstPdf?.url || firstPdf?.title));
+    setContentFormHasResources(hasResources);
     setContentFormPdfUrl(firstPdf?.url || '');
     setContentFormPdfTitle(firstPdf?.title || '');
     setContentModalTab('details');
     setIsContentModalOpen(true);
+  };
+
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingThumb(true);
+      notify('info', 'Processando e enviando thumbnail...');
+      const url = await uploadImageToStorage(file, 'community');
+      if (url) {
+        setContentFormThumbnailUrl(url);
+        notify('success', 'Thumbnail anexada com sucesso!');
+      } else {
+        notify('error', 'Erro ao enviar a imagem da thumbnail.');
+      }
+    } catch (err) {
+      notify('error', 'Falha no envio da thumbnail.');
+    } finally {
+      setIsUploadingThumb(false);
+      e.target.value = '';
+    }
   };
 
   const handleVideoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -434,7 +465,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       : contentFormTitle.trim();
 
     const resources: LessonResource[] = [];
-    if (contentFormPdfUrl.trim()) {
+    if (contentFormHasResources && contentFormPdfUrl.trim()) {
       resources.push({
         title: contentFormPdfTitle.trim() || 'Material de Apoio (PDF)',
         type: 'pdf',
@@ -449,6 +480,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
         description: contentFormDesc.trim(),
         duration: contentFormDuration.trim() || '15 min',
         videoUrl: contentFormVideoUrl.trim(),
+        thumbnailUrl: contentFormThumbnailUrl.trim() || undefined,
         resources
       });
     } else {
@@ -457,6 +489,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
         description: contentFormDesc.trim(),
         duration: contentFormDuration.trim() || '15 min',
         videoUrl: contentFormVideoUrl.trim(),
+        thumbnailUrl: contentFormThumbnailUrl.trim() || undefined,
         resources
       });
     }
@@ -617,9 +650,17 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                   className="p-3.5 bg-[#101B1E] border border-white/5 hover:border-white/15 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
                 >
                   <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-[#FF7F5B]/10 text-[#FF7F5B] flex items-center justify-center shrink-0 mt-0.5">
-                      <Video className="w-4 h-4" />
-                    </div>
+                    {lesson.thumbnailUrl ? (
+                      <img
+                        src={lesson.thumbnailUrl}
+                        alt={lesson.title}
+                        className="w-12 h-8 rounded-lg object-cover border border-white/10 shrink-0 mt-0.5"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-lg bg-[#FF7F5B]/10 text-[#FF7F5B] flex items-center justify-center shrink-0 mt-0.5">
+                        <Video className="w-4 h-4" />
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         {lesson.title.includes(': ') && (
@@ -1283,7 +1324,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 </>
               ) : (
                 <div className="space-y-5">
-                  {/* SEÇÃO DE VÍDEO */}
+                  {/* SEÇÃO 1: VÍDEO */}
                   <div className="p-4 bg-[#070D0F] border border-white/10 rounded-2xl space-y-3">
                     <div className="flex items-center gap-2 text-white text-xs font-bold">
                       <Video className="w-4 h-4 text-[#FF7F5B]" />
@@ -1291,7 +1332,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[11px] text-slate-400 block">URL do Vídeo (YouTube, Vimeo, Cloudflare ou MP4 direto):</label>
+                      <label className="text-[11px] text-slate-400 block">URL do Vídeo (Panda Video, YouTube, Vimeo ou link direto MP4):</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="url"
@@ -1319,49 +1360,143 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                     </div>
                   </div>
 
-                  {/* SEÇÃO DE PDF / MATERIAL DE APOIO */}
+                  {/* SEÇÃO 2: THUMBNAIL / CAPA DO VÍDEO */}
                   <div className="p-4 bg-[#070D0F] border border-white/10 rounded-2xl space-y-3">
-                    <div className="flex items-center gap-2 text-white text-xs font-bold">
-                      <FileText className="w-4 h-4 text-[#FFD166]" />
-                      <span>Material de Apoio (PDF / Checklist / Guia)</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-white text-xs font-bold">
+                        <ImageIcon className="w-4 h-4 text-[#FF7F5B]" />
+                        <span>Thumbnail / Capa do Conteúdo</span>
+                      </div>
+                      {contentFormThumbnailUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setContentFormThumbnailUrl('')}
+                          className="text-[11px] text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Remover Capa</span>
+                        </button>
+                      )}
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-[11px] text-slate-400 block">Título do Material:</label>
-                      <input
-                        type="text"
-                        value={contentFormPdfTitle}
-                        onChange={(e) => setContentFormPdfTitle(e.target.value)}
-                        placeholder="Ex: Guia Prático de Apoio em PDF"
-                        className="w-full p-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                      />
-                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Imagem de capa exibida nos carrosséis, na listagem de conteúdos e no player de vídeo antes do play.
+                    </p>
+
+                    {/* Preview da Thumbnail */}
+                    {contentFormThumbnailUrl && (
+                      <div className="relative aspect-video w-full max-w-sm mx-auto rounded-xl overflow-hidden border border-white/20 bg-slate-950 shadow-md">
+                        <img
+                          src={contentFormThumbnailUrl}
+                          alt="Pré-visualização da Thumbnail"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] text-white font-bold">
+                          16:9
+                        </div>
+                      </div>
+                    )}
 
                     <div className="space-y-2">
-                      <label className="text-[11px] text-slate-400 block">Link direto do PDF:</label>
+                      <label className="text-[11px] text-slate-400 block">Link direto da Imagem (opcional):</label>
                       <input
                         type="url"
-                        value={contentFormPdfUrl}
-                        onChange={(e) => setContentFormPdfUrl(e.target.value)}
-                        placeholder="https://..."
+                        value={contentFormThumbnailUrl}
+                        onChange={(e) => setContentFormThumbnailUrl(e.target.value)}
+                        placeholder="https://... ou envie uma imagem pelo botão abaixo"
                         className="w-full p-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
                       />
                     </div>
 
                     <div className="text-center">
-                      <span className="text-[10px] text-slate-500 uppercase tracking-wider block my-1">— ou faça upload do PDF —</span>
-                      <label className="inline-flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/15 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors">
-                        <UploadCloud className="w-3.5 h-3.5 text-[#FFD166]" />
-                        <span>{isUploadingPdf ? 'Enviando PDF...' : 'Upload de Arquivo PDF'}</span>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider block my-1">— ou faça upload da capa —</span>
+                      <label className="inline-flex items-center gap-2 px-3.5 py-2 bg-white/10 hover:bg-white/15 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                        <UploadCloud className="w-3.5 h-3.5 text-[#FF7F5B]" />
+                        <span>{isUploadingThumb ? 'Enviando imagem...' : 'Upload de Imagem (JPG/PNG/WebP)'}</span>
                         <input
                           type="file"
-                          accept=".pdf"
-                          onChange={handlePdfFileUpload}
-                          disabled={isUploadingPdf}
+                          accept="image/*"
+                          onChange={handleThumbnailUpload}
+                          disabled={isUploadingThumb}
                           className="hidden"
                         />
                       </label>
                     </div>
+                  </div>
+
+                  {/* SEÇÃO 3: MATERIAL DE APOIO COM SWITCH */}
+                  <div className="p-4 bg-[#070D0F] border border-white/10 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-white text-xs font-bold">
+                        <FileText className="w-4 h-4 text-[#FFD166]" />
+                        <span>Material de Apoio (PDF / Checklist / Guia)</span>
+                      </div>
+
+                      <div className="flex items-center gap-2.5">
+                        <span className={`text-[11px] font-bold ${contentFormHasResources ? 'text-emerald-400' : 'text-slate-400'}`}>
+                          {contentFormHasResources ? 'Ativado' : 'Desativado'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setContentFormHasResources(!contentFormHasResources)}
+                          className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                            contentFormHasResources ? 'bg-[#FF7F5B]' : 'bg-white/20'
+                          }`}
+                          title={contentFormHasResources ? 'Desativar material de apoio' : 'Ativar material de apoio'}
+                        >
+                          <span
+                            className={`w-5 h-5 rounded-full bg-white transition-transform absolute top-0.5 left-0.5 shadow-md ${
+                              contentFormHasResources ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+
+                    {!contentFormHasResources ? (
+                      <div className="bg-[#101B1E] border border-white/5 rounded-xl p-3 text-center text-slate-400 text-xs">
+                        <span>Este conteúdo não possui material de apoio complementar. A aba de materiais ficará oculta no aplicativo.</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 pt-2 border-t border-white/10 animate-fade-in">
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] text-slate-400 block">Título do Material:</label>
+                          <input
+                            type="text"
+                            value={contentFormPdfTitle}
+                            onChange={(e) => setContentFormPdfTitle(e.target.value)}
+                            placeholder="Ex: Guia Prático de Apoio em PDF"
+                            className="w-full p-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] text-slate-400 block">Link direto do PDF:</label>
+                          <input
+                            type="url"
+                            value={contentFormPdfUrl}
+                            onChange={(e) => setContentFormPdfUrl(e.target.value)}
+                            placeholder="https://..."
+                            className="w-full p-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
+                          />
+                        </div>
+
+                        <div className="text-center">
+                          <span className="text-[10px] text-slate-500 uppercase tracking-wider block my-1">— ou faça upload do PDF —</span>
+                          <label className="inline-flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/15 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                            <UploadCloud className="w-3.5 h-3.5 text-[#FFD166]" />
+                            <span>{isUploadingPdf ? 'Enviando PDF...' : 'Upload de Arquivo PDF'}</span>
+                            <input
+                              type="file"
+                              accept=".pdf"
+                              onChange={handlePdfFileUpload}
+                              disabled={isUploadingPdf}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

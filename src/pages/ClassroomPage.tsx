@@ -208,6 +208,50 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Helper to resolve embed URL (Panda Video, YouTube, Vimeo, iframe code)
+  const getEmbedUrl = (url: string): string | null => {
+    if (!url) return null;
+    const cleanUrl = url.trim();
+
+    // If pasted an iframe code snippet: <iframe src="...">
+    if (cleanUrl.startsWith('<iframe')) {
+      const srcMatch = cleanUrl.match(/src=["']([^"']+)["']/);
+      if (srcMatch && srcMatch[1]) return srcMatch[1];
+    }
+
+    // Panda Video
+    if (cleanUrl.includes('pandavideo.com.br') || cleanUrl.includes('b-cdn.net')) {
+      return cleanUrl;
+    }
+
+    // YouTube
+    if (cleanUrl.includes('youtube.com/watch')) {
+      try {
+        const parsed = new URL(cleanUrl);
+        const videoId = parsed.searchParams.get('v');
+        if (videoId) return `https://www.youtube.com/embed/${videoId}?rel=0`;
+      } catch (_) {}
+    }
+    if (cleanUrl.includes('youtu.be/')) {
+      const videoId = cleanUrl.split('youtu.be/')[1]?.split('?')[0];
+      if (videoId) return `https://www.youtube.com/embed/${videoId}?rel=0`;
+    }
+    if (cleanUrl.includes('youtube.com/embed/')) {
+      return cleanUrl;
+    }
+
+    // Vimeo
+    if (cleanUrl.includes('vimeo.com/') && !cleanUrl.includes('player.vimeo.com')) {
+      const vimeoId = cleanUrl.split('vimeo.com/')[1]?.split('?')[0];
+      if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}`;
+    }
+    if (cleanUrl.includes('player.vimeo.com')) {
+      return cleanUrl;
+    }
+
+    return null;
+  };
+
   // Active Module Dropdown / Accordion Expansion State (Collapsed by default)
   const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -455,59 +499,71 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
           {/* Media Player Box (Video or Audio Waveform Mode) */}
           {mediaMode === 'video' ? (
             <div className="bg-black rounded-3xl overflow-hidden shadow-2xl aspect-video relative group border border-white/10">
-              {/* Floating Timestamp Resume Prompt */}
-              {resumePromptTime !== null && (
-                <div className="absolute top-3 left-3 right-3 z-30 bg-[#070D0F]/95 backdrop-blur-md border border-[#FF7F5B]/40 p-3 rounded-2xl flex items-center justify-between shadow-2xl animate-fade-in text-xs">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-[#FF7F5B]/20 text-[#FF7F5B] flex items-center justify-center font-bold text-sm shrink-0">
-                      ⏱️
+              {getEmbedUrl(activeLesson.videoUrl) ? (
+                <iframe
+                  src={getEmbedUrl(activeLesson.videoUrl)!}
+                  title={activeLesson.title}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                  allowFullScreen
+                />
+              ) : (
+                <>
+                  {/* Floating Timestamp Resume Prompt */}
+                  {resumePromptTime !== null && (
+                    <div className="absolute top-3 left-3 right-3 z-30 bg-[#070D0F]/95 backdrop-blur-md border border-[#FF7F5B]/40 p-3 rounded-2xl flex items-center justify-between shadow-2xl animate-fade-in text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-[#FF7F5B]/20 text-[#FF7F5B] flex items-center justify-center font-bold text-sm shrink-0">
+                          ⏱️
+                        </div>
+                        <div>
+                          <span className="font-extrabold text-white block">Continuar de onde parou?</span>
+                          <span className="text-[11px] text-slate-300">Você estava aos {formatSecondsToTime(resumePromptTime)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            if (videoRef.current) {
+                              videoRef.current.currentTime = resumePromptTime;
+                              videoRef.current.play().catch(() => {});
+                            }
+                            setResumePromptTime(null);
+                            showToast('info', `Vídeo continuado aos ${formatSecondsToTime(resumePromptTime)} 🎬`);
+                          }}
+                          className="bg-[#FF7F5B] hover:bg-[#e06847] text-white px-3.5 py-1.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                        >
+                          <span>Continuar</span>
+                        </button>
+                        <button
+                          onClick={() => setResumePromptTime(null)}
+                          className="bg-white/10 hover:bg-white/20 text-slate-300 px-2.5 py-1.5 rounded-xl transition-all font-bold text-xs"
+                          title="Fechar e assistir do início"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <span className="font-extrabold text-white block">Continuar de onde parou?</span>
-                      <span className="text-[11px] text-slate-300">Você estava aos {formatSecondsToTime(resumePromptTime)}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        if (videoRef.current) {
-                          videoRef.current.currentTime = resumePromptTime;
-                          videoRef.current.play().catch(() => {});
-                        }
-                        setResumePromptTime(null);
-                        showToast('info', `Vídeo continuado aos ${formatSecondsToTime(resumePromptTime)} 🎬`);
-                      }}
-                      className="bg-[#FF7F5B] hover:bg-[#e06847] text-white px-3.5 py-1.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-95 flex items-center gap-1.5"
-                    >
-                      <span>Continuar</span>
-                    </button>
-                    <button
-                      onClick={() => setResumePromptTime(null)}
-                      className="bg-white/10 hover:bg-white/20 text-slate-300 px-2.5 py-1.5 rounded-xl transition-all font-bold text-xs"
-                      title="Fechar e assistir do início"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              )}
+                  )}
 
-              <video
-                ref={videoRef}
-                key={activeLesson.id}
-                controls
-                playsInline
-                preload="metadata"
-                autoPlay={false}
-                onTimeUpdate={handleVideoTimeUpdate}
-                onPause={handleVideoPause}
-                onEnded={triggerAutoplayCountdown}
-                className="w-full h-full object-cover"
-                poster="https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=1000&auto=format&fit=crop&q=80"
-              >
-                <source src={activeLesson.videoUrl} type="video/mp4" />
-                Seu navegador não suporta a execução deste vídeo.
-              </video>
+                  <video
+                    ref={videoRef}
+                    key={activeLesson.id}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    autoPlay={false}
+                    onTimeUpdate={handleVideoTimeUpdate}
+                    onPause={handleVideoPause}
+                    onEnded={triggerAutoplayCountdown}
+                    className="w-full h-full object-cover"
+                    poster={activeLesson.thumbnailUrl || "https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=1000&auto=format&fit=crop&q=80"}
+                  >
+                    <source src={activeLesson.videoUrl} type="video/mp4" />
+                    Seu navegador não suporta a execução deste vídeo.
+                  </video>
+                </>
+              )}
             </div>
           ) : (
             <div className="bg-gradient-to-br from-[#101B1E] to-[#070D0F] rounded-3xl p-8 sm:p-12 border border-white/10 shadow-2xl flex flex-col items-center justify-center text-center space-y-6 min-h-[320px] relative overflow-hidden">

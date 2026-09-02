@@ -507,7 +507,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
             >
               {displayLessons.map((lesson, lessonIndex) => {
                 const { subgroup, videoName } = formatLessonText(currentModule, lesson);
-                const thumb = LESSON_THUMBS[lesson.id] || SLIDE_POSTERS[journey.id];
+                const thumb = lesson.thumbnailUrl || LESSON_THUMBS[lesson.id] || SLIDE_POSTERS[journey.id];
                 const isCompleted = user?.completedLessonIds.includes(lesson.id);
 
                 // Lock rule:

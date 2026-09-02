@@ -269,6 +269,7 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       description: content.description.trim(),
       duration: content.duration.trim() || '15 min',
       videoUrl: content.videoUrl.trim(),
+      thumbnailUrl: content.thumbnailUrl?.trim() || undefined,
       xpPoints: 0, // Sem gamificação de XP por assistir
       resources: content.resources || []
     };
