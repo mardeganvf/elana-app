@@ -36,7 +36,7 @@ const SLIDE_POSTERS: Record<string, string> = {
 
 // Lesson thumbnails mapping (static — outside component to avoid re-creation)
 const LESSON_THUMBS: Record<string, string> = {
-  'prn-1-1': 'https://thumbs.tv.pandavideo.com.br/vz-d4a6702a-293/00afb826-b01c-437d-80d6-e51467d34974/cover.jpg',
+  'prn-1-1': 'https://thumbs.tv.pandavideo.com.br/vz-d4a6702a-293/9f7008fb-570c-4a72-8425-b31f8b2eedd8.png',
   'prn-1-2': 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=500&auto=format&fit=crop&q=80',
   'prn-1-3': 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=500&auto=format&fit=crop&q=80',
   'prn-1-4': 'https://images.unsplash.com/photo-1543269664-76bc3997d9ea?w=500&auto=format&fit=crop&q=80',

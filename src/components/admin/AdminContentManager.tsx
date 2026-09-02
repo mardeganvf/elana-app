@@ -483,16 +483,27 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     };
     const processedVideoUrl = cleanVideoUrl(contentFormVideoUrl);
 
-    const getPandaThumbFromUrl = (url: string): string | null => {
-      if (!url) return null;
-      const vzMatch = url.match(/vz-([a-z0-9-]+)/i);
-      const vMatch = url.match(/[?&]v=([a-z0-9-]+)/i);
-      if (vzMatch && vMatch) {
-        return `https://thumbs.tv.pandavideo.com.br/vz-${vzMatch[1]}/${vMatch[1]}/cover.jpg`;
+    const fetchPandaHighResThumb = async (url: string): Promise<string | null> => {
+      try {
+        const vzMatch = url.match(/vz-([a-z0-9-]+)/i);
+        const vMatch = url.match(/[?&]v=([a-z0-9-]+)/i);
+        if (!vzMatch || !vMatch) return null;
+        const pullzone = `vz-${vzMatch[1]}`;
+        const videoId = vMatch[1];
+        const res = await fetch(`https://config.tv.pandavideo.com.br/${pullzone}/${videoId}.json`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.thumb) {
+            return `https://thumbs.tv.pandavideo.com.br/${pullzone}/${data.thumb}`;
+          }
+        }
+        return `https://thumbs.tv.pandavideo.com.br/${pullzone}/${videoId}/cover.jpg`;
+      } catch {
+        return null;
       }
-      return null;
     };
-    const finalThumbnailUrl = contentFormThumbnailUrl.trim() || getPandaThumbFromUrl(processedVideoUrl) || undefined;
+    const autoThumb = await fetchPandaHighResThumb(processedVideoUrl);
+    const finalThumbnailUrl = contentFormThumbnailUrl.trim() || autoThumb || undefined;
 
     let ok = false;
     if (editingContent.content) {
