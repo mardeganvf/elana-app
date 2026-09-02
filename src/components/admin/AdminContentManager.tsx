@@ -144,6 +144,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
   };
 
   const handleOpenInterestsModal = async (journey: Journey) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setInterestsJourney(journey);
     setIsInterestsModalOpen(true);
     setIsLoadingInterests(true);
@@ -1765,8 +1766,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
 
       {/* MODAL: LISTA DE INTERESSADOS NO LANÇAMENTO (SUPABASE) */}
       {isInterestsModalOpen && interestsJourney && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#101B1E] border border-white/15 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-sm p-4 sm:p-6 flex justify-center items-start animate-fade-in">
+          <div className="bg-[#101B1E] border border-white/15 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5 my-4 sm:my-8">
             {/* Header do Modal */}
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="space-y-0.5">
