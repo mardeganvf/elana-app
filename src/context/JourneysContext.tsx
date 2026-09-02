@@ -31,6 +31,8 @@ interface JourneysContextType {
   ) => Promise<boolean>;
   deleteContent: (journeyId: string, moduleId: string, contentId: string) => Promise<boolean>;
   refreshJourneys: () => Promise<void>;
+  syncJourneysToSupabase: () => Promise<boolean>;
+  importJourneys: (imported: Journey[]) => Promise<boolean>;
 }
 
 const LOCAL_STORAGE_KEY = 'elana_journeys_cache_v4';
@@ -102,24 +104,35 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
         } catch (e) {}
       } else {
-        // Se a tabela estiver vazia, sincroniza as jornadas padrão iniciais no Supabase
-        for (let i = 0; i < JOURNEYS_DATA.length; i++) {
-          const j = JOURNEYS_DATA[i];
+        // Se a tabela estiver vazia, sincroniza as jornadas do cache local (com os 15 conteúdos) ou padrão
+        const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
+        let listToSeed = JOURNEYS_DATA;
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              listToSeed = parsed;
+              setJourneys(parsed);
+            }
+          } catch (e) {}
+        }
+        for (let i = 0; i < listToSeed.length; i++) {
+          const j = listToSeed[i];
           await supabase.from('journeys').upsert({
             id: j.id,
             title: j.title,
-            subtitle: j.subtitle,
-            tagline: j.tagline,
-            description: j.description,
-            pillar: j.pillar,
-            pillar_attribute: j.pillarAttribute,
-            category: j.category,
-            target_audience: j.targetAudience,
-            theme_color: j.themeColor,
-            bg_light: j.bgLight,
-            icon_name: j.iconName,
-            price: j.price,
-            modules: j.modules,
+            subtitle: j.subtitle || '',
+            tagline: j.tagline || '',
+            description: j.description || '',
+            pillar: j.pillar || 'movimento',
+            pillar_attribute: j.pillarAttribute || '',
+            category: j.category || 'comecam',
+            target_audience: j.targetAudience || '',
+            theme_color: j.themeColor || '#FF7F5B',
+            bg_light: j.bgLight || '#fff0eb',
+            icon_name: j.iconName || 'Sun',
+            price: Number(j.price) || 197,
+            modules: j.modules || [],
             display_order: i,
             updated_at: new Date().toISOString()
           }, { onConflict: 'id' }).then();
@@ -368,6 +381,60 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return await saveJourney(updatedJourney);
   };
 
+  // Sincronizar explicitamente todas as jornadas atuais para o Supabase
+  const syncJourneysToSupabase = async (): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const listToSync = journeys.length > 0 ? journeys : JOURNEYS_DATA;
+      for (let i = 0; i < listToSync.length; i++) {
+        const j = listToSync[i];
+        const { error } = await supabase.from('journeys').upsert({
+          id: j.id,
+          title: j.title,
+          subtitle: j.subtitle || '',
+          tagline: j.tagline || '',
+          description: j.description || '',
+          pillar: j.pillar || 'movimento',
+          pillar_attribute: j.pillarAttribute || '',
+          category: j.category || 'comecam',
+          target_audience: j.targetAudience || '',
+          theme_color: j.themeColor || '#FF7F5B',
+          bg_light: j.bgLight || '#fff0eb',
+          icon_name: j.iconName || 'Sun',
+          price: Number(j.price) || 197,
+          modules: j.modules || [],
+          display_order: i,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+
+        if (error) {
+          console.error('Error syncing journey to Supabase:', error);
+          return false;
+        }
+      }
+      return true;
+    } catch (err) {
+      console.error('Exception syncing journeys:', err);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Importar jornadas de um arquivo JSON de backup
+  const importJourneys = async (imported: Journey[]): Promise<boolean> => {
+    if (!Array.isArray(imported) || imported.length === 0) return false;
+    try {
+      setJourneys(imported);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(imported));
+      await syncJourneysToSupabase();
+      return true;
+    } catch (e) {
+      console.error('Error importing journeys:', e);
+      return false;
+    }
+  };
+
   return (
     <JourneysContext.Provider
       value={{
@@ -381,7 +448,9 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         addContent,
         updateContent,
         deleteContent,
-        refreshJourneys: fetchJourneysFromSupabase
+        refreshJourneys: fetchJourneysFromSupabase,
+        syncJourneysToSupabase,
+        importJourneys
       }}
     >
       {children}

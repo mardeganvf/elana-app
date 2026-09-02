@@ -57,7 +57,9 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     deleteModule, 
     addContent, 
     updateContent, 
-    deleteContent 
+    deleteContent,
+    syncJourneysToSupabase,
+    importJourneys
   } = useJourneys();
 
   const [internalSelectedJourneyId, setInternalSelectedJourneyId] = useState<string>(() => journeys[0]?.id || '');
@@ -159,6 +161,60 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       ...prev,
       [modId]: !prev[modId]
     }));
+  };
+
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+
+  const handleExportBackup = () => {
+    try {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(journeys, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `elana_conteudos_backup_${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      notify('success', 'Backup JSON baixado com sucesso! Seus conteúdos estão salvos.');
+    } catch (e) {
+      notify('error', 'Erro ao gerar backup JSON.');
+    }
+  };
+
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const ok = await importJourneys(parsed);
+          if (ok) {
+            notify('success', `Importados ${parsed.length} jornadas/conteúdos com sucesso!`);
+          } else {
+            notify('error', 'Erro ao processar importação de conteúdos.');
+          }
+        } else {
+          notify('error', 'Arquivo JSON inválido.');
+        }
+      } catch (err) {
+        notify('error', 'Erro ao ler arquivo JSON.');
+      }
+    };
+    reader.readAsText(file);
+    if (e.target) e.target.value = '';
+  };
+
+  const handleSyncSupabase = async () => {
+    setIsSyncingCloud(true);
+    notify('info', 'Sincronizando conteúdos com a nuvem Supabase...');
+    const ok = await syncJourneysToSupabase();
+    setIsSyncingCloud(false);
+    if (ok) {
+      notify('success', 'Nuvem Supabase sincronizada com sucesso! Visível em todos os navegadores.');
+    } else {
+      notify('error', 'Erro ao sincronizar com o Supabase. Certifique-se de que a tabela public.journeys foi criada no SQL Editor.');
+    }
   };
 
   // Garante que a tela comece no topo absoluto ao abrir qualquer janela de cadastro/edição
@@ -783,19 +839,59 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       {activeJourney ? (
         <div className="space-y-6">
           {/* Header da Jornada Simplificado */}
-          <div className="bg-[#101B1E] px-6 py-4 rounded-2xl border border-white/10 shadow-md flex items-center justify-between gap-4">
-            <h3 className="text-xl font-black text-white truncate" style={{ fontFamily: 'var(--font-heading)' }}>
-              {activeJourney.title}
-            </h3>
+          <div className="bg-[#101B1E] px-6 py-4 rounded-2xl border border-white/10 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-black text-white truncate" style={{ fontFamily: 'var(--font-heading)' }}>
+                {activeJourney.title}
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Gerenciamento de conteúdos e sincronização em nuvem
+              </p>
+            </div>
 
-            <button
-              onClick={() => openEditJourney(activeJourney)}
-              className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
-              title="Editar dados desta jornada"
-            >
-              <Edit3 className="w-4 h-4" />
-              <span>Editar</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSyncSupabase}
+                disabled={isSyncingCloud}
+                className="px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
+                title="Sincronizar todos os conteúdos com a nuvem Supabase"
+              >
+                <UploadCloud className="w-3.5 h-3.5" />
+                <span>{isSyncingCloud ? 'Sincronizando...' : 'Sincronizar com Nuvem'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportBackup}
+                className="px-3 py-2 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Baixar cópia de segurança em JSON de todos os conteúdos"
+              >
+                <span>📥 Baixar Backup</span>
+              </button>
+
+              <label
+                className="px-3 py-2 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Importar conteúdos de um backup JSON"
+              >
+                <span>📤 Importar Backup</span>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportBackup}
+                  className="hidden"
+                />
+              </label>
+
+              <button
+                onClick={() => openEditJourney(activeJourney)}
+                className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer shrink-0 ml-1"
+                title="Editar dados desta jornada"
+              >
+                <Edit3 className="w-4 h-4" />
+                <span>Editar</span>
+              </button>
+            </div>
           </div>
 
           {/* LISTAGEM DE CONTEÚDOS / MÓDULOS */}

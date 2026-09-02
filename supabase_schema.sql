@@ -793,3 +793,37 @@ VALUES (
   'Aprendendo a desacelerar e acolher a rotina com o meu bebê.'
 )
 ON CONFLICT (id) DO NOTHING;
+
+-- ========================================================
+-- 14. TABELA DE JORNADAS E CONTEÚDOS DA PLATAFORMA (PUBLIC.JOURNEYS)
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.journeys (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  subtitle TEXT,
+  tagline TEXT,
+  description TEXT,
+  pillar TEXT DEFAULT 'movimento',
+  pillar_attribute TEXT,
+  category TEXT DEFAULT 'comecam',
+  target_audience TEXT,
+  theme_color TEXT DEFAULT '#FF7F5B',
+  bg_light TEXT DEFAULT '#fff0eb',
+  icon_name TEXT DEFAULT 'Sun',
+  price NUMERIC DEFAULT 197,
+  modules JSONB DEFAULT '[]'::jsonb,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.journeys ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read on journeys" ON public.journeys;
+CREATE POLICY "Allow public read on journeys" ON public.journeys
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow public insert/update on journeys" ON public.journeys;
+CREATE POLICY "Allow public insert/update on journeys" ON public.journeys
+  FOR ALL USING (true) WITH CHECK (true);
+
