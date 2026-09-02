@@ -473,13 +473,23 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       });
     }
 
+    const cleanVideoUrl = (raw: string): string => {
+      const trimmed = raw.trim();
+      if (trimmed.startsWith('<iframe')) {
+        const match = trimmed.match(/src=["']([^"']+)["']/);
+        if (match && match[1]) return match[1];
+      }
+      return trimmed;
+    };
+    const processedVideoUrl = cleanVideoUrl(contentFormVideoUrl);
+
     let ok = false;
     if (editingContent.content) {
       ok = await updateContent(editingContent.journeyId, editingContent.moduleId, editingContent.content.id, {
         title: finalTitle,
         description: contentFormDesc.trim(),
         duration: contentFormDuration.trim() || '15 min',
-        videoUrl: contentFormVideoUrl.trim(),
+        videoUrl: processedVideoUrl,
         thumbnailUrl: contentFormThumbnailUrl.trim() || undefined,
         resources
       });
@@ -488,7 +498,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
         title: finalTitle,
         description: contentFormDesc.trim(),
         duration: contentFormDuration.trim() || '15 min',
-        videoUrl: contentFormVideoUrl.trim(),
+        videoUrl: processedVideoUrl,
         thumbnailUrl: contentFormThumbnailUrl.trim() || undefined,
         resources
       });
@@ -1335,10 +1345,10 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                       <label className="text-[11px] text-slate-400 block">URL do Vídeo (Panda Video, YouTube, Vimeo ou link direto MP4):</label>
                       <div className="flex items-center gap-2">
                         <input
-                          type="url"
+                          type="text"
                           value={contentFormVideoUrl}
                           onChange={(e) => setContentFormVideoUrl(e.target.value)}
-                          placeholder="https://..."
+                          placeholder="https://... ou código iframe do Panda Video"
                           className="flex-1 p-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
                         />
                       </div>

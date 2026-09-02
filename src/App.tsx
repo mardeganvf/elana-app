@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CommunityProvider, useCommunity } from './context/CommunityContext';
 import { FontSizeProvider } from './context/FontSizeContext';
-import { JourneysProvider } from './context/JourneysContext';
+import { JourneysProvider, useJourneys } from './context/JourneysContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
@@ -43,6 +43,7 @@ const PageLoadingFallback: React.FC = () => (
 const AppContent: React.FC = () => {
   const { user, login, unlockedBadgeModal, closeBadgeModal, unlockedLevelUpModal, closeLevelUpModal } = useAuth();
   const { activePoll, userVotedPollsMap } = useCommunity();
+  const { journeys } = useJourneys();
   
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedJourneyForCheckout, setSelectedJourneyForCheckout] = useState<Journey | null>(null);
@@ -177,7 +178,7 @@ const AppContent: React.FC = () => {
 
               {activeTab === 'classroom' && selectedJourneyForClassroom && (
                 <ClassroomPage
-                  journey={selectedJourneyForClassroom}
+                  journey={journeys.find(j => j.id === selectedJourneyForClassroom.id) || selectedJourneyForClassroom}
                   onBack={() => {
                     setActiveTab('home');
                     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });

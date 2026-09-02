@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Journey, Lesson } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useJourneys } from '../context/JourneysContext';
 import { 
   Play, 
   CheckCircle2, 
@@ -38,25 +39,23 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   const handleBack = onBackToHome || onBack || (() => {});
   const { user, completeLesson, saveLessonNote, awardBadge } = useAuth();
   const { showToast } = useToast();
-  
-  // Award b4 (Minha Jornada) upon entering classroom / watching lesson
-  useEffect(() => {
-    if (user?.id) {
-      awardBadge('b4');
-    }
-  }, [user?.id]);
-  
-  // Find initial lesson or default to first lesson of first module
-  const allLessons = journey.modules.flatMap(m => m.lessons);
+  const { journeys } = useJourneys();
+
+  // Garante que a jornada usada na sala seja a versão mais atualizada e sincronizada
+  const currentJourney = journeys.find(j => j.id === journey.id) || journey;
+  const allLessons = currentJourney.modules.flatMap(m => m.lessons);
   const initialLesson = allLessons.find(l => l.id === initialLessonId) || allLessons[0];
 
-  const [activeLesson, setActiveLesson] = useState<Lesson>(initialLesson || {
+  const [activeLessonId, setActiveLessonId] = useState<string>(initialLesson?.id || 'prn-1-1');
+
+  // Sincroniza dinamicamente a lição ativa com as alterações em tempo real da jornada
+  const activeLesson: Lesson = allLessons.find(l => l.id === activeLessonId) || allLessons[0] || initialLesson || {
     id: 'intro',
     title: 'Boas-Vindas e Acolhimento Inicial',
     duration: '03:45 min',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     description: 'Comece respirando fundo. Aqui você não está só.'
-  });
+  };
 
   // Helper: Format seconds into MM:SS
   const formatSecondsToTime = (totalSeconds: number): string => {
@@ -315,7 +314,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   };
 
   const handleLessonChange = (lesson: Lesson) => {
-    setActiveLesson(lesson);
+    setActiveLessonId(lesson.id);
     setAutoplayTimer(null);
     setMobileTab('content');
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -501,9 +500,10 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
             <div className="bg-black rounded-3xl overflow-hidden shadow-2xl aspect-video relative group border border-white/10">
               {getEmbedUrl(activeLesson.videoUrl) ? (
                 <iframe
+                  key={activeLesson.id + '-' + activeLesson.videoUrl}
                   src={getEmbedUrl(activeLesson.videoUrl)!}
                   title={activeLesson.title}
-                  className="w-full h-full border-0"
+                  className="w-full h-full border-0 rounded-2xl block"
                   allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
                   allowFullScreen
                 />
