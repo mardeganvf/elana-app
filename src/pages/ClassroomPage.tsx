@@ -10,14 +10,10 @@ import {
   ChevronLeft, 
   Headphones, 
   Video as VideoIcon, 
-  CheckSquare, 
-  ListTodo,
   Volume2,
   ChevronDown,
   BookOpen,
   Film,
-  PictureInPicture2,
-  Keyboard,
   RotateCcw
 } from 'lucide-react';
 import { NotebookModal } from '../components/gamification/NotebookModal';
@@ -71,7 +67,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'resources' | 'practice'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'resources'>('overview');
   const [noteText, setNoteText] = useState('');
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
 
@@ -82,29 +78,9 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   const [mediaMode, setMediaMode] = useState<'video' | 'audio'>('video');
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
 
-  // Picture-in-Picture & Shortcuts State
-  const [isPiPActive, setIsPiPActive] = useState(false);
-  const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
-
   // Timestamp Resume State
   const [resumePromptTime, setResumePromptTime] = useState<number | null>(null);
   const lastSaveTimeRef = useRef<number>(0);
-
-  // Checklist State for "Para Colocar em Prática Hoje"
-  const [completedPractices, setCompletedPractices] = useState<Record<string, boolean>>({});
-
-  // Carregar práticas diárias salvas no localStorage
-  useEffect(() => {
-    try {
-      const userKey = user?.id || 'anon';
-      const saved = localStorage.getItem(`elana_practices_${userKey}`);
-      if (saved) {
-        setCompletedPractices(JSON.parse(saved));
-      }
-    } catch (e) {
-      console.warn('Notice loading saved practices:', e);
-    }
-  }, [user?.id]);
 
   // Carregar ponto de parada salvo do vídeo
   useEffect(() => {
@@ -152,67 +128,6 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     if (!video) return;
     saveVideoTimestamp(video.currentTime, video.duration);
   };
-
-  const handleTogglePiP = async () => {
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-        setIsPiPActive(false);
-      } else if (videoRef.current && document.pictureInPictureEnabled) {
-        await videoRef.current.requestPictureInPicture();
-        setIsPiPActive(true);
-      }
-    } catch (err) {
-      console.warn('Picture-in-Picture notice:', err);
-    }
-  };
-
-  // Atalhos de Teclado Globais para Sala de Aula
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
-        return;
-      }
-
-      const video = videoRef.current;
-      if (!video) return;
-
-      if (e.code === 'Space' || e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        if (video.paused) {
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
-      } else if (e.code === 'ArrowLeft' || e.key.toLowerCase() === 'j') {
-        e.preventDefault();
-        video.currentTime = Math.max(0, video.currentTime - 10);
-        showToast('info', '⏪ -10s');
-      } else if (e.code === 'ArrowRight' || e.key.toLowerCase() === 'l') {
-        e.preventDefault();
-        video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
-        showToast('info', '⏩ +10s');
-      } else if (e.key.toLowerCase() === 'm') {
-        e.preventDefault();
-        video.muted = !video.muted;
-        showToast('info', video.muted ? '🔇 Mudo' : '🔊 Som ativado');
-      } else if (e.key.toLowerCase() === 'f') {
-        e.preventDefault();
-        if (!document.fullscreenElement) {
-          video.requestFullscreen().catch(() => {});
-        } else {
-          document.exitFullscreen().catch(() => {});
-        }
-      } else if (e.key.toLowerCase() === 'p') {
-        e.preventDefault();
-        handleTogglePiP();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   // Helper to resolve embed URL (Panda Video, YouTube, Vimeo, iframe code)
   const getEmbedUrl = (url: string): string | null => {
@@ -336,28 +251,9 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     showToast('success', 'Anotação salva com sucesso e sincronizada! 📝');
   };
 
-  const togglePracticeItem = (idx: number) => {
-    const key = `${activeLesson.id}-practice-${idx}`;
-    const userKey = user?.id || 'anon';
-    setCompletedPractices(prev => {
-      const next = { ...prev, [key]: !prev[key] };
-      try {
-        localStorage.setItem(`elana_practices_${userKey}`, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-  };
-
   // Compute progress percentage
   const completedCount = allLessons.filter(l => user?.completedLessonIds.includes(l.id)).length;
   const progressPercent = Math.round((completedCount / allLessons.length) * 100);
-
-  // Practical checklist items generated for current lesson
-  const practiceItems = [
-    `Aplicar o ritual de respiro de 3 segundos antes de responder ao comportamento do filho.`,
-    `Anotar em um papel 1 gatilho de ansiedade observado durante a rotina hoje.`,
-    `Dedicar 15 minutos de escuta ativa sem telas ou interrupções no final do dia.`
-  ];
 
   return (
     <div className="space-y-6 lg:space-y-8 pb-20 animate-fade-in max-w-7xl mx-auto text-white -mt-4">
@@ -445,33 +341,6 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
               >
                 <Headphones className="w-3.5 h-3.5" />
                 <span>Só Áudio</span>
-              </button>
-            </div>
-
-            {/* Middle Controls: Picture-in-Picture & Shortcuts */}
-            <div className="flex items-center gap-1.5">
-              {mediaMode === 'video' && (
-                <button
-                  onClick={handleTogglePiP}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all border ${
-                    isPiPActive
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                      : 'bg-[#070D0F] text-slate-300 border-white/10 hover:bg-white/5 hover:text-white'
-                  }`}
-                  title="Janela Flutuante Picture-in-Picture (Atalho: P)"
-                >
-                  <PictureInPicture2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Janela Flutuante</span>
-                </button>
-              )}
-
-              <button
-                onClick={() => setIsShortcutsHelpOpen(prev => !prev)}
-                className="flex items-center gap-1 bg-[#070D0F] hover:bg-white/5 text-slate-400 hover:text-white px-2.5 py-1.5 rounded-xl border border-white/10 transition-all"
-                title="Ver Atalhos de Teclado"
-              >
-                <Keyboard className="w-3.5 h-3.5" />
-                <span className="hidden md:inline text-[10px] uppercase font-bold">Atalhos</span>
               </button>
             </div>
 
@@ -576,20 +445,6 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
             </div>
           ) : (
             <div className="bg-gradient-to-br from-[#101B1E] to-[#070D0F] rounded-3xl p-8 sm:p-12 border border-white/10 shadow-2xl flex flex-col items-center justify-center text-center space-y-6 min-h-[320px] relative overflow-hidden">
-              {/* Animated waveform bars background */}
-              <div className="absolute inset-0 flex items-end justify-center gap-[3px] opacity-15 px-8 pb-8 pointer-events-none">
-                {Array.from({ length: 40 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="bg-[#FF7F5B] rounded-t-full w-1.5"
-                    style={{
-                      height: `${20 + Math.sin(i * 0.7) * 30 + Math.random() * 25}%`,
-                      animation: `audioWave ${0.8 + Math.random() * 0.6}s ease-in-out ${Math.random() * 0.5}s infinite alternate`
-                    }}
-                  />
-                ))}
-              </div>
-
               <div className="relative z-10 space-y-6 flex flex-col items-center">
                 <div className="w-20 h-20 rounded-full bg-[#FF7F5B]/20 border border-[#FF7F5B]/40 text-[#FF7F5B] flex items-center justify-center animate-pulse">
                   <Volume2 className="w-10 h-10" />
@@ -637,13 +492,6 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                   </button>
                 </div>
               </div>
-
-              <style>{`
-                @keyframes audioWave {
-                  from { transform: scaleY(0.4); }
-                  to   { transform: scaleY(1); }
-                }
-              `}</style>
             </div>
           )}
 
@@ -710,18 +558,6 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('practice')}
-                  className={`pb-2 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                    activeTab === 'practice'
-                      ? 'border-[#FF7F5B] text-white'
-                      : 'border-transparent text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <ListTodo className="w-3.5 h-3.5 text-[#FFD166]" />
-                  <span>Para Colocar em Prática Hoje</span>
-                </button>
-
-                <button
                   onClick={() => setActiveTab('notes')}
                   className={`pb-2 border-b-2 transition-all whitespace-nowrap ${
                     activeTab === 'notes'
@@ -753,48 +589,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                 </p>
               )}
 
-              {/* Tab 2: Para Colocar em Prática Hoje (Checklist) */}
-              {activeTab === 'practice' && (
-                <div className="space-y-3 bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10">
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-xs text-white uppercase tracking-wider flex items-center gap-2">
-                      <CheckSquare className="w-4 h-4 text-[#FF7F5B]" />
-                      Ações Práticas para a Rotina da Família
-                    </h4>
-                    <p className="text-[11px] text-slate-400">
-                      Marque conforme você colocar em prática no seu dia a dia:
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 pt-2">
-                    {practiceItems.map((item, idx) => {
-                      const key = `${activeLesson.id}-practice-${idx}`;
-                      const isChecked = !!completedPractices[key];
-
-                      return (
-                        <label 
-                          key={idx}
-                          className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none text-xs ${
-                            isChecked
-                              ? 'bg-[#8A9A5B]/15 border-[#8A9A5B]/40 text-slate-200 line-through opacity-80'
-                              : 'bg-[#101B1E] border-white/10 text-white hover:border-white/20'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => togglePracticeItem(idx)}
-                            className="mt-0.5 rounded border-slate-600 text-[#FF7F5B] focus:ring-0"
-                          />
-                          <span>{item}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Tab 3: Notes */}
+              {/* Tab 2: Notes */}
               {activeTab === 'notes' && (
                 <div className="space-y-4">
                   <form onSubmit={handleSaveNote} className="space-y-3">
@@ -960,63 +755,6 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
           initialJourneyId={journey.id}
           onClose={() => setIsNotebookModalOpen(false)}
         />
-      )}
-
-      {/* Modal de Atalhos de Teclado */}
-      {isShortcutsHelpOpen && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setIsShortcutsHelpOpen(false)}
-        >
-          <div 
-            className="bg-[#101B1E] border border-white/15 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 text-white animate-fade-in"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2">
-                <Keyboard className="w-5 h-5 text-[#FF7F5B]" />
-                <h3 className="font-extrabold text-sm">Atalhos de Teclado</h3>
-              </div>
-              <button 
-                onClick={() => setIsShortcutsHelpOpen(false)}
-                className="text-slate-400 hover:text-white text-xs px-2.5 py-1 bg-white/10 rounded-lg hover:bg-white/20 transition-colors font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#070D0F] border border-white/5">
-                <span className="text-slate-300 font-medium">Play / Pause</span>
-                <span className="bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-[#FFD166]">Espaço / K</span>
-              </div>
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#070D0F] border border-white/5">
-                <span className="text-slate-300 font-medium">Voltar 10 segundos</span>
-                <span className="bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-[#FFD166]">← / J</span>
-              </div>
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#070D0F] border border-white/5">
-                <span className="text-slate-300 font-medium">Avançar 10 segundos</span>
-                <span className="bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-[#FFD166]">→ / L</span>
-              </div>
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#070D0F] border border-white/5">
-                <span className="text-slate-300 font-medium">Mudo (Mute)</span>
-                <span className="bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-[#FFD166]">M</span>
-              </div>
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#070D0F] border border-white/5">
-                <span className="text-slate-300 font-medium">Tela Cheia (Fullscreen)</span>
-                <span className="bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-[#FFD166]">F</span>
-              </div>
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#070D0F] border border-white/5">
-                <span className="text-slate-300 font-medium">Janela Flutuante (PiP)</span>
-                <span className="bg-white/10 px-2 py-0.5 rounded font-mono font-bold text-[#FFD166]">P</span>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-              💡 Os atalhos são pausados automaticamente ao digitar nas suas anotações.
-            </p>
-          </div>
-        </div>
       )}
 
     </div>
