@@ -22,9 +22,12 @@ import {
   Layers,
   FileCheck,
   ArrowLeft,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Users,
+  Download
 } from 'lucide-react';
 import { useJourneys } from '../../context/JourneysContext';
+import { supabase } from '../../lib/supabase';
 import { Journey, CourseModule, Lesson, LessonResource } from '../../types';
 import { uploadFileToStorage, uploadImageToStorage } from '../../lib/storage';
 
@@ -130,8 +133,66 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [contentModalTab, setContentModalTab] = useState<'details' | 'media'>('details');
 
+  // Estados do Modal de Interessados (Lista de Espera no Supabase)
+  const [isInterestsModalOpen, setIsInterestsModalOpen] = useState(false);
+  const [interestsJourney, setInterestsJourney] = useState<Journey | null>(null);
+  const [interestsList, setInterestsList] = useState<any[]>([]);
+  const [isLoadingInterests, setIsLoadingInterests] = useState(false);
+
   const notify = (type: 'success' | 'error' | 'info', message: string) => {
     if (showToast) showToast(type, message);
+  };
+
+  const handleOpenInterestsModal = async (journey: Journey) => {
+    setInterestsJourney(journey);
+    setIsInterestsModalOpen(true);
+    setIsLoadingInterests(true);
+    try {
+      const { data, error } = await supabase
+        .from('journey_interests')
+        .select('*')
+        .eq('journey_id', journey.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('Erro ao carregar interessados:', error.message);
+        setInterestsList([]);
+      } else {
+        setInterestsList(data || []);
+      }
+    } catch (err) {
+      console.warn('Exceção ao buscar interessados:', err);
+      setInterestsList([]);
+    } finally {
+      setIsLoadingInterests(false);
+    }
+  };
+
+  const handleExportInterestsCSV = () => {
+    if (interestsList.length === 0) {
+      notify('info', 'Não há interessados para exportar.');
+      return;
+    }
+
+    const headers = ['#', 'Jornada', 'Nome', 'E-mail', 'Data de Registro'];
+    const rows = interestsList.map((item, idx) => [
+      idx + 1,
+      `"${interestsJourney?.title || item.journey_id}"`,
+      `"${item.user_name || 'Usuário Visitante'}"`,
+      `"${item.user_email || '-'}"`,
+      `"${new Date(item.created_at).toLocaleString('pt-BR')}"`
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `interessados_${interestsJourney?.id || 'jornada'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    notify('success', 'Planilha CSV exportada com sucesso! 📊');
   };
 
   // Garante que a jornada selecionada seja válida
@@ -788,18 +849,40 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
         <div className="space-y-6">
           {/* Header da Jornada Simplificado */}
           <div className="bg-[#101B1E] px-6 py-4 rounded-2xl border border-white/10 shadow-md flex items-center justify-between gap-4">
-            <h3 className="text-xl font-black text-white truncate" style={{ fontFamily: 'var(--font-heading)' }}>
-              {activeJourney.title}
-            </h3>
+            <div className="flex items-center gap-3 min-w-0">
+              <span 
+                className={`w-2.5 h-2.5 rounded-full shrink-0 shadow-sm ${
+                  activeJourney.isComingSoon 
+                    ? 'bg-amber-400 ring-2 ring-amber-400/25' 
+                    : 'bg-emerald-400 ring-2 ring-emerald-400/25'
+                }`}
+                title={activeJourney.isComingSoon ? 'Em Breve' : 'Jornada Ativa'}
+              />
+              <h3 className="text-xl font-black text-white truncate" style={{ fontFamily: 'var(--font-heading)' }}>
+                {activeJourney.title}
+              </h3>
+            </div>
 
-            <button
-              onClick={() => openEditJourney(activeJourney)}
-              className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
-              title="Editar dados desta jornada"
-            >
-              <Edit3 className="w-4 h-4" />
-              <span>Editar</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleOpenInterestsModal(activeJourney)}
+                className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-slate-200 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-white/10 active:scale-95"
+                title="Ver e exportar lista de usuários interessados nesta jornada"
+              >
+                <Users className="w-3.5 h-3.5 text-amber-400" />
+                <span>Interessados</span>
+              </button>
+
+              <button
+                onClick={() => openEditJourney(activeJourney)}
+                className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
+                title="Editar dados desta jornada"
+              >
+                <Edit3 className="w-4 h-4" />
+                <span>Editar</span>
+              </button>
+            </div>
           </div>
 
           {/* LISTAGEM DE CONTEÚDOS / MÓDULOS */}
@@ -1674,6 +1757,82 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-colors cursor-pointer"
               >
                 Sim, Excluir Definitivamente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: LISTA DE INTERESSADOS NO LANÇAMENTO (SUPABASE) */}
+      {isInterestsModalOpen && interestsJourney && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#101B1E] border border-white/15 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5">
+            {/* Header do Modal */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-base font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Interessados no Lançamento
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-400">
+                  {interestsJourney.title} • {interestsList.length} {interestsList.length === 1 ? 'interessado' : 'interessados'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsInterestsModalOpen(false)}
+                className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Conteúdo da Lista */}
+            <div className="max-h-72 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+              {isLoadingInterests ? (
+                <div className="py-8 text-center text-xs text-slate-400 animate-pulse">
+                  Carregando lista de interessados do Supabase...
+                </div>
+              ) : interestsList.length === 0 ? (
+                <div className="py-8 text-center space-y-1">
+                  <p className="text-xs text-slate-300 font-bold">Nenhum interessado registrado ainda.</p>
+                  <p className="text-[11px] text-slate-500">Quando os usuários clicarem em "Me avisa quando chegar?", os dados aparecerão aqui.</p>
+                </div>
+              ) : (
+                interestsList.map((item, idx) => (
+                  <div key={item.id || idx} className="p-3 bg-black/30 border border-white/5 rounded-xl flex items-center justify-between text-xs">
+                    <div className="min-w-0 pr-2">
+                      <p className="font-bold text-white truncate">{item.user_name || 'Usuário Visitante'}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{item.user_email || 'E-mail não informado'}</p>
+                    </div>
+                    <span className="text-[10px] text-slate-500 shrink-0">
+                      {new Date(item.created_at).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Ações do Rodapé */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setIsInterestsModalOpen(false)}
+                className="px-4 py-2 bg-white/10 hover:bg-white/15 text-slate-300 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                Fechar
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportInterestsCSV}
+                disabled={interestsList.length === 0}
+                className="px-4 py-2 bg-amber-400 hover:bg-amber-300 disabled:opacity-40 disabled:hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Exportar CSV</span>
               </button>
             </div>
           </div>

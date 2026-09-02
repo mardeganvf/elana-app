@@ -622,23 +622,33 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                       }
                     }}
                     className={`group flex-none w-64 sm:w-72 bg-[#101B1E] rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer flex flex-col justify-between hover:-translate-y-1 ${
-                      isCompleted ? 'border-[#8A9A5B]/40 bg-[#101B1E]/90' : 'border-white/10 hover:border-white/20'
+                      journey.isComingSoon
+                        ? 'opacity-65 hover:opacity-100 border-white/5 bg-[#0e1618] hover:border-amber-500/30 shadow-none hover:shadow-lg'
+                        : isCompleted 
+                        ? 'border-[#8A9A5B]/40 bg-[#101B1E]/90' 
+                        : 'border-white/10 hover:border-white/20'
                     }`}
                   >
                     {/* Video Thumbnail */}
-                    <div className="relative aspect-[16/9] overflow-hidden bg-slate-900">
+                    <div className="relative aspect-[16/9] overflow-hidden bg-slate-950">
                       <img
                         src={thumb}
                         alt={lesson.title}
                         className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
-                          journey.isComingSoon ? 'opacity-70' : !isUnlocked ? 'opacity-50 grayscale-[30%]' : isCompleted ? 'opacity-65 group-hover:opacity-85' : 'opacity-85 group-hover:opacity-100'
+                          journey.isComingSoon 
+                            ? 'opacity-35 grayscale-[50%] group-hover:opacity-85 group-hover:grayscale-0' 
+                            : !isUnlocked 
+                            ? 'opacity-50 grayscale-[30%]' 
+                            : isCompleted 
+                            ? 'opacity-65 group-hover:opacity-85' 
+                            : 'opacity-85 group-hover:opacity-100'
                         }`}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#101B1E] via-transparent to-transparent"></div>
 
                       {/* Top-Left 'EM BREVE' Badge for coming soon journeys */}
                       {journey.isComingSoon && (
-                        <div className="absolute top-2 left-2 z-10 bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-md shadow-md uppercase tracking-wider">
+                        <div className="absolute top-2 left-2 z-10 bg-amber-500/85 backdrop-blur-sm text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-md shadow uppercase tracking-wider">
                           EM BREVE
                         </div>
                       )}
@@ -748,13 +758,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                         </div>
 
                         {/* Subgrupo em UPPER CASE */}
-                        <span className="text-[11px] font-extrabold text-slate-400 block tracking-wider uppercase truncate">
+                        <span className={`text-[11px] font-extrabold block tracking-wider uppercase truncate ${
+                          journey.isComingSoon ? 'text-slate-500' : 'text-slate-400'
+                        }`}>
                           {subgroup}
                         </span>
 
                         {/* Nome do vídeo em font-heading, Sentence Case, Ponto Final */}
                         <h4 
-                          className="text-sm sm:text-base font-bold text-white leading-snug group-hover:text-[#FF7F5B] transition-colors normal-case truncate block"
+                          className={`text-sm sm:text-base font-bold leading-snug transition-colors normal-case truncate block ${
+                            journey.isComingSoon ? 'text-slate-300 group-hover:text-white' : 'text-white group-hover:text-[#FF7F5B]'
+                          }`}
                           style={{ fontFamily: 'var(--font-heading)' }}
                           title={videoName}
                         >
@@ -764,7 +778,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
                       {/* Descrição curta do vídeo: Sem título, sem negrito, máx 2 linhas (...) e tooltip no hover */}
                       <p 
-                        className="text-xs font-normal text-slate-400 leading-relaxed line-clamp-2 cursor-pointer hover:text-slate-200 transition-colors pt-1 border-t border-white/5"
+                        className={`text-xs font-normal leading-relaxed line-clamp-2 cursor-pointer transition-colors pt-1 border-t border-white/5 ${
+                          journey.isComingSoon ? 'text-slate-500 group-hover:text-slate-300' : 'text-slate-400 hover:text-slate-200'
+                        }`}
                         title={lesson.description}
                       >
                         {lesson.description}

@@ -501,13 +501,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                               setIsMobileMenuOpen(false);
                             }}
                           >
-                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              {/* Círculo indicador de status: Verde para Ativa, Amarelo para Em Breve */}
+                              <span 
+                                className={`w-2 h-2 rounded-full shrink-0 shadow-sm ${
+                                  journey.isComingSoon 
+                                    ? 'bg-amber-400 ring-2 ring-amber-400/25' 
+                                    : 'bg-emerald-400 ring-2 ring-emerald-400/25'
+                                }`}
+                                title={journey.isComingSoon ? 'Em Breve' : 'Jornada Ativa'}
+                              />
                               <span className="truncate">{journey.title}</span>
-                              {journey.isComingSoon && (
-                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase shrink-0">
-                                  Em breve
-                                </span>
-                              )}
                             </div>
 
                             {/* Se tem múltiplos módulos, exibe seta do dropdown temática */}

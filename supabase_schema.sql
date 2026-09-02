@@ -860,3 +860,25 @@ DROP POLICY IF EXISTS "Allow public all on destaques" ON public.destaques;
 CREATE POLICY "Allow public all on destaques" ON public.destaques
   FOR ALL USING (true) WITH CHECK (true);
 
+-- --------------------------------------------------------
+-- TABELA DE INTERESSADOS EM JORNADAS "EM BREVE"
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.journey_interests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  journey_id TEXT NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  user_email TEXT,
+  user_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.journey_interests ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public insert on journey_interests" ON public.journey_interests;
+CREATE POLICY "Allow public insert on journey_interests" 
+  ON public.journey_interests FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public select on journey_interests" ON public.journey_interests;
+CREATE POLICY "Allow public select on journey_interests" 
+  ON public.journey_interests FOR SELECT USING (true);
+
