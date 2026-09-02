@@ -6,10 +6,11 @@ export const ALL_BADGES: Badge[] = [
   { id: 'b2', title: 'Criando Raízes', icon: '🪵', category: 'Primeiros Passos', rewardXp: 25, description: 'Perfil pronto com a sua cara e com a realidade da sua casa.' },
   { id: 'b3', title: 'Sempre Alerta', icon: '🔔', category: 'Primeiros Passos', rewardXp: 10, description: 'Notificações ligadas pra gente te lembrar de respirar no meio da correria.' },
 
-  // 2. ▶️ Jornadas de Conhecimento (7 Conquistas)
+  // 2. ▶️ Jornadas de Conhecimento (8 Conquistas)
   { id: 'b4', title: 'Minha Jornada', icon: '▶️', category: 'Jornadas de Conhecimento', rewardXp: 25, description: 'Você deu o play no primeiro vídeo. Sem pressa, no seu próprio ritmo.' },
   { id: 'b5', title: 'Passos Seguros', icon: '🐾', category: 'Jornadas de Conhecimento', rewardXp: 15, targetCount: 25, unitLabel: '%', description: '25% da trilha já foi! Um passinho de cada vez e as coisas vão clareando.' },
   { id: 'b6', title: 'Chegando Lá!', icon: '🧗', category: 'Jornadas de Conhecimento', rewardXp: 15, targetCount: 50, unitLabel: '%', description: 'Metade do curso concluído. Respira fundo e olha o quanto você já aprendeu!' },
+  { id: 'b58', title: 'Quase Lá!', icon: '🎯', category: 'Jornadas de Conhecimento', rewardXp: 25, targetCount: 75, unitLabel: '%', description: '75% do curso concluído! Falta muito pouco para completar toda a jornada.' },
   { id: 'b7', title: 'Caminho Iluminado', icon: '💡', category: 'Jornadas de Conhecimento', rewardXp: 50, targetCount: 100, unitLabel: '%', description: 'Jornada completa! Mais leveza e confiança pra viver a sua rotina.' },
   { id: 'b8', title: 'Pausa para Ouvir', icon: '🎧', category: 'Jornadas de Conhecimento', rewardXp: 10, description: 'Colocou o fone e aproveitou uma brecha no dia pra escutar uma aula.' },
   { id: 'b9', title: 'Minhas Reflexões', icon: '📝', category: 'Jornadas de Conhecimento', rewardXp: 10, description: 'Aquela ideia boa que não podia se perder ficou anotada com carinho.' },

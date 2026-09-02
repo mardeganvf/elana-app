@@ -14,7 +14,8 @@ import {
   ChevronDown,
   BookOpen,
   Film,
-  RotateCcw
+  RotateCcw,
+  Check
 } from 'lucide-react';
 import { NotebookModal } from '../components/gamification/NotebookModal';
 
@@ -33,7 +34,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   onBack
 }) => {
   const handleBack = onBackToHome || onBack || (() => {});
-  const { user, completeLesson, saveLessonNote, awardBadge } = useAuth();
+  const { user, completeLesson, toggleCompleteLesson, saveLessonNote, awardBadge } = useAuth();
   const { showToast } = useToast();
   const { journeys } = useJourneys();
 
@@ -213,6 +214,27 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     }
     return () => clearInterval(interval);
   }, [autoplayTimer, nextLesson]);
+
+  // Escutar evento de término de vídeo do Panda Video (iframe postMessage)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (
+          data?.message === 'panda_ended' ||
+          data?.message === 'ended' ||
+          data?.type === 'ended' ||
+          data?.event === 'ended' ||
+          data === 'panda_ended'
+        ) {
+          triggerAutoplayCountdown();
+        }
+      } catch {}
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [activeLesson.id, nextLesson]);
 
   const triggerAutoplayCountdown = () => {
     // Limpar ponto salvo pois a aula foi concluída
@@ -536,11 +558,28 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
           {/* Lesson Overview & Title */}
           <div className="bg-[#101B1E] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-lg space-y-6">
             
-            <div className="border-b border-white/10 pb-6 space-y-1">
-              <span className="text-xs text-slate-400 font-medium">Duração: {activeLesson.duration}</span>
-              <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                {activeLesson.title}
-              </h2>
+            <div className="border-b border-white/10 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <span className="text-xs text-slate-400 font-medium">Duração: {activeLesson.duration}</span>
+                <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                  {activeLesson.title}
+                </h2>
+              </div>
+
+              {/* Botão de Sinalização e Controle: 100% Assistido */}
+              <button
+                type="button"
+                onClick={() => toggleCompleteLesson(activeLesson.id)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer shrink-0 border ${
+                  user?.completedLessonIds.includes(activeLesson.id)
+                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30'
+                    : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                }`}
+                title={user?.completedLessonIds.includes(activeLesson.id) ? 'Clique para desmarcar como concluído' : 'Clique para marcar este vídeo como 100% assistido'}
+              >
+                <CheckCircle2 className={`w-4 h-4 ${user?.completedLessonIds.includes(activeLesson.id) ? 'fill-current text-emerald-400' : 'text-slate-500'}`} />
+                <span>{user?.completedLessonIds.includes(activeLesson.id) ? '100% Concluído' : 'Marcar como 100% Assistido'}</span>
+              </button>
             </div>
 
             {/* Lesson Tabs (Overview, Practice Checklist, Notes, Resources) */}
@@ -711,27 +750,41 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                             <button
                               key={lesson.id}
                               onClick={() => handleLessonChange(lesson)}
-                              className={`w-full text-left p-2.5 rounded-xl flex items-start gap-2.5 transition-all cursor-pointer active:scale-95 ${
+                              className={`w-full text-left p-2.5 rounded-xl flex items-center justify-between gap-2.5 transition-all cursor-pointer active:scale-95 ${
                                 isCurrent
                                   ? 'bg-[#FF7F5B] text-white font-bold shadow-md'
                                   : 'hover:bg-white/5 text-slate-300'
                               }`}
                             >
-                              <div className="mt-0.5 shrink-0">
-                                {isDone ? (
-                                  <CheckCircle2 className={`w-4 h-4 ${isCurrent ? 'text-white' : 'text-emerald-400'}`} />
-                                ) : (
-                                  <Play className={`w-4 h-4 ${isCurrent ? 'text-white' : 'text-slate-500'}`} />
-                                )}
+                              <div className="flex items-start gap-2.5 min-w-0">
+                                <div className="mt-0.5 shrink-0">
+                                  {isDone ? (
+                                    <CheckCircle2 className={`w-4 h-4 ${isCurrent ? 'text-white' : 'text-emerald-400'}`} />
+                                  ) : (
+                                    <Play className={`w-4 h-4 ${isCurrent ? 'text-white' : 'text-slate-500'}`} />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs leading-snug truncate">
+                                    {lesson.title}
+                                  </p>
+                                  <span className={`text-[10px] block mt-0.5 ${isCurrent ? 'text-white/80' : 'text-slate-400'}`}>
+                                    {lesson.duration}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs leading-snug truncate">
-                                  {lesson.title}
-                                </p>
-                                <span className={`text-[10px] block mt-0.5 ${isCurrent ? 'text-white/80' : 'text-slate-400'}`}>
-                                  {lesson.duration}
+
+                              {/* Sinalização / Container 100% Assistido */}
+                              {isDone && (
+                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-md shrink-0 uppercase tracking-wider flex items-center gap-1 border ${
+                                  isCurrent
+                                    ? 'bg-white/25 text-white border-white/40'
+                                    : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                }`}>
+                                  <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                  100%
                                 </span>
-                              </div>
+                              )}
                             </button>
                           );
                         })}

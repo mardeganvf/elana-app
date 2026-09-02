@@ -42,6 +42,7 @@ interface AuthContextType {
   updateUser: (updates: Partial<UserProfile>) => Promise<void>;
   purchaseJourney: (journeyId: string) => Promise<void>;
   completeLesson: (lessonId: string) => Promise<void>;
+  toggleCompleteLesson: (lessonId: string) => Promise<void>;
   saveLessonNote: (lessonId: string, note: string) => Promise<void>;
   addXP: (amount: number) => Promise<void>;
   awardBadge: (badgeId: string) => Promise<void>;
@@ -520,14 +521,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (completedLessonIds.length >= 1) {
         checkAndAddBadge('b4'); // Minha Jornada
       }
-      for (const journey of JOURNEYS_DATA) {
-        const journeyLessonIds = journey.modules.flatMap(m => m.lessons.map(l => l.id));
-        const completedInJourney = journeyLessonIds.filter(id => completedLessonIds.includes(id)).length;
+      let allJourneysList = JOURNEYS_DATA;
+      try {
+        const cachedJ = localStorage.getItem('elana_journeys_cache_v4');
+        if (cachedJ) {
+          const parsedJ = JSON.parse(cachedJ);
+          if (Array.isArray(parsedJ) && parsedJ.length > 0) {
+            allJourneysList = parsedJ;
+          }
+        }
+      } catch (e) {}
+
+      for (const journey of allJourneysList) {
+        const journeyLessonIds = (journey.modules || []).flatMap((m: any) => (m.lessons || []).map((l: any) => l.id));
+        const completedInJourney = journeyLessonIds.filter((id: string) => completedLessonIds.includes(id)).length;
         const total = journeyLessonIds.length;
         if (total > 0) {
           const pct = (completedInJourney / total) * 100;
           if (pct >= 25) checkAndAddBadge('b5'); // Passos Seguros (25%)
           if (pct >= 50) checkAndAddBadge('b6'); // Chegando Lá! (50%)
+          if (pct >= 75) checkAndAddBadge('b58'); // Quase Lá! (75%)
           if (pct >= 100) checkAndAddBadge('b7'); // Caminho Iluminado (100%)
         }
       }
@@ -939,28 +952,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Conquista 1: 1º vídeo assistido -> b4 ("Minha Jornada" +25 XP)
     if (!currentBadgeIds.has('b4')) {
       await awardBadge('b4');
-      return;
     }
 
-    // Conquistas 2, 3 e 4: 25%, 50% e 100% da jornada
-    for (const journey of JOURNEYS_DATA) {
-      const journeyLessonIds = journey.modules.flatMap(m => m.lessons.map(l => l.id));
-      if (journeyLessonIds.includes(lessonId)) {
-        const completedCountInJourney = journeyLessonIds.filter(id => nextCompletedLessonIds.includes(id)).length;
-        const total = journeyLessonIds.length;
-        const progressPct = (completedCountInJourney / total) * 100;
-
-        if (progressPct >= 100 && !currentBadgeIds.has('b7')) {
-          await awardBadge('b7'); // Caminho Iluminado (100%) +50 XP
-          return;
-        } else if (progressPct >= 50 && !currentBadgeIds.has('b6')) {
-          await awardBadge('b6'); // Chegando Lá! (50%) +15 XP
-          return;
-        } else if (progressPct >= 25 && !currentBadgeIds.has('b5')) {
-          await awardBadge('b5'); // Passos Seguros (25%) +15 XP
-          return;
+    // Carregar jornadas dinâmicas para calcular progresso exato em todos os módulos
+    let allJourneysList = JOURNEYS_DATA;
+    try {
+      const cachedJ = localStorage.getItem('elana_journeys_cache_v4');
+      if (cachedJ) {
+        const parsedJ = JSON.parse(cachedJ);
+        if (Array.isArray(parsedJ) && parsedJ.length > 0) {
+          allJourneysList = parsedJ;
         }
       }
+    } catch (e) {}
+
+    // Conquistas 25%, 50%, 75% e 100% da jornada
+    for (const journey of allJourneysList) {
+      // Envolve TODOS os vídeos de TODOS os módulos da jornada (ex: 2 módulos)
+      const journeyLessonIds = (journey.modules || []).flatMap((m: any) => (m.lessons || []).map((l: any) => l.id));
+      if (journeyLessonIds.includes(lessonId)) {
+        const completedCountInJourney = journeyLessonIds.filter((id: string) => nextCompletedLessonIds.includes(id)).length;
+        const total = journeyLessonIds.length;
+        if (total > 0) {
+          const progressPct = (completedCountInJourney / total) * 100;
+
+          if (progressPct >= 25 && !currentBadgeIds.has('b5')) {
+            await awardBadge('b5'); // Passos Seguros (25%) +15 XP
+          }
+          if (progressPct >= 50 && !currentBadgeIds.has('b6')) {
+            await awardBadge('b6'); // Chegando Lá! (50%) +15 XP
+          }
+          if (progressPct >= 75 && !currentBadgeIds.has('b58')) {
+            await awardBadge('b58'); // Quase Lá! (75%) +25 XP
+          }
+          if (progressPct >= 100 && !currentBadgeIds.has('b7')) {
+            await awardBadge('b7'); // Caminho Iluminado (100%) +50 XP
+          }
+        }
+      }
+    }
+  };
+
+  const toggleCompleteLesson = async (lessonId: string) => {
+    const currentUser = userRef.current || user;
+    if (!currentUser) return;
+    if (currentUser.completedLessonIds.includes(lessonId)) {
+      const nextCompleted = currentUser.completedLessonIds.filter(id => id !== lessonId);
+      try {
+        await supabase
+          .from('user_completed_lessons')
+          .delete()
+          .eq('profile_id', currentUser.id)
+          .eq('lesson_id', lessonId);
+      } catch (e) {
+        console.error('Error removing completed lesson from Supabase:', e);
+      }
+      await updateUser({ completedLessonIds: nextCompleted });
+    } else {
+      await completeLesson(lessonId);
     }
   };
 
@@ -1133,6 +1182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateUser,
         purchaseJourney,
         completeLesson,
+        toggleCompleteLesson,
         saveLessonNote,
         addXP,
         awardBadge,

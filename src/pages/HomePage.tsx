@@ -448,7 +448,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
       {/* 06 Blocks: One Block for Each Journey with Horizontal Scrollable Lesson Thumbs */}
       {JOURNEYS_DATA.map((journey) => {
         const isPurchased = user?.purchasedJourneyIds.includes(journey.id);
-        const hasMultipleModules = journey.modules.length > 1;
+        const hasMultipleModules = (journey.modules || []).length > 1;
+
+        // Total de vídeos em TODOS os módulos desta jornada
+        const allJourneyLessonIds = (journey.modules || []).flatMap(m => (m.lessons || []).map(l => l.id));
+        const totalJourneyLessons = allJourneyLessonIds.length;
+        const completedLessonsInJourney = allJourneyLessonIds.filter(id => user?.completedLessonIds?.includes(id)).length;
+        const journeyProgressPct = totalJourneyLessons > 0 ? Math.round((completedLessonsInJourney / totalJourneyLessons) * 100) : 0;
 
         // Current selected module index (default to 0)
         const selectedModuleIdx = selectedModuleMap[journey.id] ?? 0;
@@ -462,8 +468,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
             {/* Journey Header Bar (3-Line Clean Layout) */}
             <div className="border-b border-white/10 pb-4 space-y-2">
               
-              {/* Line 1: Nome da Jornada */}
-              <div className="flex items-center justify-between">
+              {/* Line 1: Nome da Jornada e Progresso */}
+              <div className="flex items-center justify-between gap-4">
                 <div 
                   className="flex items-center gap-3 cursor-pointer group/title"
                   onClick={() => isPurchased ? onStartLearning(journey) : onSelectJourney(journey)}
@@ -479,6 +485,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                     {journey.title}
                   </h2>
                 </div>
+
+                {/* Sinalização de Progresso Geral da Jornada Adquirida */}
+                {isPurchased && totalJourneyLessons > 0 && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs shadow-sm">
+                      <span className="text-slate-400 font-medium hidden sm:inline">Progresso:</span>
+                      <span className={`font-black ${journeyProgressPct === 100 ? 'text-emerald-400' : 'text-[#FF7F5B]'}`}>
+                        {journeyProgressPct}%
+                      </span>
+                      <span className="text-slate-500 text-[11px]">
+                        ({completedLessonsInJourney}/{totalJourneyLessons})
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Line 2: Texto de Apoio entre aspas */}
@@ -546,11 +567,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#101B1E] via-transparent to-transparent"></div>
 
-                      {/* Top-Left 'Já Assistido' Badge */}
+                      {/* Top-Left '100% Assistido' Container Badge */}
                       {isCompleted && (
-                        <div className="absolute top-2 left-2 z-10 bg-[#8A9A5B] text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-md backdrop-blur-md flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 fill-current" />
-                          <span>Já Assistido</span>
+                        <div className="absolute top-2 left-2 z-10 bg-emerald-600/95 text-white text-[10px] font-black px-2.5 py-1 rounded-lg shadow-lg backdrop-blur-md flex items-center gap-1.5 border border-emerald-400/40 uppercase tracking-wider">
+                          <CheckCircle2 className="w-3.5 h-3.5 fill-current" />
+                          <span>100% Assistido</span>
                         </div>
                       )}
 
@@ -602,8 +623,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                         {/* Fixed h-4 slot for 'Já assistido' / 'Assista agora' / 'Conteúdo exclusivo' line so height never changes */}
                         <div className="h-4 flex items-center">
                           {isCompleted ? (
-                            <span className="text-[10px] font-bold text-[#8A9A5B] flex items-center gap-1 tracking-wide">
-                              <CheckCircle2 className="w-3 h-3 shrink-0" /> Já assistido
+                            <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/25 flex items-center gap-1 tracking-wide">
+                              <CheckCircle2 className="w-3 h-3 shrink-0 fill-current" /> 100% Concluído
                             </span>
                           ) : !isPurchased && isFirstVideo ? (
                             <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 tracking-wide">
