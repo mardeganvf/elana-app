@@ -86,8 +86,8 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             poster_url: d.posterUrl,
             duration: d.duration,
             date: d.date,
-            likes: d.likes,
-            display_order: d.displayOrder ?? (index + 1)
+            display_order: d.displayOrder ?? (index + 1),
+            is_archived: Boolean(d.isArchived ?? false)
           }));
 
           await supabase.from('destaques').upsert(toInsert, { onConflict: 'id' });
