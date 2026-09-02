@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { JOURNEYS_DATA as STATIC_JOURNEYS } from '../data/journeysData';
-import { STORIES_DATA } from '../data/storiesData';
+import { STORIES_DATA as STATIC_STORIES_DATA } from '../data/storiesData';
 import { Journey, Lesson, CourseModule } from '../types';
 import { JourneyCard } from '../components/catalog/JourneyCard';
 import { StoryViewerModal } from '../components/stories/StoryViewerModal';
 import { useAuth } from '../context/AuthContext';
 import { useJourneys } from '../context/JourneysContext';
+import { useDestaques } from '../context/DestaquesContext';
 import { Play, Flame, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Lock, Sparkles, Instagram } from 'lucide-react';
 
 interface HomePageProps {
@@ -78,7 +79,9 @@ const LESSON_THUMBS: Record<string, string> = {
 export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLearning }) => {
   const { user } = useAuth();
   const { journeys: dynamicJourneys } = useJourneys();
+  const { destaques: dynamicDestaques } = useDestaques();
   const JOURNEYS_DATA = dynamicJourneys && dynamicJourneys.length > 0 ? dynamicJourneys : STATIC_JOURNEYS;
+  const STORIES_DATA = dynamicDestaques && dynamicDestaques.length > 0 ? dynamicDestaques : STATIC_STORIES_DATA;
 
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -91,7 +94,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   const filteredStories = STORIES_DATA.filter(story => {
     if (selectedStoryFilter === 'all') return true;
     const targetJourney = JOURNEYS_DATA.find(j => j.id === selectedStoryFilter);
-    return targetJourney ? story.category === targetJourney.title : true;
+    if (!targetJourney) return true;
+    const matchesJourneyId = story.journeyIds?.includes(targetJourney.id);
+    const matchesCategory = story.category === targetJourney.title;
+    return matchesJourneyId || matchesCategory;
   });
 
   // Selected module index state for each journey
@@ -380,7 +386,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
           </button>
 
           {JOURNEYS_DATA.map(j => {
-            const count = STORIES_DATA.filter(s => s.category === j.title).length;
+            const count = STORIES_DATA.filter(s => 
+              s.journeyIds?.includes(j.id) || s.category === j.title
+            ).length;
             if (count === 0) return null;
             return (
               <button

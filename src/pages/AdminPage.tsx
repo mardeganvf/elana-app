@@ -23,7 +23,9 @@ import {
   ChevronDown,
   ChevronRight,
   BookOpen,
-  Menu
+  Menu,
+  Instagram,
+  Sparkles
 } from 'lucide-react';
 import { useAuth, isAdminUser } from '../context/AuthContext';
 import { useCommunity } from '../context/CommunityContext';
@@ -31,6 +33,7 @@ import { useToast } from '../context/ToastContext';
 import { useJourneys } from '../context/JourneysContext';
 import { supabase } from '../lib/supabase';
 import { AdminContentManager } from '../components/admin/AdminContentManager';
+import { AdminDestaquesManager } from '../components/admin/AdminDestaquesManager';
 
 // Types for Admin Data
 interface SOSTicket {
@@ -81,7 +84,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
 
-  const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'polls' | null>(null);
+  const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'polls' | 'destaques' | null>(null);
 
   // Grupos expansíveis (drop-downs) do menu lateral - iniciam todos recolhidos
   const [openMenuGroups, setOpenMenuGroups] = useState<Record<string, boolean>>({
@@ -571,6 +574,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* SEÇÃO DESTAQUES */}
+            <div className="pt-2 border-t border-white/5">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveAdminTab('destaques');
+                  setSelectedJourneyId('');
+                  setSelectedModuleId(null);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full px-3 py-2.5 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                  activeAdminTab === 'destaques'
+                    ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                    : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Instagram className="w-4 h-4 text-[#FF7F5B]" />
+                  <span>Destaques</span>
+                </div>
+              </button>
             </div>
 
             {/* GRUPO 2: COMUNIDADE & MODERAÇÃO */}
@@ -1203,6 +1229,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           isCreateJourneyModalOpen={isCreateJourneyModalOpen}
           onCloseCreateJourneyModal={() => setIsCreateJourneyModalOpen(false)}
         />
+      )}
+
+      {/* TAB: 🌟 GESTÃO DE DESTAQUES */}
+      {activeAdminTab === 'destaques' && (
+        <AdminDestaquesManager />
       )}
 
       {/* TAB 5: 👥 GESTÃO DE MEMBROS */}

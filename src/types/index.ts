@@ -150,6 +150,7 @@ export interface StoryItem {
   id: string;
   title: string;
   category: string;
+  journeyIds?: string[];
   authorName: string;
   authorHandle: string;
   authorAvatar: string;
@@ -158,6 +159,7 @@ export interface StoryItem {
   duration: string;
   date: string;
   likes: number;
+  displayOrder?: number;
 }
 
 export interface PollOption {

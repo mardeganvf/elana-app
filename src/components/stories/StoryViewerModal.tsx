@@ -178,17 +178,27 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({ stories, ini
           className="relative w-full h-full bg-slate-950 overflow-hidden flex items-center justify-center cursor-pointer"
           onClick={togglePlay}
         >
-          <video
-            ref={videoRef}
-            src={currentStory.videoUrl}
-            poster={currentStory.posterUrl}
-            playsInline
-            autoPlay
-            muted={isMuted}
-            onTimeUpdate={handleTimeUpdate}
-            onEnded={handleVideoEnd}
-            className="w-full h-full object-cover"
-          />
+          {currentStory.videoUrl.includes('pandavideo') ? (
+            <iframe
+              src={currentStory.videoUrl}
+              title={currentStory.title}
+              className="w-full h-full border-0"
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <video
+              ref={videoRef}
+              src={currentStory.videoUrl}
+              poster={currentStory.posterUrl}
+              playsInline
+              autoPlay
+              muted={isMuted}
+              onTimeUpdate={handleTimeUpdate}
+              onEnded={handleVideoEnd}
+              className="w-full h-full object-cover"
+            />
+          )}
 
           {/* Vignette Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 pointer-events-none"></div>

@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { CommunityProvider, useCommunity } from './context/CommunityContext';
 import { FontSizeProvider } from './context/FontSizeContext';
 import { JourneysProvider, useJourneys } from './context/JourneysContext';
+import { DestaquesProvider } from './context/DestaquesContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
@@ -339,11 +340,13 @@ export function App() {
     <FontSizeProvider>
       <AuthProvider>
         <JourneysProvider>
-          <CommunityProvider>
-            <ToastProvider>
-              <AppContent />
-            </ToastProvider>
-          </CommunityProvider>
+          <DestaquesProvider>
+            <CommunityProvider>
+              <ToastProvider>
+                <AppContent />
+              </ToastProvider>
+            </CommunityProvider>
+          </DestaquesProvider>
         </JourneysProvider>
       </AuthProvider>
     </FontSizeProvider>

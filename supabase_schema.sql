@@ -827,3 +827,34 @@ DROP POLICY IF EXISTS "Allow public insert/update on journeys" ON public.journey
 CREATE POLICY "Allow public insert/update on journeys" ON public.journeys
   FOR ALL USING (true) WITH CHECK (true);
 
+-- ========================================================
+-- 15. TABELA DE DESTAQUES (STORIES VERTICAIS) (PUBLIC.DESTAQUES)
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.destaques (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  category TEXT DEFAULT 'Geral',
+  journey_ids JSONB DEFAULT '[]'::jsonb,
+  author_name TEXT,
+  author_handle TEXT,
+  author_avatar TEXT,
+  video_url TEXT NOT NULL,
+  poster_url TEXT,
+  duration TEXT DEFAULT '0:45',
+  date TEXT DEFAULT 'Hoje',
+  likes INTEGER DEFAULT 0,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.destaques ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read on destaques" ON public.destaques;
+CREATE POLICY "Allow public read on destaques" ON public.destaques
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow public all on destaques" ON public.destaques;
+CREATE POLICY "Allow public all on destaques" ON public.destaques
+  FOR ALL USING (true) WITH CHECK (true);
+
