@@ -98,6 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [unlockedBadgeModal, setUnlockedBadgeModal] = useState<Badge | null>(null);
   const activeBadgeModalRef = useRef<Badge | null>(null);
+  const pendingBadgesQueueRef = useRef<Badge[]>([]);
 
   const [unlockedLevelUpModal, setUnlockedLevelUpModal] = useState<{
     levelInfo: any;
@@ -130,9 +131,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // 1. Hidratar usuário atual se já houver sessão salva
     if (user?.email && user?.id) {
+      const initialBadgeIds = new Set(user.badges?.map(b => b.id) || []);
       fetchFullUserProfile(user.id, user.email, user.name)
         .then(refreshed => {
-          if (refreshed) setUser(refreshed);
+          if (refreshed) {
+            setUser(refreshed);
+            // Se novas conquistas foram desbloqueadas retroativamente (ex: b12 ao corrigir emotion_id), celebra!
+            const newBadges = refreshed.badges.filter(b => !initialBadgeIds.has(b.id));
+            if (newBadges.length > 0) {
+              const b12 = newBadges.find(b => b.id === 'b12');
+              const badgeToShow = b12 || newBadges[0];
+              setTimeout(() => {
+                if (activeBadgeModalRef.current === null) {
+                  activeBadgeModalRef.current = badgeToShow;
+                  setUnlockedBadgeModal(badgeToShow);
+                  confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                  });
+                }
+              }, 800);
+            }
+          }
         })
         .catch(err => {
           console.warn('Notice rehydrating user session:', err);
@@ -287,10 +308,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           rawCheckinsData = checkinsData;
           const autoBadges: string[] = ['b11']; // b11 = Sinal de Cuidado (1º check-in)
           checkinsData.forEach(c => {
-            if (c.emotion_id === 'sem_energia') autoBadges.push('b12');
-            if (c.emotion_id === 'esperanca') autoBadges.push('b13');
-            if (c.emotion_id === 'celebrando') autoBadges.push('b14');
-            if (c.emotion_id === 'precisando_luz') autoBadges.push('b15');
+            const eid = (c.emotion_id || '').toLowerCase();
+            const elabel = (c.emotion_label || '').toLowerCase();
+            if (eid === 'sem_energia' || eid === 'exausto' || elabel.includes('energia') || elabel.includes('bateria')) autoBadges.push('b12');
+            if (eid === 'esperanca' || elabel.includes('esperança') || elabel.includes('esperanca')) autoBadges.push('b13');
+            if (eid === 'celebrando' || elabel.includes('celebrando')) autoBadges.push('b14');
+            if (eid === 'precisando_luz' || eid === 'preciso_luz' || elabel.includes('luz') || elabel.includes('ajuda')) autoBadges.push('b15');
           });
 
           const totalCheckins = checkinsData.length;
@@ -972,8 +995,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const badgeToAward = ALL_BADGES.find(b => b.id === badgeId);
     if (!badgeToAward) return;
 
-    activeBadgeModalRef.current = badgeToAward;
-
     const previousLevel = currentUser.level || getLevelFromXP(currentUser.xp).level;
     const nextBadges = [...currentUser.badges, badgeToAward];
     const badgeXpSum = nextBadges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
@@ -1006,13 +1027,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error saving user badge to Supabase:', e);
     }
 
-    activeBadgeModalRef.current = badgeToAward;
-    setUnlockedBadgeModal(badgeToAward);
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
+    // Se já houver um modal aberto, enfileira para a próxima celebração
+    if (activeBadgeModalRef.current !== null || unlockedBadgeModal !== null) {
+      if (!pendingBadgesQueueRef.current.some(b => b.id === badgeToAward.id)) {
+        pendingBadgesQueueRef.current.push(badgeToAward);
+      }
+    } else {
+      activeBadgeModalRef.current = badgeToAward;
+      setUnlockedBadgeModal(badgeToAward);
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
   };
 
   const saveLessonNote = async (lessonId: string, note: string) => {
@@ -1095,6 +1123,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const closeBadgeModal = () => {
     activeBadgeModalRef.current = null;
     setUnlockedBadgeModal(null);
+
+    // Se houver mais badges na fila, exibe a próxima com transição suave
+    if (pendingBadgesQueueRef.current.length > 0) {
+      const nextBadge = pendingBadgesQueueRef.current.shift();
+      if (nextBadge) {
+        setTimeout(() => {
+          activeBadgeModalRef.current = nextBadge;
+          setUnlockedBadgeModal(nextBadge);
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }, 350);
+        return;
+      }
+    }
+
     const queued = pendingLevelUpRef.current || pendingLevelUp;
     if (queued) {
       pendingLevelUpRef.current = null;
