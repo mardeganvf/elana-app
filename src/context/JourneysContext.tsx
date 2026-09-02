@@ -19,6 +19,7 @@ interface JourneysContextType {
       description: string;
       duration: string;
       videoUrl: string;
+      thumbnailUrl?: string;
       resources?: LessonResource[];
     }
   ) => Promise<boolean>;
@@ -257,6 +258,7 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       description: string;
       duration: string;
       videoUrl: string;
+      thumbnailUrl?: string;
       resources?: LessonResource[];
     }
   ): Promise<boolean> => {
