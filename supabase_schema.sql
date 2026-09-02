@@ -844,6 +844,7 @@ CREATE TABLE IF NOT EXISTS public.destaques (
   date TEXT DEFAULT 'Hoje',
   likes INTEGER DEFAULT 0,
   display_order INTEGER DEFAULT 0,
+  is_archived BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

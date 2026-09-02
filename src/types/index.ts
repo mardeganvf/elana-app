@@ -160,6 +160,7 @@ export interface StoryItem {
   date: string;
   likes: number;
   displayOrder?: number;
+  isArchived?: boolean;
 }
 
 export interface PollOption {

@@ -10,6 +10,7 @@ interface DestaquesContextType {
   updateDestaque: (id: string, updates: Partial<StoryItem>) => Promise<boolean>;
   deleteDestaque: (id: string) => Promise<boolean>;
   reorderDestaques: (newOrderedList: StoryItem[]) => Promise<boolean>;
+  toggleArchiveDestaque: (id: string) => Promise<boolean>;
   refreshDestaques: () => Promise<void>;
 }
 
@@ -63,7 +64,8 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           duration: d.duration || '0:45',
           date: d.date || 'Hoje',
           likes: Number(d.likes) || 0,
-          displayOrder: Number(d.display_order) || 0
+          displayOrder: Number(d.display_order) || 0,
+          isArchived: Boolean(d.is_archived)
         }));
 
         mapped.sort((a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999));
@@ -134,7 +136,8 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         duration: newStory.duration,
         date: newStory.date || 'Hoje',
         likes: newStory.likes,
-        display_order: newStory.displayOrder
+        display_order: newStory.displayOrder,
+        is_archived: Boolean(newStory.isArchived ?? false)
       }, { onConflict: 'id' });
 
       if (error) {
@@ -172,7 +175,8 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         duration: target.duration,
         date: target.date,
         likes: target.likes,
-        display_order: target.displayOrder
+        display_order: target.displayOrder,
+        is_archived: Boolean(target.isArchived ?? false)
       }, { onConflict: 'id' });
 
       if (error) {
@@ -231,7 +235,8 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         duration: d.duration,
         date: d.date,
         likes: d.likes,
-        display_order: d.displayOrder
+        display_order: d.displayOrder,
+        is_archived: Boolean(d.isArchived ?? false)
       }));
 
       const { error } = await supabase.from('destaques').upsert(updates, { onConflict: 'id' });
@@ -245,6 +250,33 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  // Armazenar / Desarquivar destaque
+  const toggleArchiveDestaque = async (id: string): Promise<boolean> => {
+    const target = destaques.find(d => d.id === id);
+    if (!target) return false;
+    const newArchivedState = !target.isArchived;
+
+    const updatedList = destaques.map(d => (d.id === id ? { ...d, isArchived: newArchivedState } : d));
+    setDestaques(updatedList);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedList));
+    } catch (e) {}
+
+    try {
+      const { error } = await supabase.from('destaques').update({
+        is_archived: newArchivedState
+      }).eq('id', id);
+
+      if (error) {
+        console.warn('Erro ao atualizar arquivamento no Supabase:', error.message);
+      }
+      return true;
+    } catch (e) {
+      console.error('Erro ao atualizar arquivamento:', e);
+      return true;
+    }
+  };
+
   return (
     <DestaquesContext.Provider
       value={{
@@ -254,6 +286,7 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updateDestaque,
         deleteDestaque,
         reorderDestaques,
+        toggleArchiveDestaque,
         refreshDestaques: fetchDestaquesFromSupabase
       }}
     >

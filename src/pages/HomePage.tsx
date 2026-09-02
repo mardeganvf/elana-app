@@ -81,7 +81,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   const { journeys: dynamicJourneys } = useJourneys();
   const { destaques: dynamicDestaques } = useDestaques();
   const JOURNEYS_DATA = dynamicJourneys && dynamicJourneys.length > 0 ? dynamicJourneys : STATIC_JOURNEYS;
-  const STORIES_DATA = dynamicDestaques && dynamicDestaques.length > 0 ? dynamicDestaques : STATIC_STORIES_DATA;
+  const rawStories = dynamicDestaques && dynamicDestaques.length > 0 ? dynamicDestaques : STATIC_STORIES_DATA;
+  const STORIES_DATA = rawStories.filter(s => !s.isArchived);
 
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
