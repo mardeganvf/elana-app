@@ -732,9 +732,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                       </span>
                     </div>
 
-                    {/* Lesson Text Below Thumbnail (Fixed h-[142px] for uniform card height with 2-line description) */}
-                    <div className="p-4 bg-[#101B1E] h-[142px] flex flex-col justify-between space-y-1.5">
-                      <div className="space-y-0.5">
+                    {/* Lesson Text Below Thumbnail (Flexible min-h for uniform card height without text leaking) */}
+                    <div className="p-4 bg-[#101B1E] flex-1 flex flex-col justify-between min-h-[155px] space-y-2 overflow-hidden">
+                      <div className="space-y-1 min-w-0">
                         {/* Fixed h-4 slot for 'Assista agora' / 'Conteúdo exclusivo' / 'Em breve' line */}
                         <div className="h-4 flex items-center">
                           {journey.isComingSoon ? (
@@ -767,15 +767,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                         </div>
 
                         {/* Subgrupo em UPPER CASE */}
-                        <span className={`text-[11px] font-extrabold block tracking-wider uppercase truncate ${
-                          journey.isComingSoon ? 'text-slate-500' : 'text-slate-400'
+                        <span className={`text-[10px] sm:text-[11px] font-extrabold block tracking-wider uppercase truncate ${
+                          journey.isComingSoon ? 'text-slate-500' : 'text-[#FF7F5B]'
                         }`}>
                           {subgroup}
                         </span>
 
                         {/* Nome do vídeo em font-heading, Sentence Case, Ponto Final */}
                         <h4 
-                          className={`text-sm sm:text-base font-bold leading-snug transition-colors normal-case truncate block ${
+                          className={`text-sm sm:text-base font-bold leading-snug transition-colors normal-case line-clamp-2 block ${
                             journey.isComingSoon ? 'text-slate-300 group-hover:text-white' : 'text-white group-hover:text-[#FF7F5B]'
                           }`}
                           style={{ fontFamily: 'var(--font-heading)' }}
@@ -787,7 +787,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
                       {/* Descrição curta do vídeo: Sem título, sem negrito, máx 2 linhas (...) e tooltip no hover */}
                       <p 
-                        className={`text-xs font-normal leading-relaxed line-clamp-2 cursor-pointer transition-colors pt-1 border-t border-white/5 ${
+                        className={`text-xs font-normal leading-relaxed line-clamp-2 cursor-pointer transition-colors pt-2 border-t border-white/5 ${
                           journey.isComingSoon ? 'text-slate-500 group-hover:text-slate-300' : 'text-slate-400 hover:text-slate-200'
                         }`}
                         title={lesson.description}

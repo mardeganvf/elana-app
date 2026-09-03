@@ -162,31 +162,29 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
       </div>
 
       {/* Card Info Content */}
-      <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+      <div className="p-5 space-y-3 flex-1 flex flex-col justify-between overflow-hidden">
         
         {isPurchased ? (
           /* Purchased Content Layout (Continuar Assistindo) */
-          <div className="space-y-1">
+          <div className="space-y-1.5 min-w-0">
             {/* Subgroup Title (UPPER CASE) + Progress % */}
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <span className="text-[11px] font-extrabold text-[#FF7F5B] tracking-wider uppercase truncate flex-1">
                 {subgroup}
               </span>
-              <span className="text-[11px] font-bold text-slate-400">
+              <span className="text-[11px] font-bold text-slate-400 shrink-0">
                 {progressPercent}% Concluído
               </span>
             </div>
 
-            {/* Video Lesson Name (Sentence Case, Ponto Final, font-heading, Truncated) */}
-            <div>
-              <h4 
-                className="text-sm sm:text-base font-bold text-white tracking-tight leading-snug group-hover:text-[#FF7F5B] transition-colors normal-case truncate block"
-                style={{ fontFamily: 'var(--font-heading)' }}
-                title={videoName}
-              >
-                {videoName}
-              </h4>
-            </div>
+            {/* Video Lesson Name (Sentence Case, Ponto Final, font-heading, 2 lines) */}
+            <h4 
+              className="text-sm sm:text-base font-bold text-white tracking-tight leading-snug group-hover:text-[#FF7F5B] transition-colors normal-case line-clamp-2 block"
+              style={{ fontFamily: 'var(--font-heading)' }}
+              title={videoName}
+            >
+              {videoName}
+            </h4>
           </div>
         ) : (
           /* Non-Purchased Content Layout (Catalog Card) */

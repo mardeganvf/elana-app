@@ -777,17 +777,17 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                         <Video className="w-4 h-4" />
                       </div>
                     )}
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         {(lesson.subgroup || (lesson.title.includes(': ') ? lesson.title.split(': ')[0] : '')) && (
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 shrink-0">
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 shrink-0 max-w-full truncate">
                             {lesson.subgroup || lesson.title.split(': ')[0]}
                           </span>
                         )}
-                        <h6 className="text-xs font-bold text-white truncate">
-                          {lesson.subgroup ? lesson.title : (lesson.title.includes(': ') ? lesson.title.split(': ').slice(1).join(': ') : lesson.title)}
-                        </h6>
                       </div>
+                      <h6 className="text-xs font-bold text-white line-clamp-2 leading-snug">
+                        {lesson.subgroup ? lesson.title : (lesson.title.includes(': ') ? lesson.title.split(': ').slice(1).join(': ') : lesson.title)}
+                      </h6>
 
                       <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
                         {lesson.description || 'Sem descrição pedagógica.'}
