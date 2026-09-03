@@ -15,7 +15,7 @@ import { GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
 interface DashboardPageProps {
-  onStartLearning: (journey: Journey) => void;
+  onStartLearning: (journey: Journey, lessonId?: string) => void;
   onOpenCertificate: (journey: Journey) => void;
   onExploreCatalog: () => void;
 }
@@ -1186,11 +1186,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {purchasedJourneys.map(journey => {
-              const totalLessons = journey.modules.reduce((sum, m) => sum + m.lessons.length, 0);
-              const completedInJourney = journey.modules
-                .flatMap(m => m.lessons)
-                .filter(l => user.completedLessonIds.includes(l.id)).length;
+              const allLessonsInJourney = journey.modules.flatMap(m => m.lessons);
+              const totalLessons = allLessonsInJourney.length;
+              const completedInJourney = allLessonsInJourney.filter(l => user.completedLessonIds.includes(l.id)).length;
               const progressPercent = totalLessons > 0 ? Math.round((completedInJourney / totalLessons) * 100) : 0;
+              const nextLesson = allLessonsInJourney.find(l => !user.completedLessonIds.includes(l.id)) || allLessonsInJourney[0];
 
               return (
                 <div key={journey.id} className="bg-[#101B1E] rounded-3xl p-6 border border-white/10 shadow-lg space-y-4 flex flex-col justify-between">
@@ -1224,7 +1224,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
                   <div className="pt-2 flex items-center gap-2">
                     <button
-                      onClick={() => onStartLearning(journey)}
+                      onClick={() => onStartLearning(journey, nextLesson?.id)}
                       className="flex-1 flex items-center justify-center gap-2 text-white font-bold text-xs uppercase tracking-wider py-3 px-4 rounded-xl shadow-md transition-all hover:brightness-110"
                       style={{ backgroundColor: journey.themeColor }}
                     >

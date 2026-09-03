@@ -283,7 +283,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                       if (journey.isComingSoon) {
                         toggleJourneyNotification(journey.id, journey.title);
                       } else if (isPurchased) {
-                        onStartLearning(journey);
+                        const nextLesson = journey.modules.flatMap(m => m.lessons).find(l => !user?.completedLessonIds.includes(l.id));
+                        onStartLearning(journey, nextLesson?.id);
                       } else {
                         onSelectJourney(journey);
                       }
@@ -322,7 +323,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                       </button>
                     ) : (
                       <button
-                        onClick={() => isPurchased ? onStartLearning(journey) : onSelectJourney(journey)}
+                        onClick={() => {
+                          if (isPurchased) {
+                            const nextLesson = journey.modules.flatMap(m => m.lessons).find(l => !user?.completedLessonIds.includes(l.id));
+                            onStartLearning(journey, nextLesson?.id);
+                          } else {
+                            onSelectJourney(journey);
+                          }
+                        }}
                         className="flex items-center gap-2 px-5 py-2.5 sm:py-3 rounded-2xl font-extrabold text-xs uppercase tracking-wider text-slate-950 bg-white hover:bg-slate-100 shadow-xl transition-all active:scale-95 cursor-pointer"
                       >
                         <Play className="w-4 h-4 fill-current text-slate-950" />
@@ -522,7 +530,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                     if (journey.isComingSoon) {
                       toggleJourneyNotification(journey.id, journey.title);
                     } else if (isPurchased) {
-                      onStartLearning(journey);
+                      const nextLesson = journey.modules.flatMap(m => m.lessons).find(l => !user?.completedLessonIds.includes(l.id));
+                      onStartLearning(journey, nextLesson?.id);
                     } else {
                       onSelectJourney(journey);
                     }

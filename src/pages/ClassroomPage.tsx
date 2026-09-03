@@ -42,16 +42,23 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   // Garante que a jornada usada na sala seja a versão mais atualizada e sincronizada
   const currentJourney = journeys.find(j => j.id === journey.id) || journey;
   const allLessons = currentJourney.modules.flatMap(m => m.lessons);
-  const initialLesson = allLessons.find(l => l.id === initialLessonId) || allLessons[0];
+
+  // Encontra a próxima aula pendente (não assistida) para retomar de onde parou
+  const nextUncompletedLesson = allLessons.find(l => !user?.completedLessonIds.includes(l.id)) || allLessons[0];
+  const initialLesson = (initialLessonId && allLessons.find(l => l.id === initialLessonId)) 
+    || nextUncompletedLesson 
+    || allLessons[0];
 
   const [activeLessonId, setActiveLessonId] = useState<string>(initialLesson?.id || 'prn-1-1');
 
-  // Sincroniza a lição ativa quando o usuário clica em um card específico na Home
+  // Sincroniza a lição ativa quando o usuário clica em um card específico na Home ou para Continuar
   useEffect(() => {
     if (initialLessonId) {
       setActiveLessonId(initialLessonId);
+    } else if (nextUncompletedLesson?.id) {
+      setActiveLessonId(nextUncompletedLesson.id);
     }
-  }, [initialLessonId]);
+  }, [initialLessonId, journey.id]);
 
   // Sincroniza dinamicamente a lição ativa com as alterações em tempo real da jornada
   const activeLesson: Lesson = allLessons.find(l => l.id === activeLessonId) || allLessons[0] || initialLesson || {

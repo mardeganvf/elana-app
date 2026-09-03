@@ -7,7 +7,7 @@ import { useJourneyNotifications } from '../../hooks/useJourneyNotifications';
 interface JourneyCardProps {
   journey: Journey;
   onSelect: (journey: Journey) => void;
-  onStartLearning?: (journey: Journey) => void;
+  onStartLearning?: (journey: Journey, lessonId?: string) => void;
 }
 
 // Helper to format text to Sentence case with period
@@ -84,7 +84,7 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
         if (journey.isComingSoon) {
           toggleJourneyNotification(journey.id, journey.title);
         } else if (isPurchased && onStartLearning) {
-          onStartLearning(journey);
+          onStartLearning(journey, nextLesson?.id);
         } else {
           onSelect(journey);
         }
@@ -248,7 +248,7 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (onStartLearning) onStartLearning(journey);
+                if (onStartLearning) onStartLearning(journey, nextLesson?.id);
               }}
               className="w-full flex items-center justify-center gap-2 text-white font-bold text-xs uppercase tracking-wider py-3 px-4 rounded-xl shadow-md transition-all hover:brightness-110"
               style={{ backgroundColor: journey.themeColor }}
