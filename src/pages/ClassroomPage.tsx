@@ -533,16 +533,16 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
           </div>
 
           {/* Media Player Box (Unified Video and Audio Player) */}
-          <div className="bg-black rounded-3xl overflow-hidden shadow-2xl relative border border-white/10">
+          <div className="bg-black rounded-3xl overflow-hidden shadow-2xl relative border border-white/10 aspect-video w-full">
             {/* Player Container: Iframe do Panda Video ou HTML5 Video */}
-            <div className={`aspect-video w-full relative group ${mediaMode === 'audio' ? 'opacity-0 pointer-events-none absolute inset-0 -z-10' : 'block'}`}>
+            <div className={`w-full h-full ${mediaMode === 'audio' ? 'opacity-0 pointer-events-none absolute inset-0 -z-10' : 'relative group'}`}>
               {getEmbedUrl(activeLesson.videoUrl) ? (
                 <iframe
                   id="panda-player"
                   key={activeLesson.id + '-' + activeLesson.videoUrl}
                   src={getEmbedUrl(activeLesson.videoUrl)!}
                   title={activeLesson.title}
-                  className="absolute inset-0 w-full h-full border-0 rounded-3xl"
+                  className="w-full h-full border-0 rounded-3xl"
                   style={{ border: 'none', position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
                   allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
                   allowFullScreen
@@ -612,39 +612,39 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
               )}
             </div>
 
-            {/* MODO SÓ AUDIO - Dark Calming Hands-Free Screen */}
+            {/* MODO SÓ AUDIO - Perfectly Centered in the Player Frame */}
             {mediaMode === 'audio' && (
-              <div className="bg-gradient-to-br from-[#101B1E] via-[#091113] to-[#070D0F] rounded-3xl p-8 sm:p-12 shadow-2xl flex flex-col items-center justify-center text-center space-y-6 min-h-[340px] relative overflow-hidden animate-fade-in">
+              <div className="absolute inset-0 z-20 bg-gradient-to-br from-[#101B1E] via-[#091113] to-[#070D0F] p-4 sm:p-8 flex flex-col items-center justify-center text-center space-y-3 sm:space-y-4 animate-fade-in">
                 {/* Acoustic Ambient Glow */}
                 <div className="absolute w-72 h-72 rounded-full bg-[#FF7F5B]/10 blur-3xl pointer-events-none -top-12" />
                 
-                <div className="relative z-10 space-y-6 flex flex-col items-center w-full max-w-lg">
+                <div className="relative z-10 space-y-3 sm:space-y-4 flex flex-col items-center w-full max-w-md">
                   {/* Pulsing Visual */}
-                  <div className={`w-20 h-20 rounded-full border flex items-center justify-center transition-all ${
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full border flex items-center justify-center transition-all ${
                     isAudioPlaying 
-                      ? 'bg-[#FF7F5B]/25 border-[#FF7F5B]/60 text-[#FF7F5B] scale-110 shadow-lg shadow-[#FF7F5B]/20 animate-pulse' 
+                      ? 'bg-[#FF7F5B]/25 border-[#FF7F5B]/60 text-[#FF7F5B] scale-105 shadow-lg shadow-[#FF7F5B]/20 animate-pulse' 
                       : 'bg-white/10 border-white/20 text-slate-400'
                   }`}>
-                    <Volume2 className="w-10 h-10" />
+                    <Volume2 className="w-7 h-7 sm:w-8 sm:h-8" />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-black text-[#FFD166] uppercase tracking-wider block">
+                  <div className="space-y-1">
+                    <span className="text-[11px] sm:text-xs font-black text-[#FFD166] uppercase tracking-wider block">
                       🎧 MODO SÓ AUDIO
                     </span>
-                    <h3 className="text-xl font-bold text-white">{activeLesson.title}</h3>
-                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    <h3 className="text-sm sm:text-lg font-bold text-white line-clamp-1">{activeLesson.title}</h3>
+                    <p className="text-[10px] sm:text-xs text-slate-400 max-w-sm mx-auto hidden sm:block">
                       Economia de bateria e iluminação reduzida. Ideal para ouvir enquanto nina, dirige ou descansa.
                     </p>
                   </div>
 
                   {/* Audio Controls Bar */}
-                  <div className="flex items-center justify-center gap-4 w-full pt-2">
+                  <div className="flex items-center justify-center gap-3 sm:gap-4 w-full">
                     {/* -10s */}
                     <button
                       type="button"
                       onClick={() => handleSeekAudio(-10)}
-                      className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/10 text-white/80 hover:text-white flex items-center justify-center text-xs font-extrabold transition-all cursor-pointer shrink-0"
+                      className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/10 text-white/80 hover:text-white flex items-center justify-center text-xs font-extrabold transition-all cursor-pointer shrink-0"
                       title="Retroceder 10 segundos"
                     >
                       -10s
@@ -654,13 +654,13 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                     <button
                       type="button"
                       onClick={handleToggleAudioPlay}
-                      className="w-14 h-14 rounded-full bg-[#FF7F5B] hover:bg-[#e06847] active:scale-95 text-white flex items-center justify-center shadow-xl shadow-[#FF7F5B]/30 transition-all cursor-pointer shrink-0"
+                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#FF7F5B] hover:bg-[#e06847] active:scale-95 text-white flex items-center justify-center shadow-xl shadow-[#FF7F5B]/30 transition-all cursor-pointer shrink-0"
                       title={isAudioPlaying ? "Pausar áudio" : "Tocar áudio"}
                     >
                       {isAudioPlaying ? (
-                        <Pause className="w-6 h-6 fill-current" />
+                        <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
                       ) : (
-                        <Play className="w-6 h-6 fill-current ml-0.5" />
+                        <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current ml-0.5" />
                       )}
                     </button>
 
@@ -668,7 +668,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                     <button
                       type="button"
                       onClick={() => handleSeekAudio(10)}
-                      className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/10 text-white/80 hover:text-white flex items-center justify-center text-xs font-extrabold transition-all cursor-pointer shrink-0"
+                      className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/10 text-white/80 hover:text-white flex items-center justify-center text-xs font-extrabold transition-all cursor-pointer shrink-0"
                       title="Avançar 10 segundos"
                     >
                       +10s
@@ -679,9 +679,9 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                   {(() => {
                     const effDuration = audioDuration || parseDurationToSeconds(activeLesson.duration) || 0;
                     return effDuration > 0 ? (
-                      <div className="w-full max-w-xs space-y-1.5 pt-1">
+                      <div className="w-full max-w-xs space-y-1 pt-0.5">
                         <div 
-                          className="w-full bg-white/10 hover:bg-white/15 h-2 rounded-full overflow-hidden cursor-pointer transition-colors"
+                          className="w-full bg-white/10 hover:bg-white/15 h-1.5 sm:h-2 rounded-full overflow-hidden cursor-pointer transition-colors"
                           onClick={(e) => {
                             const rect = e.currentTarget.getBoundingClientRect();
                             const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -693,7 +693,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                             style={{ width: `${Math.min(100, (audioCurrentTime / effDuration) * 100)}%` }}
                           />
                         </div>
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
+                        <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400 font-medium">
                           <span>{formatSecondsToTime(audioCurrentTime)}</span>
                           <span>{formatSecondsToTime(effDuration)}</span>
                         </div>
