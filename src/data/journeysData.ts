@@ -281,32 +281,52 @@ export const JOURNEYS_DATA: Journey[] = [
     iconName: 'Compass',
     price: 187,
     isComingSoon: true,
-    modules: [
+        modules: [
       {
         id: 'nc-mod-1',
-        number: 1,
-        title: 'O Silêncio, o Reencontro e o Amor',
+        number: 1, 
+        title: 'Quando a Casa Muda',
         lessons: [
-          // Subgrupo: O Silêncio que Muda Tudo
-          { id: 'nc-1-1', title: 'O Silêncio que Muda Tudo: A casa que ficou maior: A solidão inicial e o choque do silêncio.', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Acolhendo o impacto do ninho vazio.', xpPoints: 50 },
-          { id: 'nc-1-2', title: 'O Silêncio que Muda Tudo: O luto do ciclo que se fecha: Lidando com saudade e a nostalgia.', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'Vivenciando a transição de ciclo.', xpPoints: 50 },
-          { id: 'nc-1-3', title: 'O Silêncio que Muda Tudo: A identidade que se desmancha: "Quem sou eu agora?"', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Reinventando o papel parental.', xpPoints: 50 },
-
-          // Subgrupo: O Reencontro com Você
-          { id: 'nc-1-4', title: 'O Reencontro com Você: Quem sou eu agora? Redescobrindo desejos, hábitos e espaços pessoais.', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Retomando antigos projetos e hobbies.', xpPoints: 50 },
-          { id: 'nc-1-5', title: 'O Reencontro com Você: O que fazer com o tempo (e o quarto) que sobrou?', duration: '15 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', description: 'Ressignificando a casa física.', xpPoints: 50 },
-          { id: 'nc-1-6', title: 'O Reencontro com Você: Redescobrindo Sonhos: O cotidiano dá lugar a novos horizontes.', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', description: 'Projetando novos objetivos de vida.', xpPoints: 50 },
-
-          // Subgrupo: O Reencontro do Casal
-          { id: 'nc-1-7', title: 'O Reencontro do Casal: E agora, somos só nós dois? Redescobrindo a parceria.', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Reencontrando a cumplicidade a dois.', xpPoints: 50 },
-          { id: 'nc-1-8', title: 'O Reencontro do Casal: Como parar de falar sobre os filhos e voltar a falar sobre nós.', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Construindo novos assuntos do casal.', xpPoints: 50 },
-          { id: 'nc-1-9', title: 'O Reencontro do Casal: A intimidade e os novos projetos a dois.', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Fortalecendo o vínculo afetivo.', xpPoints: 50 },
-
-          // Subgrupo: O Amor que Muda de Lugar
-          { id: 'nc-1-10', title: 'O Amor que Muda de Lugar: A arte de continuar presente - Sem Invadir.', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Respeitando a independência dos filhos adultos.', xpPoints: 50 },
-          { id: 'nc-1-11', title: 'O Amor que Muda de Lugar: O amor à Distância: Como manter o afeto vivo com novos rituais e linguagens.', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Mantendo o contato frequente e amoroso.', xpPoints: 50 },
-          { id: 'nc-1-12', title: 'O Amor que Muda de Lugar: A casa como porto seguro e não como âncora.', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Acolhendo as visitas sem criar dependência.', xpPoints: 50 },
-          { id: 'nc-1-13', title: 'O Amor que Muda de Lugar: Celebrando os voos deles. Os seus novos caminhos.', duration: '23 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Orgulho das asas dadas aos filhos.', xpPoints: 50 }
+          { id: 'nc-1-1', subgroup: 'O silêncio da casa', title: 'Quando a casa parece grande demais depois que os filhos saem', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Acolha o silêncio e as mudanças de uma casa que começa a ter outro ritmo.', xpPoints: 0 },
+          { id: 'nc-1-2', subgroup: 'Sentimentos misturados', title: 'Orgulho e saudade podem morar juntos nessa nova fase', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'Reconheça sentimentos diferentes sem precisar escolher entre alegria e saudade.', xpPoints: 0 },
+          { id: 'nc-1-3', subgroup: 'Fim de ciclo', title: 'O luto por um ciclo que terminou e uma nova fase que começa', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Dê espaço à saudade sem transformar a mudança natural da família em perda.', xpPoints: 0 },
+          { id: 'nc-1-4', subgroup: 'Identidade parental', title: 'Quando você sente falta de ser necessário na vida dos seus filhos', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Entenda por que sentir falta do seu papel pode doer tanto quanto sentir falta deles.', xpPoints: 0 },
+          { id: 'nc-1-5', subgroup: 'Identidade', title: 'Quem sou eu quando ninguém precisa que eu resolva tudo?', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', description: 'Reencontre outras partes de você quando o papel de cuidador começa a mudar.', xpPoints: 0 },
+          { id: 'nc-1-6', subgroup: 'Espaços e memórias', title: 'O quarto que ficou e tudo o que esse espaço ainda representa', duration: '15 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', description: 'Descubra seu tempo para guardar, mudar ou ressignificar os espaços que ficaram.', xpPoints: 0 },
+          { id: 'nc-1-7', subgroup: 'Preocupação', title: 'Quando seu filho sai de casa, mas a preocupação continua com você', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Aprenda a reconhecer o cuidado sem deixar que a preocupação ocupe todo o espaço.', xpPoints: 0 },
+          { id: 'nc-1-8', subgroup: 'Soltar', title: 'Soltar não é deixar de cuidar: é aprender uma nova forma de estar perto', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Entenda como a parentalidade continua mesmo quando seu filho ganha independência.', xpPoints: 0 }
+        ]
+      },
+      {
+        id: 'nc-mod-2',
+        number: 2, 
+        title: 'Reencontrando Sua Vida',
+        lessons: [
+          { id: 'nc-2-1', subgroup: 'Identidade', title: 'Quem era você antes de ser tão necessário todos os dias?', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Revisite interesses e identidades que continuam existindo além da parentalidade.', xpPoints: 0 },
+          { id: 'nc-2-2', subgroup: 'Tempo', title: 'O que fazer com o tempo que apareceu quando a rotina mudou?', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Experimente o novo espaço da rotina sem precisar preenchê-lo imediatamente.', xpPoints: 0 },
+          { id: 'nc-2-3', subgroup: 'Interesses', title: 'Redescobrindo coisas que ficaram pelo caminho ao longo dos anos', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Reaproxime-se de interesses, amizades e projetos que ainda fazem sentido para você.', xpPoints: 0 },
+          { id: 'nc-2-4', subgroup: 'Pressão por recomeçar', title: 'Você não precisa descobrir uma nova paixão imediatamente', duration: '15 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Tire do recomeço a obrigação de transformar todo tempo livre em um grande projeto.', xpPoints: 0 },
+          { id: 'nc-2-5', subgroup: 'Mudança pessoal', title: 'Quando você percebe que seus antigos sonhos também mudaram', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Permita-se descobrir novos desejos sem precisar voltar a ser quem você era antes.', xpPoints: 0 },
+          { id: 'nc-2-6', subgroup: 'Casal', title: 'E agora, somos só nós dois? Reencontrando a parceria', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'Redescubra a relação quando os filhos deixam de organizar boa parte da rotina.', xpPoints: 0 },
+          { id: 'nc-2-7', subgroup: 'Conversa', title: 'Quando os filhos eram o assunto que mantinha vocês conversando', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Crie novas conversas e curiosidade pelo outro para além da vida dos filhos.', xpPoints: 0 },
+          { id: 'nc-2-8', subgroup: 'Intimidade', title: 'Intimidade depois de tantos anos de rotina, tarefas e logística', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Reencontre presença, conversa, toque e companhia sem cobrar que tudo volte a ser como antes.', xpPoints: 0 },
+          { id: 'nc-2-9', subgroup: 'Projetos', title: 'Novos projetos a dois - e também caminhos que podem ser só seus', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', description: 'Construa uma nova parceria que dê espaço para sonhos compartilhados e individuais.', xpPoints: 0 }
+        ]
+      },
+      {
+        id: 'nc-mod-3',
+        number: 3, 
+        title: 'O Amor que Muda de Lugar',
+        lessons: [
+          { id: 'nc-3-1', subgroup: 'Novo papel parental', title: 'De pai ou mãe que resolve para pai ou mãe que acompanha', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', description: 'Descubra como continuar sendo referência sem precisar conduzir cada decisão.', xpPoints: 0 },
+          { id: 'nc-3-2', subgroup: 'Presença à distância', title: 'Ligar ou esperar que ele ligue? Encontrando uma nova medida para a presença', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Construa proximidade sem transformar contato, mensagens ou visitas em cobrança.', xpPoints: 0 },
+          { id: 'nc-3-3', subgroup: 'Ajuda e interferência', title: 'Quando ajudar começa a virar interferência na vida do seu filho', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Perceba a diferença entre oferecer apoio e assumir decisões que agora são dele.', xpPoints: 0 },
+          { id: 'nc-3-4', subgroup: 'Diferenças', title: 'Seu filho adulto pode escolher uma vida diferente da que você escolheria', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Pratique confiança mesmo quando carreira, relações ou escolhas não seriam as suas.', xpPoints: 0 },
+          { id: 'nc-3-5', subgroup: 'Conselhos', title: 'Antes de aconselhar, descubra se existe espaço para a sua opinião', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Troque respostas automáticas por uma pergunta que ajuda a preservar o diálogo.', xpPoints: 0 },
+          { id: 'nc-3-6', subgroup: 'Retorno para casa', title: 'Quando um filho adulto volta para casa e a família precisa se reorganizar', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Crie novos combinados sem tentar reconstruir a relação que existia antes da saída.', xpPoints: 0 },
+          { id: 'nc-3-7', subgroup: 'Novos vínculos', title: 'Quando novos amores e novas famílias também entram na história', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Abra espaço para parceiros, outras famílias e novos vínculos sem disputar centralidade.', xpPoints: 0 },
+          { id: 'nc-3-8', subgroup: 'Porto seguro', title: 'A casa como porto seguro para voltar, e não como âncora para ficar', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Construa uma presença que oferece pertencimento sem transformar afeto em obrigação.', xpPoints: 0 },
+          { id: 'nc-3-9', subgroup: 'Novos caminhos', title: 'Celebrando os voos deles e descobrindo também os seus caminhos', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'Reconheça a autonomia dos filhos enquanto abre espaço para uma nova fase da sua vida.', xpPoints: 0 }
         ]
       }
     ]
