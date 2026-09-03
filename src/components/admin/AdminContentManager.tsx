@@ -443,7 +443,10 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
 
   const openEditContent = (journeyId: string, moduleId: string, content: Lesson) => {
     setEditingContent({ journeyId, moduleId, content });
-    if (content.title.includes(': ')) {
+    if (content.subgroup !== undefined) {
+      setContentFormSubgroup(content.subgroup);
+      setContentFormTitle(content.title);
+    } else if (content.title.includes(': ')) {
       const parts = content.title.split(': ');
       setContentFormSubgroup(parts[0].trim());
       setContentFormTitle(parts.slice(1).join(': ').trim());
@@ -540,9 +543,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       return;
     }
 
-    const finalTitle = contentFormSubgroup.trim()
-      ? `${contentFormSubgroup.trim()}: ${contentFormTitle.trim()}`
-      : contentFormTitle.trim();
+    const finalSubgroup = contentFormSubgroup.trim();
+    const finalTitle = contentFormTitle.trim();
 
     const resources: LessonResource[] = [];
     if (contentFormHasResources && contentFormPdfUrl.trim()) {
@@ -589,6 +591,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     if (editingContent.content) {
       ok = await updateContent(editingContent.journeyId, editingContent.moduleId, editingContent.content.id, {
         title: finalTitle,
+        subgroup: finalSubgroup || undefined,
         description: contentFormDesc.trim(),
         duration: contentFormDuration.trim() || '15 min',
         videoUrl: processedVideoUrl,
@@ -598,6 +601,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     } else {
       ok = await addContent(editingContent.journeyId, editingContent.moduleId, {
         title: finalTitle,
+        subgroup: finalSubgroup || undefined,
         description: contentFormDesc.trim(),
         duration: contentFormDuration.trim() || '15 min',
         videoUrl: processedVideoUrl,
@@ -775,13 +779,13 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {lesson.title.includes(': ') && (
+                        {(lesson.subgroup || (lesson.title.includes(': ') ? lesson.title.split(': ')[0] : '')) && (
                           <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 shrink-0">
-                            {lesson.title.split(': ')[0]}
+                            {lesson.subgroup || lesson.title.split(': ')[0]}
                           </span>
                         )}
                         <h6 className="text-xs font-bold text-white truncate">
-                          {lesson.title.includes(': ') ? lesson.title.split(': ').slice(1).join(': ') : lesson.title}
+                          {lesson.subgroup ? lesson.title : (lesson.title.includes(': ') ? lesson.title.split(': ').slice(1).join(': ') : lesson.title)}
                         </h6>
                       </div>
 
@@ -1531,8 +1535,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                     <datalist id="subgroup-suggestions-list">
                       {Array.from(new Set(
                         (activeJourney?.modules?.find(m => m.id === editingContent?.moduleId)?.lessons || [])
-                          .filter(l => l.title.includes(': '))
-                          .map(l => l.title.split(': ')[0].trim())
+                          .map(l => l.subgroup || (l.title.includes(': ') ? l.title.split(': ')[0].trim() : ''))
+                          .filter(Boolean)
                       )).map(sg => (
                         <option key={sg} value={sg} />
                       ))}

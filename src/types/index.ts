@@ -10,6 +10,7 @@ export interface LessonResource {
 export interface Lesson {
   id: string;
   title: string;
+  subgroup?: string;
   duration: string;
   videoUrl: string;
   description: string;

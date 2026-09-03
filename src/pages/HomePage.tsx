@@ -208,13 +208,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
   // Helper to split subgroup (UPPERCASE) and lesson title (Sentence Case with period)
   const formatLessonText = (module: CourseModule, lesson: Lesson) => {
-    let subgroup = module.title;
+    let subgroup = lesson.subgroup || module.title;
     let videoName = lesson.title;
 
-    if (lesson.title.includes(': ')) {
+    if (!lesson.subgroup && lesson.title.includes(': ')) {
       const parts = lesson.title.split(': ');
       subgroup = parts[0];
-      videoName = parts[1];
+      videoName = parts.slice(1).join(': ');
     }
 
     return {

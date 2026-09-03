@@ -48,13 +48,13 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
       };
     }
 
-    let subgroupText = journey.modules[0]?.title || journey.title;
+    let subgroupText = nextLesson.subgroup || journey.modules[0]?.title || journey.title;
     let videoTitleText = nextLesson.title;
 
-    if (nextLesson.title.includes(': ')) {
+    if (!nextLesson.subgroup && nextLesson.title.includes(': ')) {
       const parts = nextLesson.title.split(': ');
       subgroupText = parts[0];
-      videoTitleText = parts[1];
+      videoTitleText = parts.slice(1).join(': ');
     }
 
     return {
