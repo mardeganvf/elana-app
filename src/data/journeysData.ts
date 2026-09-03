@@ -149,36 +149,52 @@ export const JOURNEYS_DATA: Journey[] = [
     iconName: 'Palette',
     price: 247,
     isComingSoon: true,
-    modules: [
+        modules: [
       {
         id: 'sing-mod-1',
-        number: 1,
-        title: 'O Que Nasce em Você e Floresce na Criança',
+        number: 1, 
+        title: 'O Que Nasce em Você',
         lessons: [
-          // Subgrupo: O Que Nasce em Você
-          { id: 'sing-1-1', title: 'O Que Nasce em Você: Quando a vida muda de direção.', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Acolhendo a mudança de planos da vida.', xpPoints: 50 },
-          { id: 'sing-1-2', title: 'O Que Nasce em Você: O luto pelo que você imaginou que seria.', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Ressignificando as expectativas ideais.', xpPoints: 50 },
-          { id: 'sing-1-3', title: 'O Que Nasce em Você: A aceitação que não vem de uma vez (e tudo bem).', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Entendendo a aceitação como processo.', xpPoints: 50 },
-          { id: 'sing-1-4', title: 'O Que Nasce em Você: Medo, culpa, exaustão: os sentimentos que ninguém conta.', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Normalizando os sentimentos desafiadores.', xpPoints: 50 },
-          { id: 'sing-1-5', title: 'O Que Nasce em Você: O casal como pilar: como manter a união na tempestade.', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Fortalecendo a parceria a dois.', xpPoints: 50 },
-          { id: 'sing-1-6', title: 'O Que Nasce em Você: Acolhendo os irmãos e as dúvidas dos outros filhos.', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Dando atenção e voz a toda a família.', xpPoints: 50 },
-          { id: 'sing-1-7', title: 'O Que Nasce em Você: A máscara de oxigênio: cuidar de si para conseguir cuidar.', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Autocuidado como necessidade primária.', xpPoints: 50 },
-
-          // Subgrupo: O Que Floresce na Criança
-          { id: 'sing-1-8', title: 'O Que Floresce na Criança: O diagnóstico não define quem ele é.', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'Enxergando a criança além de laudos.', xpPoints: 50 },
-          { id: 'sing-1-9', title: 'O Que Floresce na Criança: Entendendo ritmos e singularidades.', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Respeitando o tempo próprio de desenvolvimento.', xpPoints: 50 },
-          { id: 'sing-1-10', title: 'O Que Floresce na Criança: A força dos pequenos avanços.', duration: '15 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Celebrando cada marco conquistado.', xpPoints: 50 },
-          { id: 'sing-1-11', title: 'O Que Floresce na Criança: O que é desenvolvimento possível ... não idealizado.', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', description: 'Avaliando progressos reais com afeto.', xpPoints: 50 },
-          { id: 'sing-1-12', title: 'O Que Floresce na Criança: O olhar apreciativo: ver o que cresce, não só o que falta.', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', description: 'Foco nas potências da criança.', xpPoints: 50 },
-          { id: 'sing-1-13', title: 'O Que Floresce na Criança: Comunicação e vínculo no ritmo da criança.', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Conexão profunda e adaptada.', xpPoints: 50 },
-
-          // Subgrupo: O Caminho que Vocês Constroem Juntos
-          { id: 'sing-1-14', title: 'O Caminho Juntos: O amor que organiza: como criar uma rotina que acolhe - sem se perder nela.', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Previsibilidade e leveza no dia a dia.', xpPoints: 50 },
-          { id: 'sing-1-15', title: 'O Caminho Juntos: O amor que se "advoga": navegando laudos, terapias e a escola.', duration: '24 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Defendendo os direitos e necessidades da criança.', xpPoints: 50 },
-          { id: 'sing-1-16', title: 'O Caminho Juntos: O amor que pede ajuda: construindo uma rede de apoio que realmente funciona.', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Buscando alianças de suporte confiáveis.', xpPoints: 50 },
-          { id: 'sing-1-17', title: 'O Caminho Juntos: Ferramentas práticas de conexão emocional.', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Estratégias cotidianas de vínculo.', xpPoints: 50 },
-          { id: 'sing-1-18', title: 'O Caminho Juntos: Rituais que fortalecem ... e como celebrar conquistas.', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Momentos especiais em família.', xpPoints: 50 },
-          { id: 'sing-1-19', title: 'O Caminho Juntos: O maior presente: confiando na sua intuição.', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Honrando a sabedoria de pai e mãe.', xpPoints: 50 }
+          { id: 'sing-1-1', subgroup: 'Quando o caminho muda', title: 'Quando o caminho muda: acolhendo uma história diferente', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Acolha o impacto das mudanças sem precisar encontrar respostas de imediato.', xpPoints: 0 },
+          { id: 'sing-1-2', subgroup: 'Quando o caminho muda', title: 'Entre a suspeita e as respostas: como atravessar a incerteza', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Encontre mais chão enquanto as respostas ainda estão sendo construídas.', xpPoints: 0 },
+          { id: 'sing-1-3', subgroup: 'O filho imaginado e o filho real', title: 'O filho que você imaginou e a criança que está diante de você', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Acolha expectativas antigas sem perder de vista a criança real e inteira.', xpPoints: 0 },
+          { id: 'sing-1-4', subgroup: 'O filho imaginado e o filho real', title: 'O luto pelas expectativas: sentir também faz parte do caminho', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Dê espaço ao que você imaginou sem transformar seu filho em uma perda.', xpPoints: 0 },
+          { id: 'sing-1-5', subgroup: 'Sentimentos que parecem não combinar com o amor', title: 'Medo, culpa, raiva e cansaço também podem existir junto do amor', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Entenda sentimentos difíceis sem usá-los como medida do amor pelo seu filho.', xpPoints: 0 },
+          { id: 'sing-1-6', subgroup: 'Sentimentos que parecem não combinar com o amor', title: 'Quando a comparação com outras famílias começa a machucar', duration: '15 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Perceba o peso da comparação e volte o olhar para a história de vocês.', xpPoints: 0 },
+          { id: 'sing-1-7', subgroup: 'Aceitação em movimento', title: 'Aceitação não acontece de uma vez — e nem precisa acontecer', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'Entenda por que novas fases podem reabrir sentimentos que pareciam resolvidos.', xpPoints: 0 },
+          { id: 'sing-1-8', subgroup: 'O casal', title: 'Quando cada um sente de um jeito: cuidando também do casal', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Reconheça ritmos diferentes e encontre formas de atravessar a fase em parceria.', xpPoints: 0 },
+          { id: 'sing-1-9', subgroup: 'Os irmãos', title: 'Os irmãos também vivem essa história: como acolher cada filho', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Crie espaço para dúvidas, sentimentos e necessidades dos outros filhos.', xpPoints: 0 },
+          { id: 'sing-1-10', subgroup: 'Cuidando de quem cuida', title: 'Cuidar de você sem transformar autocuidado em mais uma obrigação', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', description: 'Encontre pequenas formas de se incluir no cuidado que sustenta a família.', xpPoints: 0 }
+        ]
+      },
+      {
+        id: 'sing-mod-2',
+        number: 2, 
+        title: 'O Que Floresce na Criança',
+        lessons: [
+          { id: 'sing-2-1', subgroup: 'Além do diagnóstico', title: 'Seu filho é muito maior do que qualquer diagnóstico', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', description: 'Use o diagnóstico como informação sem deixar que ele conte a história inteira.', xpPoints: 0 },
+          { id: 'sing-2-2', subgroup: 'Ritmos e singularidades', title: 'Aprendendo a reconhecer e respeitar o ritmo do seu filho', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Observe necessidades e sinais sem transformar cada diferença em comparação.', xpPoints: 0 },
+          { id: 'sing-2-3', subgroup: 'Desenvolvimento possível', title: 'Desenvolvimento possível: trocando a régua ideal pelo caminho real', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Acompanhe o desenvolvimento com presença, sem fazer do progresso uma cobrança.', xpPoints: 0 },
+          { id: 'sing-2-4', subgroup: 'Pequenos avanços', title: 'Pequenos avanços também contam — e merecem ser reconhecidos', duration: '15 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Aprenda a perceber conquistas que podem passar despercebidas no cotidiano.', xpPoints: 0 },
+          { id: 'sing-2-5', subgroup: 'Olhar apreciativo', title: 'Como enxergar o que existe sem olhar apenas para o que falta', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Amplie o olhar para habilidades, interesses e formas próprias de estar no mundo.', xpPoints: 0 },
+          { id: 'sing-2-6', subgroup: 'Comunicação e vínculo', title: 'Conexão no ritmo da criança: outras formas de falar e escutar', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Fortaleça o vínculo aprendendo a perceber as formas de comunicação do seu filho.', xpPoints: 0 }
+        ]
+      },
+      {
+        id: 'sing-mod-3',
+        number: 3, 
+        title: 'O Caminho que Vocês Constroem Juntos',
+        lessons: [
+          { id: 'sing-3-1', subgroup: 'Rotina', title: 'Uma rotina que sustenta a família sem engolir a vida de vocês', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Organize o cotidiano com previsibilidade sem transformar a rotina em prisão.', xpPoints: 0 },
+          { id: 'sing-3-2', subgroup: 'Cuidado x gerenciamento', title: 'Quando cuidar vira administrar: como voltar a ser pai ou mãe', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Abra espaço para o vínculo em meio a consultas, terapias, escola e agendas.', xpPoints: 0 },
+          { id: 'sing-3-3', subgroup: 'Autonomia e voz', title: 'Ser a voz do seu filho sem ocupar o lugar da voz dele', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'Defenda necessidades e direitos enquanto abre espaço para sua autonomia.', xpPoints: 0 },
+          { id: 'sing-3-4', subgroup: 'O mundo ao redor', title: 'Quando a escola também precisa aprender a enxergar seu filho', duration: '23 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Construa diálogo com a escola sem reduzir a criança às suas dificuldades.', xpPoints: 0 },
+          { id: 'sing-3-5', subgroup: 'O mundo ao redor', title: 'Olhares, comentários e perguntas: protegendo sem esconder', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Encontre respostas e limites para situações que expõem ou diminuem seu filho.', xpPoints: 0 },
+          { id: 'sing-3-6', subgroup: 'Decisões e culpa', title: 'Será que estou fazendo o suficiente? Lidando com a pressão de fazer mais', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', description: 'Organize prioridades sem transformar cada possibilidade em uma nova obrigação.', xpPoints: 0 },
+          { id: 'sing-3-7', subgroup: 'Rede de apoio', title: 'Construindo uma rede de apoio que acolhe de verdade', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', description: 'Aproxime pessoas que respeitam seu filho e também sustentam quem cuida.', xpPoints: 0 },
+          { id: 'sing-3-8', subgroup: 'Rituais e conquistas', title: 'Rituais que fortalecem: celebrando a história que é só de vocês', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Crie pequenos rituais para reconhecer vínculos, avanços e momentos importantes.', xpPoints: 0 },
+          { id: 'sing-3-9', subgroup: 'O futuro', title: 'Quando a cabeça corre para o futuro e as respostas ainda não existem', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Acolha as incertezas do amanhã sem deixar de viver a criança que existe hoje.', xpPoints: 0 },
+          { id: 'sing-3-10', subgroup: 'Confiança parental', title: 'Confiando em você sem precisar ter todas as respostas', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Troque a busca por certezas pela confiança construída ao conhecer seu filho.', xpPoints: 0 }
         ]
       }
     ]
