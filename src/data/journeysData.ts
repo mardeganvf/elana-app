@@ -215,32 +215,52 @@ export const JOURNEYS_DATA: Journey[] = [
     iconName: 'HeartHandshake',
     price: 217,
     isComingSoon: true,
-    modules: [
+        modules: [
       {
         id: 'ae-mod-1',
-        number: 1,
-        title: 'Da Espera à Construção da Família',
+        number: 1, 
+        title: 'O Caminho Até Vocês',
         lessons: [
-          // Subgrupo: O Caminho até o Encontro
-          { id: 'ae-1-1', title: 'O Caminho até o Encontro: Antes do Sim: O Desejo, o Medo e o Chamado.', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Preparação psicológica e o chamado da adoção.', xpPoints: 50 },
-          { id: 'ae-1-2', title: 'O Caminho até o Encontro: A Espera que Testa o Amor (e o Casal).', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Lidando com a ansiedade dos prazos.', xpPoints: 50 },
-          { id: 'ae-1-3', title: 'O Caminho até o Encontro: As Expectativas Invisíveis: Imaginado x Possível x Real.', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Desmistificando a chegada da criança.', xpPoints: 50 },
-
-          // Subgrupo: Quando o Encontro Acontece
-          { id: 'ae-1-4', title: 'Quando o Encontro Acontece: O Primeiro Olhar: Quando duas histórias se encontram.', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'O momento da aproximação inicial.', xpPoints: 50 },
-          { id: 'ae-1-5', title: 'Quando o Encontro Acontece: A Construção do Vínculo: O amor que nasce no fazer (e não só no sentir).', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Construindo o apego no cotidiano.', xpPoints: 50 },
-          { id: 'ae-1-6', title: 'Quando o Encontro Acontece: A Adaptação da Criança: Acolhendo o luto, o medo da perda e comportamentos de teste.', duration: '25 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Acolhendo as inseguranças do filho.', xpPoints: 50 },
-          { id: 'ae-1-7', title: 'Quando o Encontro Acontece: A Adaptação da Família: O "puerpério" da adoção e relação com os irmãos.', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', description: 'A reorganização da rotina familiar.', xpPoints: 50 },
-
-          // Subgrupo: A Origem, os Laços e a Verdade
-          { id: 'ae-1-8', title: 'Origem e Verdade: Como Falar de Origem (Em Cada Idade): Respeito, verdade e linguagem.', duration: '23 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', description: 'Diálogos de verdade e respeito com o filho.', xpPoints: 50 },
-          { id: 'ae-1-9', title: 'Origem e Verdade: Ajudando seu filho a se reconhecer como parte da família.', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Fortalecendo o sentimento de pertencimento.', xpPoints: 50 },
-          { id: 'ae-1-10', title: 'Origem e Verdade: Quando Perguntas Dóiem: Família biológica e abandono.', duration: '24 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Acolhendo dores e questionamentos.', xpPoints: 50 },
-
-          // Subgrupo: A Vida que se Constrói
-          { id: 'ae-1-11', title: 'A Vida que se Constrói: Rotinas que Fortalecem: Transformando a casa com rituais e previsibilidade.', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Criando um porto seguro amoroso.', xpPoints: 50 },
-          { id: 'ae-1-12', title: 'A Vida que se Constrói: Lidando com o Mundo: Como acolher palpites e perguntas invasivas.', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Protegendo a intimidade da família.', xpPoints: 50 },
-          { id: 'ae-1-13', title: 'A Vida que se Constrói: Celebrando o Amor Escolhido: Honrando a história que vocês construíram juntos.', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Celebrando o vínculo único.', xpPoints: 50 }
+          { id: 'ae-1-1', subgroup: 'Desejo e decisão', title: 'Antes do sim: entendendo o desejo de construir uma família', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Olhe para desejos e medos que acompanham a decisão de adotar.', xpPoints: 0 },
+          { id: 'ae-1-2', subgroup: 'Expectativas', title: 'A família que você começou a imaginar antes mesmo do encontro', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Reconheça expectativas para abrir espaço à família que realmente vai chegar.', xpPoints: 0 },
+          { id: 'ae-1-3', subgroup: 'Espera', title: 'Quando a espera começa a ocupar todos os espaços da sua vida', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Atravesse a ansiedade da espera sem colocar toda a vida em suspensão.', xpPoints: 0 },
+          { id: 'ae-1-4', subgroup: 'Casal', title: 'Quando cada um atravessa a espera de um jeito diferente', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'Encontre espaço para ritmos, medos e expectativas diferentes dentro do casal.', xpPoints: 0 },
+          { id: 'ae-1-5', subgroup: 'Preparação', title: 'Preparar a casa é diferente de se preparar para o encontro', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Vá além dos preparativos e cuide também das expectativas para a chegada.', xpPoints: 0 },
+          { id: 'ae-1-6', subgroup: 'Criança real', title: 'A criança real não precisa caber na história que você imaginou', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Abra espaço para conhecer seu filho sem exigir que ele corresponda à expectativa.', xpPoints: 0 },
+          { id: 'ae-1-7', subgroup: 'Encontro', title: 'Quando duas histórias finalmente se encontram pela primeira vez', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', description: 'Acolha emoção, estranhamento ou silêncio sem transformar o encontro em um teste.', xpPoints: 0 },
+          { id: 'ae-1-8', subgroup: 'Transição', title: 'O encontro não é o fim da espera: é o começo da relação', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', description: 'Entenda por que formar uma família é um processo que continua depois da chegada.', xpPoints: 0 }
+        ]
+      },
+      {
+        id: 'ae-mod-2',
+        number: 2, 
+        title: 'Construindo o Nosso Vínculo',
+        lessons: [
+          { id: 'ae-2-1', subgroup: 'Vínculo', title: 'Amor também pode nascer no fazer, um cuidado de cada vez', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Descubra como presença e pequenos cuidados cotidianos ajudam o vínculo a crescer.', xpPoints: 0 },
+          { id: 'ae-2-2', subgroup: 'Expectativa afetiva', title: 'Quando o amor não chega do jeito ou no tempo que você imaginava', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Acolha sentimentos reais sem transformar o vínculo em uma obrigação imediata.', xpPoints: 0 },
+          { id: 'ae-2-3', subgroup: 'Adaptação', title: 'Seu filho também está aprendendo como é viver e confiar em você', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Veja a adaptação como um caminho vivido por toda a família, não só pela criança.', xpPoints: 0 },
+          { id: 'ae-2-4', subgroup: 'Segurança', title: 'Quando alguns comportamentos parecem testar se você vai continuar ali', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Responda à insegurança com presença e consistência, sem levar tudo para o pessoal.', xpPoints: 0 },
+          { id: 'ae-2-5', subgroup: 'Rejeição', title: 'Quando seu filho parece rejeitar você: o que pode existir por trás', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Separe a dificuldade de confiar da ideia de que seu filho não gosta de você.', xpPoints: 0 },
+          { id: 'ae-2-6', subgroup: 'Rotina', title: 'A rotina como linguagem de segurança para quem acaba de chegar', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Use previsibilidade e repetição para tornar o cotidiano mais seguro e familiar.', xpPoints: 0 },
+          { id: 'ae-2-7', subgroup: 'Reorganização familiar', title: 'O “puerpério” da adoção: quando a família inteira precisa se reorganizar', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Acolha cansaço e mudanças sem cobrar que a adaptação seja perfeita.', xpPoints: 0 },
+          { id: 'ae-2-8', subgroup: 'Irmãos', title: 'Quando os irmãos também precisam encontrar um novo lugar na família', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'Cuide da chegada sem perder de vista sentimentos e necessidades dos outros filhos.', xpPoints: 0 },
+          { id: 'ae-2-9', subgroup: 'Família e amigos', title: 'Quando todo mundo quer participar da chegada mais do que deveria', duration: '15 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Crie limites para proteger a adaptação sem afastar quem deseja apoiar.', xpPoints: 0 },
+          { id: 'ae-2-10', subgroup: 'Pertencimento', title: 'Quando começamos, de verdade, a nos sentir uma família?', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Entenda o pertencimento como algo construído na repetição do vínculo e do cuidado.', xpPoints: 0 }
+        ]
+      },
+      {
+        id: 'ae-mod-3',
+        number: 3, 
+        title: 'Uma História que Continua',
+        lessons: [
+          { id: 'ae-3-1', subgroup: 'Origem', title: 'A história do seu filho começou muito antes do encontro com você', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', description: 'Acolha o passado como parte de quem seu filho é e da família que vocês constroem.', xpPoints: 0 },
+          { id: 'ae-3-2', subgroup: 'Verdade', title: 'Falar sobre adoção desde sempre: uma conversa que cresce com a criança', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', description: 'Transforme origem e adoção em conversas possíveis, adequadas a cada fase.', xpPoints: 0 },
+          { id: 'ae-3-3', subgroup: 'Família de origem', title: 'Quando surgem perguntas e curiosidades sobre a família de origem', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Acolha a curiosidade sem interpretá-la como rejeição ao vínculo com você.', xpPoints: 0 },
+          { id: 'ae-3-4', subgroup: 'Histórias que coexistem', title: 'Amar você não exige que seu filho esqueça quem veio antes', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Ajude diferentes vínculos e histórias a coexistirem sem competição por amor.', xpPoints: 0 },
+          { id: 'ae-3-5', subgroup: 'Insegurança parental', title: 'Quando as perguntas sobre a origem também doem em quem cuida', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Reconheça suas inseguranças sem fazer seu filho carregar o peso delas.', xpPoints: 0 },
+          { id: 'ae-3-6', subgroup: 'Mundo ao redor', title: 'Quando o mundo pergunta demais sobre uma história que não é dele', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Proteja a privacidade do seu filho sem transformar sua história em segredo.', xpPoints: 0 },
+          { id: 'ae-3-7', subgroup: 'Autonomia e identidade', title: 'Quando seu filho começa a contar a própria história do jeito dele', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Abra espaço para que ele escolha o que contar, para quem e em que momento.', xpPoints: 0 },
+          { id: 'ae-3-8', subgroup: 'Família em construção', title: 'Nossa família continua sendo construída, mesmo depois de tantos encontros', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Celebre um pertencimento que cresce sem exigir que nenhuma história seja apagada.', xpPoints: 0 }
         ]
       }
     ]
