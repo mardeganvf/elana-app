@@ -16,6 +16,7 @@ interface JourneysContextType {
     moduleId: string,
     content: {
       title: string;
+      subgroup?: string;
       description: string;
       duration: string;
       videoUrl: string;
@@ -311,6 +312,7 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     moduleId: string,
     content: {
       title: string;
+      subgroup?: string;
       description: string;
       duration: string;
       videoUrl: string;
@@ -324,6 +326,7 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const newContent: Lesson = {
       id: `content-${Date.now()}-${crypto.randomUUID().slice(0, 4)}`,
       title: content.title.trim(),
+      subgroup: content.subgroup?.trim() || undefined,
       description: content.description.trim(),
       duration: content.duration.trim() || '15 min',
       videoUrl: content.videoUrl.trim(),
