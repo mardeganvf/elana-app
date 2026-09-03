@@ -42,8 +42,7 @@ export const useJourneyNotifications = () => {
           journey_id: journeyId,
           user_id: user?.id || null,
           user_email: user?.email || null,
-          user_name: user?.name || null,
-          user_phone: user?.phone || null
+          user_name: user?.name || null
         });
       } catch (err) {
         // Fallback silencioso
