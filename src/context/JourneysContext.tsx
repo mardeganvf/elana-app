@@ -170,8 +170,8 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedList));
       } catch (e) {}
 
-      // Persistir no Supabase
-      const { error } = await supabase.from('journeys').upsert({
+      // Prepara payload de persistência
+      const payload: Record<string, any> = {
         id: journey.id,
         title: journey.title,
         subtitle: journey.subtitle || '',
@@ -189,14 +189,41 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         is_coming_soon: Boolean(journey.isComingSoon ?? false),
         cover_image_url: journey.coverImageUrl || '',
         updated_at: new Date().toISOString()
-      }, { onConflict: 'id' });
+      };
+
+      // Tenta upsert completo no Supabase
+      let { error } = await supabase.from('journeys').upsert(payload, { onConflict: 'id' });
+
+      // Fallback 1: se a coluna cover_image_url ainda não existir na tabela journeys do Supabase
+      if (error && (error.code === '42703' || error.message?.includes('cover_image_url'))) {
+        console.warn('Coluna cover_image_url não encontrada na tabela journeys. Salvando sem ela...');
+        delete payload.cover_image_url;
+        const retry1 = await supabase.from('journeys').upsert(payload, { onConflict: 'id' });
+        error = retry1.error;
+      }
+
+      // Fallback 2: se a coluna is_coming_soon ainda não existir na tabela journeys do Supabase
+      if (error && (error.code === '42703' || error.message?.includes('is_coming_soon'))) {
+        console.warn('Coluna is_coming_soon não encontrada na tabela journeys. Salvando sem ela...');
+        delete payload.is_coming_soon;
+        const retry2 = await supabase.from('journeys').upsert(payload, { onConflict: 'id' });
+        error = retry2.error;
+      }
+
+      // Fallback 3: se upsert falhar por RLS de insert, tenta update direto
+      if (error) {
+        const retryUpdate = await supabase.from('journeys').update(payload).eq('id', journey.id);
+        if (!retryUpdate.error) {
+          error = null;
+        }
+      }
 
       if (error) {
-        console.error('Error saving journey to Supabase:', error.message);
+        console.error('Erro ao persistir jornada no Supabase:', error.message);
       }
       return true;
     } catch (err) {
-      console.error('Exception saving journey:', err);
+      console.error('Exceção ao salvar jornada:', err);
       return false;
     }
   };
