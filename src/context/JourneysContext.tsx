@@ -153,24 +153,22 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fetchJourneysFromSupabase();
   }, [fetchJourneysFromSupabase]);
 
-  // Salvar uma jornada completa (criar ou editar)
   const saveJourney = async (journey: Journey): Promise<boolean> => {
     try {
-      const existingIdx = journeys.findIndex(j => j.id === journey.id);
-      let updatedList: Journey[];
-      if (existingIdx >= 0) {
-        updatedList = [...journeys];
-        updatedList[existingIdx] = journey;
-      } else {
-        updatedList = [...journeys, journey];
-      }
+      setJourneys(prev => {
+        const existingIdx = prev.findIndex(j => j.id === journey.id);
+        const nextList = [...prev];
+        if (existingIdx >= 0) {
+          nextList[existingIdx] = journey;
+        } else {
+          nextList.push(journey);
+        }
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(nextList));
+        } catch (e) {}
+        return nextList;
+      });
 
-      setJourneys(updatedList);
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedList));
-      } catch (e) {}
-
-      // Prepara payload de persistência
       const payload: Record<string, any> = {
         id: journey.id,
         title: journey.title,
@@ -187,14 +185,15 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         price: journey.price || 197,
         modules: journey.modules || [],
         is_coming_soon: Boolean(journey.isComingSoon ?? false),
-        cover_image_url: journey.coverImageUrl || '',
         updated_at: new Date().toISOString()
       };
 
-      // Tenta upsert completo no Supabase
+      if (journey.coverImageUrl) {
+        payload.cover_image_url = journey.coverImageUrl;
+      }
+
       let { error } = await supabase.from('journeys').upsert(payload, { onConflict: 'id' });
 
-      // Fallback 1: se a coluna cover_image_url ainda não existir na tabela journeys do Supabase
       if (error && (error.code === '42703' || error.message?.includes('cover_image_url'))) {
         console.warn('Coluna cover_image_url não encontrada na tabela journeys. Salvando sem ela...');
         delete payload.cover_image_url;
@@ -202,7 +201,6 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         error = retry1.error;
       }
 
-      // Fallback 2: se a coluna is_coming_soon ainda não existir na tabela journeys do Supabase
       if (error && (error.code === '42703' || error.message?.includes('is_coming_soon'))) {
         console.warn('Coluna is_coming_soon não encontrada na tabela journeys. Salvando sem ela...');
         delete payload.is_coming_soon;
@@ -210,7 +208,6 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         error = retry2.error;
       }
 
-      // Fallback 3: se upsert falhar por RLS de insert, tenta update direto
       if (error) {
         const retryUpdate = await supabase.from('journeys').update(payload).eq('id', journey.id);
         if (!retryUpdate.error) {
@@ -228,14 +225,15 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Excluir uma jornada
   const deleteJourney = async (journeyId: string): Promise<boolean> => {
     try {
-      const updatedList = journeys.filter(j => j.id !== journeyId);
-      setJourneys(updatedList);
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedList));
-      } catch (e) {}
+      setJourneys(prev => {
+        const nextList = prev.filter(j => j.id !== journeyId);
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(nextList));
+        } catch (e) {}
+        return nextList;
+      });
 
       await supabase.from('journeys').delete().eq('id', journeyId);
       return true;
@@ -245,16 +243,15 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Adicionar um subtema (módulo) a uma jornada
-  const addModule = async (journeyId: string, title: string, description?: string): Promise<boolean> => {
+  const addModule = async (journeyId: string, title: string, description: string = ''): Promise<boolean> => {
     const journey = journeys.find(j => j.id === journeyId);
     if (!journey) return false;
 
     const newModule: CourseModule = {
-      id: `${journeyId}-mod-${Date.now()}`,
+      id: `mod-${journeyId}-${Date.now()}`,
       number: (journey.modules?.length || 0) + 1,
-      title: title.trim(),
-      description: description?.trim() || '',
+      title: title.trim() || `Módulo ${(journey.modules?.length || 0) + 1}`,
+      description: description.trim(),
       lessons: []
     };
 
@@ -266,18 +263,21 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return await saveJourney(updatedJourney);
   };
 
-  // Atualizar um subtema (módulo)
   const updateModule = async (
     journeyId: string,
     moduleId: string,
-    updates: Partial<CourseModule>
+    updates: { title?: string; description?: string }
   ): Promise<boolean> => {
     const journey = journeys.find(j => j.id === journeyId);
     if (!journey) return false;
 
     const updatedModules = (journey.modules || []).map(m => {
       if (m.id === moduleId) {
-        return { ...m, ...updates };
+        return {
+          ...m,
+          ...(updates.title !== undefined ? { title: updates.title.trim() } : {}),
+          ...(updates.description !== undefined ? { description: updates.description.trim() } : {})
+        };
       }
       return m;
     });
@@ -290,7 +290,6 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return await saveJourney(updatedJourney);
   };
 
-  // Excluir um subtema (módulo)
   const deleteModule = async (journeyId: string, moduleId: string): Promise<boolean> => {
     const journey = journeys.find(j => j.id === journeyId);
     if (!journey) return false;
@@ -307,7 +306,6 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return await saveJourney(updatedJourney);
   };
 
-  // Adicionar um Conteúdo a um subtema
   const addContent = async (
     journeyId: string,
     moduleId: string,
@@ -330,12 +328,15 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       duration: content.duration.trim() || '15 min',
       videoUrl: content.videoUrl.trim(),
       thumbnailUrl: content.thumbnailUrl?.trim() || undefined,
-      xpPoints: 0, // Sem gamificação de XP por assistir
+      xpPoints: 0,
       resources: content.resources || []
     };
 
+    let added = false;
     const updatedModules = (journey.modules || []).map(m => {
-      if (m.id === moduleId) {
+      const isTargetMod = (moduleId && m.id === moduleId) || (!moduleId && journey.modules.length === 1);
+      if (isTargetMod) {
+        added = true;
         return {
           ...m,
           lessons: [...(m.lessons || []), newContent]
@@ -344,15 +345,29 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return m;
     });
 
+    let finalModules = updatedModules;
+    if (!added) {
+      if (finalModules.length > 0) {
+        finalModules[0].lessons = [...(finalModules[0].lessons || []), newContent];
+      } else {
+        finalModules = [{
+          id: `mod-${journeyId}-1`,
+          number: 1,
+          title: 'Conteúdos da Jornada',
+          description: '',
+          lessons: [newContent]
+        }];
+      }
+    }
+
     const updatedJourney: Journey = {
       ...journey,
-      modules: updatedModules
+      modules: finalModules
     };
 
     return await saveJourney(updatedJourney);
   };
 
-  // Atualizar um Conteúdo existente
   const updateContent = async (
     journeyId: string,
     moduleId: string,
@@ -360,16 +375,22 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     updates: Partial<Lesson>
   ): Promise<boolean> => {
     const journey = journeys.find(j => j.id === journeyId);
-    if (!journey) return false;
+    if (!journey) {
+      console.error(`Jornada ${journeyId} não encontrada.`);
+      return false;
+    }
 
+    let lessonFound = false;
     const updatedModules = (journey.modules || []).map(m => {
-      if (m.id === moduleId) {
+      const isTargetModule = (moduleId && m.id === moduleId) || (m.lessons || []).some(l => l.id === contentId);
+      if (isTargetModule) {
         const updatedLessons = (m.lessons || []).map(l => {
           if (l.id === contentId) {
+            lessonFound = true;
             return {
               ...l,
               ...updates,
-              xpPoints: 0 // Garantir sem XP por assistir
+              xpPoints: 0
             };
           }
           return l;
@@ -379,6 +400,10 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return m;
     });
 
+    if (!lessonFound) {
+      console.warn(`Aula ${contentId} não encontrada nos módulos da jornada ${journeyId}.`);
+    }
+
     const updatedJourney: Journey = {
       ...journey,
       modules: updatedModules
@@ -387,7 +412,6 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return await saveJourney(updatedJourney);
   };
 
-  // Excluir um Conteúdo
   const deleteContent = async (
     journeyId: string,
     moduleId: string,
@@ -397,7 +421,8 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!journey) return false;
 
     const updatedModules = (journey.modules || []).map(m => {
-      if (m.id === moduleId) {
+      const isTargetModule = (moduleId && m.id === moduleId) || (m.lessons || []).some(l => l.id === contentId);
+      if (isTargetModule) {
         return {
           ...m,
           lessons: (m.lessons || []).filter(l => l.id !== contentId)
@@ -414,7 +439,6 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return await saveJourney(updatedJourney);
   };
 
-  // Sincronizar explicitamente todas as jornadas atuais para o Supabase
   const syncJourneysToSupabase = async (): Promise<boolean> => {
     setIsLoading(true);
     try {

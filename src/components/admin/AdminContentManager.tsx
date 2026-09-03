@@ -1077,29 +1077,16 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
             </div>
 
             <form onSubmit={handleSaveJourney} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 block">Título:</label>
-                  <input
-                    type="text"
-                    value={journeyFormTitle}
-                    onChange={(e) => setJourneyFormTitle(e.target.value)}
-                    placeholder="Ex: Construindo Pontes"
-                    className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 block">Subtítulo (Categoria):</label>
-                  <input
-                    type="text"
-                    value={journeyFormSubtitle}
-                    onChange={(e) => setJourneyFormSubtitle(e.target.value)}
-                    placeholder="Ex: Jornadas que Começam / Transformam"
-                    className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 block">Título:</label>
+                <input
+                  type="text"
+                  value={journeyFormTitle}
+                  onChange={(e) => setJourneyFormTitle(e.target.value)}
+                  placeholder="Ex: Pais Recém-Nascidos, Construindo Pontes"
+                  className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
+                  required
+                />
               </div>
 
               <div className="space-y-1.5">
