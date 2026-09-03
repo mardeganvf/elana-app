@@ -24,7 +24,9 @@ import {
   ArrowLeft,
   Image as ImageIcon,
   Users,
-  Download
+  Download,
+  Phone,
+  MessageCircle
 } from 'lucide-react';
 import { useJourneys } from '../../context/JourneysContext';
 import { supabase } from '../../lib/supabase';
@@ -153,7 +155,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     try {
       const { data, error } = await supabase
         .from('journey_interests')
-        .select('*')
+        .select('*, profiles:user_id(phone, name, email)')
         .eq('journey_id', journey.id)
         .order('created_at', { ascending: false });
 
@@ -177,14 +179,21 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       return;
     }
 
-    const headers = ['#', 'Jornada', 'Nome', 'E-mail', 'Data de Registro'];
-    const rows = interestsList.map((item, idx) => [
-      idx + 1,
-      `"${interestsJourney?.title || item.journey_id}"`,
-      `"${item.user_name || 'Usuário Visitante'}"`,
-      `"${item.user_email || '-'}"`,
-      `"${new Date(item.created_at).toLocaleString('pt-BR')}"`
-    ]);
+    const headers = ['#', 'Jornada', 'Nome', 'E-mail', 'Telefone / WhatsApp', 'Data de Registro'];
+    const rows = interestsList.map((item, idx) => {
+      const phone = item.user_phone || item.profiles?.phone || '-';
+      const name = item.user_name || item.profiles?.name || 'Usuário Visitante';
+      const email = item.user_email || item.profiles?.email || '-';
+
+      return [
+        idx + 1,
+        `"${interestsJourney?.title || item.journey_id}"`,
+        `"${name}"`,
+        `"${email}"`,
+        `"${phone}"`,
+        `"${new Date(item.created_at).toLocaleString('pt-BR')}"`
+      ];
+    });
 
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1881,17 +1890,48 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                   <p className="text-[11px] text-slate-500">Quando os usuários clicarem em "Me avisa quando chegar?", os dados aparecerão aqui.</p>
                 </div>
               ) : (
-                interestsList.map((item, idx) => (
-                  <div key={item.id || idx} className="p-3 bg-black/30 border border-white/5 rounded-xl flex items-center justify-between text-xs">
-                    <div className="min-w-0 pr-2">
-                      <p className="font-bold text-white truncate">{item.user_name || 'Usuário Visitante'}</p>
-                      <p className="text-[11px] text-slate-400 truncate">{item.user_email || 'E-mail não informado'}</p>
+                interestsList.map((item, idx) => {
+                  const phone = item.user_phone || item.profiles?.phone || null;
+                  const name = item.user_name || item.profiles?.name || 'Usuário Visitante';
+                  const email = item.user_email || item.profiles?.email || 'E-mail não informado';
+                  const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
+                  const waNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+
+                  return (
+                    <div key={item.id || idx} className="p-3 bg-black/30 border border-white/5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-white truncate">{name}</p>
+                          <span className="text-[10px] text-slate-500 shrink-0">
+                            • {new Date(item.created_at).toLocaleDateString('pt-BR')}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 truncate">{email}</p>
+                      </div>
+
+                      {/* Telefone / WhatsApp direto */}
+                      <div className="shrink-0 flex items-center gap-2">
+                        {phone && cleanPhone ? (
+                          <a
+                            href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Olá, ${name}! Vimos que você pediu para ser avisado sobre o lançamento da Jornada "${interestsJourney.title}" na Elana.`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-xs font-bold border border-emerald-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
+                            title="Abrir conversa direta no WhatsApp"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                            <span>{phone}</span>
+                          </a>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 px-2 py-0.5 rounded bg-white/5">
+                            <Phone className="w-3 h-3 text-slate-600" />
+                            <span>Sem telefone</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-[10px] text-slate-500 shrink-0">
-                      {new Date(item.created_at).toLocaleDateString('pt-BR')}
-                    </span>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 

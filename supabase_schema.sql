@@ -870,6 +870,7 @@ CREATE TABLE IF NOT EXISTS public.journey_interests (
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   user_email TEXT,
   user_name TEXT,
+  user_phone TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
