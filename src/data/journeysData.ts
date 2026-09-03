@@ -347,33 +347,52 @@ export const JOURNEYS_DATA: Journey[] = [
     iconName: 'Sparkles',
     price: 197,
     isComingSoon: true,
-    modules: [
+        modules: [
       {
         id: 'dds-mod-1',
-        number: 1,
-        title: 'Ternura, Memória e Reconstrução Possível',
+        number: 1, 
+        title: 'Quando o Mundo Para',
         lessons: [
-          // Subgrupo: Quando o Mundo Para
-          { id: 'dds-1-1', title: 'Quando o Mundo Para: O silêncio inimaginável: O impacto da perda, a permissão para sentir.', duration: '25 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Dando vazão à dor com acolhimento.', xpPoints: 50 },
-          { id: 'dds-1-2', title: 'Quando o Mundo Para: O luto sem manual: Entendendo que não existe "tempo certo".', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Respeitando o ritmo individual do luto.', xpPoints: 50 },
-          { id: 'dds-1-3', title: 'Quando o Mundo Para: Quando a rotina desajeita: Gatilhos, objetos e os horários vazios.', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', description: 'Navegando os momentos delicados do dia.', xpPoints: 50 },
-
-          // Subgrupo: A Dor que se Vive... e se Divide
-          { id: 'dds-1-4', title: 'A Dor que se Vive: A Culpa que Machuca: Por que ela aparece e como acolher com gentileza.', duration: '24 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', description: 'Aliviando o peso do autojulgamento.', xpPoints: 50 },
-          { id: 'dds-1-5', title: 'A Dor que se Vive: O Corpo em Luto: A exaustão, a confusão mental e o impacto físico.', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Cuidando da saúde física no luto.', xpPoints: 50 },
-          { id: 'dds-1-6', title: 'A Dor que se Vive: O Luto a Dois: Por que vocês sentem de jeitos diferentes (e como se apoiar).', duration: '23 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Acolhendo as diferenças de expressão do casal.', xpPoints: 50 },
-          { id: 'dds-1-7', title: 'A Dor que se Vive: O Tempo Não-Linear: Entendendo os ciclos, as recaídas e os respiros.', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Compreendendo as ondas do luto.', xpPoints: 50 },
-
-          // Subgrupo: A Ausência que Continua Presente
-          { id: 'dds-1-8', title: 'A Ausência Presente: A memória como casa: Presença de forma leve, simbólica e verdadeira.', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Mantendo o vínculo vivo através do amor.', xpPoints: 50 },
-          { id: 'dds-1-9', title: 'A Ausência Presente: O Nome, as fotos e os objetos: Como lidar com os símbolos.', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Rituais de lembrança com ternura.', xpPoints: 50 },
-          { id: 'dds-1-10', title: 'A Ausência Presente: O Amor que Permanece: A permanência silenciosa do vínculo.', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Honrando a memória do filho.', xpPoints: 50 },
-
-          // Subgrupo: A Reconstrução Possível
-          { id: 'dds-1-11', title: 'A Reconstrução Possível: A vida que anda aos poucos: Pequenos movimentos de retorno.', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Dando os primeiros passos para o futuro.', xpPoints: 50 },
-          { id: 'dds-1-12', title: 'A Reconstrução Possível: Acolhendo a dor dos irmãos: Como falar, ouvir e dar segurança.', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'Apoiando os outros filhos na perda.', xpPoints: 50 },
-          { id: 'dds-1-13', title: 'A Reconstrução Possível: A rede que ajuda: Como identificar quem acolhe e impor limites a quem fere.', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Protegendo seu processo de reconstrução.', xpPoints: 50 },
-          { id: 'dds-1-14', title: 'A Reconstrução Possível: A Luz que Retorna Devagar: O reencontro com a esperança.', duration: '25 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'A esperança como presença serena.', xpPoints: 50 }
+          { id: 'dds-1-1', subgroup: 'Descompasso', title: 'Quando parece que o mundo continuou - menos o seu', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Acolha o estranhamento de ver a vida seguir quando a sua parece ter parado.', xpPoints: 0 },
+          { id: 'dds-1-2', subgroup: 'Luto sem manual', title: 'Não existe um jeito certo nem um tempo certo para viver o luto', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Deixe de medir sua dor por etapas, prazos ou expectativas de outras pessoas.', xpPoints: 0 },
+          { id: 'dds-1-3', subgroup: 'Sentimentos', title: 'Quando você sente coisas que parecem não combinar com a saudade', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', description: 'Abra espaço para raiva, silêncio, riso ou cansaço sem julgar o que sente.', xpPoints: 0 },
+          { id: 'dds-1-4', subgroup: 'Culpa', title: 'A culpa e as perguntas que continuam procurando uma resposta', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', description: 'Acolha os “e se...” sem exigir de si respostas que talvez não existam.', xpPoints: 0 },
+          { id: 'dds-1-5', subgroup: 'Corpo', title: 'Quando o corpo também sente o peso de tudo o que aconteceu', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Perceba como o luto atravessa energia, sono e cotidiano sem cobrar normalidade.', xpPoints: 0 },
+          { id: 'dds-1-6', subgroup: 'Rotina', title: 'Quando a rotina perde o sentido e os horários parecem vazios', duration: '15 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Atravesse pequenas partes do dia sem precisar reconstruir tudo de uma vez.', xpPoints: 0 },
+          { id: 'dds-1-7', subgroup: 'Objetos e espaços', title: 'Roupas, fotos, o quarto: quando os objetos passam a dizer tanta coisa', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Encontre seu próprio tempo para guardar, mudar, tocar ou simplesmente deixar como está.', xpPoints: 0 },
+          { id: 'dds-1-8', subgroup: 'Linguagem', title: 'Quando você não consegue responder à pergunta “como você está?”', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Encontre palavras e limites para os momentos em que explicar parece impossível.', xpPoints: 0 },
+          { id: 'dds-1-9', subgroup: 'Um dia de cada vez', title: 'Hoje pode ser só hoje: quando pensar no futuro parece grande demais', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Diminua a medida do tempo e atravesse o que for possível neste dia.', xpPoints: 0 }
+        ]
+      },
+      {
+        id: 'dds-mod-2',
+        number: 2, 
+        title: 'O Amor que Permanece',
+        lessons: [
+          { id: 'dds-2-1', subgroup: 'Ausência', title: 'A ausência também ocupa espaço na casa, na rotina e nas lembranças', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Reconheça as formas como quem não está continua presente na vida da família.', xpPoints: 0 },
+          { id: 'dds-2-2', subgroup: 'Nome e memória', title: 'Falar o nome do seu filho não faz a dor existir - ela já está aí', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Abra espaço para lembrar e falar sem tratar a memória como algo a evitar.', xpPoints: 0 },
+          { id: 'dds-2-3', subgroup: 'Lembranças', title: 'Fotos, objetos e lembranças: cada família encontra o seu jeito', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'Guarde, transforme ou espere sem precisar seguir uma regra para preservar memórias.', xpPoints: 0 },
+          { id: 'dds-2-4', subgroup: 'Rituais', title: 'Encontrando maneiras de manter a memória presente sem criar obrigação', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Crie gestos e rituais que façam sentido para vocês, no tempo em que fizer sentido.', xpPoints: 0 },
+          { id: 'dds-2-5', subgroup: 'Casal', title: 'Quando cada um sofre de um jeito e parece estar em lugares diferentes', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Reconheça formas diferentes de sentir sem medir o amor pela maneira de demonstrar.', xpPoints: 0 },
+          { id: 'dds-2-6', subgroup: 'Relação', title: 'Quando a dor afasta justamente quem mais precisava estar perto', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4', description: 'Procure pequenos caminhos de encontro sem exigir que vocês sofram do mesmo jeito.', xpPoints: 0 },
+          { id: 'dds-2-7', subgroup: 'Irmãos', title: 'Os irmãos também perderam alguém - e vivem uma história só deles', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4', description: 'Acolha a dor dos outros filhos sem esperar que ela se pareça com a sua.', xpPoints: 0 },
+          { id: 'dds-2-8', subgroup: 'Mundo ao redor', title: 'Quando as pessoas não sabem o que dizer e algumas palavras machucam', duration: '16 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', description: 'Crie limites para frases e situações que não ajudam, mesmo quando há boa intenção.', xpPoints: 0 },
+          { id: 'dds-2-9', subgroup: 'Rede de apoio', title: 'Quem consegue ficar perto quando você não precisa parecer bem?', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', description: 'Reconheça pessoas capazes de oferecer presença sem tentar consertar a sua dor.', xpPoints: 0 }
+        ]
+      },
+      {
+        id: 'dds-mod-3',
+        number: 3, 
+        title: 'Continuar, do Seu Jeito',
+        lessons: [
+          { id: 'dds-3-1', subgroup: 'Datas', title: 'Quando uma data importante chega antes de você se sentir pronto', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', description: 'Atravesse aniversários e celebrações do jeito que for possível para você.', xpPoints: 0 },
+          { id: 'dds-3-2', subgroup: 'Retorno ao cotidiano', title: 'Quando voltar ao trabalho, aos amigos ou ao mundo parece estranho', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', description: 'Dê pequenos passos de volta ao cotidiano sem cobrar que tudo pareça normal.', xpPoints: 0 },
+          { id: 'dds-3-3', subgroup: 'Culpa e alegria', title: 'Quando um momento bom aparece e logo depois vem a culpa', duration: '17 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', description: 'Permita que algum bem-estar exista sem tratá-lo como uma traição à memória.', xpPoints: 0 },
+          { id: 'dds-3-4', subgroup: 'Identidade parental', title: 'Quem sou eu agora? As perguntas sobre continuar sendo pai ou mãe', duration: '21 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', description: 'Acolha uma identidade parental que continua existindo e também precisa mudar de forma.', xpPoints: 0 },
+          { id: 'dds-3-5', subgroup: 'Gatilhos e marcos', title: 'Quando outras famílias e novos marcos fazem a ausência aparecer', duration: '19 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', description: 'Reconheça a saudade diante das vidas e possibilidades que continuam ao redor.', xpPoints: 0 },
+          { id: 'dds-3-6', subgroup: 'Novos passos', title: 'Dar novos passos não significa deixar seu filho para trás', duration: '18 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', description: 'Permita que a vida se mova sem transformar movimento em esquecimento.', xpPoints: 0 },
+          { id: 'dds-3-7', subgroup: 'Vida e saudade', title: 'A vida pode voltar a crescer ao redor da saudade', duration: '22 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4', description: 'Descubra espaço para outras experiências sem exigir que a saudade desapareça.', xpPoints: 0 },
+          { id: 'dds-3-8', subgroup: 'Esperança', title: 'A luz que retorna devagar: esperança sem pressa e sem euforia', duration: '20 min', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', description: 'Reconheça pequenos espaços de presença e vida sem exigir que os dias difíceis acabem.', xpPoints: 0 }
         ]
       }
     ]
