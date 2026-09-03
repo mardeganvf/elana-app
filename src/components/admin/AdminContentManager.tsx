@@ -1518,7 +1518,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-slate-300">
-                        Subgrupo Temático (opcional):
+                        Subgrupo (Opcional):
                       </label>
                       <span className="text-[10px] text-slate-500">
                         Ex: Uma Nova Identidade, A Dinâmica do Casal
@@ -1544,7 +1544,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300 block">Título do Conteúdo:</label>
+                    <label className="text-xs font-bold text-slate-300 block">Título:</label>
                     <input
                       type="text"
                       value={contentFormTitle}
@@ -1567,7 +1567,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300 block">Descrição Acolhedora:</label>
+                    <label className="text-xs font-bold text-slate-300 block">Descrição:</label>
                     <textarea
                       value={contentFormDesc}
                       onChange={(e) => setContentFormDesc(e.target.value)}
