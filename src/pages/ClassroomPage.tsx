@@ -15,7 +15,8 @@ import {
   BookOpen,
   Film,
   RotateCcw,
-  Check
+  Check,
+  Pause
 } from 'lucide-react';
 import { NotebookModal } from '../components/gamification/NotebookModal';
 
@@ -78,6 +79,140 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   // Audio Mode & Speed Controls
   const [mediaMode, setMediaMode] = useState<'video' | 'audio'>('video');
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+
+  // Helper para converter "14 min" ou "14:00" em segundos
+  const parseDurationToSeconds = (durStr?: string) => {
+    if (!durStr) return 0;
+    const minMatch = durStr.match(/(\d+)\s*min/);
+    if (minMatch) return parseInt(minMatch[1], 10) * 60;
+    const parts = durStr.split(':');
+    if (parts.length === 2) return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    return 0;
+  };
+
+  // Aplicação da taxa de velocidade no Panda Video e no HTML5 Video
+  const applyPlaybackSpeed = (speed: number) => {
+    // 1. HTML5 Video
+    if (videoRef.current) {
+      videoRef.current.playbackRate = speed;
+    }
+    // 2. Panda Player API
+    try {
+      if ((window as any).PandaPlayer) {
+        const panda = new (window as any).PandaPlayer('panda-player');
+        if (panda && typeof panda.setSpeed === 'function') {
+          panda.setSpeed(speed);
+        }
+      }
+    } catch (e) {}
+    // 3. Panda Player postMessage
+    try {
+      const iframe = document.getElementById('panda-player') as HTMLIFrameElement;
+      if (iframe?.contentWindow) {
+        iframe.contentWindow.postMessage({ message: 'setSpeed', value: speed }, '*');
+        iframe.contentWindow.postMessage({ type: 'panda_set_speed', speed }, '*');
+        iframe.contentWindow.postMessage(JSON.stringify({ event: 'setSpeed', value: speed }), '*');
+      }
+    } catch (e) {}
+  };
+
+  // Sincroniza velocidade sempre que o usuário alterar, trocar de aula ou de modo
+  useEffect(() => {
+    applyPlaybackSpeed(playbackSpeed);
+  }, [playbackSpeed, activeLesson.id, mediaMode]);
+
+  // Listener para eventos do Panda Video (Play, Pause, TimeUpdate, Ended)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data?.message === 'panda_play' || data?.type === 'panda_play') {
+          setIsAudioPlaying(true);
+        }
+        if (data?.message === 'panda_pause' || data?.type === 'panda_pause') {
+          setIsAudioPlaying(false);
+        }
+        if (data?.message === 'panda_timeupdate' || data?.type === 'panda_timeupdate') {
+          if (typeof data.currentTime === 'number') setAudioCurrentTime(data.currentTime);
+          if (typeof data.duration === 'number') setAudioDuration(data.duration);
+        }
+        if (data?.message === 'panda_ended' || data?.type === 'panda_ended') {
+          setIsAudioPlaying(false);
+          triggerAutoplayCountdown();
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const handleToggleAudioPlay = () => {
+    const isPanda = Boolean(getEmbedUrl(activeLesson.videoUrl));
+    if (isPanda) {
+      try {
+        if ((window as any).PandaPlayer) {
+          const panda = new (window as any).PandaPlayer('panda-player');
+          panda?.togglePlay();
+        } else {
+          const iframe = document.getElementById('panda-player') as HTMLIFrameElement;
+          iframe?.contentWindow?.postMessage({ message: isAudioPlaying ? 'pause' : 'play' }, '*');
+        }
+      } catch (e) {}
+      setIsAudioPlaying(!isAudioPlaying);
+    } else if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play().catch(() => {});
+        setIsAudioPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsAudioPlaying(false);
+      }
+    }
+  };
+
+  const handleSeekAudio = (deltaSeconds: number) => {
+    const isPanda = Boolean(getEmbedUrl(activeLesson.videoUrl));
+    const target = Math.max(0, audioCurrentTime + deltaSeconds);
+    if (isPanda) {
+      try {
+        if ((window as any).PandaPlayer) {
+          const panda = new (window as any).PandaPlayer('panda-player');
+          panda?.setCurrentTime(target);
+        } else {
+          const iframe = document.getElementById('panda-player') as HTMLIFrameElement;
+          iframe?.contentWindow?.postMessage({ message: 'setCurrentTime', value: target }, '*');
+        }
+      } catch (e) {}
+      setAudioCurrentTime(target);
+    } else if (videoRef.current) {
+      videoRef.current.currentTime = target;
+      setAudioCurrentTime(target);
+    }
+  };
+
+  const handleSeekToTime = (targetSeconds: number) => {
+    const isPanda = Boolean(getEmbedUrl(activeLesson.videoUrl));
+    const target = Math.max(0, targetSeconds);
+    if (isPanda) {
+      try {
+        if ((window as any).PandaPlayer) {
+          const panda = new (window as any).PandaPlayer('panda-player');
+          panda?.setCurrentTime(target);
+        } else {
+          const iframe = document.getElementById('panda-player') as HTMLIFrameElement;
+          iframe?.contentWindow?.postMessage({ message: 'setCurrentTime', value: target }, '*');
+        }
+      } catch (e) {}
+      setAudioCurrentTime(target);
+    } else if (videoRef.current) {
+      videoRef.current.currentTime = target;
+      setAudioCurrentTime(target);
+    }
+  };
 
   // Timestamp Resume State
   const [resumePromptTime, setResumePromptTime] = useState<number | null>(null);
@@ -380,7 +515,11 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                 <span className="text-[10px] text-slate-400 font-bold uppercase">Velocidade:</span>
                 <select
                   value={playbackSpeed}
-                  onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
+                  onChange={(e) => {
+                    const newSpeed = parseFloat(e.target.value);
+                    setPlaybackSpeed(newSpeed);
+                    applyPlaybackSpeed(newSpeed);
+                  }}
                   className="bg-transparent text-white font-bold focus:outline-none cursor-pointer"
                 >
                   <option value={1.0} className="bg-[#101B1E]">1.0x Normal</option>
@@ -393,9 +532,10 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
 
           </div>
 
-          {/* Media Player Box (Video or Audio Waveform Mode) */}
-          {mediaMode === 'video' ? (
-            <div className="bg-black rounded-3xl overflow-hidden shadow-2xl aspect-video relative group border border-white/10">
+          {/* Media Player Box (Unified Video and Audio Player) */}
+          <div className="bg-black rounded-3xl overflow-hidden shadow-2xl relative border border-white/10">
+            {/* Player Container: Iframe do Panda Video ou HTML5 Video */}
+            <div className={`aspect-video w-full relative group ${mediaMode === 'audio' ? 'opacity-0 pointer-events-none absolute inset-0 -z-10' : 'block'}`}>
               {getEmbedUrl(activeLesson.videoUrl) ? (
                 <iframe
                   id="panda-player"
@@ -406,6 +546,11 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                   style={{ border: 'none', position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
                   allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
                   allowFullScreen
+                  onLoad={() => {
+                    setTimeout(() => {
+                      applyPlaybackSpeed(playbackSpeed);
+                    }, 800);
+                  }}
                 />
               ) : (
                 <>
@@ -449,12 +594,13 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                   <video
                     ref={videoRef}
                     key={activeLesson.id}
-                    controls
+                    controls={mediaMode === 'video'}
                     playsInline
                     preload="metadata"
                     autoPlay={false}
                     onTimeUpdate={handleVideoTimeUpdate}
                     onPause={handleVideoPause}
+                    onPlay={() => setIsAudioPlaying(true)}
                     onEnded={triggerAutoplayCountdown}
                     className="w-full h-full object-cover"
                     poster={activeLesson.thumbnailUrl || "https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=1000&auto=format&fit=crop&q=80"}
@@ -465,57 +611,100 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                 </>
               )}
             </div>
-          ) : (
-            <div className="bg-gradient-to-br from-[#101B1E] to-[#070D0F] rounded-3xl p-8 sm:p-12 border border-white/10 shadow-2xl flex flex-col items-center justify-center text-center space-y-6 min-h-[320px] relative overflow-hidden">
-              <div className="relative z-10 space-y-6 flex flex-col items-center">
-                <div className="w-20 h-20 rounded-full bg-[#FF7F5B]/20 border border-[#FF7F5B]/40 text-[#FF7F5B] flex items-center justify-center animate-pulse">
-                  <Volume2 className="w-10 h-10" />
-                </div>
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-[#FFD166] uppercase tracking-wider block">
-                    🎧 Modo Só Áudio — Mãos Livres
-                  </span>
-                  <h3 className="text-xl font-bold text-white">{activeLesson.title}</h3>
-                  <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    Economia de bateria e iluminação reduzida. Ideal para ouvir enquanto nina, dirige ou descansa.
-                  </p>
-                </div>
 
-                {/* Audio player + skip controls */}
-                <div className="flex items-center gap-3 w-full max-w-md">
-                  <button
-                    onClick={() => {
-                      const audio = document.querySelector<HTMLAudioElement>('#elana-audio-player');
-                      if (audio) audio.currentTime = Math.max(0, audio.currentTime - 10);
-                    }}
-                    className="w-10 h-10 rounded-full bg-white/10 border border-white/10 text-white/70 hover:text-white hover:bg-white/20 flex items-center justify-center text-[10px] font-extrabold transition-all shrink-0"
-                    title="Retroceder 10 segundos"
-                  >
-                    -10s
-                  </button>
-                  <audio
-                    id="elana-audio-player"
-                    controls
-                    autoPlay
-                    onEnded={triggerAutoplayCountdown}
-                    className="w-full rounded-xl flex-1"
-                  >
-                    <source src={activeLesson.videoUrl} type="audio/mp3" />
-                  </audio>
-                  <button
-                    onClick={() => {
-                      const audio = document.querySelector<HTMLAudioElement>('#elana-audio-player');
-                      if (audio) audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
-                    }}
-                    className="w-10 h-10 rounded-full bg-white/10 border border-white/10 text-white/70 hover:text-white hover:bg-white/20 flex items-center justify-center text-[10px] font-extrabold transition-all shrink-0"
-                    title="Avançar 10 segundos"
-                  >
-                    +10s
-                  </button>
+            {/* MODO SÓ AUDIO - Dark Calming Hands-Free Screen */}
+            {mediaMode === 'audio' && (
+              <div className="bg-gradient-to-br from-[#101B1E] via-[#091113] to-[#070D0F] rounded-3xl p-8 sm:p-12 shadow-2xl flex flex-col items-center justify-center text-center space-y-6 min-h-[340px] relative overflow-hidden animate-fade-in">
+                {/* Acoustic Ambient Glow */}
+                <div className="absolute w-72 h-72 rounded-full bg-[#FF7F5B]/10 blur-3xl pointer-events-none -top-12" />
+                
+                <div className="relative z-10 space-y-6 flex flex-col items-center w-full max-w-lg">
+                  {/* Pulsing Visual */}
+                  <div className={`w-20 h-20 rounded-full border flex items-center justify-center transition-all ${
+                    isAudioPlaying 
+                      ? 'bg-[#FF7F5B]/25 border-[#FF7F5B]/60 text-[#FF7F5B] scale-110 shadow-lg shadow-[#FF7F5B]/20 animate-pulse' 
+                      : 'bg-white/10 border-white/20 text-slate-400'
+                  }`}>
+                    <Volume2 className="w-10 h-10" />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-black text-[#FFD166] uppercase tracking-wider block">
+                      🎧 MODO SÓ AUDIO
+                    </span>
+                    <h3 className="text-xl font-bold text-white">{activeLesson.title}</h3>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      Economia de bateria e iluminação reduzida. Ideal para ouvir enquanto nina, dirige ou descansa.
+                    </p>
+                  </div>
+
+                  {/* Audio Controls Bar */}
+                  <div className="flex items-center justify-center gap-4 w-full pt-2">
+                    {/* -10s */}
+                    <button
+                      type="button"
+                      onClick={() => handleSeekAudio(-10)}
+                      className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/10 text-white/80 hover:text-white flex items-center justify-center text-xs font-extrabold transition-all cursor-pointer shrink-0"
+                      title="Retroceder 10 segundos"
+                    >
+                      -10s
+                    </button>
+
+                    {/* Central Play/Pause button */}
+                    <button
+                      type="button"
+                      onClick={handleToggleAudioPlay}
+                      className="w-14 h-14 rounded-full bg-[#FF7F5B] hover:bg-[#e06847] active:scale-95 text-white flex items-center justify-center shadow-xl shadow-[#FF7F5B]/30 transition-all cursor-pointer shrink-0"
+                      title={isAudioPlaying ? "Pausar áudio" : "Tocar áudio"}
+                    >
+                      {isAudioPlaying ? (
+                        <Pause className="w-6 h-6 fill-current" />
+                      ) : (
+                        <Play className="w-6 h-6 fill-current ml-0.5" />
+                      )}
+                    </button>
+
+                    {/* +10s */}
+                    <button
+                      type="button"
+                      onClick={() => handleSeekAudio(10)}
+                      className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/10 text-white/80 hover:text-white flex items-center justify-center text-xs font-extrabold transition-all cursor-pointer shrink-0"
+                      title="Avançar 10 segundos"
+                    >
+                      +10s
+                    </button>
+                  </div>
+
+                  {/* Audio Timeline / Time Display */}
+                  {(() => {
+                    const effDuration = audioDuration || parseDurationToSeconds(activeLesson.duration) || 0;
+                    return effDuration > 0 ? (
+                      <div className="w-full max-w-xs space-y-1.5 pt-1">
+                        <div 
+                          className="w-full bg-white/10 hover:bg-white/15 h-2 rounded-full overflow-hidden cursor-pointer transition-colors"
+                          onClick={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                            handleSeekToTime(percent * effDuration);
+                          }}
+                        >
+                          <div 
+                            className="bg-[#FF7F5B] h-full rounded-full transition-all"
+                            style={{ width: `${Math.min(100, (audioCurrentTime / effDuration) * 100)}%` }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
+                          <span>{formatSecondsToTime(audioCurrentTime)}</span>
+                          <span>{formatSecondsToTime(effDuration)}</span>
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Feature 5: Autoplay 5-Second Countdown Banner Overlay */}
           {autoplayTimer !== null && nextLesson && (
