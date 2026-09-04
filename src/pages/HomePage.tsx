@@ -257,7 +257,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                 <img
                   src={journey.coverImageUrl || SLIDE_POSTERS[journey.id] || 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1600&auto=format&fit=crop&q=80'}
                   alt={journey.title}
-                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  className={`absolute inset-0 w-full h-full object-cover object-center ${
+                    journey.isComingSoon ? 'grayscale opacity-75' : ''
+                  }`}
                 />
                 
                 {/* Subtle Gradient Vignette for Readability */}
@@ -632,7 +634,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                     }}
                     className={`group flex-none w-64 sm:w-72 bg-[#101B1E] rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer flex flex-col justify-between hover:-translate-y-1 ${
                       journey.isComingSoon
-                        ? 'opacity-65 hover:opacity-100 border-white/5 bg-[#0e1618] hover:border-amber-500/30 shadow-none hover:shadow-lg'
+                        ? 'opacity-70 hover:opacity-85 border-white/5 bg-[#0e1618] hover:border-amber-500/30 shadow-none hover:shadow-lg'
                         : isCompleted 
                         ? 'border-[#8A9A5B]/40 bg-[#101B1E]/90' 
                         : 'border-white/10 hover:border-white/20'
@@ -645,7 +647,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                         alt={lesson.title}
                         className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
                           journey.isComingSoon 
-                            ? 'opacity-35 grayscale-[50%] group-hover:opacity-85 group-hover:grayscale-0' 
+                            ? 'grayscale opacity-60 group-hover:opacity-80' 
                             : !isUnlocked 
                             ? 'opacity-50 grayscale-[30%]' 
                             : isCompleted 
@@ -657,7 +659,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
                       {/* Top-Left 'EM BREVE' Badge for coming soon journeys */}
                       {journey.isComingSoon && (
-                        <div className="absolute top-2 left-2 z-10 bg-amber-500/85 backdrop-blur-sm text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-md shadow uppercase tracking-wider">
+                        <div className="absolute top-2 left-2 z-10 bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-md shadow uppercase tracking-wider">
                           EM BREVE
                         </div>
                       )}
@@ -686,7 +688,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                       )}
 
                       {/* Play, Lock or 1-Click Notification Overlay on hover */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
+                      <div className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${
+                        journey.isComingSoon ? 'bg-black/40' : 'bg-black/40 backdrop-blur-[2px]'
+                      }`}>
                         {journey.isComingSoon ? (
                           <button
                             type="button"

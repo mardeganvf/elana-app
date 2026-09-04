@@ -79,7 +79,11 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
 
   return (
     <div 
-      className="group relative bg-[#101B1E] rounded-2xl overflow-hidden border border-white/10 shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between hover:-translate-y-1.5 cursor-pointer active:scale-[0.98]"
+      className={`group relative bg-[#101B1E] rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col justify-between hover:-translate-y-1.5 cursor-pointer active:scale-[0.98] ${
+        journey.isComingSoon
+          ? 'opacity-75 hover:opacity-90 border-white/5 bg-[#0e1618] shadow-none hover:shadow-lg'
+          : 'border-white/10 shadow-lg hover:shadow-2xl'
+      }`}
       onClick={() => {
         if (journey.isComingSoon) {
           toggleJourneyNotification(journey.id, journey.title);
@@ -96,7 +100,11 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
         <img
           src={posterImage}
           alt={journey.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
+          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
+            journey.isComingSoon
+              ? 'grayscale opacity-70 group-hover:opacity-85'
+              : 'opacity-80 group-hover:opacity-100'
+          }`}
         />
         
         <div className="absolute inset-0 bg-gradient-to-t from-[#101B1E] via-[#101B1E]/40 to-transparent"></div>
@@ -105,7 +113,7 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
         {!isPurchased && (
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
             {journey.isComingSoon ? (
-              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md shadow-md backdrop-blur-md bg-amber-500 text-slate-950">
+              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md shadow-md bg-amber-500 text-slate-950">
                 EM BREVE
               </span>
             ) : (
@@ -123,7 +131,9 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({ journey, onSelect, onS
         )}
 
         {/* Hover Action Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
+        <div className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${
+          journey.isComingSoon ? 'bg-black/40' : 'bg-black/40 backdrop-blur-[2px]'
+        }`}>
           {journey.isComingSoon ? (
             <button
               type="button"
