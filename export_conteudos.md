@@ -1,5 +1,5 @@
 # Exportação de Conteúdos das Jornadas - Elana App
-Total de conteúdos catalogados: **160 conteúdos**.
+Total de conteúdos catalogados: **151 conteúdos**.
 
 ## 🌟 Jornada: Pais Recém-Nascidos
 
@@ -395,115 +395,79 @@ Total de conteúdos catalogados: **160 conteúdos**.
 
 ## 🌟 Jornada: Amor Escolhido
 
-### 📂 Módulo: O Caminho Até Vocês
+### 📂 Módulo: Antes do Encontro
 
-- **Subgrupo (Opcional):** O desejo e a espera
-  - **Título:** Antes do sim: entendendo o desejo de construir uma família
-  - **Descrição:** Olhe para desejos e medos que acompanham a decisão de adotar.
+- **Subgrupo (Opcional):** Desejo
+  - **Título:** Por que eu quero adotar?
+  - **Descrição:** Olhe para desejos, expectativas e medos antes de transformá-los em lugar para uma criança.
 
-- **Subgrupo (Opcional):** O desejo e a espera
-  - **Título:** A família que você começou a imaginar antes mesmo do encontro
-  - **Descrição:** Reconheça expectativas para abrir espaço à família que realmente vai chegar.
+- **Subgrupo (Opcional):** Espera
+  - **Título:** Quando a espera começa a ocupar a vida inteira
+  - **Descrição:** Atravesse a incerteza sem colocar relações, planos e o presente em suspensão.
 
-- **Subgrupo (Opcional):** O desejo e a espera
-  - **Título:** Quando a espera começa a ocupar todos os espaços da sua vida
-  - **Descrição:** Atravesse a ansiedade da espera sem colocar toda a vida em suspensão.
+- **Subgrupo (Opcional):** Expectativas
+  - **Título:** A criança que você imaginou e a criança que vai chegar
+  - **Descrição:** Reconheça expectativas para que elas não ocupem o lugar de conhecer seu filho real.
 
-- **Subgrupo (Opcional):** O desejo e a espera
-  - **Título:** Quando cada um atravessa a espera de um jeito diferente
-  - **Descrição:** Encontre espaço para ritmos, medos e expectativas diferentes dentro do casal.
+- **Subgrupo (Opcional):** Preparação
+  - **Título:** Como se preparar para um encontro que você não controla?
+  - **Descrição:** Troque a busca por um encontro perfeito pela disponibilidade para acolher o imprevisível.
 
-- **Subgrupo (Opcional):** O desejo e a espera
-  - **Título:** Preparar a casa é diferente de se preparar para o encontro
-  - **Descrição:** Vá além dos preparativos e cuide também das expectativas para a chegada.
+- **Subgrupo (Opcional):** Transição
+  - **Título:** O encontro não transforma desconhecidos em família de uma hora para outra
+  - **Descrição:** Dê espaço para emoção, estranhamento e descoberta enquanto a convivência começa.
 
-- **Subgrupo (Opcional):** A criança real
-  - **Título:** A criança real não precisa caber na história que você imaginou
-  - **Descrição:** Abra espaço para conhecer seu filho sem exigir que ele corresponda à expectativa.
+### 📂 Módulo: Construindo Família
 
-- **Subgrupo (Opcional):** A criança real
-  - **Título:** Quando duas histórias finalmente se encontram pela primeira vez
-  - **Descrição:** Acolha emoção, estranhamento ou silêncio sem transformar o encontro em um teste.
+- **Subgrupo (Opcional):** Vínculo
+  - **Título:** O amor não precisa chegar pronto
+  - **Descrição:** Entenda como vínculo e confiança podem nascer da presença e dos cuidados repetidos no cotidiano.
 
-- **Subgrupo (Opcional):** A criança real
-  - **Título:** O encontro não é o fim da espera: é o começo da relação
-  - **Descrição:** Entenda por que formar uma família é um processo que continua depois da chegada.
+- **Subgrupo (Opcional):** Segurança
+  - **Título:** Antes de confiar, seu filho pode precisar descobrir se você fica
+  - **Descrição:** Responda a testes, afastamentos e inseguranças com constância sem tomar cada reação como rejeição.
 
-### 📂 Módulo: Construindo o Novo Vínculo
+- **Subgrupo (Opcional):** Rotina
+  - **Título:** Quando a rotina começa a transformar um lugar em casa
+  - **Descrição:** Use previsibilidade e repetição para criar segurança sem exigir adaptação imediata.
 
-- **Subgrupo (Opcional):** Fortalecendo o vínculo
-  - **Título:** Amor também pode nascer no fazer, um cuidado de cada vez
-  - **Descrição:** Descubra como presença e pequenos cuidados cotidianos ajudam o vínculo a crescer.
+- **Subgrupo (Opcional):** Reorganização
+  - **Título:** A chegada muda o lugar de todo mundo na família
+  - **Descrição:** Reorganize ritmos, casal, irmãos e responsabilidades sem esperar que todos se adaptem do mesmo jeito.
 
-- **Subgrupo (Opcional):** Fortalecendo o vínculo
-  - **Título:** Quando o amor não chega do jeito ou no tempo que você imaginava
-  - **Descrição:** Acolha sentimentos reais sem transformar o vínculo em uma obrigação imediata.
+- **Subgrupo (Opcional):** Rede e limites
+  - **Título:** Nem toda ajuda ajuda: protegendo o começo da convivência
+  - **Descrição:** Defina limites com familiares e amigos para preservar o tempo e a intimidade que o vínculo precisa.
 
-- **Subgrupo (Opcional):** Fortalecendo o vínculo
-  - **Título:** Seu filho também está aprendendo como é viver e confiar em você
-  - **Descrição:** Veja a adaptação como um caminho vivido por toda a família, não só pela criança.
+- **Subgrupo (Opcional):** Pertencimento
+  - **Título:** Quando deixamos de estar nos conhecendo e começamos a nos sentir família?
+  - **Descrição:** Perceba o pertencimento nos pequenos sinais de confiança e intimidade que a convivência constrói.
 
-- **Subgrupo (Opcional):** Os desafios do relacionamento
-  - **Título:** Quando alguns comportamentos parecem testar se você vai continuar ali
-  - **Descrição:** Responda à insegurança com presença e consistência, sem levar tudo para o pessoal.
+### 📂 Módulo: Uma História Inteira
 
-- **Subgrupo (Opcional):** Os desafios do relacionamento
-  - **Título:** Quando seu filho parece rejeitar você: o que pode existir por trás
-  - **Descrição:** Separe a dificuldade de confiar da ideia de que seu filho não gosta de você.
+- **Subgrupo (Opcional):** Origem e identidade
+  - **Título:** Seu filho chegou com uma história - e ela continua pertencendo a ele
+  - **Descrição:** Integre origem, experiências e memórias à identidade da criança sem transformar o passado em ameaça.
 
-- **Subgrupo (Opcional):** Os desafios do relacionamento
-  - **Título:** A rotina como linguagem de segurança para quem acaba de chegar
-  - **Descrição:** Use previsibilidade e repetição para tornar o cotidiano mais seguro e familiar.
+- **Subgrupo (Opcional):** Conversa sobre adoção
+  - **Título:** Como falar sobre adoção enquanto seu filho cresce?
+  - **Descrição:** Faça da adoção uma conversa contínua, verdadeira e adequada às perguntas de cada fase.
 
-- **Subgrupo (Opcional):** A família e o círculo social
-  - **Título:** O “puerpério” da adoção: quando a família inteira precisa se reorganizar
-  - **Descrição:** Acolha cansaço e mudanças sem cobrar que a adaptação seja perfeita.
+- **Subgrupo (Opcional):** Família de origem e afetos
+  - **Título:** Quando seu filho quer saber, lembrar ou falar de quem veio antes
+  - **Descrição:** Acolha curiosidade, saudade e outros vínculos sem transformar amor e pertencimento em uma escolha.
 
-- **Subgrupo (Opcional):** A família e o círculo social
-  - **Título:** Quando os irmãos também precisam encontrar um novo lugar na família
-  - **Descrição:** Cuide da chegada sem perder de vista sentimentos e necessidades dos outros filhos.
+- **Subgrupo (Opcional):** Insegurança parental
+  - **Título:** Quando a história do seu filho desperta medo em você
+  - **Descrição:** Reconheça ciúme, insegurança ou receio sem pedir que seu filho proteja você desses sentimentos.
 
-- **Subgrupo (Opcional):** A família e o círculo social
-  - **Título:** Quando todo mundo quer participar da chegada mais do que deveria
-  - **Descrição:** Crie limites para proteger a adaptação sem afastar quem deseja apoiar.
+- **Subgrupo (Opcional):** Privacidade
+  - **Título:** A história do seu filho não precisa responder à curiosidade dos outros
+  - **Descrição:** Proteja sua privacidade e ensine que ele pode escolher o que contar, para quem e quando.
 
-- **Subgrupo (Opcional):** A família e o círculo social
-  - **Título:** Quando começamos, de verdade, a nos sentir uma família?
-  - **Descrição:** Entenda o pertencimento como algo construído na repetição do vínculo e do cuidado.
-
-### 📂 Módulo: Uma História que Continua
-
-- **Subgrupo (Opcional):** Respeitando as origens
-  - **Título:** A história do seu filho começou muito antes do encontro com você
-  - **Descrição:** Acolha o passado como parte de quem seu filho é e da família que vocês constroem.
-
-- **Subgrupo (Opcional):** Respeitando as origens
-  - **Título:** Falar sobre adoção desde sempre: uma conversa que cresce com a criança
-  - **Descrição:** Transforme origem e adoção em conversas possíveis, adequadas a cada fase.
-
-- **Subgrupo (Opcional):** Respeitando as origens
-  - **Título:** Quando surgem perguntas e curiosidades sobre a família de origem
-  - **Descrição:** Acolha a curiosidade sem interpretá-la como rejeição ao vínculo com você.
-
-- **Subgrupo (Opcional):** Respeitando as origens
-  - **Título:** Amar você não exige que seu filho esqueça quem veio antes
-  - **Descrição:** Ajude diferentes vínculos e histórias a coexistirem sem competição por amor.
-
-- **Subgrupo (Opcional):** Respeitando as origens
-  - **Título:** Quando as perguntas sobre a origem também doem em quem cuida
-  - **Descrição:** Reconheça suas inseguranças sem fazer seu filho carregar o peso delas.
-
-- **Subgrupo (Opcional):** Seu lugar no mundo
-  - **Título:** Quando o mundo pergunta demais sobre uma história que não é dele
-  - **Descrição:** Proteja a privacidade do seu filho sem transformar sua história em segredo.
-
-- **Subgrupo (Opcional):** Respeitando as origens
-  - **Título:** Quando seu filho começa a contar a própria história do jeito dele
-  - **Descrição:** Abra espaço para que ele escolha o que contar, para quem e em que momento.
-
-- **Subgrupo (Opcional):** Respeitando as origens
-  - **Título:** Nossa família continua sendo construída, mesmo depois de tantos encontros
-  - **Descrição:** Celebre um pertencimento que cresce sem exigir que nenhuma história seja apagada.
+- **Subgrupo (Opcional):** Continuidade
+  - **Título:** Nossa família não começou no mesmo lugar - e isso também é nossa história
+  - **Descrição:** Construa pertencimento sem apagar capítulos anteriores nem exigir que todos contem a mesma versão da família.
 
 ## 🌟 Jornada: Novos Caminhos
 
