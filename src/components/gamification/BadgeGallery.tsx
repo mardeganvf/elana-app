@@ -164,9 +164,8 @@ export const BadgeGallery: React.FC<BadgeGalleryProps> = ({
                   <p className="text-[11px] text-slate-200 leading-relaxed font-normal">
                     {b.description}
                   </p>
-                  <div className="pt-0.5 flex items-center justify-between text-[9px] font-bold">
+                  <div className="pt-0.5 flex items-center text-[9px] font-bold">
                     <span className="text-emerald-400">✓ Desbloqueada</span>
-                    <span className="text-slate-400 uppercase tracking-wider">{b.category}</span>
                   </div>
                 </div>
               </div>
@@ -310,11 +309,10 @@ export const BadgeGallery: React.FC<BadgeGalleryProps> = ({
                           {badge.description}
                         </p>
 
-                        <div className="pt-1 border-t border-white/10 flex items-center justify-between text-[10px] font-bold">
+                        <div className="pt-1 border-t border-white/10 flex items-center text-[10px] font-bold">
                           <span className={unlocked ? 'text-emerald-400 flex items-center gap-1' : 'text-slate-400 flex items-center gap-1'}>
                             {unlocked ? '✨ Conquista Liberada' : '🔒 Bloqueada (Clique p/ ver)'}
                           </span>
-                          <span className="text-slate-400 uppercase tracking-wider text-[9px]">{badge.category}</span>
                         </div>
                       </div>
 
