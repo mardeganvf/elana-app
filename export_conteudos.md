@@ -1,5 +1,5 @@
 # Exportação de Conteúdos das Jornadas - Elana App
-Total de conteúdos catalogados: **151 conteúdos**.
+Total de conteúdos catalogados: **143 conteúdos**.
 
 ## 🌟 Jornada: Pais Recém-Nascidos
 
@@ -283,115 +283,83 @@ Total de conteúdos catalogados: **151 conteúdos**.
 
 ## 🌟 Jornada: Singular
 
-### 📂 Módulo: O Que Nasce em Você
+### 📂 Módulo: Quando o Caminho Muda
 
-- **Subgrupo (Opcional):** Quando o caminho muda
-  - **Título:** Quando o caminho muda: acolhendo uma história diferente
-  - **Descrição:** Acolha o impacto das mudanças sem precisar encontrar respostas de imediato.
+- **Subgrupo (Opcional):** Incerteza
+  - **Título:** Entre a suspeita e as respostas: como viver enquanto você ainda não sabe
+  - **Descrição:** Atravesse a incerteza sem transformar cada dia numa busca urgente por uma explicação.
 
-- **Subgrupo (Opcional):** Quando o caminho muda
-  - **Título:** Entre a suspeita e as respostas: como atravessar a incerteza
-  - **Descrição:** Encontre mais chão enquanto as respostas ainda estão sendo construídas.
+- **Subgrupo (Opcional):** Expectativas
+  - **Título:** Quando o filho real encontra a história que você tinha imaginado
+  - **Descrição:** Acolha o que muda em suas expectativas sem transformar seu filho em uma perda.
 
-- **Subgrupo (Opcional):** O filho imaginado e o filho real
-  - **Título:** O filho que você imaginou e a criança que está diante de você
-  - **Descrição:** Acolha expectativas antigas sem perder de vista a criança real e inteira.
+- **Subgrupo (Opcional):** Sentimentos
+  - **Título:** Quando amor, medo, culpa e cansaço aparecem ao mesmo tempo
+  - **Descrição:** Reconheça sentimentos difíceis sem usá-los como medida do amor que você sente.
 
-- **Subgrupo (Opcional):** O filho imaginado e o filho real
-  - **Título:** O luto pelas expectativas: sentir também faz parte do caminho
-  - **Descrição:** Dê espaço ao que você imaginou sem transformar seu filho em uma perda.
+- **Subgrupo (Opcional):** Aceitação
+  - **Título:** Aceitar não é chegar a um lugar onde nada mais dói
+  - **Descrição:** Entenda por que novas fases podem reabrir sentimentos sem significar que você voltou ao começo.
 
-- **Subgrupo (Opcional):** Sentimentos que parecem não combinar com o amor
-  - **Título:** Medo, culpa, raiva e cansaço também podem existir junto do amor
-  - **Descrição:** Entenda sentimentos difíceis sem usá-los como medida do amor pelo seu filho.
+- **Subgrupo (Opcional):** Relações familiares
+  - **Título:** Quando cada pessoa da família vive essa mudança de um jeito
+  - **Descrição:** Acolha ritmos diferentes entre parceiros e irmãos sem exigir que todos sintam ou reajam igual.
 
-- **Subgrupo (Opcional):** Sentimentos que parecem não combinar com o amor
-  - **Título:** Quando a comparação com outras famílias começa a machucar
-  - **Descrição:** Perceba o peso da comparação e volte o olhar para a história de vocês.
+- **Subgrupo (Opcional):** Quem cuida
+  - **Título:** Como cuidar de você quando o cuidado já ocupa quase tudo
+  - **Descrição:** Encontre formas possíveis de se incluir na rotina sem transformar autocuidado em outra obrigação.
 
-- **Subgrupo (Opcional):** Sentimentos que parecem não combinar com o amor
-  - **Título:** Aceitação não acontece de uma vez — e nem precisa acontecer
-  - **Descrição:** Entenda por que novas fases podem reabrir sentimentos que pareciam resolvidos.
-
-- **Subgrupo (Opcional):** O casal
-  - **Título:** Quando cada um sente de um jeito: cuidando também do casal
-  - **Descrição:** Reconheça ritmos diferentes e encontre formas de atravessar a fase em parceria.
-
-- **Subgrupo (Opcional):** Os irmãos
-  - **Título:** Os irmãos também vivem essa história: como acolher cada filho
-  - **Descrição:** Crie espaço para dúvidas, sentimentos e necessidades dos outros filhos.
-
-- **Subgrupo (Opcional):** Cuidando de quem cuida
-  - **Título:** Cuidar de você sem transformar autocuidado em mais uma obrigação
-  - **Descrição:** Encontre pequenas formas de se incluir no cuidado que sustenta a família.
-
-### 📂 Módulo: O Que Floresce na Criança
+### 📂 Módulo: Enxergando Seu Filho Inteiro
 
 - **Subgrupo (Opcional):** Além do diagnóstico
-  - **Título:** Seu filho é muito maior do que qualquer diagnóstico
-  - **Descrição:** Use o diagnóstico como informação sem deixar que ele conte a história inteira.
+  - **Título:** Seu filho é maior do que qualquer diagnóstico
+  - **Descrição:** Use o diagnóstico como informação sem deixar que ele se torne a lente para enxergar tudo.
 
-- **Subgrupo (Opcional):** Além do diagnóstico
-  - **Título:** Aprendendo a reconhecer e respeitar o ritmo do seu filho
-  - **Descrição:** Observe necessidades e sinais sem transformar cada diferença em comparação.
+- **Subgrupo (Opcional):** Ritmo e sinais
+  - **Título:** O que muda quando você aprende a ler o ritmo do seu filho
+  - **Descrição:** Observe sinais, necessidades e interesses sem medir cada diferença pela régua de outras crianças.
 
-- **Subgrupo (Opcional):** Além do diagnóstico
-  - **Título:** Desenvolvimento possível: trocando a régua ideal pelo caminho real
-  - **Descrição:** Acompanhe o desenvolvimento com presença, sem fazer do progresso uma cobrança.
+- **Subgrupo (Opcional):** Desenvolvimento
+  - **Título:** Progresso não precisa parecer com o caminho que você esperava
+  - **Descrição:** Reconheça possibilidades e conquistas sem transformar desenvolvimento em cobrança permanente.
 
-- **Subgrupo (Opcional):** Celebrando todos os avanços
-  - **Título:** Pequenos avanços também contam — e merecem ser reconhecidos
-  - **Descrição:** Aprenda a perceber conquistas que podem passar despercebidas no cotidiano.
+- **Subgrupo (Opcional):** Comunicação e vínculo
+  - **Título:** Quando seu filho se comunica de um jeito que pede outra forma de escutar
+  - **Descrição:** Amplie sua percepção sobre expressão e conexão para encontrar caminhos de encontro entre vocês.
 
-- **Subgrupo (Opcional):** Celebrando todos os avanços
-  - **Título:** Como enxergar o que existe sem olhar apenas para o que falta
-  - **Descrição:** Amplie o olhar para habilidades, interesses e formas próprias de estar no mundo.
+- **Subgrupo (Opcional):** Autonomia e voz
+  - **Título:** Proteger, defender, decidir: onde começa a voz do seu filho?
+  - **Descrição:** Apoie necessidades e direitos enquanto cria espaço crescente para escolhas, preferências e autonomia.
 
-- **Subgrupo (Opcional):** Celebrando todos os avanços
-  - **Título:** Conexão no ritmo da criança: outras formas de falar e escutar
-  - **Descrição:** Fortaleça o vínculo aprendendo a perceber as formas de comunicação do seu filho.
+### 📂 Módulo: Construindo uma Vida Possível
 
-### 📂 Módulo: O Caminho que Vocês Constroem Juntos
+- **Subgrupo (Opcional):** Rotina
+  - **Título:** Uma rotina que ajuda sem fazer a família viver em função dela
+  - **Descrição:** Crie previsibilidade suficiente para sustentar o cotidiano sem transformar organização em rigidez.
 
-- **Subgrupo (Opcional):** Criando uma nova rotina
-  - **Título:** Uma rotina que sustenta a família sem engolir a vida de vocês
-  - **Descrição:** Organize o cotidiano com previsibilidade sem transformar a rotina em prisão.
-
-- **Subgrupo (Opcional):** Criando uma nova rotina
-  - **Título:** Quando cuidar vira administrar: como voltar a ser pai ou mãe
+- **Subgrupo (Opcional):** Cuidado x gerenciamento
+  - **Título:** Quando ser pai ou mãe começa a parecer um trabalho de gestão
   - **Descrição:** Abra espaço para o vínculo em meio a consultas, terapias, escola e agendas.
 
-- **Subgrupo (Opcional):** O mundo ao redor
-  - **Título:** Ser a voz do seu filho sem ocupar o lugar da voz dele
-  - **Descrição:** Defenda necessidades e direitos enquanto abre espaço para sua autonomia.
-
-- **Subgrupo (Opcional):** O mundo ao redor
+- **Subgrupo (Opcional):** Escola
   - **Título:** Quando a escola também precisa aprender a enxergar seu filho
   - **Descrição:** Construa diálogo com a escola sem reduzir a criança às suas dificuldades.
 
-- **Subgrupo (Opcional):** O mundo ao redor
-  - **Título:** Olhares, comentários e perguntas: protegendo sem esconder
-  - **Descrição:** Encontre respostas e limites para situações que expõem ou diminuem seu filho.
+- **Subgrupo (Opcional):** Mundo ao redor
+  - **Título:** Como proteger seu filho sem ensiná-lo a se esconder do mundo
+  - **Descrição:** Crie limites para olhares e comentários sem transformar diferença em algo que precise ser escondido.
 
-- **Subgrupo (Opcional):** O mundo ao redor
-  - **Título:** Será que estou fazendo o suficiente? Lidando com a pressão de fazer mais
-  - **Descrição:** Organize prioridades sem transformar cada possibilidade em uma nova obrigação.
+- **Subgrupo (Opcional):** Rede de apoio
+  - **Título:** Quem realmente ajuda a sustentar a vida de vocês?
+  - **Descrição:** Construa uma rede que respeite seu filho, compreenda limites e também ofereça apoio a quem cuida.
 
-- **Subgrupo (Opcional):** O mundo ao redor
-  - **Título:** Construindo uma rede de apoio que acolhe de verdade
-  - **Descrição:** Aproxime pessoas que respeitam seu filho e também sustentam quem cuida.
+- **Subgrupo (Opcional):** Futuro
+  - **Título:** Quando a cabeça tenta viver hoje todas as preocupações do futuro
+  - **Descrição:** Cuide do que pode ser construído agora sem exigir respostas antecipadas para todas as fases da vida.
 
-- **Subgrupo (Opcional):** O que o futuro reserva
-  - **Título:** Rituais que fortalecem: celebrando a história que é só de vocês
-  - **Descrição:** Crie pequenos rituais para reconhecer vínculos, avanços e momentos importantes.
-
-- **Subgrupo (Opcional):** O que o futuro reserva
-  - **Título:** Quando a cabeça corre para o futuro e as respostas ainda não existem
-  - **Descrição:** Acolha as incertezas do amanhã sem deixar de viver a criança que existe hoje.
-
-- **Subgrupo (Opcional):** O que o futuro reserva
-  - **Título:** Confiando em você sem precisar ter todas as respostas
-  - **Descrição:** Troque a busca por certezas pela confiança construída ao conhecer seu filho.
+- **Subgrupo (Opcional):** Confiança parental
+  - **Título:** Você não precisa saber tudo para conhecer profundamente seu filho
+  - **Descrição:** Troque a busca por certeza pela confiança que nasce de observar, aprender, ajustar e caminhar junto.
 
 ## 🌟 Jornada: Amor Escolhido
 
