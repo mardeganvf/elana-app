@@ -448,69 +448,71 @@ Total de conteúdos catalogados: **135 conteúdos**.
 
 ## 🌟 Jornada: Novos Caminhos
 
-### 📂 Módulo: Quando Eles Seguem Seus Caminhos
+### 📂 Módulo: O Silêncio que Muda Tudo
 
-- **Subgrupo (Opcional):** Fim de ciclo
-- **Título:** Quando a casa muda e um ciclo termina
-- **Descrição:** Entenda por que a saída dos filhos transforma muito mais do que a rotina da casa.
+- **Subgrupo (Opcional):** A Nova Dinâmica
+- **Título:** A casa que ficou maior: o choque do silêncio
+- **Descrição:** O entendimento da solidão inicial e a adaptação à nova paz do ambiente.
 
-- **Subgrupo (Opcional):** Sentimentos misturados
-- **Título:** Orgulho e saudade podem morar juntos
-- **Descrição:** Acolha sentimentos diferentes sem transformar tristeza em falta de apoio aos filhos.
+- **Subgrupo (Opcional):** A Nova Dinâmica
+- **Título:** O fechamento de um ciclo: a saudade e o luto
+- **Descrição:** Um espaço para vivenciar a nostalgia de uma longa fase que se encerra.
 
-- **Subgrupo (Opcional):** Papel parental
-- **Título:** Quando você sente falta de ser necessário
-- **Descrição:** Perceba como a independência dos filhos também mexe com o lugar que você ocupava.
+- **Subgrupo (Opcional):** A Nova Identidade
+- **Título:** A identidade em transição: quem sou eu agora?
+- **Descrição:** A reflexão sobre o papel de mãe e pai quando o cuidado diário muda.
 
-- **Subgrupo (Opcional):** Identidade
-- **Título:** Quem sou eu quando meu papel de pai ou mãe muda?
-- **Descrição:** Reconheça quem você é além das funções de cuidado que organizaram tantos anos da vida.
+- **Subgrupo (Opcional):** A Nova Identidade
+- **Título:** O tempo e o espaço: lidando com o quarto vazio
+- **Descrição:** A ressignificação das horas livres e dos cantos da casa sem uso.
 
-- **Subgrupo (Opcional):** Espaços e memórias
-- **Título:** O que fazer com o quarto, os objetos e os espaços que ficaram?
-- **Descrição:** Encontre seu próprio tempo para decidir o que preservar, transformar ou simplesmente deixar.
+### 📂 Módulo: O Tempo de Reencontros
 
-- **Subgrupo (Opcional):** Preocupação
-- **Título:** Quando a preocupação continua, mesmo com os filhos longe
-- **Descrição:** Diferencie cuidado de ansiedade quando você já não acompanha de perto cada detalhe.
+- **Subgrupo (Opcional):** O Resgate Individual
+- **Título:** O despertar interior: redescobrindo os desejos
+- **Descrição:** O resgate suave de vontades hábitos e interesses antigos esquecidos.
 
-- **Subgrupo (Opcional):** Soltar
-- **Título:** Soltar não é deixar de cuidar
-- **Descrição:** Descubra por que dar espaço pode ser uma nova forma de confiança e presença.
+- **Subgrupo (Opcional):** O Resgate Individual
+- **Título:** O resgate de sonhos: buscando novos horizontes
+- **Descrição:** A motivação para olhar o futuro e tirar projetos pessoais do papel.
 
-### 📂 Módulo: Encontrando Novos Caminhos
+- **Subgrupo (Opcional):** A Redescoberta a Dois
+- **Título:** Somos só nós dois: a redescoberta da parceria
+- **Descrição:** O ajuste da dinâmica do casal para viver essa nova fase com leveza.
 
-- **Subgrupo (Opcional):** Tempo e identidade
-- **Título:** O que fazer com o tempo que voltou a ser seu?
-- **Descrição:** Experimente o espaço que surgiu sem a obrigação de preenchê-lo ou reinventar a vida depressa.
+- **Subgrupo (Opcional):** A Redescoberta a Dois
+- **Título:** A conversa além dos filhos: resgatando assuntos
+- **Descrição:** O desafio de voltar a falar sobre vocês mesmos e achar afinidades.
 
-- **Subgrupo (Opcional):** Desejos e projetos
-- **Título:** Você não precisa voltar a ser quem era antes dos filhos
-- **Descrição:** Reencontre interesses e desejos de hoje, mesmo que sejam diferentes dos seus planos antigos.
+- **Subgrupo (Opcional):** A Redescoberta a Dois
+- **Título:** A nova intimidade: criando planos a dois
+- **Descrição:** A construção de novos projetos para fortalecer a parceria amorosa.
 
-- **Subgrupo (Opcional):** Casal e relações
-- **Título:** E agora, quem somos nós além de pais e mães?
-- **Descrição:** Redescubra conversas, intimidade, amizades e relações que podem ganhar novas formas.
+### 📂 Módulo: O Amor que Muda de Lugar
 
-- **Subgrupo (Opcional):** Novo papel parental
-- **Título:** De quem resolve para quem acompanha
-- **Descrição:** Aprenda a continuar sendo referência sem assumir a direção da vida do seu filho adulto.
+- **Subgrupo (Opcional):** A Relação Adulta
+- **Título:** A arte de estar presente: o apoio sem invasão
+- **Descrição:** O equilíbrio entre oferecer suporte e respeitar o espaço do filho.
 
-- **Subgrupo (Opcional):** Presença
-- **Título:** Ligar, visitar, perguntar: qual é a nova medida da presença?
-- **Descrição:** Construa proximidade respeitando o espaço, o ritmo e a vida que seu filho está criando.
+- **Subgrupo (Opcional):** A Relação Adulta
+- **Título:** A comunicação que aproxima: amor à distância
+- **Descrição:** A criação de novos rituais e linguagens para manter o afeto vivo.
 
-- **Subgrupo (Opcional):** Ajuda e autonomia
-- **Título:** Quando ajudar começa a virar interferência
-- **Descrição:** Reconheça quando apoiar fortalece e quando é hora de deixar a decisão nas mãos dele.
+- **Subgrupo (Opcional):** A Família Expandida
+- **Título:** Efeito bumerangue: quando o filho adulto volta
+- **Descrição:** A nova convivência sem que ele volte a ser tratado como adolescente.
 
-- **Subgrupo (Opcional):** Escolhas e novos vínculos
-- **Título:** A vida dele pode ser diferente da que você imaginou
-- **Descrição:** Sustente o vínculo diante de escolhas, parceiros e caminhos que talvez não fossem os seus.
+- **Subgrupo (Opcional):** A Família Expandida
+- **Título:** A família cresce: novos laços e a vida de avós
+- **Descrição:** A arte de acolher a nova família do filho respeitando os seus espaços.
 
-- **Subgrupo (Opcional):** Porto seguro
-- **Título:** A casa como porto seguro, não como âncora
-- **Descrição:** Continue oferecendo pertencimento sem fazer da proximidade uma condição para o amor.
+- **Subgrupo (Opcional):** A Celebração da Vida
+- **Título:** De cuidador a mentor: o seu novo papel na vida
+- **Descrição:** A compreensão dessa transição natural de quem cuida para quem apoia.
+
+- **Subgrupo (Opcional):** A Celebração da Vida
+- **Título:** Celebrando os voos: a alegria do caminho livre
+- **Descrição:** A comemoração da independência dos filhos e da sua própria liberdade.
 
 ## 🌟 Jornada: Depois do Silêncio
 
