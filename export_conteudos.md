@@ -284,34 +284,34 @@ Total de conteúdos catalogados: **135 conteúdos**.
 
 ## 🌟 Jornada: Singular
 
-### 📂 Módulo: O Que Nasce em Você
+### 📂 Módulo: O Que Nasce em Vocês
 
 - **Subgrupo (Opcional):** A Nova Realidade
 - **Título:** Mudança de rota: aceitação é um processo gradual
 - **Descrição:** Um espaço para acolher a saudade dos planos antigos e o percurso de aceitar.
 
 - **Subgrupo (Opcional):** A Nova Realidade
-- **Título:** Adeus expectativas: espaço para o filho real
+- **Título:** Adeus expectativas: um espaço para o seu filho real
 - **Descrição:** A passagem suave do futuro planejado para o abraço acolhedor no filho de hoje.
 
 - **Subgrupo (Opcional):** O Lado Emocional
-- **Título:** O peso do futuro: esperança e conexão no hoje
+- **Título:** O peso do futuro: esperança e conexão no dia de hoje
 - **Descrição:** Um convite para trocar o medo do amanhã por mais presença e força no agora.
 
 - **Subgrupo (Opcional):** O Lado Emocional
-- **Título:** Medo, culpa e exaustão: o que ninguém te conta
+- **Título:** Medo, culpa e exaustão: aquilo que ninguém te conta
 - **Descrição:** Um lugar seguro para sentimentos reais, lembrando que o cansaço não diminui o amor.
 
 - **Subgrupo (Opcional):** O Lado Emocional
-- **Título:** Máscara de oxigênio: o cuidado com quem cuida
+- **Título:** Máscara de oxigênio: o autocuidado com quem cuida
 - **Descrição:** A descoberta de pequenos respiros no dia a dia para renovar a mente e a energia.
 
 - **Subgrupo (Opcional):** A Dinâmica da Família
-- **Título:** Mãe ou gerente? O afeto além da rotina médica
+- **Título:** Mãe ou gerente? O afeto além de uma rotina médica
 - **Descrição:** O desafio de harmonizar a agenda de terapias com o tempo livre de ser família.
 
 - **Subgrupo (Opcional):** A Dinâmica da Família
-- **Título:** O casal como pilar: a união em meio à tempestade
+- **Título:** O casal como pilar: a união em meio à uma nova realidade.
 - **Descrição:** O fortalecimento da parceria e do companheirismo nos dias mais desafiadores.
 
 - **Subgrupo (Opcional):** A Dinâmica da Família
@@ -321,23 +321,23 @@ Total de conteúdos catalogados: **135 conteúdos**.
 ### 📂 Módulo: O Que Floresce na Criança
 
 - **Subgrupo (Opcional):** Além do Diagnóstico
-- **Título:** Além do laudo: a identidade única do seu filho
+- **Título:** Muito além de um laudo: a identidade única do seu filho
 - **Descrição:** Um olhar sensível para a personalidade e o potencial muito além do diagnóstico.
 
 - **Subgrupo (Opcional):** Além do Diagnóstico
-- **Título:** As diferenças e o ritmo único do desenvolvimento
+- **Título:** As diferenças e o ritmo único do desenvolvimento do seu filho.
 - **Descrição:** O encontro de paz e respeito para acompanhar o tempo próprio da sua criança.
 
 - **Subgrupo (Opcional):** Além do Diagnóstico
-- **Título:** O olhar de amor: celebrando o real e o que cresce
+- **Título:** O olhar de amor: celebrando o real e o que cresce na sua família
 - **Descrição:** A mudança de perspectiva para enxergar as potências que florescem todos os dias.
 
 - **Subgrupo (Opcional):** O Mundo Sensorial
-- **Título:** Além das palavras: o mundo sensorial da criança
+- **Título:** Muito além das palavras: o mundo sensorial da sua criança
 - **Descrição:** A percepção de que movimentos e texturas também são formas profundas de afeto.
 
 - **Subgrupo (Opcional):** O Mundo Sensorial
-- **Título:** Criando pontes de conversa no ritmo do seu filho
+- **Título:** Criando pontes de conversa respeitando o ritmo do seu filho
 - **Descrição:** Caminhos acolhedores para se conectar usando linguagens não tradicionais.
 
 ### 📂 Módulo: O Caminho Que Vocês Constroem Juntos
@@ -355,96 +355,98 @@ Total de conteúdos catalogados: **135 conteúdos**.
 - **Descrição:** A formação de uma rede prática e amorosa para suavizar o peso da rotina intensa.
 
 - **Subgrupo (Opcional):** A Estrutura do Cuidado
-- **Título:** O mundo lá fora: proteção com firmeza e leveza
+- **Título:** O mundo lá fora: protegendo seu filho com firmeza e leveza
 - **Descrição:** Reflexões sobre como lidar com falas invasivas e olhares mantendo a própria luz.
 
 - **Subgrupo (Opcional):** Conexão e Beleza
-- **Título:** Rituais de afeto: práticas para conectar e celebrar
+- **Título:** Criando rituais de afeto: práticas para conectar e celebrar
 - **Descrição:** A magia dos pequenos hábitos para comemorar passos importantes e unir a família.
 
 - **Subgrupo (Opcional):** Conexão e Beleza
-- **Título:** Beleza em caminhos diferentes: foco na luz e alegria
+- **Título:** Beleza em caminhos diferentes: foco na luz e alegria da família
 - **Descrição:** A surpresa de um caminho onde a alegria e o amor singular iluminam toda a casa.
 
 - **Subgrupo (Opcional):** Conexão e Beleza
-- **Título:** O maior presente: confiando na intuição materna
+- **Título:** O maior presente de todos: confiando na sua intuição materna
 - **Descrição:** O resgate da segurança interna e da escuta atenta do coração na relação de vocês.
 
 ## 🌟 Jornada: Amor Escolhido
 
-### 📂 Módulo: Antes do Encontro
+### 📂 Módulo: O Caminho Até o Encontro
 
-- **Subgrupo (Opcional):** Desejo
-- **Título:** Por que eu quero adotar?
-- **Descrição:** Olhe para desejos, expectativas e medos antes de transformá-los em lugar para uma criança.
+- **Subgrupo (Opcional):** A Espera e o Desejo
+- **Título:** Antes do sim: o desejo os medos e o chamado
+- **Descrição:** Um espaço para entender as incertezas e a força que iniciam a adoção.
 
-- **Subgrupo (Opcional):** Espera
-- **Título:** Quando a espera começa a ocupar a vida inteira
-- **Descrição:** Atravesse a incerteza sem colocar relações, planos e o presente em suspensão.
+- **Subgrupo (Opcional):** A Espera e o Desejo
+- **Título:** A espera e a relação: como o tempo testa o amor
+- **Descrição:** O fortalecimento do casal enquanto o momento do grande encontro não chega.
 
-- **Subgrupo (Opcional):** Expectativas
-- **Título:** A criança que você imaginou e a criança que vai chegar
-- **Descrição:** Reconheça expectativas para que elas não ocupem o lugar de conhecer seu filho real.
+- **Subgrupo (Opcional):** A Espera e o Desejo
+- **Título:** Expectativas invisíveis: o imaginado e o possível
+- **Descrição:** A passagem do cenário idealizado para a aceitação da realidade como ela é.
 
-- **Subgrupo (Opcional):** Preparação
-- **Título:** Como se preparar para um encontro que você não controla?
-- **Descrição:** Troque a busca por um encontro perfeito pela disponibilidade para acolher o imprevisível.
+### 📂 Módulo: Quando o Encontro Acontece
 
-- **Subgrupo (Opcional):** Transição
-- **Título:** O encontro não transforma desconhecidos em família de uma hora para outra
-- **Descrição:** Dê espaço para emoção, estranhamento e descoberta enquanto a convivência começa.
+- **Subgrupo (Opcional):** Os Primeiros Passos
+- **Título:** O primeiro olhar: quando duas histórias se cruzam
+- **Descrição:** A emoção e a delicadeza dos primeiros contatos reais com a sua criança.
 
-### 📂 Módulo: Construindo Família
+- **Subgrupo (Opcional):** Os Primeiros Passos
+- **Título:** Construção do vínculo: o amor que nasce nas ações
+- **Descrição:** A descoberta de que o afeto ganha raízes através do cuidado do dia a dia.
 
-- **Subgrupo (Opcional):** Vínculo
-- **Título:** O amor não precisa chegar pronto
-- **Descrição:** Entenda como vínculo e confiança podem nascer da presença e dos cuidados repetidos no cotidiano.
+- **Subgrupo (Opcional):** Adaptação e Cuidado
+- **Título:** Adaptação da criança: o luto e os testes de amor
+- **Descrição:** Um olhar empático sobre o medo da perda e a necessidade de sentir segurança.
 
-- **Subgrupo (Opcional):** Segurança
-- **Título:** Antes de confiar, seu filho pode precisar descobrir se você fica
-- **Descrição:** Responda a testes, afastamentos e inseguranças com constância sem tomar cada reação como rejeição.
+- **Subgrupo (Opcional):** Adaptação e Cuidado
+- **Título:** O tempo do corpo: o afeto físico e os seus limites
+- **Descrição:** O respeito pelo espaço da criança até que o abraço se torne um porto seguro.
 
-- **Subgrupo (Opcional):** Rotina
-- **Título:** Quando a rotina começa a transformar um lugar em casa
-- **Descrição:** Use previsibilidade e repetição para criar segurança sem exigir adaptação imediata.
+- **Subgrupo (Opcional):** Adaptação e Cuidado
+- **Título:** O puerpério da adoção e as conexões com os irmãos
+- **Descrição:** A reorganização da casa e a construção de laços seguros entre os filhos.
 
-- **Subgrupo (Opcional):** Reorganização
-- **Título:** A chegada muda o lugar de todo mundo na família
-- **Descrição:** Reorganize ritmos, casal, irmãos e responsabilidades sem esperar que todos se adaptem do mesmo jeito.
+- **Subgrupo (Opcional):** Adaptação e Cuidado
+- **Título:** A máscara de oxigênio: o autocuidado nessa fase
+- **Descrição:** A busca por respiros para aliviar o medo de falhar e sustentar a transição.
 
-- **Subgrupo (Opcional):** Rede e limites
-- **Título:** Nem toda ajuda ajuda: protegendo o começo da convivência
-- **Descrição:** Defina limites com familiares e amigos para preservar o tempo e a intimidade que o vínculo precisa.
+### 📂 Módulo: A Origem, os Laços e a Verdade
 
-- **Subgrupo (Opcional):** Pertencimento
-- **Título:** Quando deixamos de estar nos conhecendo e começamos a nos sentir família?
-- **Descrição:** Perceba o pertencimento nos pequenos sinais de confiança e intimidade que a convivência constrói.
+- **Subgrupo (Opcional):** Falando da História
+- **Título:** Como falar de origem: respeito, verdade e linguagem
+- **Descrição:** Caminhos leves e honestos para conversar sobre o passado em cada idade.
 
-### 📂 Módulo: Uma História Inteira
+- **Subgrupo (Opcional):** Falando da História
+- **Título:** Ajudando a criança a se reconhecer na nova família
+- **Descrição:** A construção do sentimento profundo de pertencer e ter um lugar no mundo.
 
-- **Subgrupo (Opcional):** Origem e identidade
-- **Título:** Seu filho chegou com uma história - e ela continua pertencendo a ele
-- **Descrição:** Integre origem, experiências e memórias à identidade da criança sem transformar o passado em ameaça.
+- **Subgrupo (Opcional):** Falando da História
+- **Título:** Quando perguntas doem: família biológica e abandono
+- **Descrição:** O acolhimento das dúvidas difíceis com serenidade presença e muito amor.
 
-- **Subgrupo (Opcional):** Conversa sobre adoção
-- **Título:** Como falar sobre adoção enquanto seu filho cresce?
-- **Descrição:** Faça da adoção uma conversa contínua, verdadeira e adequada às perguntas de cada fase.
+### 📂 Módulo: A Vida que se Constrói
 
-- **Subgrupo (Opcional):** Família de origem e afetos
-- **Título:** Quando seu filho quer saber, lembrar ou falar de quem veio antes
-- **Descrição:** Acolha curiosidade, saudade e outros vínculos sem transformar amor e pertencimento em uma escolha.
+- **Subgrupo (Opcional):** Rotina e Sociedade
+- **Título:** Rotinas que fortalecem: a casa como lugar seguro
+- **Descrição:** A mágica dos rituais diários e da previsibilidade para acalmar os corações.
 
-- **Subgrupo (Opcional):** Insegurança parental
-- **Título:** Quando a história do seu filho desperta medo em você
-- **Descrição:** Reconheça ciúme, insegurança ou receio sem pedir que seu filho proteja você desses sentimentos.
+- **Subgrupo (Opcional):** Rotina e Sociedade
+- **Título:** Lidando com o mundo: acolhendo os olhares curiosos
+- **Descrição:** Formas seguras de lidar com palpites externos e proteger a sua intimidade.
 
-- **Subgrupo (Opcional):** Privacidade
-- **Título:** A história do seu filho não precisa responder à curiosidade dos outros
-- **Descrição:** Proteja sua privacidade e ensine que ele pode escolher o que contar, para quem e quando.
+- **Subgrupo (Opcional):** Rotina e Sociedade
+- **Título:** O amor que advoga: a escola e o pertencimento
+- **Descrição:** O apoio na preparação da escola para abraçar a história do seu filho.
 
-- **Subgrupo (Opcional):** Continuidade
-- **Título:** Nossa família não começou no mesmo lugar - e isso também é nossa história
-- **Descrição:** Construa pertencimento sem apagar capítulos anteriores nem exigir que todos contem a mesma versão da família.
+- **Subgrupo (Opcional):** Rotina e Sociedade
+- **Título:** Formando a sua rede: o poder do apoio que funciona
+- **Descrição:** A criação de um círculo de amigos e parentes para dar suporte verdadeiro.
+
+- **Subgrupo (Opcional):** Celebração do Amor
+- **Título:** Celebrando a jornada: honrando a história de vocês
+- **Descrição:** A alegria de comemorar a vida e a união que vocês decidiram trilhar juntos.
 
 ## 🌟 Jornada: Novos Caminhos
 
