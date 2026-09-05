@@ -372,79 +372,77 @@ Total de conteúdos catalogados: **135 conteúdos**.
 
 ## 🌟 Jornada: Amor Escolhido
 
-### 📂 Módulo: O Caminho Até o Encontro
+### 📂 Módulo: A Espera e o Encontro
 
-- **Subgrupo (Opcional):** A Espera e o Desejo
-- **Título:** Antes do sim: o desejo os medos e o chamado
+- **Subgrupo (Opcional):** A Gestação Invisível
+- **Título:** Antes do sim: o desejo, os medos e o chamado
 - **Descrição:** Um espaço para entender as incertezas e a força que iniciam a adoção.
 
-- **Subgrupo (Opcional):** A Espera e o Desejo
-- **Título:** A espera e a relação: como o tempo testa o amor
+- **Subgrupo (Opcional):** A Gestação Invisível
+- **Título:** A espera e a relação: o tempo testa o amor
 - **Descrição:** O fortalecimento do casal enquanto o momento do grande encontro não chega.
 
-- **Subgrupo (Opcional):** A Espera e o Desejo
-- **Título:** Expectativas invisíveis: o imaginado e o possível
-- **Descrição:** A passagem do cenário idealizado para a aceitação da realidade como ela é.
+- **Subgrupo (Opcional):** A Gestação Invisível
+- **Título:** Expectativas invisíveis: imaginado e possível
+- **Descrição:** A passagem do cenário idealizado para a aceitação amorosa da realidade.
 
-### 📂 Módulo: Quando o Encontro Acontece
-
-- **Subgrupo (Opcional):** Os Primeiros Passos
-- **Título:** O primeiro olhar: quando duas histórias se cruzam
+- **Subgrupo (Opcional):** A Chegada
+- **Título:** O primeiro olhar: quando as histórias se cruzam
 - **Descrição:** A emoção e a delicadeza dos primeiros contatos reais com a sua criança.
 
-- **Subgrupo (Opcional):** Os Primeiros Passos
-- **Título:** Construção do vínculo: o amor que nasce nas ações
-- **Descrição:** A descoberta de que o afeto ganha raízes através do cuidado do dia a dia.
+- **Subgrupo (Opcional):** A Chegada
+- **Título:** Puerpério da adoção e conexões com os irmãos
+- **Descrição:** A reorganização da casa e o cultivo de laços seguros entre os filhos.
 
-- **Subgrupo (Opcional):** Adaptação e Cuidado
-- **Título:** Adaptação da criança: o luto e os testes de amor
-- **Descrição:** Um olhar empático sobre o medo da perda e a necessidade de sentir segurança.
+- **Subgrupo (Opcional):** A Chegada
+- **Título:** Máscara de oxigênio: o cuidado com quem cuida
+- **Descrição:** A busca por respiros para aliviar o peso e sustentar a transição de todos.
 
-- **Subgrupo (Opcional):** Adaptação e Cuidado
-- **Título:** O tempo do corpo: o afeto físico e os seus limites
+### 📂 Módulo: O Nascer dos Laços
+
+- **Subgrupo (Opcional):** O Tempo da Adaptação
+- **Título:** Adaptação da criança: luto e testes de amor
+- **Descrição:** Um olhar empático sobre o medo da perda e a necessidade de segurança.
+
+- **Subgrupo (Opcional):** O Tempo da Adaptação
+- **Título:** O tempo do corpo: afeto físico e seus limites
 - **Descrição:** O respeito pelo espaço da criança até que o abraço se torne um porto seguro.
 
-- **Subgrupo (Opcional):** Adaptação e Cuidado
-- **Título:** O puerpério da adoção e as conexões com os irmãos
-- **Descrição:** A reorganização da casa e a construção de laços seguros entre os filhos.
+- **Subgrupo (Opcional):** O Tempo da Adaptação
+- **Título:** O cultivo do vínculo: o amor que nasce na ação
+- **Descrição:** A descoberta de que o afeto ganha raízes através do cuidado do dia a dia.
 
-- **Subgrupo (Opcional):** Adaptação e Cuidado
-- **Título:** A máscara de oxigênio: o autocuidado nessa fase
-- **Descrição:** A busca por respiros para aliviar o medo de falhar e sustentar a transição.
-
-### 📂 Módulo: A Origem, os Laços e a Verdade
-
-- **Subgrupo (Opcional):** Falando da História
-- **Título:** Como falar de origem: respeito, verdade e linguagem
+- **Subgrupo (Opcional):** A História e a Verdade
+- **Título:** Falando de origem: respeito, verdade e linguagem
 - **Descrição:** Caminhos leves e honestos para conversar sobre o passado em cada idade.
 
-- **Subgrupo (Opcional):** Falando da História
-- **Título:** Ajudando a criança a se reconhecer na nova família
-- **Descrição:** A construção do sentimento profundo de pertencer e ter um lugar no mundo.
+- **Subgrupo (Opcional):** A História e a Verdade
+- **Título:** Quando as perguntas doem: a família biológica
+- **Descrição:** O acolhimento das dúvidas difíceis com serenidade, presença e muito amor.
 
-- **Subgrupo (Opcional):** Falando da História
-- **Título:** Quando perguntas doem: família biológica e abandono
-- **Descrição:** O acolhimento das dúvidas difíceis com serenidade presença e muito amor.
+- **Subgrupo (Opcional):** A História e a Verdade
+- **Título:** Ajudando a criança a pertencer à nova família
+- **Descrição:** O despertar do sentimento profundo de pertencer e ter um lugar no mundo.
 
 ### 📂 Módulo: A Vida que se Constrói
 
-- **Subgrupo (Opcional):** Rotina e Sociedade
+- **Subgrupo (Opcional):** A Casa e o Mundo
 - **Título:** Rotinas que fortalecem: a casa como lugar seguro
-- **Descrição:** A mágica dos rituais diários e da previsibilidade para acalmar os corações.
+- **Descrição:** A mágica dos rituais diários e da previsibilidade para acalmar corações.
 
-- **Subgrupo (Opcional):** Rotina e Sociedade
-- **Título:** Lidando com o mundo: acolhendo os olhares curiosos
-- **Descrição:** Formas seguras de lidar com palpites externos e proteger a sua intimidade.
+- **Subgrupo (Opcional):** A Casa e o Mundo
+- **Título:** Lidando com o mundo: acolhendo olhares curiosos
+- **Descrição:** Formas seguras de lidar com palpites externos e proteger a intimidade.
 
-- **Subgrupo (Opcional):** Rotina e Sociedade
+- **Subgrupo (Opcional):** A Casa e o Mundo
 - **Título:** O amor que advoga: a escola e o pertencimento
-- **Descrição:** O apoio na preparação da escola para abraçar a história do seu filho.
+- **Descrição:** O apoio amoroso na preparação da escola para abraçar a história do seu filho.
 
-- **Subgrupo (Opcional):** Rotina e Sociedade
-- **Título:** Formando a sua rede: o poder do apoio que funciona
-- **Descrição:** A criação de um círculo de amigos e parentes para dar suporte verdadeiro.
+- **Subgrupo (Opcional):** Rede e Celebração
+- **Título:** Formando a sua rede: o poder do apoio que atua
+- **Descrição:** A união de um círculo de amigos e parentes para dar suporte verdadeiro.
 
-- **Subgrupo (Opcional):** Celebração do Amor
+- **Subgrupo (Opcional):** Rede e Celebração
 - **Título:** Celebrando a jornada: honrando a história de vocês
 - **Descrição:** A alegria de comemorar a vida e a união que vocês decidiram trilhar juntos.
 
