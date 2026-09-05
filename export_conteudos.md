@@ -1,6 +1,6 @@
 # Exportação de Conteúdos das Jornadas - Elana App
 
-Total de conteúdos catalogados: **133 conteúdos**.
+Total de conteúdos catalogados: **135 conteúdos**.
 
 ## 🌟 Jornada: Pais Recém-Nascidos
 
@@ -284,83 +284,91 @@ Total de conteúdos catalogados: **133 conteúdos**.
 
 ## 🌟 Jornada: Singular
 
-### 📂 Módulo: Quando o Caminho Muda
+### 📂 Módulo: O Que Nasce em Você
 
-- **Subgrupo (Opcional):** Incerteza
-- **Título:** Entre a suspeita e as respostas: como viver enquanto você ainda não sabe
-- **Descrição:** Atravesse a incerteza sem transformar cada dia numa busca urgente por uma explicação.
+- **Subgrupo (Opcional):** A Nova Realidade
+- **Título:** Mudança de rota: aceitação é um processo gradual
+- **Descrição:** Um espaço para acolher a saudade dos planos antigos e o percurso de aceitar.
 
-- **Subgrupo (Opcional):** Expectativas
-- **Título:** Quando o filho real encontra a história que você tinha imaginado
-- **Descrição:** Acolha o que muda em suas expectativas sem transformar seu filho em uma perda.
+- **Subgrupo (Opcional):** A Nova Realidade
+- **Título:** Adeus expectativas: espaço para o filho real
+- **Descrição:** A passagem suave do futuro planejado para o abraço acolhedor no filho de hoje.
 
-- **Subgrupo (Opcional):** Sentimentos
-- **Título:** Quando amor, medo, culpa e cansaço aparecem ao mesmo tempo
-- **Descrição:** Reconheça sentimentos difíceis sem usá-los como medida do amor que você sente.
+- **Subgrupo (Opcional):** O Lado Emocional
+- **Título:** O peso do futuro: esperança e conexão no hoje
+- **Descrição:** Um convite para trocar o medo do amanhã por mais presença e força no agora.
 
-- **Subgrupo (Opcional):** Aceitação
-- **Título:** Aceitar não é chegar a um lugar onde nada mais dói
-- **Descrição:** Entenda por que novas fases podem reabrir sentimentos sem significar que você voltou ao começo.
+- **Subgrupo (Opcional):** O Lado Emocional
+- **Título:** Medo, culpa e exaustão: o que ninguém te conta
+- **Descrição:** Um lugar seguro para sentimentos reais, lembrando que o cansaço não diminui o amor.
 
-- **Subgrupo (Opcional):** Relações familiares
-- **Título:** Quando cada pessoa da família vive essa mudança de um jeito
-- **Descrição:** Acolha ritmos diferentes entre parceiros e irmãos sem exigir que todos sintam ou reajam igual.
+- **Subgrupo (Opcional):** O Lado Emocional
+- **Título:** Máscara de oxigênio: o cuidado com quem cuida
+- **Descrição:** A descoberta de pequenos respiros no dia a dia para renovar a mente e a energia.
 
-- **Subgrupo (Opcional):** Quem cuida
-- **Título:** Como cuidar de você quando o cuidado já ocupa quase tudo
-- **Descrição:** Encontre formas possíveis de se incluir na rotina sem transformar autocuidado em outra obrigação.
+- **Subgrupo (Opcional):** A Dinâmica da Família
+- **Título:** Mãe ou gerente? O afeto além da rotina médica
+- **Descrição:** O desafio de harmonizar a agenda de terapias com o tempo livre de ser família.
 
-### 📂 Módulo: Enxergando Seu Filho Inteiro
+- **Subgrupo (Opcional):** A Dinâmica da Família
+- **Título:** O casal como pilar: a união em meio à tempestade
+- **Descrição:** O fortalecimento da parceria e do companheirismo nos dias mais desafiadores.
 
-- **Subgrupo (Opcional):** Além do diagnóstico
-- **Título:** Seu filho é maior do que qualquer diagnóstico
-- **Descrição:** Use o diagnóstico como informação sem deixar que ele se torne a lente para enxergar tudo.
+- **Subgrupo (Opcional):** A Dinâmica da Família
+- **Título:** Acolhendo os irmãos: as dúvidas das outras crianças
+- **Descrição:** O carinho e a atenção para nutrir conexões seguras com os irmãos da criança.
 
-- **Subgrupo (Opcional):** Ritmo e sinais
-- **Título:** O que muda quando você aprende a ler o ritmo do seu filho
-- **Descrição:** Observe sinais, necessidades e interesses sem medir cada diferença pela régua de outras crianças.
+### 📂 Módulo: O Que Floresce na Criança
 
-- **Subgrupo (Opcional):** Desenvolvimento
-- **Título:** Progresso não precisa parecer com o caminho que você esperava
-- **Descrição:** Reconheça possibilidades e conquistas sem transformar desenvolvimento em cobrança permanente.
+- **Subgrupo (Opcional):** Além do Diagnóstico
+- **Título:** Além do laudo: a identidade única do seu filho
+- **Descrição:** Um olhar sensível para a personalidade e o potencial muito além do diagnóstico.
 
-- **Subgrupo (Opcional):** Comunicação e vínculo
-- **Título:** Quando seu filho se comunica de um jeito que pede outra forma de escutar
-- **Descrição:** Amplie sua percepção sobre expressão e conexão para encontrar caminhos de encontro entre vocês.
+- **Subgrupo (Opcional):** Além do Diagnóstico
+- **Título:** As diferenças e o ritmo único do desenvolvimento
+- **Descrição:** O encontro de paz e respeito para acompanhar o tempo próprio da sua criança.
 
-- **Subgrupo (Opcional):** Autonomia e voz
-- **Título:** Proteger, defender, decidir: onde começa a voz do seu filho?
-- **Descrição:** Apoie necessidades e direitos enquanto cria espaço crescente para escolhas, preferências e autonomia.
+- **Subgrupo (Opcional):** Além do Diagnóstico
+- **Título:** O olhar de amor: celebrando o real e o que cresce
+- **Descrição:** A mudança de perspectiva para enxergar as potências que florescem todos os dias.
 
-### 📂 Módulo: Construindo uma Vida Possível
+- **Subgrupo (Opcional):** O Mundo Sensorial
+- **Título:** Além das palavras: o mundo sensorial da criança
+- **Descrição:** A percepção de que movimentos e texturas também são formas profundas de afeto.
 
-- **Subgrupo (Opcional):** Rotina
-- **Título:** Uma rotina que ajuda sem fazer a família viver em função dela
-- **Descrição:** Crie previsibilidade suficiente para sustentar o cotidiano sem transformar organização em rigidez.
+- **Subgrupo (Opcional):** O Mundo Sensorial
+- **Título:** Criando pontes de conversa no ritmo do seu filho
+- **Descrição:** Caminhos acolhedores para se conectar usando linguagens não tradicionais.
 
-- **Subgrupo (Opcional):** Cuidado x gerenciamento
-- **Título:** Quando ser pai ou mãe começa a parecer um trabalho de gestão
-- **Descrição:** Abra espaço para o vínculo em meio a consultas, terapias, escola e agendas.
+### 📂 Módulo: O Caminho Que Vocês Constroem Juntos
 
-- **Subgrupo (Opcional):** Escola
-- **Título:** Quando a escola também precisa aprender a enxergar seu filho
-- **Descrição:** Construa diálogo com a escola sem reduzir a criança às suas dificuldades.
+- **Subgrupo (Opcional):** A Estrutura do Cuidado
+- **Título:** O amor que organiza: rotinas que acolhem e fluem
+- **Descrição:** A construção de um dia a dia previsível, que traz paz e leveza sem rigidez.
 
-- **Subgrupo (Opcional):** Mundo ao redor
-- **Título:** Como proteger seu filho sem ensiná-lo a se esconder do mundo
-- **Descrição:** Crie limites para olhares e comentários sem transformar diferença em algo que precise ser escondido.
+- **Subgrupo (Opcional):** A Estrutura do Cuidado
+- **Título:** O amor que defende: navegando por terapias e escolas
+- **Descrição:** O apoio necessário para lidar com burocracias e garantir direitos com serenidade.
 
-- **Subgrupo (Opcional):** Rede de apoio
-- **Título:** Quem realmente ajuda a sustentar a vida de vocês?
-- **Descrição:** Construa uma rede que respeite seu filho, compreenda limites e também ofereça apoio a quem cuida.
+- **Subgrupo (Opcional):** A Estrutura do Cuidado
+- **Título:** O amor que pede ajuda: a rede de apoio que funciona
+- **Descrição:** A formação de uma rede prática e amorosa para suavizar o peso da rotina intensa.
 
-- **Subgrupo (Opcional):** Futuro
-- **Título:** Quando a cabeça tenta viver hoje todas as preocupações do futuro
-- **Descrição:** Cuide do que pode ser construído agora sem exigir respostas antecipadas para todas as fases da vida.
+- **Subgrupo (Opcional):** A Estrutura do Cuidado
+- **Título:** O mundo lá fora: proteção com firmeza e leveza
+- **Descrição:** Reflexões sobre como lidar com falas invasivas e olhares mantendo a própria luz.
 
-- **Subgrupo (Opcional):** Confiança parental
-- **Título:** Você não precisa saber tudo para conhecer profundamente seu filho
-- **Descrição:** Troque a busca por certeza pela confiança que nasce de observar, aprender, ajustar e caminhar junto.
+- **Subgrupo (Opcional):** Conexão e Beleza
+- **Título:** Rituais de afeto: práticas para conectar e celebrar
+- **Descrição:** A magia dos pequenos hábitos para comemorar passos importantes e unir a família.
+
+- **Subgrupo (Opcional):** Conexão e Beleza
+- **Título:** Beleza em caminhos diferentes: foco na luz e alegria
+- **Descrição:** A surpresa de um caminho onde a alegria e o amor singular iluminam toda a casa.
+
+- **Subgrupo (Opcional):** Conexão e Beleza
+- **Título:** O maior presente: confiando na intuição materna
+- **Descrição:** O resgate da segurança interna e da escuta atenta do coração na relação de vocês.
 
 ## 🌟 Jornada: Amor Escolhido
 
