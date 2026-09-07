@@ -628,9 +628,14 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     let ok = false;
     if (type === 'journey') {
       ok = await deleteJourney(journeyId);
-      if (ok && activeJourneyId === journeyId) {
+      if (ok) {
         const remaining = journeys.filter(j => j.id !== journeyId);
-        if (remaining.length > 0) setSelectedJourneyId(remaining[0].id);
+        if (remaining.length > 0) {
+          setSelectedJourneyId(remaining[0].id);
+        } else {
+          setSelectedJourneyId('');
+        }
+        propOnSelectModuleId?.(null);
       }
     } else if (type === 'module' && moduleId) {
       ok = await deleteModule(journeyId, moduleId);
@@ -639,7 +644,13 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     }
 
     if (ok) {
-      notify('success', 'Item removido com sucesso.');
+      if (type === 'journey') {
+        notify('success', 'Jornada excluída com sucesso! 🗑️');
+      } else if (type === 'module') {
+        notify('success', 'Subtema removido com sucesso.');
+      } else {
+        notify('success', 'Conteúdo removido com sucesso.');
+      }
     } else {
       notify('error', 'Erro ao remover item.');
     }
@@ -867,7 +878,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       {activeJourney ? (
         <div className="space-y-6">
           {/* Header da Jornada Simplificado */}
-          <div className="bg-[#101B1E] px-6 py-4 rounded-2xl border border-white/10 shadow-md flex items-center justify-between gap-4">
+          <div className="bg-[#101B1E] px-6 py-4 rounded-2xl border border-white/10 shadow-md flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <span 
                 className={`w-2.5 h-2.5 rounded-full shrink-0 shadow-sm ${
@@ -882,7 +893,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
               </h3>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => handleOpenInterestsModal(activeJourney)}
@@ -900,6 +911,20 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
               >
                 <Edit3 className="w-4 h-4" />
                 <span>Editar</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm({
+                  type: 'journey',
+                  journeyId: activeJourney.id,
+                  title: activeJourney.title
+                })}
+                className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-rose-500/20 active:scale-95"
+                title="Excluir jornada"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Excluir</span>
               </button>
             </div>
           </div>
@@ -1044,13 +1069,28 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                   <p className="text-xs text-slate-400 max-w-md mx-auto">
                     Adicione o primeiro vídeo ou material de apoio para disponibilizar às famílias.
                   </p>
-                  <button
-                    onClick={() => openEditJourney(activeJourney)}
-                    className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer inline-flex items-center gap-2"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                    <span>Editar Jornada para Adicionar Módulos</span>
-                  </button>
+                  <div className="flex items-center justify-center gap-3 pt-1">
+                    <button
+                      onClick={() => openEditJourney(activeJourney)}
+                      className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer inline-flex items-center gap-2 active:scale-95"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      <span>Editar Jornada para Adicionar Módulos</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirm({
+                        type: 'journey',
+                        journeyId: activeJourney.id,
+                        title: activeJourney.title
+                      })}
+                      className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 font-bold text-xs rounded-xl transition-all cursor-pointer inline-flex items-center gap-2 active:scale-95"
+                      title="Excluir jornada"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Excluir Jornada</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1377,20 +1417,42 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setIsJourneyModalOpen(false)}
-                  className="px-4 py-2.5 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer"
-                >
-                  {editingJourney ? 'Salvar Alterações' : 'Criar Jornada'}
-                </button>
+              <div className="flex items-center justify-between gap-3 pt-4 border-t border-white/10">
+                {editingJourney ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const toDelete = { ...editingJourney };
+                      setIsJourneyModalOpen(false);
+                      setDeleteConfirm({
+                        type: 'journey',
+                        journeyId: toDelete.id,
+                        title: toDelete.title
+                      });
+                    }}
+                    className="px-3.5 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 border border-rose-500/20 active:scale-95"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Excluir Jornada</span>
+                  </button>
+                ) : (
+                  <div />
+                )}
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsJourneyModalOpen(false)}
+                    className="px-4 py-2.5 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer active:scale-95"
+                  >
+                    {editingJourney ? 'Salvar Alterações' : 'Criar Jornada'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -1830,8 +1892,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 Você está prestes a remover <strong className="text-rose-400 font-bold">"{deleteConfirm.title}"</strong>.
               </p>
               {deleteConfirm.type === 'journey' && (
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Todos os subtemas e conteúdos desta jornada também serão removidos.
+                <p className="text-[11px] text-amber-300/90 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20 mt-2.5 text-left leading-relaxed">
+                  ⚠️ <strong>Atenção:</strong> Esta ação é irreversível. Todos os subtemas, vídeos, materiais de apoio e dados vinculados a esta jornada serão removidos definitivamente.
                 </p>
               )}
             </div>

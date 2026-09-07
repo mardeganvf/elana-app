@@ -236,8 +236,16 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return nextList;
       });
 
-      await supabase.from('journeys').delete().eq('id', journeyId);
-      return true;
+      const { error } = await supabase.from('journeys').delete().eq('id', journeyId);
+      if (error) {
+        console.error('Error deleting journey from Supabase:', error);
+      }
+
+      try {
+        await supabase.from('journey_interests').delete().eq('journey_id', journeyId);
+      } catch (e) {}
+
+      return !error;
     } catch (err) {
       console.error('Error deleting journey:', err);
       return false;
