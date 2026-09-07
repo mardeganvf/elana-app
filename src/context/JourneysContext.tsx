@@ -8,6 +8,7 @@ interface JourneysContextType {
   isLoading: boolean;
   saveJourney: (journey: Journey) => Promise<boolean>;
   deleteJourney: (journeyId: string) => Promise<boolean>;
+  toggleJourneyStatus: (journeyId: string) => Promise<boolean>;
   addModule: (journeyId: string, title: string, description?: string) => Promise<boolean>;
   updateModule: (journeyId: string, moduleId: string, updates: Partial<CourseModule>) => Promise<boolean>;
   deleteModule: (journeyId: string, moduleId: string) => Promise<boolean>;
@@ -99,7 +100,8 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           price: Number(row.price) || 197,
           modules: Array.isArray(row.modules) ? row.modules : [],
           isComingSoon: Boolean(row.is_coming_soon),
-          coverImageUrl: row.cover_image_url || ''
+          coverImageUrl: row.cover_image_url || '',
+          isEnabled: row.is_enabled !== undefined && row.is_enabled !== null ? Boolean(row.is_enabled) : true
         }));
 
         setJourneys(mapped);
@@ -138,6 +140,7 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             modules: j.modules || [],
             is_coming_soon: Boolean(j.isComingSoon ?? false),
             cover_image_url: j.coverImageUrl || '',
+            is_enabled: j.isEnabled !== false,
             display_order: i,
             updated_at: new Date().toISOString()
           }, { onConflict: 'id' }).then();
@@ -186,6 +189,7 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         price: journey.price || 197,
         modules: journey.modules || [],
         is_coming_soon: Boolean(journey.isComingSoon ?? false),
+        is_enabled: journey.isEnabled !== false,
         updated_at: new Date().toISOString()
       };
 
@@ -209,6 +213,13 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         error = retry2.error;
       }
 
+      if (error && (error.code === '42703' || error.message?.includes('is_enabled'))) {
+        console.warn('Coluna is_enabled não encontrada na tabela journeys. Salvando sem ela...');
+        delete payload.is_enabled;
+        const retry3 = await supabase.from('journeys').upsert(payload, { onConflict: 'id' });
+        error = retry3.error;
+      }
+
       if (error) {
         const retryUpdate = await supabase.from('journeys').update(payload).eq('id', journey.id);
         if (!retryUpdate.error) {
@@ -224,6 +235,16 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.error('Exceção ao salvar jornada:', err);
       return false;
     }
+  };
+
+  const toggleJourneyStatus = async (journeyId: string): Promise<boolean> => {
+    const journey = journeys.find(j => j.id === journeyId);
+    if (!journey) return false;
+    const nextStatus = journey.isEnabled === false ? true : false;
+    return await saveJourney({
+      ...journey,
+      isEnabled: nextStatus
+    });
   };
 
   const deleteJourney = async (journeyId: string): Promise<boolean> => {
@@ -510,6 +531,7 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         isLoading,
         saveJourney,
         deleteJourney,
+        toggleJourneyStatus,
         addModule,
         updateModule,
         deleteModule,

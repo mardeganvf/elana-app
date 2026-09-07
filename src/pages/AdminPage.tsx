@@ -502,16 +502,27 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                             }}
                           >
                             <div className="flex items-center gap-2 min-w-0 flex-1">
-                              {/* Círculo indicador de status: Verde para Ativa, Amarelo para Em Breve */}
+                              {/* Círculo indicador de status: Cinza se Desabilitada, Amarelo se Em Breve, Verde se Ativa */}
                               <span 
                                 className={`w-2 h-2 rounded-full shrink-0 shadow-sm ${
-                                  journey.isComingSoon 
+                                  journey.isEnabled === false
+                                    ? 'bg-slate-500 ring-2 ring-slate-500/30'
+                                    : journey.isComingSoon 
                                     ? 'bg-amber-400 ring-2 ring-amber-400/25' 
                                     : 'bg-emerald-400 ring-2 ring-emerald-400/25'
                                 }`}
-                                title={journey.isComingSoon ? 'Em Breve' : 'Jornada Ativa'}
+                                title={
+                                  journey.isEnabled === false
+                                    ? 'Desabilitada do front-end (oculta)'
+                                    : journey.isComingSoon ? 'Em Breve' : 'Jornada Ativa'
+                                }
                               />
-                              <span className="truncate">{journey.title}</span>
+                              <span className={`truncate ${journey.isEnabled === false ? 'text-slate-400' : ''}`}>{journey.title}</span>
+                              {journey.isEnabled === false && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-white/10 text-slate-400 font-medium shrink-0">
+                                  Oculta
+                                </span>
+                              )}
                             </div>
 
                             {/* Se tem múltiplos módulos, exibe seta do dropdown temática */}

@@ -44,6 +44,7 @@ export interface Journey {
   modules: CourseModule[];
   isComingSoon?: boolean;
   coverImageUrl?: string;
+  isEnabled?: boolean;
 }
 
 export interface UserLevel {

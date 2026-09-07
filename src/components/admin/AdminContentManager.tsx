@@ -18,6 +18,7 @@ import {
   UploadCloud, 
   AlertCircle,
   Eye,
+  EyeOff,
   ExternalLink,
   Layers,
   FileCheck,
@@ -115,6 +116,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
   const [journeyFormThemeColor, setJourneyFormThemeColor] = useState('#FF7F5B');
   const [journeyFormPrice, setJourneyFormPrice] = useState(197);
   const [journeyFormIsComingSoon, setJourneyFormIsComingSoon] = useState(false);
+  const [journeyFormIsEnabled, setJourneyFormIsEnabled] = useState(true);
   const [journeyFormCoverUrl, setJourneyFormCoverUrl] = useState('');
   const [isUploadingJourneyCover, setIsUploadingJourneyCover] = useState(false);
 
@@ -279,6 +281,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     setJourneyFormModulesList([]);
     setNewModuleInput('');
     setJourneyFormIsComingSoon(false);
+    setJourneyFormIsEnabled(true);
     setJourneyFormCoverUrl('');
     setIsJourneyModalOpen(true);
   };
@@ -296,6 +299,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     setJourneyFormThemeColor(journey.themeColor || '#FF7F5B');
     setJourneyFormPrice(journey.price || 197);
     setJourneyFormIsComingSoon(Boolean(journey.isComingSoon));
+    setJourneyFormIsEnabled(journey.isEnabled !== false);
     setJourneyFormCoverUrl(journey.coverImageUrl || '');
 
     const existingMods = journey.modules || [];
@@ -367,6 +371,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       iconName: 'Sun',
       price: journeyFormPrice,
       isComingSoon: journeyFormIsComingSoon,
+      isEnabled: journeyFormIsEnabled,
       coverImageUrl: journeyFormCoverUrl.trim(),
       modules: finalModules
     };
@@ -378,6 +383,19 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       notify('success', editingJourney ? 'Trilha atualizada com sucesso! ✨' : 'Nova Trilha criada com sucesso! 🌿');
     } else {
       notify('error', 'Erro ao salvar trilha. Tente novamente.');
+    }
+  };
+
+  const handleToggleJourneyStatus = async (journey: Journey) => {
+    const nextStatus = journey.isEnabled === false ? true : false;
+    const ok = await saveJourney({
+      ...journey,
+      isEnabled: nextStatus
+    });
+    if (ok) {
+      notify('success', nextStatus ? 'Jornada habilitada no front-end! 👁️' : 'Jornada desabilitada do front-end (oculta)! 🙈');
+    } else {
+      notify('error', 'Erro ao alterar visibilidade da jornada.');
     }
   };
 
@@ -879,21 +897,60 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
         <div className="space-y-6">
           {/* Header da Jornada Simplificado */}
           <div className="bg-[#101B1E] px-6 py-4 rounded-2xl border border-white/10 shadow-md flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-3 min-w-0 flex-wrap sm:flex-nowrap">
               <span 
                 className={`w-2.5 h-2.5 rounded-full shrink-0 shadow-sm ${
-                  activeJourney.isComingSoon 
+                  activeJourney.isEnabled === false
+                    ? 'bg-slate-500 ring-2 ring-slate-500/25'
+                    : activeJourney.isComingSoon 
                     ? 'bg-amber-400 ring-2 ring-amber-400/25' 
                     : 'bg-emerald-400 ring-2 ring-emerald-400/25'
                 }`}
-                title={activeJourney.isComingSoon ? 'Em Breve' : 'Jornada Ativa'}
+                title={
+                  activeJourney.isEnabled === false
+                    ? 'Desabilitada do front-end (oculta para usuários)'
+                    : activeJourney.isComingSoon ? 'Em Breve' : 'Jornada Ativa'
+                }
               />
               <h3 className="text-xl font-black text-white truncate" style={{ fontFamily: 'var(--font-heading)' }}>
                 {activeJourney.title}
               </h3>
+              {activeJourney.isEnabled === false && (
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
+                  Desabilitada no Front-end
+                </span>
+              )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+              {/* Botão de alternância rápida de visibilidade no front-end */}
+              <button
+                type="button"
+                onClick={() => handleToggleJourneyStatus(activeJourney)}
+                className={`px-3.5 py-2 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border active:scale-95 ${
+                  activeJourney.isEnabled === false
+                    ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border-rose-500/30 shadow-sm'
+                    : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/10'
+                }`}
+                title={
+                  activeJourney.isEnabled === false
+                    ? 'Esta jornada está OCULTA no front-end. Clique para torná-la visível aos usuários.'
+                    : 'Esta jornada está VISÍVEL no front-end. Clique para desabilitá-la e ocultá-la dos usuários.'
+                }
+              >
+                {activeJourney.isEnabled === false ? (
+                  <>
+                    <EyeOff className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Oculta no Front</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="hidden sm:inline">Visível no Front</span>
+                  </>
+                )}
+              </button>
+
               <button
                 type="button"
                 onClick={() => handleOpenInterestsModal(activeJourney)}
@@ -1243,6 +1300,54 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                     }`}
                   >
                     Em Breve
+                  </button>
+                </div>
+              </div>
+
+              {/* Seletor Slider: Habilitada vs Desabilitada do Front-end */}
+              <div className="p-3.5 bg-[#070D0F] border border-white/10 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block">Exibição no Front-end:</label>
+                    <span className="text-[11px] text-slate-400 block">
+                      Disponibilidade pública no catálogo e carrossel da plataforma.
+                    </span>
+                  </div>
+                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
+                    journeyFormIsEnabled 
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                  }`}>
+                    {journeyFormIsEnabled ? 'Habilitada (Visível)' : 'Desabilitada (Oculta)'}
+                  </span>
+                </div>
+                
+                {/* Slider de 2 posições */}
+                <div className="relative bg-[#101B1E] p-1 rounded-xl border border-white/10 flex items-center">
+                  <div 
+                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-all duration-300 ease-out shadow-md ${
+                      journeyFormIsEnabled 
+                        ? 'left-1 bg-emerald-500' 
+                        : 'left-[calc(50%+2px)] bg-rose-500'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setJourneyFormIsEnabled(true)}
+                    className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
+                      journeyFormIsEnabled ? 'text-slate-950' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Habilitada (Visível)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setJourneyFormIsEnabled(false)}
+                    className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
+                      !journeyFormIsEnabled ? 'text-white' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Desabilitada (Oculta)
                   </button>
                 </div>
               </div>

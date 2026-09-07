@@ -82,7 +82,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   const { journeys: dynamicJourneys } = useJourneys();
   const { isJourneyNotified, toggleJourneyNotification } = useJourneyNotifications();
   const { destaques: dynamicDestaques } = useDestaques();
-  const JOURNEYS_DATA = dynamicJourneys && dynamicJourneys.length > 0 ? dynamicJourneys : STATIC_JOURNEYS;
+  const rawJourneys = dynamicJourneys && dynamicJourneys.length > 0 ? dynamicJourneys : STATIC_JOURNEYS;
+  // Filtra apenas as jornadas habilitadas para o front-end
+  const JOURNEYS_DATA = rawJourneys.filter(j => j.isEnabled !== false);
   const rawStories = dynamicDestaques && dynamicDestaques.length > 0 ? dynamicDestaques : STATIC_STORIES_DATA;
   const STORIES_DATA = rawStories.filter(s => !s.isArchived);
 
@@ -97,7 +99,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   const filteredStories = STORIES_DATA.filter(story => {
     if (selectedStoryFilter === 'all') return true;
     const targetJourney = JOURNEYS_DATA.find(j => j.id === selectedStoryFilter);
-    if (!targetJourney) return true;
+    if (!targetJourney) return false;
     const matchesJourneyId = story.journeyIds?.includes(targetJourney.id);
     const matchesCategory = story.category === targetJourney.title;
     return matchesJourneyId || matchesCategory;
@@ -106,27 +108,37 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
   // Selected module index state for each journey
   const [selectedModuleMap, setSelectedModuleMap] = useState<Record<string, number>>({});
 
-  // 8-slide revolving track: [Clone 6, Slide 1..6, Clone 1]
+  const numJourneys = JOURNEYS_DATA.length;
+
+  // Revolving track: [Clone Last, Slide 1..N, Clone First]
   const EXTENDED_JOURNEYS = React.useMemo(() => {
-    return [JOURNEYS_DATA[JOURNEYS_DATA.length - 1], ...JOURNEYS_DATA, JOURNEYS_DATA[0]];
-  }, [JOURNEYS_DATA]);
+    if (numJourneys === 0) return [];
+    return [JOURNEYS_DATA[numJourneys - 1], ...JOURNEYS_DATA, JOURNEYS_DATA[0]];
+  }, [JOURNEYS_DATA, numJourneys]);
 
   const [displayIndex, setDisplayIndex] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(true);
   const isAnimating = React.useRef(false);
 
-  // Normalized active journey index for indicators and details (0 to 5)
-  const activeNormIdx = displayIndex === 0 ? 5 : displayIndex === 7 ? 0 : displayIndex - 1;
+  // Normalized active journey index for indicators and details (0 to numJourneys - 1)
+  const activeNormIdx = numJourneys === 0 
+    ? 0 
+    : displayIndex === 0 
+    ? numJourneys - 1 
+    : displayIndex >= numJourneys + 1 
+    ? 0 
+    : displayIndex - 1;
   const activeJourney = JOURNEYS_DATA[activeNormIdx];
 
   const handleTransitionEnd = () => {
     isAnimating.current = false;
-    if (displayIndex >= 7) {
+    if (numJourneys === 0) return;
+    if (displayIndex >= numJourneys + 1) {
       setIsTransitioning(false);
       setDisplayIndex(1);
     } else if (displayIndex <= 0) {
       setIsTransitioning(false);
-      setDisplayIndex(6);
+      setDisplayIndex(numJourneys);
     }
   };
 

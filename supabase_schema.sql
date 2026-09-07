@@ -815,6 +815,7 @@ CREATE TABLE IF NOT EXISTS public.journeys (
   price NUMERIC DEFAULT 197,
   modules JSONB DEFAULT '[]'::jsonb,
   display_order INTEGER DEFAULT 0,
+  is_enabled BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
