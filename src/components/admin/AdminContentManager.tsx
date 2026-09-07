@@ -115,8 +115,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
   const [journeyFormAudience, setJourneyFormAudience] = useState('');
   const [journeyFormThemeColor, setJourneyFormThemeColor] = useState('#FF7F5B');
   const [journeyFormPrice, setJourneyFormPrice] = useState(197);
-  const [journeyFormIsComingSoon, setJourneyFormIsComingSoon] = useState(false);
-  const [journeyFormIsEnabled, setJourneyFormIsEnabled] = useState(true);
+  const [journeyFormStatus, setJourneyFormStatus] = useState<'active' | 'coming_soon' | 'disabled'>('active');
   const [journeyFormCoverUrl, setJourneyFormCoverUrl] = useState('');
   const [isUploadingJourneyCover, setIsUploadingJourneyCover] = useState(false);
 
@@ -280,8 +279,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     setJourneyFormHasModules(false);
     setJourneyFormModulesList([]);
     setNewModuleInput('');
-    setJourneyFormIsComingSoon(false);
-    setJourneyFormIsEnabled(true);
+    setJourneyFormStatus('active');
     setJourneyFormCoverUrl('');
     setIsJourneyModalOpen(true);
   };
@@ -298,8 +296,13 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     setJourneyFormAudience(journey.targetAudience || '');
     setJourneyFormThemeColor(journey.themeColor || '#FF7F5B');
     setJourneyFormPrice(journey.price || 197);
-    setJourneyFormIsComingSoon(Boolean(journey.isComingSoon));
-    setJourneyFormIsEnabled(journey.isEnabled !== false);
+    if (journey.isEnabled === false) {
+      setJourneyFormStatus('disabled');
+    } else if (journey.isComingSoon) {
+      setJourneyFormStatus('coming_soon');
+    } else {
+      setJourneyFormStatus('active');
+    }
     setJourneyFormCoverUrl(journey.coverImageUrl || '');
 
     const existingMods = journey.modules || [];
@@ -370,8 +373,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       bgLight: '#fff0eb',
       iconName: 'Sun',
       price: journeyFormPrice,
-      isComingSoon: journeyFormIsComingSoon,
-      isEnabled: journeyFormIsEnabled,
+      isComingSoon: journeyFormStatus === 'coming_soon',
+      isEnabled: journeyFormStatus !== 'disabled',
       coverImageUrl: journeyFormCoverUrl.trim(),
       modules: finalModules
     };
@@ -386,14 +389,19 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     }
   };
 
-  const handleToggleJourneyStatus = async (journey: Journey) => {
-    const nextStatus = journey.isEnabled === false ? true : false;
+  const handleSetJourneyStatus = async (journey: Journey, newStatus: 'active' | 'coming_soon' | 'disabled') => {
+    const isComingSoon = newStatus === 'coming_soon';
+    const isEnabled = newStatus !== 'disabled';
+
     const ok = await saveJourney({
       ...journey,
-      isEnabled: nextStatus
+      isComingSoon,
+      isEnabled
     });
+
     if (ok) {
-      notify('success', nextStatus ? 'Jornada ativada com sucesso! ✨' : 'Jornada inativada com sucesso! ⏸️');
+      const label = newStatus === 'active' ? 'Ativa' : newStatus === 'coming_soon' ? 'Em Breve' : 'Desabilitada';
+      notify('success', `Status da jornada alterado para "${label}"! ✨`);
     } else {
       notify('error', 'Erro ao alterar status da jornada.');
     }
@@ -908,48 +916,68 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 }`}
                 title={
                   activeJourney.isEnabled === false
-                    ? 'Inativa'
+                    ? 'Desabilitada'
                     : activeJourney.isComingSoon ? 'Em Breve' : 'Ativa'
                 }
               />
               <h3 className="text-xl font-black text-white truncate" style={{ fontFamily: 'var(--font-heading)' }}>
                 {activeJourney.title}
               </h3>
-              {activeJourney.isEnabled === false && (
+              {activeJourney.isEnabled === false ? (
                 <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
-                  Inativa
+                  Desabilitada
+                </span>
+              ) : activeJourney.isComingSoon ? (
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+                  Em Breve
+                </span>
+              ) : (
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+                  Ativa
                 </span>
               )}
             </div>
 
             <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-              {/* Botão de alternância rápida: Ativa / Inativa */}
-              <button
-                type="button"
-                onClick={() => handleToggleJourneyStatus(activeJourney)}
-                className={`px-3.5 py-2 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border active:scale-95 ${
-                  activeJourney.isEnabled === false
-                    ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border-rose-500/30 shadow-sm'
-                    : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/10'
-                }`}
-                title={
-                  activeJourney.isEnabled === false
-                    ? 'Esta jornada está Inativa. Clique para ativá-la.'
-                    : 'Esta jornada está Ativa. Clique para inativá-la.'
-                }
-              >
-                {activeJourney.isEnabled === false ? (
-                  <>
-                    <EyeOff className="w-3.5 h-3.5 text-rose-400" />
-                    <span>Inativa</span>
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Ativa</span>
-                  </>
-                )}
-              </button>
+              {/* Seletor rápido de Status: Ativa, Em Breve, Desabilitada */}
+              <div className="bg-[#070D0F] p-0.5 rounded-xl border border-white/10 flex items-center">
+                <button
+                  type="button"
+                  onClick={() => handleSetJourneyStatus(activeJourney, 'active')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeJourney.isEnabled !== false && !activeJourney.isComingSoon
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Definir status como Ativa"
+                >
+                  Ativa
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetJourneyStatus(activeJourney, 'coming_soon')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeJourney.isEnabled !== false && activeJourney.isComingSoon
+                      ? 'bg-amber-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Definir status como Em Breve"
+                >
+                  Em Breve
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetJourneyStatus(activeJourney, 'disabled')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeJourney.isEnabled === false
+                      ? 'bg-rose-500 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Definir status como Desabilitada"
+                >
+                  Desabilitada
+                </button>
+              </div>
 
               <button
                 type="button"
@@ -1261,93 +1289,58 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 </div>
               </div>
 
-              {/* Seletor Slider: Fase de Lançamento (Lançada vs Em Breve) */}
+              {/* Seletor Slider: Status (Ativa, Em Breve, Desabilitada) */}
               <div className="p-3.5 bg-[#070D0F] border border-white/10 rounded-2xl space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-300 block">Fase de Lançamento:</label>
-                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
-                    journeyFormIsComingSoon 
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
-                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  }`}>
-                    {journeyFormIsComingSoon ? 'Em Breve' : 'Lançada'}
-                  </span>
-                </div>
-                
-                {/* Slider de 2 posições */}
-                <div className="relative bg-[#101B1E] p-1 rounded-xl border border-white/10 flex items-center">
-                  <div 
-                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-all duration-300 ease-out shadow-md ${
-                      journeyFormIsComingSoon 
-                        ? 'left-[calc(50%+2px)] bg-amber-500' 
-                        : 'left-1 bg-emerald-500'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setJourneyFormIsComingSoon(false)}
-                    className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
-                      !journeyFormIsComingSoon ? 'text-slate-950' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Lançada
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setJourneyFormIsComingSoon(true)}
-                    className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
-                      journeyFormIsComingSoon ? 'text-slate-950' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Em Breve
-                  </button>
-                </div>
-              </div>
-
-              {/* Seletor Slider: Ativa vs Inativa */}
-              <div className="p-3.5 bg-[#070D0F] border border-white/10 rounded-2xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-xs font-bold text-slate-300 block">Status da Jornada:</label>
-                    <span className="text-[11px] text-slate-400 block">
-                      Define se a jornada está ativa ou inativa no front-end.
-                    </span>
-                  </div>
-                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
-                    journeyFormIsEnabled 
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                  <label className="text-xs font-bold text-slate-300 block">Status:</label>
+                  <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md ${
+                    journeyFormStatus === 'active'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      : journeyFormStatus === 'coming_soon'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                       : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                   }`}>
-                    {journeyFormIsEnabled ? 'Ativa' : 'Inativa'}
+                    {journeyFormStatus === 'active' ? 'Ativa' : journeyFormStatus === 'coming_soon' ? 'Em Breve' : 'Desabilitada'}
                   </span>
                 </div>
                 
-                {/* Slider de 2 posições */}
+                {/* Slider de 3 posições */}
                 <div className="relative bg-[#101B1E] p-1 rounded-xl border border-white/10 flex items-center">
                   <div 
-                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-all duration-300 ease-out shadow-md ${
-                      journeyFormIsEnabled 
-                        ? 'left-1 bg-emerald-500' 
-                        : 'left-[calc(50%+2px)] bg-rose-500'
+                    className={`absolute top-1 bottom-1 w-[calc(33.333%-4px)] rounded-lg transition-all duration-300 ease-out shadow-md ${
+                      journeyFormStatus === 'active'
+                        ? 'left-1 bg-emerald-500'
+                        : journeyFormStatus === 'coming_soon'
+                        ? 'left-[calc(33.333%+1px)] bg-amber-500'
+                        : 'left-[calc(66.666%+1px)] bg-rose-500'
                     }`}
                   />
                   <button
                     type="button"
-                    onClick={() => setJourneyFormIsEnabled(true)}
+                    onClick={() => setJourneyFormStatus('active')}
                     className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
-                      journeyFormIsEnabled ? 'text-slate-950' : 'text-slate-400 hover:text-white'
+                      journeyFormStatus === 'active' ? 'text-slate-950' : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     Ativa
                   </button>
                   <button
                     type="button"
-                    onClick={() => setJourneyFormIsEnabled(false)}
+                    onClick={() => setJourneyFormStatus('coming_soon')}
                     className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
-                      !journeyFormIsEnabled ? 'text-white' : 'text-slate-400 hover:text-white'
+                      journeyFormStatus === 'coming_soon' ? 'text-slate-950' : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    Inativa
+                    Em Breve
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setJourneyFormStatus('disabled')}
+                    className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
+                      journeyFormStatus === 'disabled' ? 'text-slate-950' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Desabilitada
                   </button>
                 </div>
               </div>
