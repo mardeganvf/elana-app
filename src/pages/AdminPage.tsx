@@ -502,11 +502,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                             }}
                           >
                             <div className="flex items-center gap-2 min-w-0 flex-1">
-                              {/* Círculo indicador de status: Rosa se Desabilitada, Amarelo se Em Breve, Verde se Ativa */}
+                              {/* Farol lateral indicador de status: Cinza se Desabilitada, Amarelo se Em Breve, Verde se Ativa */}
                               <span 
                                 className={`w-2 h-2 rounded-full shrink-0 shadow-sm ${
                                   journey.isEnabled === false
-                                    ? 'bg-rose-500 ring-2 ring-rose-500/25'
+                                    ? 'bg-slate-400 ring-2 ring-slate-400/25'
                                     : journey.isComingSoon 
                                     ? 'bg-amber-400 ring-2 ring-amber-400/25' 
                                     : 'bg-emerald-400 ring-2 ring-emerald-400/25'
@@ -517,16 +517,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                                     : journey.isComingSoon ? 'Status: Em Breve' : 'Status: Ativa'
                                 }
                               />
-                              <span className={`truncate ${journey.isEnabled === false ? 'text-slate-400 line-through/50' : ''}`}>{journey.title}</span>
-                              {journey.isEnabled === false ? (
-                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300 font-medium shrink-0 border border-rose-500/25">
-                                  Desabilitada
-                                </span>
-                              ) : journey.isComingSoon ? (
-                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 font-medium shrink-0 border border-amber-500/25">
-                                  Em Breve
-                                </span>
-                              ) : null}
+                              <span className={`truncate ${journey.isEnabled === false ? 'text-slate-400' : ''}`}>{journey.title}</span>
                             </div>
 
                             {/* Se tem múltiplos módulos, exibe seta do dropdown temática */}

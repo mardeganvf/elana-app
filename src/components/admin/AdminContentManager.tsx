@@ -909,22 +909,22 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
               <span 
                 className={`w-2.5 h-2.5 rounded-full shrink-0 shadow-sm ${
                   activeJourney.isEnabled === false
-                    ? 'bg-slate-500 ring-2 ring-slate-500/25'
+                    ? 'bg-slate-400 ring-2 ring-slate-400/25'
                     : activeJourney.isComingSoon 
                     ? 'bg-amber-400 ring-2 ring-amber-400/25' 
                     : 'bg-emerald-400 ring-2 ring-emerald-400/25'
                 }`}
                 title={
                   activeJourney.isEnabled === false
-                    ? 'Desabilitada'
-                    : activeJourney.isComingSoon ? 'Em Breve' : 'Ativa'
+                    ? 'Status: Desabilitada'
+                    : activeJourney.isComingSoon ? 'Status: Em Breve' : 'Status: Ativa'
                 }
               />
               <h3 className="text-xl font-black text-white truncate" style={{ fontFamily: 'var(--font-heading)' }}>
                 {activeJourney.title}
               </h3>
               {activeJourney.isEnabled === false ? (
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-white/10 text-slate-300 border border-white/15 shrink-0">
                   Desabilitada
                 </span>
               ) : activeJourney.isComingSoon ? (
@@ -970,7 +970,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                   onClick={() => handleSetJourneyStatus(activeJourney, 'disabled')}
                   className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     activeJourney.isEnabled === false
-                      ? 'bg-rose-500 text-white shadow-sm'
+                      ? 'bg-slate-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white'
                   }`}
                   title="Definir status como Desabilitada"
@@ -1298,7 +1298,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                       : journeyFormStatus === 'coming_soon'
                       ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                      : 'bg-white/10 text-slate-300 border border-white/15'
                   }`}>
                     {journeyFormStatus === 'active' ? 'Ativa' : journeyFormStatus === 'coming_soon' ? 'Em Breve' : 'Desabilitada'}
                   </span>
@@ -1312,7 +1312,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                         ? 'left-1 bg-emerald-500'
                         : journeyFormStatus === 'coming_soon'
                         ? 'left-[calc(33.333%+1px)] bg-amber-500'
-                        : 'left-[calc(66.666%+1px)] bg-rose-500'
+                        : 'left-[calc(66.666%+1px)] bg-slate-600'
                     }`}
                   />
                   <button
@@ -1337,7 +1337,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                     type="button"
                     onClick={() => setJourneyFormStatus('disabled')}
                     className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
-                      journeyFormStatus === 'disabled' ? 'text-slate-950' : 'text-slate-400 hover:text-white'
+                      journeyFormStatus === 'disabled' ? 'text-white' : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     Desabilitada
