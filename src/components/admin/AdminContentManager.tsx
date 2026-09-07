@@ -393,9 +393,9 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       isEnabled: nextStatus
     });
     if (ok) {
-      notify('success', nextStatus ? 'Jornada habilitada no front-end! 👁️' : 'Jornada desabilitada do front-end (oculta)! 🙈');
+      notify('success', nextStatus ? 'Jornada ativada com sucesso! ✨' : 'Jornada inativada com sucesso! ⏸️');
     } else {
-      notify('error', 'Erro ao alterar visibilidade da jornada.');
+      notify('error', 'Erro ao alterar status da jornada.');
     }
   };
 
@@ -908,8 +908,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 }`}
                 title={
                   activeJourney.isEnabled === false
-                    ? 'Desabilitada do front-end (oculta para usuários)'
-                    : activeJourney.isComingSoon ? 'Em Breve' : 'Jornada Ativa'
+                    ? 'Inativa'
+                    : activeJourney.isComingSoon ? 'Em Breve' : 'Ativa'
                 }
               />
               <h3 className="text-xl font-black text-white truncate" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -917,13 +917,13 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
               </h3>
               {activeJourney.isEnabled === false && (
                 <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
-                  Desabilitada no Front-end
+                  Inativa
                 </span>
               )}
             </div>
 
             <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-              {/* Botão de alternância rápida de visibilidade no front-end */}
+              {/* Botão de alternância rápida: Ativa / Inativa */}
               <button
                 type="button"
                 onClick={() => handleToggleJourneyStatus(activeJourney)}
@@ -934,19 +934,19 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 }`}
                 title={
                   activeJourney.isEnabled === false
-                    ? 'Esta jornada está OCULTA no front-end. Clique para torná-la visível aos usuários.'
-                    : 'Esta jornada está VISÍVEL no front-end. Clique para desabilitá-la e ocultá-la dos usuários.'
+                    ? 'Esta jornada está Inativa. Clique para ativá-la.'
+                    : 'Esta jornada está Ativa. Clique para inativá-la.'
                 }
               >
                 {activeJourney.isEnabled === false ? (
                   <>
                     <EyeOff className="w-3.5 h-3.5 text-rose-400" />
-                    <span>Oculta no Front</span>
+                    <span>Inativa</span>
                   </>
                 ) : (
                   <>
                     <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="hidden sm:inline">Visível no Front</span>
+                    <span>Ativa</span>
                   </>
                 )}
               </button>
@@ -1261,16 +1261,16 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 </div>
               </div>
 
-              {/* Seletor Slider: Jornada Ativa e Em Breve */}
+              {/* Seletor Slider: Fase de Lançamento (Lançada vs Em Breve) */}
               <div className="p-3.5 bg-[#070D0F] border border-white/10 rounded-2xl space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-300 block">Status da Jornada:</label>
+                  <label className="text-xs font-bold text-slate-300 block">Fase de Lançamento:</label>
                   <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
                     journeyFormIsComingSoon 
                       ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
                       : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                   }`}>
-                    {journeyFormIsComingSoon ? 'Em Breve' : 'Jornada Ativa'}
+                    {journeyFormIsComingSoon ? 'Em Breve' : 'Lançada'}
                   </span>
                 </div>
                 
@@ -1290,7 +1290,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                       !journeyFormIsComingSoon ? 'text-slate-950' : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    Jornada Ativa
+                    Lançada
                   </button>
                   <button
                     type="button"
@@ -1304,13 +1304,13 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                 </div>
               </div>
 
-              {/* Seletor Slider: Habilitada vs Desabilitada do Front-end */}
+              {/* Seletor Slider: Ativa vs Inativa */}
               <div className="p-3.5 bg-[#070D0F] border border-white/10 rounded-2xl space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-xs font-bold text-slate-300 block">Exibição no Front-end:</label>
+                    <label className="text-xs font-bold text-slate-300 block">Status da Jornada:</label>
                     <span className="text-[11px] text-slate-400 block">
-                      Disponibilidade pública no catálogo e carrossel da plataforma.
+                      Define se a jornada está ativa ou inativa no front-end.
                     </span>
                   </div>
                   <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
@@ -1318,7 +1318,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
                       : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                   }`}>
-                    {journeyFormIsEnabled ? 'Habilitada (Visível)' : 'Desabilitada (Oculta)'}
+                    {journeyFormIsEnabled ? 'Ativa' : 'Inativa'}
                   </span>
                 </div>
                 
@@ -1338,7 +1338,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                       journeyFormIsEnabled ? 'text-slate-950' : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    Habilitada (Visível)
+                    Ativa
                   </button>
                   <button
                     type="button"
@@ -1347,7 +1347,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                       !journeyFormIsEnabled ? 'text-white' : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    Desabilitada (Oculta)
+                    Inativa
                   </button>
                 </div>
               </div>
