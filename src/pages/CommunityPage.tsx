@@ -328,16 +328,6 @@ export const CommunityPage: React.FC = () => {
     setVisibleCount(15);
   }, [activeSelection, selectedEmotionId, searchQuery]);
 
-  // Ensure scroll to top of viewport when page mounts or when user clicks any room/subgroup
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-  }, [activeSelection]);
-
-  useEffect(() => {
-    if (isDailyCheckinModalOpen || isBreathingModalOpen) {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    }
-  }, [isDailyCheckinModalOpen, isBreathingModalOpen]);
 
   // Helper to format current local date (YYYY-MM-DD) resetting at 00:00:00 local time
   const getTodayDateKey = () => {
@@ -959,15 +949,14 @@ export const CommunityPage: React.FC = () => {
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         
         {/* Left Sidebar Container — hidden on mobile, visible on desktop */}
-        <aside className="hidden lg:block w-full lg:w-72 shrink-0 space-y-3">
+        <aside className="hidden lg:block w-full lg:w-72 shrink-0 space-y-3 sticky top-24 sm:top-28 max-h-[calc(100vh-7.5rem)] overflow-y-auto custom-scrollbar pr-1 self-start">
           
           {/* Button Respiro de 60 Segundos Above Criar Tópico */}
           <button
             onClick={() => {
               setIsBreathingModalOpen(true);
-              window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             }}
-            className="w-full flex items-center justify-center gap-2 bg-[#8A9A5B]/20 hover:bg-[#8A9A5B]/30 text-[#8A9A5B] border border-[#8A9A5B]/40 font-bold text-xs uppercase tracking-wider py-3 px-4 rounded-2xl shadow-md transition-all active:scale-95"
+            className="w-full flex items-center justify-center gap-2 bg-[#8A9A5B]/20 hover:bg-[#8A9A5B]/30 text-[#8A9A5B] border border-[#8A9A5B]/40 font-bold text-xs uppercase tracking-wider py-3 px-4 rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer"
           >
             <Wind className="w-4 h-4 animate-spin-slow" />
             <span>Respiro de 60 Segundos</span>
