@@ -9,6 +9,7 @@ import {
   TRANSVERSAL_ROOMS, 
   AGE_BRACKET_ROOMS 
 } from '../data/communityData';
+import { CommunityPost } from '../types';
 import { CreatePostModal } from '../components/community/CreatePostModal';
 import { PublicProfileModal, PublicUserProfile, ChildInfo, ProfileTestimonial } from '../components/community/PublicProfileModal';
 import { CommunityPollBanner } from '../components/community/CommunityPollBanner';
@@ -44,6 +45,322 @@ export type ActiveSelection =
   | { type: 'geral'; roomId: string }
   | { type: 'idade'; ageId: string }
   | null;
+
+export interface PostRoomDetails {
+  categoryType: 'jornada' | 'geral' | 'idade';
+  categoryLabel: string;
+  roomName: string;
+  emoji: string;
+  badgeBg: string;
+  badgeBorder: string;
+  badgeText: string;
+  subTopicLabel?: string;
+  subTopicEmoji?: string;
+  subBadgeBg?: string;
+  subBadgeBorder?: string;
+  subBadgeText?: string;
+  selectionTarget?: ActiveSelection;
+}
+
+export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
+  // 1. Salas Transversais / Geral
+  if (post.transversalRoomId) {
+    const raw = post.transversalRoomId.toLowerCase();
+    if (raw === 'confessionario') {
+      return {
+        categoryType: 'geral',
+        categoryLabel: 'Geral',
+        roomName: 'Confessionário',
+        emoji: '🕯️',
+        badgeBg: 'rgba(168, 85, 247, 0.12)',
+        badgeBorder: 'rgba(168, 85, 247, 0.35)',
+        badgeText: '#D8B4FE',
+        selectionTarget: { type: 'geral', roomId: 'confessionario' }
+      };
+    }
+    if (raw === 'cantinho-mel' || raw === 'cantinho-da-mel' || raw === 'trocas-livres') {
+      return {
+        categoryType: 'geral',
+        categoryLabel: 'Geral',
+        roomName: 'Cantinho da Mel',
+        emoji: '🍯',
+        badgeBg: 'rgba(255, 209, 102, 0.12)',
+        badgeBorder: 'rgba(255, 209, 102, 0.35)',
+        badgeText: '#FDE047',
+        selectionTarget: { type: 'geral', roomId: 'cantinho-mel' }
+      };
+    }
+    if (raw === 'espaco-dois') {
+      return {
+        categoryType: 'geral',
+        categoryLabel: 'Geral',
+        roomName: 'Espaço a Dois',
+        emoji: '💖',
+        badgeBg: 'rgba(244, 114, 182, 0.12)',
+        badgeBorder: 'rgba(244, 114, 182, 0.35)',
+        badgeText: '#F472B6',
+        selectionTarget: { type: 'geral', roomId: 'espaco-dois' }
+      };
+    }
+    if (raw === 'cuidando-quem-cuida' || raw === 'cuidando-de-quem-cuida') {
+      return {
+        categoryType: 'geral',
+        categoryLabel: 'Geral',
+        roomName: 'Cuidando de Quem Cuida',
+        emoji: '🌱',
+        badgeBg: 'rgba(138, 154, 91, 0.12)',
+        badgeBorder: 'rgba(138, 154, 91, 0.35)',
+        badgeText: '#A3B18A',
+        selectionTarget: { type: 'geral', roomId: 'cuidando-quem-cuida' }
+      };
+    }
+    if (raw === 'boas-vindas') {
+      return {
+        categoryType: 'geral',
+        categoryLabel: 'Geral',
+        roomName: 'Boas-Vindas',
+        emoji: '👋',
+        badgeBg: 'rgba(45, 212, 191, 0.12)',
+        badgeBorder: 'rgba(45, 212, 191, 0.35)',
+        badgeText: '#2DD4BF',
+        selectionTarget: { type: 'geral', roomId: 'boas-vindas' }
+      };
+    }
+    const r = TRANSVERSAL_ROOMS.find(item => item.id === raw);
+    if (r) {
+      return {
+        categoryType: 'geral',
+        categoryLabel: 'Geral',
+        roomName: r.name,
+        emoji: r.emoji || '💬',
+        badgeBg: 'rgba(14, 165, 233, 0.12)',
+        badgeBorder: 'rgba(14, 165, 233, 0.35)',
+        badgeText: '#38BDF8',
+        selectionTarget: { type: 'geral', roomId: r.id }
+      };
+    }
+  }
+
+  // 2. Salas por Faixa Etária (Idades)
+  if (post.ageBracketId) {
+    const raw = post.ageBracketId.toLowerCase();
+    const ageNames: Record<string, { name: string; emoji: string }> = {
+      '0-2': { name: '0–2 anos (Bebês)', emoji: '👶' },
+      '3-6': { name: '3–6 anos (1ª Infância)', emoji: '🧒' },
+      '7-10': { name: '7–10 anos (Fase Escolar)', emoji: '🎒' },
+      '11-14': { name: '11–14 anos (Pré-Adolescência)', emoji: '🎧' },
+      '14-19': { name: '14–19 anos (Adolescência)', emoji: '🛹' },
+      '15-18': { name: '14–19 anos (Adolescência)', emoji: '🛹' },
+      '20-plus': { name: '20+ anos (Jovens Adultos)', emoji: '🌲' },
+      '18-plus': { name: '20+ anos (Jovens Adultos)', emoji: '🌲' }
+    };
+    const info = ageNames[raw] || { name: `${raw} anos`, emoji: '👶' };
+    const ageId = raw === '15-18' ? '14-19' : (raw === '18-plus' ? '20-plus' : raw);
+    return {
+      categoryType: 'idade',
+      categoryLabel: 'Idades',
+      roomName: info.name,
+      emoji: info.emoji,
+      badgeBg: 'rgba(230, 103, 149, 0.12)',
+      badgeBorder: 'rgba(230, 103, 149, 0.35)',
+      badgeText: '#F472B6',
+      selectionTarget: { type: 'idade', ageId }
+    };
+  }
+
+  // 3. Salas de Jornadas
+  if (post.journeyId) {
+    const journey = JOURNEYS_DATA.find(j => j.id === post.journeyId);
+    const jName = journey ? journey.title : (post.journeyId === 'pais-recem-nascidos' ? 'Pais Recém-Nascidos' : post.journeyId);
+    
+    const journeyMeta: Record<string, { emoji: string; color: string; bg: string; border: string }> = {
+      'pais-recem-nascidos': { emoji: '🌅', color: '#FF7F5B', bg: 'rgba(255, 127, 91, 0.12)', border: 'rgba(255, 127, 91, 0.35)' },
+      'construindo-pontes': { emoji: '🌉', color: '#2DD4BF', bg: 'rgba(45, 212, 191, 0.12)', border: 'rgba(45, 212, 191, 0.35)' },
+      'singular': { emoji: '✨', color: '#FFD166', bg: 'rgba(255, 209, 102, 0.12)', border: 'rgba(255, 209, 102, 0.35)' },
+      'amor-escolhido': { emoji: '💖', color: '#E66795', bg: 'rgba(230, 103, 149, 0.12)', border: 'rgba(230, 103, 149, 0.35)' },
+      'depois-do-silencio': { emoji: '🕊️', color: '#C4B5FD', bg: 'rgba(167, 139, 250, 0.12)', border: 'rgba(167, 139, 250, 0.35)' },
+      'novos-caminhos': { emoji: '🌿', color: '#A3B18A', bg: 'rgba(138, 154, 91, 0.12)', border: 'rgba(138, 154, 91, 0.35)' }
+    };
+    const meta = journeyMeta[post.journeyId] || { emoji: '📚', color: '#FF7F5B', bg: 'rgba(255, 127, 91, 0.12)', border: 'rgba(255, 127, 91, 0.35)' };
+
+    let subTopicLabel: string | undefined;
+    let subTopicEmoji: string | undefined;
+    let subBadgeBg: string | undefined;
+    let subBadgeBorder: string | undefined;
+    let subBadgeText: string | undefined;
+    let subOption: 'ajuda' | 'celebrar' | 'desabafar' | 'abertas' = 'ajuda';
+
+    if (post.emotionalIntention === 'ajuda') {
+      subTopicLabel = 'Preciso de Ajuda';
+      subTopicEmoji = '🆘';
+      subBadgeBg = 'rgba(255, 127, 91, 0.12)';
+      subBadgeBorder = 'rgba(255, 127, 91, 0.3)';
+      subBadgeText = '#FF7F5B';
+      subOption = 'ajuda';
+    } else if (post.emotionalIntention === 'celebrar') {
+      subTopicLabel = 'Vamos Celebrar';
+      subTopicEmoji = '🎉';
+      subBadgeBg = 'rgba(255, 209, 102, 0.12)';
+      subBadgeBorder = 'rgba(255, 209, 102, 0.3)';
+      subBadgeText = '#FFD166';
+      subOption = 'celebrar';
+    } else if (post.emotionalIntention === 'desabafar') {
+      subTopicLabel = 'Preciso Desabafar';
+      subTopicEmoji = '💧';
+      subBadgeBg = 'rgba(138, 154, 91, 0.12)';
+      subBadgeBorder = 'rgba(138, 154, 91, 0.3)';
+      subBadgeText = '#8A9A5B';
+      subOption = 'desabafar';
+    } else if (post.emotionalIntention === 'abertas') {
+      subTopicLabel = 'Abertas pela Comunidade';
+      subTopicEmoji = '💬';
+      subBadgeBg = 'rgba(148, 163, 184, 0.12)';
+      subBadgeBorder = 'rgba(148, 163, 184, 0.3)';
+      subBadgeText = '#CBD5E1';
+      subOption = 'abertas';
+    }
+
+    return {
+      categoryType: 'jornada',
+      categoryLabel: 'Jornada',
+      roomName: jName,
+      emoji: meta.emoji,
+      badgeBg: meta.bg,
+      badgeBorder: meta.border,
+      badgeText: meta.color,
+      subTopicLabel,
+      subTopicEmoji,
+      subBadgeBg,
+      subBadgeBorder,
+      subBadgeText,
+      selectionTarget: { type: 'jornada', journeyId: post.journeyId, subOption }
+    };
+  }
+
+  // 4. Fallbacks inteligentes por contexto
+  if (post.isAnonymous) {
+    return {
+      categoryType: 'geral',
+      categoryLabel: 'Geral',
+      roomName: 'Confessionário',
+      emoji: '🕯️',
+      badgeBg: 'rgba(168, 85, 247, 0.12)',
+      badgeBorder: 'rgba(168, 85, 247, 0.35)',
+      badgeText: '#D8B4FE',
+      selectionTarget: { type: 'geral', roomId: 'confessionario' }
+    };
+  }
+
+  const fullText = `${post.title || ''} ${post.content || ''}`.toLowerCase();
+  if (fullText.includes('sono') || fullText.includes('bebê') || fullText.includes('mamada') || fullText.includes('berço') || fullText.includes('dente') || fullText.includes('puerpério')) {
+    return {
+      categoryType: 'jornada',
+      categoryLabel: 'Jornada',
+      roomName: 'Pais Recém-Nascidos',
+      emoji: '🌅',
+      badgeBg: 'rgba(255, 127, 91, 0.12)',
+      badgeBorder: 'rgba(255, 127, 91, 0.35)',
+      badgeText: '#FF7F5B',
+      selectionTarget: { type: 'jornada', journeyId: 'pais-recem-nascidos', subOption: 'ajuda' }
+    };
+  }
+  if (fullText.includes('adolescente') || fullText.includes('celular') || fullText.includes('filho de 15') || fullText.includes('monosílabo')) {
+    return {
+      categoryType: 'jornada',
+      categoryLabel: 'Jornada',
+      roomName: 'Construindo Pontes',
+      emoji: '🌉',
+      badgeBg: 'rgba(45, 212, 191, 0.12)',
+      badgeBorder: 'rgba(45, 212, 191, 0.35)',
+      badgeText: '#2DD4BF',
+      selectionTarget: { type: 'jornada', journeyId: 'construindo-pontes', subOption: 'ajuda' }
+    };
+  }
+  if (fullText.includes('tea') || fullText.includes('laudo') || fullText.includes('sensorial') || fullText.includes('atípico')) {
+    return {
+      categoryType: 'jornada',
+      categoryLabel: 'Jornada',
+      roomName: 'Singular',
+      emoji: '✨',
+      badgeBg: 'rgba(255, 209, 102, 0.12)',
+      badgeBorder: 'rgba(255, 209, 102, 0.35)',
+      badgeText: '#FFD166',
+      selectionTarget: { type: 'jornada', journeyId: 'singular', subOption: 'ajuda' }
+    };
+  }
+  if (fullText.includes('adoção') || fullText.includes('habilitação') || fullText.includes('fila')) {
+    return {
+      categoryType: 'jornada',
+      categoryLabel: 'Jornada',
+      roomName: 'Amor Escolhido',
+      emoji: '💖',
+      badgeBg: 'rgba(230, 103, 149, 0.12)',
+      badgeBorder: 'rgba(230, 103, 149, 0.35)',
+      badgeText: '#E66795',
+      selectionTarget: { type: 'jornada', journeyId: 'amor-escolhido', subOption: 'ajuda' }
+    };
+  }
+  if (fullText.includes('luto') || fullText.includes('anjo') || fullText.includes('saudade') || fullText.includes('perda')) {
+    return {
+      categoryType: 'jornada',
+      categoryLabel: 'Jornada',
+      roomName: 'Depois do Silêncio',
+      emoji: '🕊️',
+      badgeBg: 'rgba(167, 139, 250, 0.12)',
+      badgeBorder: 'rgba(167, 139, 250, 0.35)',
+      badgeText: '#C4B5FD',
+      selectionTarget: { type: 'jornada', journeyId: 'depois-do-silencio', subOption: 'desabafar' }
+    };
+  }
+  if (fullText.includes('ninho vazio') || fullText.includes('faculdade') || fullText.includes('sairam de casa')) {
+    return {
+      categoryType: 'jornada',
+      categoryLabel: 'Jornada',
+      roomName: 'Novos Caminhos',
+      emoji: '🌿',
+      badgeBg: 'rgba(138, 154, 91, 0.12)',
+      badgeBorder: 'rgba(138, 154, 91, 0.35)',
+      badgeText: '#A3B18A',
+      selectionTarget: { type: 'jornada', journeyId: 'novos-caminhos', subOption: 'desabafar' }
+    };
+  }
+  if (fullText.includes('casamento') || fullText.includes('marido') || fullText.includes('esposa') || fullText.includes('casal') || fullText.includes('relacionamento')) {
+    return {
+      categoryType: 'geral',
+      categoryLabel: 'Geral',
+      roomName: 'Espaço a Dois',
+      emoji: '💖',
+      badgeBg: 'rgba(244, 114, 182, 0.12)',
+      badgeBorder: 'rgba(244, 114, 182, 0.35)',
+      badgeText: '#F472B6',
+      selectionTarget: { type: 'geral', roomId: 'espaco-dois' }
+    };
+  }
+  if (fullText.includes('autocuidado') || fullText.includes('cuidar de si') || fullText.includes('caminhada') || fullText.includes('café quente')) {
+    return {
+      categoryType: 'geral',
+      categoryLabel: 'Geral',
+      roomName: 'Cuidando de Quem Cuida',
+      emoji: '🌱',
+      badgeBg: 'rgba(138, 154, 91, 0.12)',
+      badgeBorder: 'rgba(138, 154, 91, 0.35)',
+      badgeText: '#A3B18A',
+      selectionTarget: { type: 'geral', roomId: 'cuidando-quem-cuida' }
+    };
+  }
+
+  // Padrão Geral: Cantinho da Mel
+  return {
+    categoryType: 'geral',
+    categoryLabel: 'Geral',
+    roomName: 'Cantinho da Mel',
+    emoji: '🍯',
+    badgeBg: 'rgba(255, 209, 102, 0.12)',
+    badgeBorder: 'rgba(255, 209, 102, 0.35)',
+    badgeText: '#FDE047',
+    selectionTarget: { type: 'geral', roomId: 'cantinho-mel' }
+  };
+};
 
 const EMOTIONAL_CHECKINS = [
   { 
@@ -1259,6 +1576,7 @@ export const CommunityPage: React.FC = () => {
               <>
                 {visiblePosts.map(post => {
                   const isInlineExpanded = !!expandedCommentsMap[post.id];
+                  const roomDetails = getPostRoomDetails(post);
 
                   return (
                     <div 
@@ -1304,12 +1622,56 @@ export const CommunityPage: React.FC = () => {
                       </div>
 
                       {/* Content Section */}
-                      <div className="space-y-2">
-                        {post.moduleTopic && (
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-1 rounded-lg inline-block border border-[#FF7F5B]/20">
-                            {post.moduleTopic}
-                          </span>
-                        )}
+                      <div className="space-y-3">
+                        {/* 🏷️ Sinalização Clara da Sala e Subtópico */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Badge Principal da Sala com filtro ao clicar */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (roomDetails.selectionTarget) {
+                                setActiveSelection(roomDetails.selectionTarget);
+                              }
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black transition-all border shadow-sm group hover:scale-[1.02] active:scale-95 cursor-pointer"
+                            style={{
+                              backgroundColor: roomDetails.badgeBg,
+                              borderColor: roomDetails.badgeBorder,
+                              color: roomDetails.badgeText
+                            }}
+                            title={`Clique para filtrar posts desta sala: ${roomDetails.roomName}`}
+                          >
+                            <span className="text-sm shrink-0">{roomDetails.emoji}</span>
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider opacity-75 shrink-0">
+                              {roomDetails.categoryLabel} ›
+                            </span>
+                            <span>{roomDetails.roomName}</span>
+                          </button>
+
+                          {/* Subtópico / Intenção Emocional (se for Jornada) */}
+                          {roomDetails.subTopicLabel && (
+                            <span 
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-extrabold border shrink-0 shadow-sm"
+                              style={{
+                                backgroundColor: roomDetails.subBadgeBg,
+                                borderColor: roomDetails.subBadgeBorder,
+                                color: roomDetails.subBadgeText
+                              }}
+                            >
+                              <span>{roomDetails.subTopicEmoji}</span>
+                              <span>{roomDetails.subTopicLabel}</span>
+                            </span>
+                          )}
+
+                          {/* Módulo de aula específico (se houver e não for apenas 'Geral') */}
+                          {post.moduleTopic && post.moduleTopic !== 'Geral' && (
+                            <span className="text-[10px] font-bold text-slate-300 bg-white/5 border border-white/10 px-2.5 py-1 rounded-xl shrink-0">
+                              {post.moduleTopic}
+                            </span>
+                          )}
+                        </div>
+
                         <h4 className="text-lg font-black text-white leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                           {post.title}
                         </h4>

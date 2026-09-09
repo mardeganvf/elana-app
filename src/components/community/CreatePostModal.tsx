@@ -23,21 +23,28 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 }) => {
   const { createPost } = useCommunity();
 
-  // Resolve current active room context
-  const postType: 'jornada' | 'transversal' | 'idade' = activeSelection?.type === 'geral' 
-    ? 'transversal' 
-    : activeSelection?.type === 'idade' 
-    ? 'idade' 
-    : 'jornada';
+  // Resolve current active room context as dynamic state
+  const [postType, setPostType] = useState<'jornada' | 'transversal' | 'idade'>(
+    activeSelection?.type === 'geral' ? 'transversal' : activeSelection?.type === 'idade' ? 'idade' : 'jornada'
+  );
 
-  const selectedJourneyId = activeSelection?.type === 'jornada' ? activeSelection.journeyId : 'pais-recem-nascidos';
-  const selectedTransversalId = activeSelection?.type === 'geral' ? activeSelection.roomId : 'confessionario';
-  const selectedAgeId = activeSelection?.type === 'idade' ? activeSelection.ageId : '0-2';
+  const [selectedJourneyId, setSelectedJourneyId] = useState<string>(
+    activeSelection?.type === 'jornada' ? activeSelection.journeyId : 'pais-recem-nascidos'
+  );
+  const [selectedTransversalId, setSelectedTransversalId] = useState<string>(
+    activeSelection?.type === 'geral' ? activeSelection.roomId : 'cantinho-mel'
+  );
+  const [selectedAgeId, setSelectedAgeId] = useState<string>(
+    activeSelection?.type === 'idade' ? activeSelection.ageId : '0-2'
+  );
 
-  // Compute default emotional intention if in journey
-  const initialIntention: EmotionalIntention = activeSelection?.type === 'jornada'
-    ? (activeSelection.subOption === 'ajuda' ? 'ajuda' : activeSelection.subOption === 'celebrar' ? 'celebrar' : 'desabafar')
-    : 'desabafar';
+  const [selectedIntention, setSelectedIntention] = useState<EmotionalIntention>(
+    activeSelection?.type === 'jornada'
+      ? (activeSelection.subOption === 'celebrar' ? 'celebrar' : activeSelection.subOption === 'desabafar' ? 'desabafar' : 'ajuda')
+      : 'ajuda'
+  );
+
+  const [isChangingRoom, setIsChangingRoom] = useState<boolean>(!activeSelection);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -49,22 +56,20 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     if (postType === 'jornada') {
       const j = JOURNEYS_DATA.find(item => item.id === selectedJourneyId);
       const baseTitle = j ? j.title : 'Jornada';
-      if (activeSelection?.type === 'jornada') {
-        const subLabels: Record<string, string> = {
-          ajuda: 'Preciso de Ajuda',
-          celebrar: 'Vamos Celebrar',
-          desabafar: 'Preciso Desabafar',
-          abertas: 'Abertas pela Comunidade'
-        };
-        if (activeSelection.subOption && subLabels[activeSelection.subOption]) {
-          return `${baseTitle} - ${subLabels[activeSelection.subOption]}`;
-        }
+      const subLabels: Record<string, string> = {
+        ajuda: 'Preciso de Ajuda',
+        celebrar: 'Vamos Celebrar',
+        desabafar: 'Preciso Desabafar',
+        abertas: 'Abertas pela Comunidade'
+      };
+      if (subLabels[selectedIntention]) {
+        return `${baseTitle} • ${subLabels[selectedIntention]}`;
       }
       return baseTitle;
     }
     if (postType === 'transversal') {
       const r = TRANSVERSAL_ROOMS.find(item => item.id === selectedTransversalId);
-      return r ? r.name : 'Sala Transversal';
+      return r ? `${r.emoji} ${r.name}` : 'Sala Geral';
     }
     if (postType === 'idade') {
       const a = AGE_BRACKET_ROOMS.find(item => item.id === selectedAgeId);
@@ -81,7 +86,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       journeyId: postType === 'jornada' ? selectedJourneyId : undefined,
       transversalRoomId: postType === 'transversal' ? selectedTransversalId : undefined,
       ageBracketId: postType === 'idade' ? selectedAgeId : undefined,
-      emotionalIntention: postType === 'jornada' ? initialIntention : undefined,
+      emotionalIntention: postType === 'jornada' ? selectedIntention : undefined,
       moduleTopic: 'Geral',
       title: title.trim(),
       content: content.trim(),
@@ -128,6 +133,172 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* Room Selection Box */}
+        {isChangingRoom ? (
+          <div className="bg-[#070D0F] p-4 rounded-2xl border border-white/15 space-y-3 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-extrabold text-slate-300 uppercase tracking-wider">
+                Selecione a Sala de Destino:
+              </label>
+              {activeSelection && (
+                <button 
+                  type="button" 
+                  onClick={() => setIsChangingRoom(false)} 
+                  className="text-[11px] font-bold text-slate-400 hover:text-white"
+                >
+                  Concluir
+                </button>
+              )}
+            </div>
+
+            {/* Categorias: Jornadas | Geral | Idades */}
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/5 rounded-xl border border-white/10">
+              <button
+                type="button"
+                onClick={() => setPostType('jornada')}
+                className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  postType === 'jornada' ? 'bg-[#FF7F5B] text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                🌿 Jornadas
+              </button>
+              <button
+                type="button"
+                onClick={() => setPostType('transversal')}
+                className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  postType === 'transversal' ? 'bg-[#8A9A5B] text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                💬 Geral
+              </button>
+              <button
+                type="button"
+                onClick={() => setPostType('idade')}
+                className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  postType === 'idade' ? 'bg-[#E66795] text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                👶 Idades
+              </button>
+            </div>
+
+            {/* Opções de Jornada */}
+            {postType === 'jornada' && (
+              <div className="space-y-2 pt-1 animate-fade-in">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    Jornada:
+                  </label>
+                  <select
+                    value={selectedJourneyId}
+                    onChange={(e) => setSelectedJourneyId(e.target.value)}
+                    className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#FF7F5B]"
+                  >
+                    {JOURNEYS_DATA.map(j => (
+                      <option key={j.id} value={j.id} className="bg-[#101B1E] text-white">
+                        {j.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    Subtópico / Intenção:
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { id: 'ajuda' as const, label: 'Preciso de Ajuda', emoji: '🆘' },
+                      { id: 'celebrar' as const, label: 'Vamos Celebrar', emoji: '🎉' },
+                      { id: 'desabafar' as const, label: 'Preciso Desabafar', emoji: '💧' },
+                      { id: 'abertas' as const, label: 'Abertas', emoji: '💬' }
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setSelectedIntention(opt.id)}
+                        className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
+                          selectedIntention === opt.id
+                            ? 'bg-[#FF7F5B]/20 text-[#FF7F5B] border-[#FF7F5B]/50 shadow-sm'
+                            : 'bg-[#101B1E] text-slate-400 border-white/10 hover:text-white'
+                        }`}
+                      >
+                        <span>{opt.emoji}</span>
+                        <span className="truncate">{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Opções de Salas Gerais (Transversais) */}
+            {postType === 'transversal' && (
+              <div className="space-y-1.5 pt-1 animate-fade-in">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Sala Geral:
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {TRANSVERSAL_ROOMS.map(r => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setSelectedTransversalId(r.id)}
+                      className={`flex items-center gap-2 p-2 rounded-xl text-xs font-bold border transition-all text-left ${
+                        selectedTransversalId === r.id
+                          ? 'bg-[#8A9A5B]/20 text-white border-[#8A9A5B]/60 shadow-sm'
+                          : 'bg-[#101B1E] text-slate-300 border-white/10 hover:text-white'
+                      }`}
+                    >
+                      <span>{r.emoji}</span>
+                      <span className="truncate">{r.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Opções de Faixa Etária (Idades) */}
+            {postType === 'idade' && (
+              <div className="space-y-1.5 pt-1 animate-fade-in">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Faixa Etária:
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                  {AGE_BRACKET_ROOMS.map(a => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => setSelectedAgeId(a.id)}
+                      className={`flex items-center justify-center p-2 rounded-xl text-xs font-bold border transition-all ${
+                        selectedAgeId === a.id
+                          ? 'bg-[#E66795]/20 text-white border-[#E66795]/60 shadow-sm'
+                          : 'bg-[#101B1E] text-slate-300 border-white/10 hover:text-white'
+                      }`}
+                    >
+                      <span>{a.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between bg-[#070D0F] px-4 py-2.5 rounded-2xl border border-white/10">
+            <div className="flex items-center gap-2 truncate pr-2">
+              <span className="text-xs text-slate-400 shrink-0">Postando em:</span>
+              <span className="text-xs font-black text-white truncate">{getLocationName()}</span>
+            </div>
+            <button 
+              type="button"
+              onClick={() => setIsChangingRoom(true)} 
+              className="text-[11px] font-bold text-[#FF7F5B] hover:underline shrink-0"
+            >
+              Alterar
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
 
