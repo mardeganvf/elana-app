@@ -15,65 +15,124 @@ interface CreatePostPayload {
   isAnonymous?: boolean;
 }
 
-// Expressões de Sofrimento Profundo, Exaustão Crítica, Ideação e Acolhimento Prioritário
-export const VULNERABILITY_KEYWORDS = [
-  'vontade de sumir',
-  'quero sumir',
-  'pensando em sumir',
-  'sumir de vez',
-  'sumir do mapa',
-  'preciso sumir',
-  'vontade de morrer',
-  'quero morrer',
-  'pensando em morrer',
-  'desejo de morrer',
-  'vontade de desaparecer',
-  'quero desaparecer',
-  'desaparecer do mundo',
-  'não aguento mais',
-  'nao aguento mais',
-  'não aguento mais viver',
-  'nao aguento mais viver',
-  'não suporto mais',
-  'nao suporto mais',
-  'não vejo saída',
-  'nao vejo saida',
-  'sem saída',
-  'sem saida',
-  'acabar com tudo',
-  'por um fim',
-  'pôr um fim',
-  'fazer besteira',
-  'fazer uma besteira',
-  'me machucar',
-  'me ferir',
-  'tirar minha vida',
-  'não quero mais viver',
-  'nao quero mais viver',
-  'não dou mais conta',
-  'nao dou mais conta',
-  'não tenho mais forças',
-  'nao tenho mais forcas',
-  'perdi o sentido',
-  'sem vontade de viver',
-  'sem forças pra continuar',
-  'sem forcas pra continuar',
-  'esgotamento extremo'
+// Função de normalização textual (remove acentos, comprime repetições e passa para minúsculas)
+export const normalizeText = (text: string): string => {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // remove acentos
+    .replace(/(.)\1{2,}/g, '$1$1') // comprime letras repetidas excessivas (ex: suuuumir -> sumir)
+    .trim();
+};
+
+// 1. PADRÕES E REGRAS DE RISCO À VIDA, IDEAÇÃO, DESVALIA EXTREMA E SOFRIMENTO PROFUNDO
+export const VULNERABILITY_PATTERNS = [
+  // Ideação / Sumiço / Desaparecimento / Morte
+  { pattern: /(?:vontade\s+de|pensando\s+em|querendo|preciso|vou|desejo\s+de)\s+sumir/i, reason: 'Ideação / Vontade de sumir' },
+  { pattern: /\bsumir\s+(?:de\s+vez|do\s+mapa|pra\s+sempre|e\s+nunca\s+mais)\b/i, reason: 'Desejo de sumir definitivamente' },
+  { pattern: /(?:vontade\s+de|pensando\s+em|querendo|desejo\s+de|preferia|melhor|antes)\s+morrer/i, reason: 'Ideação de morte' },
+  { pattern: /(?:preferia|queria|seria\s+melhor)\s+estar\s+mort[ao]/i, reason: 'Ideação de morte' },
+  { pattern: /(?:vontade\s+de|pensando\s+em|querendo|preciso)\s+desaparecer/i, reason: 'Desejo de desaparecer' },
+  { pattern: /\bdesaparecer\s+(?:do\s+mapa|do\s+mundo|de\s+vez)\b/i, reason: 'Desejo de desaparecer' },
+  { pattern: /(?:queria\s+nao|queria\s+nunca\s+ter|melhor\s+nao|deixar\s+de)\s+existir/i, reason: 'Desejo de não existir' },
+  { pattern: /(?:nunca\s+devia|nunca\s+deveria)\s+ter\s+nascid[ao]/i, reason: 'Rejeição à própria existência' },
+
+  // Sentimento de Não Ter Importância / Desvalia / Rejeição / Fardo
+  { pattern: /(?:nao|nunca)\s+(?:sou|sinto\s+que\s+sou|sou\s+nada|tenho)\s+(?:importante|importancia|valor|relevante)/i, reason: 'Sentimento de desvalia / Não ser importante' },
+  { pattern: /(?:nao|nunca)\s+importo\s+(?:pra|para)\s+(?:ninguem|ele|ela|eles)/i, reason: 'Sentimento de não importar a ninguém' },
+  { pattern: /(?:nao|nunca)\s+(?:faco|faria|faz)\s+falta/i, reason: 'Sentimento de não fazer falta' },
+  { pattern: /ninguem\s+(?:vai\s+|iria\s+)?sentir\s+(?:minha\s+)?falta/i, reason: 'Sentimento de ausência de falta' },
+  { pattern: /ninguem\s+(?:se\s+importa\s+comigo|se\s+importa|precisa\s+de\s+mim|liga\s+pra\s+mim|me\s+ama)/i, reason: 'Sensação de desamparo / Ninguém se importa' },
+  { pattern: /(?:ele|ela|eles)\s+nao\s+precisa[m]?\s+de\s+mim/i, reason: 'Sensação de inutilidade familiar' },
+  { pattern: /(?:sou|me\s+sinto)\s+(?:um\s+)?(?:fardo|peso|estorvo|lixo|fracasso\s+total)/i, reason: 'Sentimento de ser fardo / peso' },
+  { pattern: /(?:seria\s+)?melhor\s+(?:sem\s+mim|se\s+eu\s+(?:sumisse|morresse|nao\s+existisse))/i, reason: 'Ideação de que outros estariam melhor sem si' },
+  { pattern: /(?:estariam|ficariam)\s+melhor\s+sem\s+mim/i, reason: 'Ideação de que estariam melhor sem si' },
+
+  // Perda de Forças / "Não dou conta" / Desesperança Crítica
+  { pattern: /(?:nao|nunca)\s+(?:estou|to)?\s*dando\s+conta/i, reason: 'Exaustão crítica / Não estar dando conta' },
+  { pattern: /(?:nao|nunca)\s+dou\s+(?:mais\s+)?conta/i, reason: 'Incapacidade extrema / Não dar conta' },
+  { pattern: /(?:nao|nunca)\s+(?:vou\s+dar|consigo\s+dar|aguento\s+dar)\s+conta/i, reason: 'Incapacidade extrema de dar conta' },
+  { pattern: /(?:nao|nunca)\s+(?:aguento|suporto|resisto)\s+mais/i, reason: 'Esgotamento crítico / Não aguentar mais' },
+  { pattern: /(?:nao\s+estou|nao\s+to|nao\s+consigo)\s+aguentando/i, reason: 'Exaustão crítica / Não estar aguentando' },
+  { pattern: /(?:nao\s+presto|nao\s+sirvo)\s+(?:pra\s+ser|para\s+ser|pra|para|nada)/i, reason: 'Autodepreciação extrema' },
+  { pattern: /(?:me\s+sinto\s+)?(?:inutil|sem\s+valor)/i, reason: 'Sentimento de desvalia total' },
+  { pattern: /(?:nao\s+quero|cansei\s+de|sem\s+vontade\s+de)\s+viver/i, reason: 'Perda do desejo de viver' },
+  { pattern: /(?:perdi|sem)\s+(?:o\s+)?sentido\s+(?:de\s+viver|da\s+vida|em\s+viver)/i, reason: 'Perda de sentido vital' },
+  { pattern: /(?:minha\s+vida|tudo)\s+(?:perdeu\s+o\s+sentido|nao\s+tem\s+mais\s+sentido|acabou)/i, reason: 'Desesperança total' },
+  { pattern: /(?:sem|perdi\s+(?:as|a))\s+forcas?\s+(?:pra\s+continuar|para\s+continuar|pra\s+viver)?/i, reason: 'Ausência total de forças' },
+  { pattern: /(?:minhas\s+)?forcas?\s+acabaram/i, reason: 'Forças esgotadas' },
+  { pattern: /(?:nao\s+tenho|nao\s+vejo)\s+(?:mais\s+)?saida/i, reason: 'Sensação de estar sem saída' },
+  { pattern: /\bsem\s+saida\b/i, reason: 'Sensação de sem saída' },
+  { pattern: /(?:cheguei|estou)\s+(?:no\s+meu\s+|ao\s+meu\s+|no\s+)?limite/i, reason: 'Limite extrapolado' },
+  { pattern: /(?:cheguei|estou)\s+no\s+fundo\s+do\s+poco/i, reason: 'Sensação de fundo do poço' },
+  { pattern: /\bdesespero\s+(?:total|profundo)\b/i, reason: 'Desespero agudo' },
+
+  // Ações de Risco Imediato / Autoagressão
+  { pattern: /(?:tirar|dar\s+fim\s+a|dar\s+um\s+fim\s+na)\s+(?:minha\s+)?vida/i, reason: 'Risco iminente à vida' },
+  { pattern: /(?:acabar\s+com\s+tudo|por\s+um\s+fim|por\s+um\s+fim\s+em\s+tudo)/i, reason: 'Ideação de término drástico' },
+  { pattern: /(?:fazer|cometer)\s+(?:uma\s+)?besteira/i, reason: 'Menção a fazer besteira' },
+  { pattern: /(?:me\s+machucar|me\s+ferir|me\s+cortar|automutilacao|me\s+matar|se\s+matar)/i, reason: 'Autoagressão explícita' },
+  { pattern: /\b(?:suicidio|pensamentos\s+suicidas)\b/i, reason: 'Menção direta a suicídio' },
+  { pattern: /(?:dormir|apagar)\s+e\s+(?:nunca\s+mais\s+|nao\s+)?(?:nao\s+acordar|nunca\s+mais\s+acordar)/i, reason: 'Desejo de não acordar' },
+  { pattern: /(?:tomar|beber)\s+(?:todos\s+os|uma\s+cartela\s+de)\s+remedios/i, reason: 'Risco de intoxicação medicamentosa' }
 ];
 
-// Expressões de Antijulgamento, Hostilidade ou Mom-Shaming
+// Expressões legadas de vulnerabilidade para verificação direta
+export const VULNERABILITY_KEYWORDS = [
+  'vontade de sumir', 'quero sumir', 'pensando em sumir', 'sumir de vez', 'sumir do mapa', 'preciso sumir',
+  'vontade de morrer', 'quero morrer', 'pensando em morrer', 'desejo de morrer', 'vontade de desaparecer',
+  'quero desaparecer', 'desaparecer do mundo', 'não aguento mais', 'nao aguento mais', 'não aguento mais viver',
+  'não suporto mais', 'não vejo saída', 'sem saída', 'acabar com tudo', 'por um fim', 'pôr um fim',
+  'fazer besteira', 'fazer uma besteira', 'me machucar', 'me ferir', 'tirar minha vida', 'não quero mais viver',
+  'não dou mais conta', 'não dou conta', 'não estou dando conta', 'não tenho mais forças', 'perdi o sentido',
+  'sem vontade de viver', 'sem forças pra continuar', 'esgotamento extremo', 'não sou importante', 'me sinto um peso'
+];
+
+// 2. PADRÕES DE OFENSAS, CRÍTICA PESADA (MOM-SHAMING) E TOM IMPOSITIVO
+export const OFFENSIVE_PATTERNS = [
+  // Palavras de Baixo Calão / Xingamentos com limites de palavra
+  { pattern: /\b(?:puta|putas|filh[ao]\s+da\s+puta|fdp|pqp|porra|caralho|merda|bosta)\b/i, reason: 'Linguagem obscena / ofensiva' },
+  { pattern: /\b(?:arrombad[ao]|babaca|otari[ao]|imbecil|idiota|estupid[ao]|retardad[ao]|burr[ao]|burr[ao]s|incompetente)\b/i, reason: 'Xingamento / Ofensa direta' },
+  { pattern: /\b(?:vagabund[ao]|desgracad[ao]|desgraca|escrot[ao]|cuz[ao]o|canalha|cretin[ao]|nojent[ao])\b/i, reason: 'Xingamento / Ofensa degradante' },
+  { pattern: /\b(?:vai\s+se\s+foder|vai\s+tomar\s+no\s+cu|vsf|vtnc|vsfd)\b/i, reason: 'Ofensa verbal grave' },
+
+  // Crítica Pesada / Mom-Shaming / Julgamento Parental Agressivo
+  { pattern: /\b(?:pessim[ao]|ruim|horrivel|de\s+merda)\s+(?:mae|pai)\b/i, reason: 'Julgamento parental destrutivo' },
+  { pattern: /\b(?:mae|pai)\s+(?:pessim[ao]|ruim|horrivel|de\s+merda|desnaturad[ao])\b/i, reason: 'Ataque à maternidade/paternidade' },
+  { pattern: /\b(?:desnaturad[ao]|irresponsavel|negligente|relaxad[ao]|preguicos[ao]|egoista)\b/i, reason: 'Acusação pejorativa' },
+  { pattern: /\b(?:mae\s+louca|louca\s+varrida|desequilibrada|surtada|histerica)\b/i, reason: 'Desqualificação psicológica agressiva' },
+  { pattern: /\bcoitad[ao]\s+(?:do\s+bebe|da\s+crianca|do\s+seu\s+filho|da\s+sua\s+filha)\b/i, reason: 'Julgamento culpabilizador' },
+  { pattern: /\b(?:deveria\s+ter|tenha|crie)\s+vergonha\b/i, reason: 'Humilhação / Shaming' },
+  { pattern: /\bnao\s+(?:sabe\s+ser|serve\s+pra\s+ser)\s+(?:mae|pai)\b/i, reason: 'Invalidação parental' },
+  { pattern: /\bnao\s+devia\s+ter\s+tido\s+filho\b/i, reason: 'Ataque pessoal extremo' },
+  { pattern: /\b(?:estragando|destruindo|traumatizando)\s+(?:seu\s+filho|sua\s+filha|o\s+bebe|a\s+crianca)\b/i, reason: 'Acusação de dano à criança' },
+  { pattern: /\b(?:vai\s+matar|fazendo\s+mal\s+pr[ao])\s+(?:bebe|crianca|filh[ao])\b/i, reason: 'Acusação grave de perigo' },
+  { pattern: /\b(?:mimimi|frescura|vitimismo|para\s+de\s+drama|choradeira)\b/i, reason: 'Minimização agressiva / Julgamento' },
+  { pattern: /\b(?:culpa\s+sua|a\s+culpa\s+e\s+toda\s+sua|voce\s+procurou|bem\s+feito)\b/i, reason: 'Culpabilização agressiva' },
+
+  // Tom Exageradamente Impositivo / Intimidatório
+  { pattern: /\bcala(?:r)?\s+(?:a\s+|sua\s+|essa\s+)?boca\b/i, reason: 'Tom impositivo: Mandato de silenciamento' },
+  { pattern: /\bcala\s+e\s+escuta\b/i, reason: 'Tom impositivo: Silenciamento agressivo' },
+  { pattern: /\bfica\s+(?:quieta|quieto|calada|calado)\b/i, reason: 'Tom impositivo: Silenciamento agressivo' },
+  { pattern: /\bengol(?:a|e)\s+(?:o\s+)?choro\b/i, reason: 'Tom impositivo: Supressão emocional violenta' },
+  { pattern: /\b(?:voce\s+e\s+|sua\s+)?obrigad[ao]\s+a\b/i, reason: 'Tom impositivo: Imposição de obrigatoriedade' },
+  { pattern: /\b(?:tem\s+que|e\s+sua\s+obrigacao)\s+calar\b/i, reason: 'Tom impositivo: Ordem abusiva' },
+  { pattern: /\bvai\s+(?:se\s+tratar|pro\s+hospicio|tomar\s+remedio)\b/i, reason: 'Agressão / Desqualificação médica' },
+  { pattern: /\bnao\s+tem\s+(?:o\s+)?direito\s+de\s+reclamar\b/i, reason: 'Tom impositivo: Cassação de fala' },
+  { pattern: /\bnao\s+tem\s+moral\b/i, reason: 'Tom impositivo / Ofensa moral' },
+  { pattern: /\bpara\s+de\s+(?:reclamar|falar\s+besteira|falar\s+bobagem)\b/i, reason: 'Tom impositivo: Interrupção agressiva' },
+  { pattern: /\b(?:faca\s+o\s+que\s+eu\s+mando|quem\s+manda\s+sou\s+eu)\b/i, reason: 'Tom impositivo: Autoritarismo' },
+  { pattern: /\bvoce\s+nao\s+sabe\s+nada\b/i, reason: 'Desqualificação intelectual agressiva' }
+];
+
+// Expressões legadas de antijulgamento para verificação direta
 export const SHAMING_KEYWORDS = [
-  'irresponsavel', 'irresponsável',
-  'relaxada', 'preguicosa', 'preguiçosa',
-  'pessima mae', 'péssima mãe',
-  'pessimo pai', 'péssimo pai',
-  'mae ruim', 'mãe ruim',
-  'culpa sua', 'deveria ter vergonha',
-  'sem nocao', 'sem noção',
-  'coitado do bebe', 'coitado do bebê',
-  'absurdo fazer isso', 'mae louca', 'mãe louca',
-  'negligente', 'egoista', 'egoísta',
-  'burra', 'idiota', 'mimimi', 'frescura'
+  'irresponsavel', 'irresponsável', 'relaxada', 'preguicosa', 'preguiçosa',
+  'pessima mae', 'péssima mãe', 'pessimo pai', 'péssimo pai', 'mae ruim', 'mãe ruim',
+  'culpa sua', 'deveria ter vergonha', 'sem nocao', 'sem noção', 'coitado do bebe',
+  'coitado do bebê', 'absurdo fazer isso', 'mae louca', 'mãe louca', 'negligente',
+  'egoista', 'egoísta', 'burra', 'idiota', 'mimimi', 'frescura'
 ];
 
 export type SensitivityFlagType = 'vulnerabilidade' | 'antijulgamento';
@@ -88,11 +147,25 @@ export interface ContentSensitivityResult {
 
 export const checkContentSensitivity = (text: string): ContentSensitivityResult => {
   if (!text) return { isFlagged: false };
-  const lower = text.toLowerCase();
+  const normalized = normalizeText(text);
 
-  // 1. Prioridade Máxima: Sofrimento profundo / acolhimento e vulnerabilidade
+  // 1. PRIORIDADE MÁXIMA: Risco à Vida, Ideação, Desvalia Extrema e Sofrimento Profundo
+  for (const item of VULNERABILITY_PATTERNS) {
+    const match = normalized.match(item.pattern);
+    if (match) {
+      return {
+        isFlagged: true,
+        type: 'vulnerabilidade',
+        matchedWord: match[0],
+        flagReason: `Alerta de Acolhimento: "${match[0]}" (${item.reason})`,
+        suggestsCrisisSupport: true
+      };
+    }
+  }
+
   for (const word of VULNERABILITY_KEYWORDS) {
-    if (lower.includes(word)) {
+    const normWord = normalizeText(word);
+    if (normalized.includes(normWord)) {
       return {
         isFlagged: true,
         type: 'vulnerabilidade',
@@ -103,9 +176,23 @@ export const checkContentSensitivity = (text: string): ContentSensitivityResult 
     }
   }
 
-  // 2. Moderação Antijulgamento / mom-shaming / hostilidade
+  // 2. OFENSAS, BAIXO CALÃO, CRÍTICA PESADA (MOM-SHAMING) E TOM IMPOSITIVO
+  for (const item of OFFENSIVE_PATTERNS) {
+    const match = normalized.match(item.pattern);
+    if (match) {
+      return {
+        isFlagged: true,
+        type: 'antijulgamento',
+        matchedWord: match[0],
+        flagReason: `Alerta Antijulgamento: "${match[0]}" (${item.reason})`,
+        suggestsCrisisSupport: false
+      };
+    }
+  }
+
   for (const word of SHAMING_KEYWORDS) {
-    if (lower.includes(word)) {
+    const normWord = normalizeText(word);
+    if (normalized.includes(normWord)) {
       return {
         isFlagged: true,
         type: 'antijulgamento',
@@ -159,7 +246,7 @@ interface CommunityContextType {
   createPost: (payload: CreatePostPayload) => void;
   toggleReaction: (postId: string, reactionKey: string) => void;
   toggleCommentReaction: (postId: string, commentId: string, reactionKey: string) => void;
-  addComment: (postId: string, content: string, isAnonymous?: boolean) => { isFlagged: boolean; matchedWord?: string };
+  addComment: (postId: string, content: string, isAnonymous?: boolean) => { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType };
   refreshPosts: () => Promise<void>;
   // 🗳️ Enquetes da Comunidade ("Sua Voz Importa")
   polls: CommunityPoll[];
@@ -646,10 +733,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }));
   };
 
-  const addComment = (postId: string, content: string, isAnonymousInput?: boolean): { isFlagged: boolean; matchedWord?: string } => {
+  const addComment = (postId: string, content: string, isAnonymousInput?: boolean): { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType } => {
     if (!user) return { isFlagged: false };
 
-    const { isFlagged, matchedWord } = checkAntiShaming(content);
+    const { isFlagged, matchedWord, flagType } = checkAntiShaming(content);
     const commentStatus = isFlagged ? ('sob_moderacao' as const) : ('aprovado' as const);
 
     const isConfession = posts.find(p => p.id === postId)?.transversalRoomId === 'confessionario';
@@ -718,7 +805,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
     }
 
-    return { isFlagged, matchedWord };
+    return { isFlagged, matchedWord, flagType };
   };
 
   const votePoll = async (pollId: string, optionId: string) => {

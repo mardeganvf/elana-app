@@ -98,8 +98,12 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       isAnonymous: isConfessionario
     });
 
-    if (sensitivity.isFlagged && sensitivity.type === 'vulnerabilidade') {
-      showToast('info', 'Recebemos seu relato com carinho, mas notamos algo sensível. Nossa equipe está dando uma olhadinha na publicação.');
+    if (sensitivity.isFlagged) {
+      if (sensitivity.type === 'vulnerabilidade') {
+        showToast('info', 'Recebemos seu relato com carinho, mas notamos algo sensível. Nossa equipe está dando uma olhadinha na publicação.');
+      } else {
+        showToast('warning', 'Identificamos termos sensíveis ou de tom impositivo. Sua publicação foi enviada para moderação preventiva da equipe.');
+      }
     }
 
     onClose();

@@ -559,8 +559,8 @@ export const CommunityPage: React.FC = () => {
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [commentAnonMap, setCommentAnonMap] = useState<Record<string, boolean>>({});
 
-  // IA Antijulgamento (Anti-Mom Shaming Filter) Modal State
-  const [flaggedCommentInfo, setFlaggedCommentInfo] = useState<{ isOpen: boolean; matchedWord?: string } | null>(null);
+  // IA Antijulgamento & Acolhimento Modal State
+  const [flaggedCommentInfo, setFlaggedCommentInfo] = useState<{ isOpen: boolean; matchedWord?: string; flagType?: 'vulnerabilidade' | 'antijulgamento' } | null>(null);
 
   // Feed Pagination State (Initial 15 topics, +15 on "Carregar Mais")
   const [visibleCount, setVisibleCount] = useState(15);
@@ -883,7 +883,7 @@ export const CommunityPage: React.FC = () => {
     const result = addComment(postId, content.trim(), isAnon);
 
     if (result && result.isFlagged) {
-      setFlaggedCommentInfo({ isOpen: true, matchedWord: result.matchedWord });
+      setFlaggedCommentInfo({ isOpen: true, matchedWord: result.matchedWord, flagType: result.flagType });
     }
 
     // Reset input
@@ -1877,7 +1877,11 @@ export const CommunityPage: React.FC = () => {
       {/* IA Antijulgamento (Anti-Mom Shaming Filter) Warning Modal */}
       {flaggedCommentInfo?.isOpen && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
-          <div className="bg-[#101B1E] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-amber-500/40 relative text-center space-y-5 m-auto">
+          <div className={`bg-[#101B1E] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative text-center space-y-5 m-auto ${
+            flaggedCommentInfo.flagType === 'vulnerabilidade'
+              ? 'border border-rose-500/40'
+              : 'border border-amber-500/40'
+          }`}>
             
             <button
               onClick={() => setFlaggedCommentInfo(null)}
@@ -1887,28 +1891,57 @@ export const CommunityPage: React.FC = () => {
               <X className="w-4 h-4" />
             </button>
 
-            <div className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center mx-auto text-2xl shadow-lg animate-pulse">
-              🛡️
-            </div>
+            {flaggedCommentInfo.flagType === 'vulnerabilidade' ? (
+              <>
+                <div className="w-16 h-16 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center mx-auto text-2xl shadow-lg animate-pulse">
+                  ❤️
+                </div>
 
-            <div className="space-y-2">
-              <span className="text-xs font-extrabold text-amber-400 uppercase tracking-wider block">
-                IA Antijulgamento Elana — Moderação Preventiva
-              </span>
-              <h3 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                Mensagem Encaminhada para Análise
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed bg-[#070D0F] p-4 rounded-2xl border border-white/10 text-center">
-                Identificamos palavras com potencial tom crítico ou agressivo. Na <strong>Elana Academy</strong>, cultivamos um ambiente 100% acolhedor e livre de <em>mom-shaming</em>. Sua mensagem foi encaminhada com prioridade para a nossa equipe de moderação analisar antes de ser publicada. 💖
-              </p>
-            </div>
+                <div className="space-y-2">
+                  <span className="text-xs font-extrabold text-rose-400 uppercase tracking-wider block">
+                    Acolhimento & Suporte Prioritário
+                  </span>
+                  <h3 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Você não está só
+                  </h3>
+                  <p className="text-xs text-slate-300 leading-relaxed bg-[#070D0F] p-4 rounded-2xl border border-white/10 text-center">
+                    Identificamos que você pode estar passando por um momento delicado ou de profunda sobrecarga. Recebemos seu comentário com carinho e nossa equipe está atenta para acolher você. Se precisar de apoio imediato, ligue gratuitamente para o <strong>CVV (188)</strong>. 🌸
+                  </p>
+                </div>
 
-            <button
-              onClick={() => setFlaggedCommentInfo(null)}
-              className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all"
-            >
-              Entendi. Acompanhar Moderação
-            </button>
+                <button
+                  onClick={() => setFlaggedCommentInfo(null)}
+                  className="w-full bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all"
+                >
+                  Entendi. Obrigado pelo cuidado
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center mx-auto text-2xl shadow-lg animate-pulse">
+                  🛡️
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-xs font-extrabold text-amber-400 uppercase tracking-wider block">
+                    IA Antijulgamento Elana — Moderação Preventiva
+                  </span>
+                  <h3 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Mensagem Encaminhada para Análise
+                  </h3>
+                  <p className="text-xs text-slate-300 leading-relaxed bg-[#070D0F] p-4 rounded-2xl border border-white/10 text-center">
+                    Identificamos palavras com potencial tom crítico, ofensivo ou impositivo. Na <strong>Elana Academy</strong>, cultivamos um ambiente 100% acolhedor e livre de <em>mom-shaming</em>. Sua mensagem foi encaminhada com prioridade para a nossa equipe de moderação analisar antes de ser publicada. 💖
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setFlaggedCommentInfo(null)}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all"
+                >
+                  Entendi. Acompanhar Moderação
+                </button>
+              </>
+            )}
 
           </div>
         </div>,
