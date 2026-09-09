@@ -599,10 +599,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           checkAndAddBadge('b29'); // Voz de Coragem (1º post)
           postsRes.data.forEach(p => {
             if (p.is_anonymous || p.transversal_room_id === 'confessionario') checkAndAddBadge('b30');
-            if (p.transversal_room_id === 'cantinho-da-mel' || p.transversal_room_id === 'trocas-livres') checkAndAddBadge('b31');
+            if (p.transversal_room_id === 'cantinho-mel' || p.transversal_room_id === 'cantinho-da-mel' || p.transversal_room_id === 'trocas-livres') checkAndAddBadge('b31');
             if (p.transversal_room_id === 'espaco-dois') checkAndAddBadge('b32');
-            if (p.transversal_room_id === 'cuidando-de-quem-cuida') checkAndAddBadge('b33');
+            if (p.transversal_room_id === 'cuidando-quem-cuida' || p.transversal_room_id === 'cuidando-de-quem-cuida') checkAndAddBadge('b33');
           });
+        }
+        if (unlockedBadgeIds.has('b30') && unlockedBadgeIds.has('b31') && unlockedBadgeIds.has('b32') && unlockedBadgeIds.has('b33')) {
+          checkAndAddBadge('b34'); // Explorador da Comunidade
         }
 
         if (commentsRes.data && commentsRes.data.length > 0) {

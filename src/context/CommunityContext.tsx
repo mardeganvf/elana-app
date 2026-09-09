@@ -548,6 +548,30 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     await fetchSupabasePosts(false);
   };
 
+  // 🏆 Sincronização Retroativa de Conquistas de Salas da Comunidade
+  useEffect(() => {
+    if (!user?.id || posts.length === 0) return;
+    const userPosts = posts.filter(p => p.authorId === user.id || (!p.isAnonymous && p.authorName === user.name));
+    if (userPosts.length > 0) {
+      awardBadge('b29'); // Voz de Coragem
+      userPosts.forEach(p => {
+        const room = p.transversalRoomId;
+        if (p.isAnonymous || room === 'confessionario') {
+          awardBadge('b30');
+        }
+        if (room === 'cantinho-mel' || room === 'cantinho-da-mel' || room === 'trocas-livres') {
+          awardBadge('b31');
+        }
+        if (room === 'espaco-dois') {
+          awardBadge('b32');
+        }
+        if (room === 'cuidando-quem-cuida' || room === 'cuidando-de-quem-cuida') {
+          awardBadge('b33');
+        }
+      });
+    }
+  }, [user?.id, user?.name, posts]);
+
   // Supabase Realtime: live posts, reactions, comments and polls via WebSockets
   useEffect(() => {
     const channel = supabase
@@ -740,20 +764,39 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (isAnonymous || payload.transversalRoomId === 'confessionario') {
       awardBadge('b30'); // Confissão Liberta
     }
-    if (payload.transversalRoomId === 'cantinho-da-mel' || payload.transversalRoomId === 'trocas-livres') {
+    if (payload.transversalRoomId === 'cantinho-mel' || payload.transversalRoomId === 'cantinho-da-mel' || payload.transversalRoomId === 'trocas-livres') {
       awardBadge('b31'); // Roda de Conversa
     }
     if (payload.transversalRoomId === 'espaco-dois') {
       awardBadge('b32'); // Ponte a Dois
     }
-    if (payload.transversalRoomId === 'cuidando-de-quem-cuida') {
+    if (payload.transversalRoomId === 'cuidando-quem-cuida' || payload.transversalRoomId === 'cuidando-de-quem-cuida') {
       awardBadge('b33'); // Máscara de Oxigênio
+    }
+
+    // Checar se completou as 4 salas para b34 (Explorador da Comunidade)
+    const currentBadges = new Set((user?.badges || []).map(b => b.id));
+    if (isAnonymous || payload.transversalRoomId === 'confessionario') currentBadges.add('b30');
+    if (payload.transversalRoomId === 'cantinho-mel' || payload.transversalRoomId === 'cantinho-da-mel' || payload.transversalRoomId === 'trocas-livres') currentBadges.add('b31');
+    if (payload.transversalRoomId === 'espaco-dois') currentBadges.add('b32');
+    if (payload.transversalRoomId === 'cuidando-quem-cuida' || payload.transversalRoomId === 'cuidando-de-quem-cuida') currentBadges.add('b33');
+    if (currentBadges.has('b30') && currentBadges.has('b31') && currentBadges.has('b32') && currentBadges.has('b33')) {
+      awardBadge('b34');
     }
   };
 
   const toggleReaction = (postId: string, reactionKey: string) => {
     // 🏆 Conquista: Acolhimento Pleno (usou reações)
     awardBadge('b35');
+
+    const targetPost = posts.find(p => p.id === postId);
+    if (targetPost?.transversalRoomId) {
+      const room = targetPost.transversalRoomId;
+      if (room === 'confessionario') awardBadge('b30');
+      if (room === 'cantinho-mel' || room === 'cantinho-da-mel' || room === 'trocas-livres') awardBadge('b31');
+      if (room === 'espaco-dois') awardBadge('b32');
+      if (room === 'cuidando-quem-cuida' || room === 'cuidando-de-quem-cuida') awardBadge('b33');
+    }
 
     setPosts(prev => prev.map(post => {
       if (post.id === postId) {
@@ -894,6 +937,17 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       // 🏆 Conquistas de Comentários / Rede de Apoio:
       awardBadge('b36'); // Primeiro Acolhimento
+
+      // 🏆 Conquistas por sala de apoio (ao comentar no post daquela sala):
+      const parentPost = posts.find(p => p.id === postId);
+      if (parentPost?.transversalRoomId) {
+        const room = parentPost.transversalRoomId;
+        if (room === 'confessionario') awardBadge('b30');
+        if (room === 'cantinho-mel' || room === 'cantinho-da-mel' || room === 'trocas-livres') awardBadge('b31');
+        if (room === 'espaco-dois') awardBadge('b32');
+        if (room === 'cuidando-quem-cuida' || room === 'cuidando-de-quem-cuida') awardBadge('b33');
+      }
+
       supabase
         .from('community_comments')
         .select('*', { count: 'exact', head: true })
