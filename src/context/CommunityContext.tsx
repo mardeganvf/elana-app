@@ -286,7 +286,7 @@ export const checkContentSensitivityAI = async (
   // 2. Análise contextual avançada via Supabase Edge Function com IA Gemini
   try {
     const timeoutPromise = new Promise<{ error: string }>((resolve) =>
-      setTimeout(() => resolve({ error: 'TIMEOUT' }), 12000)
+      setTimeout(() => resolve({ error: 'TIMEOUT' }), 4500)
     );
 
     const invokePromise = supabase.functions.invoke('moderate-content', {

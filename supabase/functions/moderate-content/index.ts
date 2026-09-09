@@ -68,17 +68,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Chamar a API REST do Gemini com redundância multi-modelo
-    const models = ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.7-flash'];
+    // Chamar com prioridade o gemini-3.5-flash-lite (ultra-rápido: ~1.1s) e fallback para gemini-3.6-flash
+    const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash'];
     let lastError: any = null;
     let parsed: any = null;
+    let usedModel: string = '';
 
     for (const model of models) {
       try {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         const geminiResponse = await fetch(geminiUrl, {
           method: 'POST',
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(3500),
           headers: {
             'Content-Type': 'application/json',
           },
@@ -93,7 +94,8 @@ Deno.serve(async (req) => {
             ],
             generationConfig: {
               response_mime_type: 'application/json',
-              temperature: 0.1
+              temperature: 0.1,
+              max_output_tokens: 120
             }
           })
         });
@@ -119,6 +121,7 @@ Deno.serve(async (req) => {
             matchedContext: text.trim().slice(0, 100),
             suggestsCrisisSupport: false
           };
+          usedModel = model;
           break;
         }
 
@@ -126,6 +129,7 @@ Deno.serve(async (req) => {
         if (candidateText) {
           try {
             parsed = JSON.parse(candidateText);
+            usedModel = model;
             break;
           } catch (jsonErr: any) {
             console.warn('Erro ao parsear resposta JSON do Gemini:', jsonErr);
