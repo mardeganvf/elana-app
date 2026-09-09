@@ -35,8 +35,10 @@ import {
   Wind,
   X,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  Flag
 } from 'lucide-react';
+import { ReportModal } from '../components/community/ReportModal';
 
 export type ActiveSelection = 
   | { type: 'jornada'; journeyId: string; subOption: 'ajuda' | 'celebrar' | 'desabafar' | 'abertas' }
@@ -475,6 +477,7 @@ export const CommunityPage: React.FC = () => {
     toggleReaction, 
     toggleCommentReaction, 
     addComment,
+    reportContent,
     activePoll,
     userVotedPollsMap
   } = useCommunity();
@@ -570,6 +573,9 @@ export const CommunityPage: React.FC = () => {
 
   // Public Profile Modal State
   const [selectedPublicProfile, setSelectedPublicProfile] = useState<PublicUserProfile | null>(null);
+
+  // Report Modal State
+  const [reportTarget, setReportTarget] = useState<{ contentType: 'post' | 'comment'; contentId: string; postId: string | null } | null>(null);
 
   const openAuthorProfile = async (author: {
     id: string;
@@ -1713,6 +1719,19 @@ export const CommunityPage: React.FC = () => {
                             </button>
                           );
                         })}
+
+                        {/* Botão Denunciar — só aparece para posts de outros usuários */}
+                        {user && post.authorId !== user.id && (
+                          <button
+                            type="button"
+                            title="Denunciar publicação"
+                            onClick={() => setReportTarget({ contentType: 'post', contentId: post.id, postId: null })}
+                            className="ml-auto flex items-center gap-1 px-2 py-1.5 rounded-xl text-[10px] font-bold text-slate-500 border border-transparent hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all"
+                          >
+                            <Flag className="w-3 h-3" />
+                            Denunciar
+                          </button>
+                        )}
                       </div>
 
                       {/* Rede de Apoio com X Respostas Button (Inline Expand Toggle) */}
@@ -1770,7 +1789,19 @@ export const CommunityPage: React.FC = () => {
                                               >
                                                 <span className={`font-bold text-xs text-white ${(c.isAnonymous || post.isAnonymous) ? '' : 'group-hover:text-[#FF7F5B] transition-colors'}`}>{c.authorName}</span>
                                               </div>
-                                              <span className="text-[10px] text-slate-400">{c.createdAt}</span>
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-[10px] text-slate-400">{c.createdAt}</span>
+                                                {user && c.authorId !== user.id && (
+                                                  <button
+                                                    type="button"
+                                                    title="Denunciar comentário"
+                                                    onClick={() => setReportTarget({ contentType: 'comment', contentId: c.id, postId: post.id })}
+                                                    className="flex items-center gap-0.5 text-[10px] text-slate-500 hover:text-rose-400 transition-colors"
+                                                  >
+                                                    <Flag className="w-2.5 h-2.5" />
+                                                  </button>
+                                                )}
+                                              </div>
                                             </div>
                                             <p className="text-slate-300 leading-relaxed">{c.content}</p>
 
@@ -1973,6 +2004,17 @@ export const CommunityPage: React.FC = () => {
         <PublicProfileModal
           profile={selectedPublicProfile}
           onClose={() => setSelectedPublicProfile(null)}
+        />
+      )}
+
+      {/* Report Modal */}
+      {reportTarget && (
+        <ReportModal
+          contentType={reportTarget.contentType}
+          contentId={reportTarget.contentId}
+          postId={reportTarget.postId}
+          onClose={() => setReportTarget(null)}
+          onReport={reportContent}
         />
       )}
 

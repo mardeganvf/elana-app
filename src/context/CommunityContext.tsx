@@ -353,6 +353,7 @@ interface CommunityContextType {
   addComment: (postId: string, content: string, isAnonymous?: boolean, customSensitivity?: ContentSensitivityResult) => { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType };
   refreshPosts: () => Promise<void>;
   deletePost: (postId: string) => void;
+  reportContent: (contentType: 'post' | 'comment', contentId: string, postId: string | null, reason: string) => Promise<{ success: boolean; alreadyReported?: boolean }>;
   polls: CommunityPoll[];
   activePoll: CommunityPoll | null;
   userVotedPollsMap: Record<string, string>;
@@ -1137,6 +1138,93 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setPosts(prev => prev.filter(p => p.id !== postId));
   };
 
+  // ─── Auto-moderação: denúncia de conteúdo pelos usuários ───────────────────
+  const REPORT_THRESHOLD = 3; // denúncias para ocultar automaticamente
+
+  const reportContent = async (
+    contentType: 'post' | 'comment',
+    contentId: string,
+    postId: string | null,
+    reason: string
+  ): Promise<{ success: boolean; alreadyReported?: boolean }> => {
+    if (!user) return { success: false };
+
+    try {
+      // 1. Inserir denúncia (UNIQUE constraint previne duplicata do mesmo usuário)
+      const { error: insertError } = await supabase
+        .from('community_reports')
+        .insert({
+          reporter_id: user.id,
+          content_type: contentType,
+          content_id: contentId,
+          reason
+        });
+
+      if (insertError) {
+        // Código 23505 = violação de UNIQUE → usuário já reportou este conteúdo
+        if (insertError.code === '23505') {
+          return { success: false, alreadyReported: true };
+        }
+        console.warn('[reportContent] Erro ao inserir denúncia:', insertError);
+        return { success: false };
+      }
+
+      // 2. Incrementar report_count (read-modify-write)
+      const table = contentType === 'post' ? 'community_posts' : 'community_comments';
+
+      const { data: current } = await supabase
+        .from(table)
+        .select('report_count, status')
+        .eq('id', contentId)
+        .single();
+
+      if (current) {
+        const newCount = (current.report_count || 0) + 1;
+        const shouldFlag = newCount >= REPORT_THRESHOLD && current.status !== 'sob_moderacao';
+
+        await supabase
+          .from(table)
+          .update({
+            report_count: newCount,
+            ...(shouldFlag ? { status: 'sob_moderacao' } : {})
+          })
+          .eq('id', contentId);
+
+        // 3. Atualizar estado local imediatamente
+        if (contentType === 'post') {
+          setPosts(prev => prev.map(p => {
+            if (p.id !== contentId) return p;
+            return {
+              ...p,
+              reportCount: newCount,
+              status: shouldFlag ? 'sob_moderacao' : p.status
+            };
+          }));
+        } else if (contentType === 'comment' && postId) {
+          setPosts(prev => prev.map(p => {
+            if (p.id !== postId) return p;
+            return {
+              ...p,
+              comments: p.comments.map(c => {
+                if (c.id !== contentId) return c;
+                return {
+                  ...c,
+                  reportCount: newCount,
+                  status: shouldFlag ? 'sob_moderacao' : c.status
+                };
+              })
+            };
+          }));
+        }
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.warn('[reportContent] Erro inesperado:', err);
+      return { success: false };
+    }
+  };
+
   return (
     <CommunityContext.Provider value={{
       posts,
@@ -1150,6 +1238,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       addComment,
       refreshPosts,
       deletePost,
+      reportContent,
       polls,
       activePoll,
       userVotedPollsMap,

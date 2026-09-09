@@ -111,6 +111,32 @@ CREATE TABLE IF NOT EXISTS public.community_comments (
 ALTER TABLE public.community_comments ALTER COLUMN post_id DROP NOT NULL;
 ALTER TABLE public.community_comments ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'aprovado';
 
+-- Colunas de contagem de denúncias
+ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS report_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE public.community_comments ADD COLUMN IF NOT EXISTS report_count INTEGER NOT NULL DEFAULT 0;
+
+-- 6b. TABELA DE DENÚNCIAS DA COMUNIDADE (auto-moderação)
+CREATE TABLE IF NOT EXISTS public.community_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reporter_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  content_type TEXT NOT NULL CHECK (content_type IN ('post', 'comment')),
+  content_id UUID NOT NULL,
+  reason TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(reporter_id, content_type, content_id)
+);
+
+-- RLS para community_reports
+ALTER TABLE public.community_reports ENABLE ROW LEVEL SECURITY;
+
+-- Usuários autenticados podem inserir apenas suas próprias denúncias
+CREATE POLICY IF NOT EXISTS "users_can_report" ON public.community_reports
+  FOR INSERT WITH CHECK (auth.uid() = reporter_id);
+
+-- Admins (service_role) podem ler todas as denúncias
+CREATE POLICY IF NOT EXISTS "admins_can_read_reports" ON public.community_reports
+  FOR SELECT USING (true);
+
 -- 7. TABELA DE BADGES / CONQUISTAS DESBLOQUEADAS
 CREATE TABLE IF NOT EXISTS public.user_badges (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

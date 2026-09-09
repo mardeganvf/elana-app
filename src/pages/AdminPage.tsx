@@ -58,6 +58,7 @@ interface ModerationItem {
   flagReason: string;
   createdAt: string;
   status: 'pendente' | 'aprovado' | 'rejeitado';
+  reportCount?: number;
 }
 
 interface MemberUser {
@@ -231,6 +232,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     const loadModeration = async () => {
       try {
         const approvedIds = getApprovedPostIds();
+
+        // Carregar posts
         const { data, error } = await supabase
           .from('community_posts')
           .select('*')
@@ -242,15 +245,36 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           return;
         }
 
+        // Carregar denúncias de usuários agrupadas por post
+        const { data: reportsData } = await supabase
+          .from('community_reports')
+          .select('content_id, reason')
+          .eq('content_type', 'post');
+
+        // Mapear content_id → { count, reasons }
+        const reportMap: Record<string, { count: number; reasons: string[] }> = {};
+        if (reportsData) {
+          for (const r of reportsData) {
+            if (!reportMap[r.content_id]) reportMap[r.content_id] = { count: 0, reasons: [] };
+            reportMap[r.content_id].count++;
+            if (!reportMap[r.content_id].reasons.includes(r.reason)) {
+              reportMap[r.content_id].reasons.push(r.reason);
+            }
+          }
+        }
+
         if (data && data.length > 0) {
           const items: ModerationItem[] = data.map(p => {
             const isPersistedApproved = p.category === 'aprovado' || approvedIds.has(p.id);
             const sensitivityCheck = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
-            const isExplicitlyFlagged = p.category === 'sob_moderacao';
+            const isExplicitlyFlagged = p.status === 'sob_moderacao' || p.category === 'sob_moderacao';
             const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
+            const postReports = reportMap[p.id];
 
             let flagReason = 'Conteúdo livre';
-            if (sensitivityCheck.isFlagged) {
+            if (postReports && postReports.count > 0) {
+              flagReason = `🚩 ${postReports.count} denúncia${postReports.count > 1 ? 's' : ''} de usuários: ${postReports.reasons.join(', ')}`;
+            } else if (sensitivityCheck.isFlagged) {
               flagReason = sensitivityCheck.flagReason || `Termo sensível: "${sensitivityCheck.matchedWord}"`;
             } else if (isExplicitlyFlagged) {
               flagReason = 'Retido para moderação preventiva';
@@ -259,10 +283,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             let status: 'pendente' | 'aprovado' | 'rejeitado' = 'aprovado';
             if (isPersistedApproved) {
               status = 'aprovado';
-            } else if (isSensitive) {
+            } else if (isSensitive || (postReports && postReports.count >= 3)) {
               status = 'pendente';
             } else {
-              // Não tem conteúdo sensível: aprovado automaticamente
               status = 'aprovado';
             }
 
@@ -274,7 +297,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               content: p.title ? `[${p.title}] ${p.content}` : p.content,
               flagReason,
               createdAt: new Date(p.created_at).toLocaleString('pt-BR'),
-              status
+              status,
+              reportCount: postReports?.count || p.report_count || 0
             };
           });
 
@@ -1259,6 +1283,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                           <h4 className="text-xs font-bold text-white">{item.authorName}</h4>
                           <span className="text-[10px] text-[#FF7F5B] font-bold">Sala: {item.roomName} • {item.createdAt}</span>
                         </div>
+                        {(item.reportCount ?? 0) > 0 && (
+                          <span className="ml-1 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                            🚩 {item.reportCount} denúncia{(item.reportCount ?? 0) > 1 ? 's' : ''}
+                          </span>
+                        )}
                       </div>
 
                       <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1.5 w-fit ${

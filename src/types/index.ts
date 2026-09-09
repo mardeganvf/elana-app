@@ -125,6 +125,7 @@ export interface CommunityComment {
   reactions?: Record<string, number>;
   userReactions?: Record<string, boolean>;
   status?: 'aprovado' | 'sob_moderacao';
+  reportCount?: number;
 }
 
 export interface CommunityPost {
@@ -150,6 +151,13 @@ export interface CommunityPost {
   reactions: Record<string, number>; // e.g. { estou_aqui: 5, vai_dar_certo: 3 }
   userReactions?: Record<string, boolean>; // e.g. { estou_aqui: true }
   comments: CommunityComment[];
+  reportCount?: number;
+}
+
+export interface ContentReport {
+  contentType: 'post' | 'comment';
+  contentId: string;
+  reason: string;
 }
 
 export interface StoryItem {
