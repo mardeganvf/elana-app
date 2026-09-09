@@ -483,6 +483,11 @@ export const CommunityPage: React.FC = () => {
   const { user, isAuthenticated, awardBadge } = useAuth();
   const { showToast } = useToast();
 
+  // Forçar atualização dos posts sempre que abrir a aba/página da Comunidade
+  useEffect(() => {
+    refreshPosts();
+  }, []);
+
   // Pull-to-Refresh State
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);

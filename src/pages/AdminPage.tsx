@@ -116,7 +116,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   };
 
   // 🗳️ Enquetes State
-  const { polls, createPoll, togglePollStatus } = useCommunity();
+  const { polls, createPoll, togglePollStatus, deletePost, refreshPosts } = useCommunity();
   const [newPollTitle, setNewPollTitle] = useState('');
   const [newPollDesc, setNewPollDesc] = useState('');
   const [newPollOptions, setNewPollOptions] = useState<string[]>(['', '']);
@@ -366,17 +366,20 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           .from('community_posts')
           .update({ category: 'aprovado' })
           .eq('id', id);
+        await refreshPosts();
       } catch (err) {
         console.warn('Erro ao salvar aprovação no Supabase:', err);
       }
       showToast('success', 'Publicação aprovada e mantida na comunidade!');
     } else if (newStatus === 'rejeitado') {
       removeApprovedPostId(id);
+      deletePost(id);
       try {
         await supabase
           .from('community_posts')
           .delete()
           .eq('id', id);
+        await refreshPosts();
       } catch (err) {
         console.warn('Erro ao deletar post rejeitado no Supabase:', err);
       }

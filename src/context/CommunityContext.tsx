@@ -332,6 +332,7 @@ interface CommunityContextType {
   toggleCommentReaction: (postId: string, commentId: string, reactionKey: string) => void;
   addComment: (postId: string, content: string, isAnonymous?: boolean, customSensitivity?: ContentSensitivityResult) => { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType };
   refreshPosts: () => Promise<void>;
+  deletePost: (postId: string) => void;
   polls: CommunityPoll[];
   activePoll: CommunityPoll | null;
   userVotedPollsMap: Record<string, string>;
@@ -576,11 +577,22 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 ...p,
                 reactions: updated.reactions || p.reactions,
                 title: updated.title,
-                content: updated.content
+                content: updated.content,
+                status: (updated.category || updated.status || p.status) as any,
+                sensitivityLevel: updated.category === 'sob_moderacao' ? 'critico' : p.sensitivityLevel
               };
             }
             return p;
           }));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'community_posts' },
+        (payload: any) => {
+          const oldItem = payload.old;
+          if (!oldItem || !oldItem.id) return;
+          setPosts(prev => prev.filter(p => p.id !== oldItem.id));
         }
       )
       .on(
@@ -1025,6 +1037,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const deletePost = (postId: string) => {
+    setPosts(prev => prev.filter(p => p.id !== postId));
+  };
+
   return (
     <CommunityContext.Provider value={{
       posts,
@@ -1037,6 +1053,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       toggleCommentReaction,
       addComment,
       refreshPosts,
+      deletePost,
       polls,
       activePoll,
       userVotedPollsMap,

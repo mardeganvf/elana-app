@@ -43,7 +43,7 @@ const PageLoadingFallback: React.FC = () => (
 
 const AppContent: React.FC = () => {
   const { user, login, unlockedBadgeModal, closeBadgeModal, unlockedLevelUpModal, closeLevelUpModal } = useAuth();
-  const { activePoll, userVotedPollsMap } = useCommunity();
+  const { activePoll, userVotedPollsMap, refreshPosts } = useCommunity();
   const { journeys } = useJourneys();
   
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -114,6 +114,13 @@ const AppContent: React.FC = () => {
     }
   }, [user?.email, user?.onboardingCompleted]);
 
+  // 🔄 Atualização automática dos posts da Comunidade ao mudar para a aba 'community'
+  useEffect(() => {
+    if (activeTab === 'community') {
+      refreshPosts();
+    }
+  }, [activeTab]);
+
   const handleSelectJourney = (journey: Journey) => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     if (user?.purchasedJourneyIds.includes(journey.id)) {
@@ -161,6 +168,9 @@ const AppContent: React.FC = () => {
           activeTab={activeTab}
           setActiveTab={(tab) => {
             setActiveTab(tab);
+            if (tab === 'community') {
+              refreshPosts();
+            }
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
           }}
           onOpenAuthModal={() => {
