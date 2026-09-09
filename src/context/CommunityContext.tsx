@@ -580,6 +580,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const userPosts = posts.filter(p => p.authorId === user.id || (!p.isAnonymous && p.authorName === user.name));
     if (userPosts.length > 0) {
       awardBadge('b29'); // Voz de Coragem
+      let totalReactions = 0;
       userPosts.forEach(p => {
         const room = p.transversalRoomId;
         if (p.isAnonymous || room === 'confessionario') {
