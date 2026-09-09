@@ -300,8 +300,9 @@ interface CommunityContextType {
   loadMorePosts: () => Promise<void>;
   createPost: (payload: CreatePostPayload) => void;
   toggleReaction: (postId: string, reactionKey: string) => void;
+  toggleCommentReaction: (postId: string, commentId: string, reactionKey: string) => void;
   addComment: (postId: string, content: string, isAnonymous?: boolean, customSensitivity?: ContentSensitivityResult) => { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType };
-  // 🗳️ Enquetes da Comunidade ("Sua Voz Importa")
+  refreshPosts: () => Promise<void>;
   polls: CommunityPoll[];
   activePoll: CommunityPoll | null;
   userVotedPollsMap: Record<string, string>;
@@ -794,7 +795,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   ): { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType } => {
     if (!user) return { isFlagged: false };
 
-    const sensitivity = customSensitivity || checkAntiShaming(content);
+    const sensitivity = customSensitivity || checkContentSensitivity(content);
     const isFlagged = sensitivity.isFlagged;
     const matchedWord = sensitivity.matchedWord;
     const flagType = sensitivity.type;
