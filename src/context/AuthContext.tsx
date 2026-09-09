@@ -657,8 +657,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const finalPhone = profile.phone || adminRecoveredPhone || undefined;
       const finalChildren = children.length > 0 ? children : adminRecoveredChildren;
 
-      // Auto-heal Supabase se profiles.xp estiver desalinhado da soma das badges, ou bio/streak desatualizados
-      if ((xp !== (profile.xp || 0) || calculatedStreak > (profile.streak_days || 1) || (isUserAdmin && adminRecoveredBio && !profile.bio)) && profileId) {
+      // Auto-heal Supabase se profiles.xp estiver desalinhado da soma das badges, ou level/bio/streak desatualizados
+      if ((xp !== (profile.xp || 0) || levelInfo.level !== (profile.level_number || 1) || calculatedStreak > (profile.streak_days || 1) || (isUserAdmin && adminRecoveredBio && !profile.bio)) && profileId) {
         supabase
           .from('profiles')
           .update({
@@ -687,8 +687,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         notificationsEnabled: !!profile.notifications_enabled,
         onboardingCompleted: isTourFinished,
         xp,
-        level: profile.level_number || levelInfo.level,
-        levelTitle: profile.level_name || levelInfo.title,
+        level: levelInfo.level,
+        levelTitle: levelInfo.title,
         streakDays: calculatedStreak,
         lastActiveDate: profile.last_active_date || new Date().toISOString(),
         purchasedJourneyIds,
