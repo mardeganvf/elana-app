@@ -27,7 +27,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAuth, isAdminUser } from '../context/AuthContext';
-import { useCommunity } from '../context/CommunityContext';
+import { useCommunity, checkAntiShaming } from '../context/CommunityContext';
 import { useToast } from '../context/ToastContext';
 import { useJourneys } from '../context/JourneysContext';
 import { supabase } from '../lib/supabase';
@@ -173,6 +173,33 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // 🛡️ Moderation Items State
   const [modItems, setModItems] = useState<ModerationItem[]>([]);
+  const [moderationFilter, setModerationFilter] = useState<'pendentes' | 'aprovados' | 'todos'>('pendentes');
+
+  // Helpers para persistência de aprovações locais e remotas
+  const getApprovedPostIds = (): Set<string> => {
+    try {
+      const raw = localStorage.getItem('elana_approved_post_ids');
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch {
+      return new Set();
+    }
+  };
+
+  const saveApprovedPostId = (id: string) => {
+    try {
+      const set = getApprovedPostIds();
+      set.add(id);
+      localStorage.setItem('elana_approved_post_ids', JSON.stringify(Array.from(set)));
+    } catch {}
+  };
+
+  const removeApprovedPostId = (id: string) => {
+    try {
+      const set = getApprovedPostIds();
+      set.delete(id);
+      localStorage.setItem('elana_approved_post_ids', JSON.stringify(Array.from(set)));
+    } catch {}
+  };
 
   // 👥 Members State
   const [members, setMembers] = useState<MemberUser[]>([]);
@@ -202,22 +229,61 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     loadTickets();
 
     const loadModeration = async () => {
-      const { data } = await supabase
-        .from('community_posts')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (data && data.length > 0) {
-        setModItems(data.map(p => ({
-          id: p.id,
-          authorName: p.author_name || 'Anônimo',
-          authorAvatar: p.author_avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-          roomName: p.transversal_room_id || p.journey_id || 'Comunidade Geral',
-          content: p.content,
-          flagReason: p.is_anonymous ? 'Post em sala anônima' : 'Verificação preventiva de acolhimento',
-          createdAt: new Date(p.created_at).toLocaleString('pt-BR'),
-          status: 'pendente'
-        })));
+      try {
+        const approvedIds = getApprovedPostIds();
+        const { data, error } = await supabase
+          .from('community_posts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (error) {
+          console.warn('Erro ao carregar moderação do Supabase:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const items: ModerationItem[] = data.map(p => {
+            const isPersistedApproved = p.category === 'aprovado' || approvedIds.has(p.id);
+            const antiShamingCheck = checkAntiShaming(`${p.title || ''} ${p.content || ''}`);
+            const isExplicitlyFlagged = p.category === 'sob_moderacao';
+            const isSensitive = antiShamingCheck.isFlagged || isExplicitlyFlagged;
+
+            let flagReason = 'Conteúdo acolhedor';
+            if (antiShamingCheck.isFlagged) {
+              flagReason = `Termo sensível detectado: "${antiShamingCheck.matchedWord}"`;
+            } else if (isExplicitlyFlagged) {
+              flagReason = 'Retido para moderação preventiva';
+            }
+
+            let status: 'pendente' | 'aprovado' | 'rejeitado' = 'aprovado';
+            if (isPersistedApproved) {
+              status = 'aprovado';
+            } else if (isSensitive) {
+              status = 'pendente';
+            } else {
+              // Não tem conteúdo sensível: aprovado automaticamente
+              status = 'aprovado';
+            }
+
+            return {
+              id: p.id,
+              authorName: p.author_name || 'Anônimo',
+              authorAvatar: p.author_avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+              roomName: p.transversal_room_id || p.journey_id || 'Comunidade Geral',
+              content: p.content,
+              flagReason,
+              createdAt: new Date(p.created_at).toLocaleString('pt-BR'),
+              status
+            };
+          });
+
+          setModItems(items);
+        } else {
+          setModItems([]);
+        }
+      } catch (err) {
+        console.warn('Falha ao processar fila de moderação:', err);
       }
     };
     loadModeration();
@@ -292,12 +358,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   // Moderation Handlers
   const handleModerateItem = async (id: string, newStatus: 'aprovado' | 'rejeitado') => {
     setModItems(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
-    if (newStatus === 'rejeitado') {
+
+    if (newStatus === 'aprovado') {
+      saveApprovedPostId(id);
       try {
-        await supabase.from('community_posts').delete().eq('id', id);
+        await supabase
+          .from('community_posts')
+          .update({ category: 'aprovado' })
+          .eq('id', id);
       } catch (err) {
-        console.warn('Error deleting rejected post in Supabase:', err);
+        console.warn('Erro ao salvar aprovação no Supabase:', err);
       }
+      showToast('Publicação aprovada e mantida na comunidade!', 'success');
+    } else if (newStatus === 'rejeitado') {
+      removeApprovedPostId(id);
+      try {
+        await supabase
+          .from('community_posts')
+          .delete()
+          .eq('id', id);
+      } catch (err) {
+        console.warn('Erro ao deletar post rejeitado no Supabase:', err);
+      }
+      showToast('Publicação removida com sucesso.', 'info');
     }
   };
 
@@ -1069,78 +1152,179 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       )}
 
       {/* TAB 2: 🛡️ MODERAÇÃO ANTIJULGAMENTO */}
-      {activeAdminTab === 'moderation' && (
-        <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
-                <ShieldCheck className="w-5 h-5 text-[#8A9A5B]" />
-                Fila de Moderação Antijulgamento
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Avalie os alertas da IA Antijulgamento para manter a comunidade livre de julgamentos e cobranças.
-              </p>
-            </div>
-          </div>
+      {activeAdminTab === 'moderation' && (() => {
+        const displayedModItems = modItems.filter(item => {
+          if (moderationFilter === 'pendentes') return item.status === 'pendente';
+          if (moderationFilter === 'aprovados') return item.status === 'aprovado';
+          return true;
+        });
 
-          <div className="space-y-4">
-            {modItems.length === 0 ? (
-              <div className="bg-[#070D0F] p-8 rounded-2xl border border-white/5 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
-                <ShieldCheck className="w-8 h-8 text-[#8A9A5B] opacity-60" />
-                <span className="font-bold text-slate-300">Fila de moderação limpa!</span>
-                <span className="text-[11px] text-slate-500">Nenhuma publicação pendente de revisão no momento.</span>
+        const pendingCount = modItems.filter(m => m.status === 'pendente').length;
+        const approvedCount = modItems.filter(m => m.status === 'aprovado').length;
+
+        return (
+          <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
+                  <ShieldCheck className="w-5 h-5 text-[#8A9A5B]" />
+                  Fila de Moderação Antijulgamento
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Avalie os alertas da IA Antijulgamento para manter a comunidade livre de julgamentos e cobranças.
+                </p>
               </div>
-            ) : (
-              modItems.map(item => (
-                <div key={item.id} className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
-                    <div className="flex items-center gap-3">
-                      <img src={item.authorAvatar} alt={item.authorName} className="w-9 h-9 rounded-full object-cover" />
-                      <div>
-                        <h4 className="text-xs font-bold text-white">{item.authorName}</h4>
-                        <span className="text-[10px] text-[#FF7F5B] font-bold">Sala: {item.roomName} • {item.createdAt}</span>
-                      </div>
-                    </div>
 
-                    <span className="text-[10px] font-extrabold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full flex items-center gap-1.5 w-fit">
-                      <AlertTriangle className="w-3 h-3 text-amber-400" />
-                      {item.flagReason}
-                    </span>
-                  </div>
-
-                  <div className="bg-[#101B1E] p-3.5 rounded-xl border border-white/5 text-xs text-slate-200 italic leading-relaxed">
-                    "{item.content}"
-                  </div>
-
-                  {item.status === 'pendente' ? (
-                    <div className="flex items-center justify-end gap-3 pt-1">
-                      <button
-                        onClick={() => handleModerateItem(item.id, 'rejeitado')}
-                        className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                        <span>Remover Post</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleModerateItem(item.id, 'aprovado')}
-                        className="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Aprovar Publicação</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <span className={`text-xs font-bold flex items-center gap-1 justify-end ${item.status === 'aprovado' ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {item.status === 'aprovado' ? '✓ Aprovado e Mantido na Comunidade' : '✕ Removido por infringir diretrizes de acolhimento'}
+              {/* Filtros da Moderação */}
+              <div className="flex items-center gap-1.5 bg-[#070D0F] p-1 rounded-xl border border-white/10 shrink-0 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setModerationFilter('pendentes')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    moderationFilter === 'pendentes'
+                      ? 'bg-[#FF7F5B] text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>Pendentes</span>
+                  {pendingCount > 0 && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
+                      moderationFilter === 'pendentes' ? 'bg-black/20 text-white' : 'bg-white/10 text-slate-300'
+                    }`}>
+                      {pendingCount}
                     </span>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModerationFilter('aprovados')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    moderationFilter === 'aprovados'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>Aprovados</span>
+                  {approvedCount > 0 && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
+                      moderationFilter === 'aprovados' ? 'bg-black/20 text-white' : 'bg-white/10 text-slate-300'
+                    }`}>
+                      {approvedCount}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModerationFilter('todos')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    moderationFilter === 'todos'
+                      ? 'bg-white/20 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>Todos ({modItems.length})</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {displayedModItems.length === 0 ? (
+                <div className="bg-[#070D0F] p-8 rounded-2xl border border-white/5 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
+                  <ShieldCheck className="w-8 h-8 text-[#8A9A5B] opacity-60" />
+                  <span className="font-bold text-slate-300">
+                    {moderationFilter === 'pendentes' 
+                      ? 'Fila de moderação limpa!' 
+                      : moderationFilter === 'aprovados' 
+                        ? 'Nenhuma publicação aprovada encontrada' 
+                        : 'Nenhuma publicação registrada'}
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    {moderationFilter === 'pendentes'
+                      ? 'Nenhuma publicação pendente de revisão no momento. Todas as postagens respeitam as diretrizes de acolhimento.'
+                      : 'Todas as publicações aprovadas permanecem visíveis para a comunidade.'}
+                  </span>
                 </div>
-              ))
-            )}
-          </div>
-        </section>
-      )}
+              ) : (
+                displayedModItems.map(item => (
+                  <div key={item.id} className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+                      <div className="flex items-center gap-3">
+                        <img src={item.authorAvatar} alt={item.authorName} className="w-9 h-9 rounded-full object-cover" />
+                        <div>
+                          <h4 className="text-xs font-bold text-white">{item.authorName}</h4>
+                          <span className="text-[10px] text-[#FF7F5B] font-bold">Sala: {item.roomName} • {item.createdAt}</span>
+                        </div>
+                      </div>
+
+                      <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1.5 w-fit ${
+                        item.status === 'pendente'
+                          ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                          : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                      }`}>
+                        {item.status === 'pendente' ? (
+                          <>
+                            <AlertTriangle className="w-3 h-3 text-amber-400" />
+                            {item.flagReason}
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            Aprovado
+                          </>
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="bg-[#101B1E] p-3.5 rounded-xl border border-white/5 text-xs text-slate-200 italic leading-relaxed">
+                      "{item.content}"
+                    </div>
+
+                    {item.status === 'pendente' ? (
+                      <div className="flex items-center justify-end gap-3 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleModerateItem(item.id, 'rejeitado')}
+                          className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>Remover Post</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleModerateItem(item.id, 'aprovado')}
+                          className="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Aprovar Publicação</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between pt-1">
+                        <span className={`text-xs font-bold flex items-center gap-1 ${item.status === 'aprovado' ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {item.status === 'aprovado' ? '✓ Aprovado e Mantido na Comunidade' : '✕ Removido por infringir diretrizes de acolhimento'}
+                        </span>
+                        {item.status === 'aprovado' && (
+                          <button
+                            type="button"
+                            onClick={() => handleModerateItem(item.id, 'rejeitado')}
+                            className="text-xs text-red-400/80 hover:text-red-300 hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Remover da Comunidade</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* TAB 3: 📊 TERMÔMETRO EMOCIONAL DA COMUNIDADE */}
       {activeAdminTab === 'analytics' && (

@@ -94,6 +94,8 @@ CREATE TABLE IF NOT EXISTS public.community_posts (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'aprovado';
+
 -- 6. TABELA DE COMENTÁRIOS DA COMUNIDADE
 CREATE TABLE IF NOT EXISTS public.community_comments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -107,6 +109,7 @@ CREATE TABLE IF NOT EXISTS public.community_comments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ALTER TABLE public.community_comments ALTER COLUMN post_id DROP NOT NULL;
+ALTER TABLE public.community_comments ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'aprovado';
 
 -- 7. TABELA DE BADGES / CONQUISTAS DESBLOQUEADAS
 CREATE TABLE IF NOT EXISTS public.user_badges (

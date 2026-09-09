@@ -173,6 +173,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     authorRole: 'membro',
     isAnonymous: !!item.is_anonymous,
     sensitivityLevel: item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
+    status: item.category === 'sob_moderacao' ? 'sob_moderacao' : 'aprovado',
     title: item.title || '',
     content: item.content || '',
     createdAt: item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora',
@@ -408,6 +409,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ? 'https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=150&auto=format&fit=crop&q=80' 
       : user.avatar;
 
+    const { isFlagged } = checkAntiShaming(`${payload.title} ${payload.content}`);
+    const postStatus: 'sob_moderacao' | 'aprovado' = isFlagged ? 'sob_moderacao' : 'aprovado';
+
     const newPost: CommunityPost = {
       id: `post-${Date.now()}`,
       journeyId: payload.journeyId,
@@ -421,6 +425,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       authorRole: 'membro',
       isAnonymous,
       sensitivityLevel: sensitivity,
+      status: postStatus,
       title: payload.title,
       content: payload.content,
       createdAt: 'Agora mesmo',
@@ -438,6 +443,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         author_id: user?.id || null,
         title: payload.title,
         content: payload.content,
+        category: postStatus,
         author_name: authorName,
         author_avatar: authorAvatar,
         journey_id: payload.journeyId || null,
