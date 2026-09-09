@@ -884,7 +884,7 @@ export const CommunityPage: React.FC = () => {
                       const next = mobilePillJourneyId === j.id ? null : j.id;
                       setMobilePillJourneyId(next);
                       if (next) {
-                        setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'abertas' });
+                        setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'ajuda' });
                       }
                     }}
                     className={`shrink-0 snap-start px-3 py-1 rounded-full text-[11px] font-bold transition-all border ${
@@ -904,10 +904,10 @@ export const CommunityPage: React.FC = () => {
             {mobilePillJourneyId && (
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in">
                 {[
-                  { id: 'abertas' as const, label: 'Abertas' },
                   { id: 'ajuda' as const,   label: 'Preciso de Ajuda' },
                   { id: 'celebrar' as const, label: 'Celebrar' },
                   { id: 'desabafar' as const, label: 'Desabafar' },
+                  { id: 'abertas' as const, label: 'Abertas' },
                 ].map(sub => {
                   const isSelected = activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId && activeSelection.subOption === sub.id;
                   const journey = JOURNEYS_DATA.find(j => j.id === mobilePillJourneyId);
@@ -1042,9 +1042,10 @@ export const CommunityPage: React.FC = () => {
                       {/* Journey Accordion Trigger */}
                       <button
                         onClick={() => {
-                          setExpandedJourneyId(isExpanded ? null : j.id);
-                          if (!isSelectedJourney) {
-                            setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'abertas' });
+                          const willExpand = !isExpanded;
+                          setExpandedJourneyId(willExpand ? j.id : null);
+                          if (willExpand) {
+                            setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'ajuda' });
                           }
                         }}
                         className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all border ${
