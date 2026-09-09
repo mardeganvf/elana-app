@@ -1652,14 +1652,11 @@ export const CommunityPage: React.FC = () => {
                       {/* Content Section */}
                       <div className="space-y-3">
                         {post.status === 'sob_moderacao' && (
-                          <div className="bg-rose-500/10 border border-rose-500/30 p-3.5 rounded-2xl flex items-start gap-2.5 text-rose-200 text-xs">
-                            <Heart className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
-                            <div>
-                              <p className="font-bold text-rose-100">Espaço de Acolhimento e Suporte Prioritário</p>
-                              <p className="text-rose-200/80 text-[11px] mt-0.5 leading-relaxed">
-                                Você não está sozinha. Sentimos a sua dor. Essa mensagem foi recebida com prioridade pela nossa equipe de acolhimento. Se precisar de apoio imediato, chame nossa equipe no botão <strong>SOS</strong> ou ligue gratuitamente para o <strong>CVV (188)</strong>.
-                              </p>
-                            </div>
+                          <div className="bg-rose-500/10 border border-rose-500/30 p-3.5 rounded-2xl flex items-center gap-2.5 text-rose-200 text-xs">
+                            <Heart className="w-4 h-4 shrink-0 text-rose-400" />
+                            <p className="text-rose-100 text-xs leading-relaxed font-medium">
+                              Você não está sozinha. Se precisar de apoio imediato, ligue gratuitamente para o <strong>CVV (188)</strong>.
+                            </p>
                           </div>
                         )}
 

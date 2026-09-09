@@ -99,7 +99,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     });
 
     if (sensitivity.isFlagged && sensitivity.type === 'vulnerabilidade') {
-      showToast('info', 'Recebemos seu relato com carinho. Nossa equipe está acolhendo você. Você não está sozinha.');
+      showToast('info', 'Recebemos seu relato com carinho, mas notamos algo sensível. Nossa equipe está dando uma olhadinha na publicação. Você não está sozinha.');
     }
 
     onClose();
