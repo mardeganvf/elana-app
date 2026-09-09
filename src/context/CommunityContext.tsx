@@ -42,8 +42,9 @@ export const VULNERABILITY_PATTERNS = [
   { pattern: /(?:queria\s+nao|queria\s+nunca\s+ter|melhor\s+nao|deixar\s+de)\s+existir/i, reason: 'Desejo de não existir' },
   { pattern: /(?:nunca\s+devia|nunca\s+deveria)\s+ter\s+nascid[ao]/i, reason: 'Rejeição à própria existência' },
   { pattern: /\b(?:cansei|cansad[ao])\s+de\s+(?:tudo|tudo\s+isso|lutar|sofrer|tentar|insistir|existir)\b/i, reason: 'Desistência extrema / Cansei de tudo' },
-  { pattern: /\b(?:cansei|cansad[ao])\s+d(?:a|essa)\s+vida\b/i, reason: 'Desistência extrema da vida' },
-  { pattern: /\bchega\s+de\s+(?:tudo|sofrer|lutar|tentar|viver)\b/i, reason: 'Desistência extrema: Chega de tudo' },
+  { pattern: /\bchega\s+de\s+(?:tudo|sofrer|lutar|tentar|viver|respirar|existir)\b/i, reason: 'Desistência extrema / Risco à vida' },
+  { pattern: /\b(?:vou|indo|partindo)\s+dessa\s+(?:pr?a|para)\s+(?:uma\s+)?melhor\b/i, reason: 'Eufemismo de morte / Fim da vida' },
+  { pattern: /\bparar\s+de\s+respirar\b/i, reason: 'Ideação de cessação de vida' },
 
   // Sentimento de Não Ter Importância / Desvalia / Rejeição / Fardo
   { pattern: /(?:minha\s+vida|minha\s+existencia|minha\s+historia|tudo\s+em\s+mim)\s+(?:nao|nunca)\s+(?:importa|tem\s+valor|tem\s+sentido|vale\s+nada|faz\s+sentido|vale\s+a\s+pena)/i, reason: 'Desvalia da própria vida' },
@@ -101,7 +102,8 @@ export const VULNERABILITY_KEYWORDS = [
   'não suporto mais', 'não vejo saída', 'sem saída', 'acabar com tudo', 'por um fim', 'pôr um fim',
   'fazer besteira', 'fazer uma besteira', 'me machucar', 'me ferir', 'tirar minha vida', 'não quero mais viver',
   'não dou mais conta', 'não dou conta', 'não estou dando conta', 'não tenho mais forças', 'perdi o sentido',
-  'sem vontade de viver', 'sem forças pra continuar', 'esgotamento extremo', 'não sou importante', 'me sinto um peso'
+  'sem vontade de viver', 'sem forças pra continuar', 'esgotamento extremo', 'não sou importante', 'me sinto um peso',
+  'chega de respirar', 'vou dessa para uma melhor', 'vou dessa pra uma melhor', 'parar de respirar'
 ];
 
 // 2. PADRÕES DE OFENSAS, CRÍTICA PESADA (MOM-SHAMING) E TOM IMPOSITIVO
@@ -264,7 +266,7 @@ export const checkContentSensitivityAI = async (
   // 2. Análise contextual avançada via Supabase Edge Function com IA Gemini
   try {
     const timeoutPromise = new Promise<{ error: string }>((resolve) =>
-      setTimeout(() => resolve({ error: 'TIMEOUT' }), 6500)
+      setTimeout(() => resolve({ error: 'TIMEOUT' }), 8000)
     );
 
     const invokePromise = supabase.functions.invoke('moderate-content', {
