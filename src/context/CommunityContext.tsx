@@ -29,14 +29,20 @@ export const normalizeText = (text: string): string => {
 // 1. PADRÕES E REGRAS DE RISCO À VIDA, IDEAÇÃO, DESVALIA EXTREMA E SOFRIMENTO PROFUNDO
 export const VULNERABILITY_PATTERNS = [
   // Ideação / Sumiço / Desaparecimento / Morte
-  { pattern: /(?:vontade\s+de|pensando\s+em|querendo|preciso|vou|desejo\s+de)\s+sumir/i, reason: 'Ideação / Vontade de sumir' },
-  { pattern: /\bsumir\s+(?:de\s+vez|do\s+mapa|pra\s+sempre|e\s+nunca\s+mais)\b/i, reason: 'Desejo de sumir definitivamente' },
+  { pattern: /(?:vontade\s+de|pensando\s+em|querendo|preciso|vou|devo|queria|quero|desejo\s+de|melhor|seria\s+melhor|bom|seria\s+bom|hora\s+de|se\s+eu)\s+sumir/i, reason: 'Ideação / Vontade de sumir' },
+  { pattern: /\b(?:seria\s+)?melhor\s+sumir\b/i, reason: 'Ideação: Melhor sumir' },
+  { pattern: /\bse\s+eu\s+sumir\b/i, reason: 'Ideação: Se eu sumir' },
+  { pattern: /\b(?:vou|quero|queria|preciso|hora\s+de)\s+sumir\b/i, reason: 'Desejo explícito de sumir' },
+  { pattern: /\bsumir\s+(?:de\s+vez|do\s+mapa|pra\s+sempre|e\s+nunca\s+mais|daqui)\b/i, reason: 'Desejo de sumir definitivamente' },
   { pattern: /(?:vontade\s+de|pensando\s+em|querendo|desejo\s+de|preferia|melhor|antes)\s+morrer/i, reason: 'Ideação de morte' },
   { pattern: /(?:preferia|queria|seria\s+melhor)\s+estar\s+mort[ao]/i, reason: 'Ideação de morte' },
-  { pattern: /(?:vontade\s+de|pensando\s+em|querendo|preciso)\s+desaparecer/i, reason: 'Desejo de desaparecer' },
+  { pattern: /(?:vontade\s+de|pensando\s+em|querendo|preciso|melhor|seria\s+melhor|vou|queria)\s+desaparecer/i, reason: 'Desejo de desaparecer' },
   { pattern: /\bdesaparecer\s+(?:do\s+mapa|do\s+mundo|de\s+vez)\b/i, reason: 'Desejo de desaparecer' },
   { pattern: /(?:queria\s+nao|queria\s+nunca\s+ter|melhor\s+nao|deixar\s+de)\s+existir/i, reason: 'Desejo de não existir' },
   { pattern: /(?:nunca\s+devia|nunca\s+deveria)\s+ter\s+nascid[ao]/i, reason: 'Rejeição à própria existência' },
+  { pattern: /\b(?:cansei|cansad[ao])\s+de\s+(?:tudo|tudo\s+isso|lutar|sofrer|tentar|insistir|existir)\b/i, reason: 'Desistência extrema / Cansei de tudo' },
+  { pattern: /\b(?:cansei|cansad[ao])\s+d(?:a|essa)\s+vida\b/i, reason: 'Desistência extrema da vida' },
+  { pattern: /\bchega\s+de\s+(?:tudo|sofrer|lutar|tentar|viver)\b/i, reason: 'Desistência extrema: Chega de tudo' },
 
   // Sentimento de Não Ter Importância / Desvalia / Rejeição / Fardo
   { pattern: /(?:minha\s+vida|minha\s+existencia|minha\s+historia|tudo\s+em\s+mim)\s+(?:nao|nunca)\s+(?:importa|tem\s+valor|tem\s+sentido|vale\s+nada|faz\s+sentido|vale\s+a\s+pena)/i, reason: 'Desvalia da própria vida' },
