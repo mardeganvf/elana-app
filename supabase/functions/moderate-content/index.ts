@@ -64,8 +64,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Chamar a API REST do Gemini com redundância multi-modelo
-    const models = ['gemini-flash-latest', 'gemini-3.5-flash-lite', 'gemini-3.7-flash'];
+    // Chamar a API REST do Gemini com redundância multi-modelo (gemini-3.5-flash-lite é ultra-rápido)
+    const models = ['gemini-3.5-flash-lite', 'gemini-3.7-flash'];
     let lastError: any = null;
     let parsed: any = null;
 
@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         const geminiResponse = await fetch(geminiUrl, {
           method: 'POST',
+          signal: AbortSignal.timeout(5000),
           headers: {
             'Content-Type': 'application/json',
           },

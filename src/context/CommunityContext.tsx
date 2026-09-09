@@ -115,14 +115,21 @@ export const OFFENSIVE_PATTERNS = [
   // Crítica Pesada / Mom-Shaming / Julgamento Parental Agressivo
   { pattern: /\b(?:pessim[ao]|ruim|horrivel|de\s+merda)\s+(?:mae|pai)\b/i, reason: 'Julgamento parental destrutivo' },
   { pattern: /\b(?:mae|pai)\s+(?:pessim[ao]|ruim|horrivel|de\s+merda|desnaturad[ao])\b/i, reason: 'Ataque à maternidade/paternidade' },
+  { pattern: /\b(?:voce\s+e\s+)?(?:uma\s+)?pessima\s+mae\b/i, reason: 'Ataque direto à maternidade' },
+  { pattern: /\b(?:voce\s+e\s+)?(?:um\s+)?pessimo\s+pai\b/i, reason: 'Ataque direto à paternidade' },
+  { pattern: /\b(?:voce\s+)?(?:esta\s+)?fazendo\s+tudo\s+errad[ao]\b/i, reason: 'Julgamento destrutivo da capacidade parental' },
+  { pattern: /\b(?:faz|fazem|fazendo)\s+tudo\s+errad[ao]\b/i, reason: 'Desqualificação agressiva de conduta' },
+  { pattern: /\bnao\s+(?:nasceu|serve|presta|tem\s+capacidade|tem\s+jeito|tem\s+condicoes)\s+(?:pr?a|para)\s+ser\s+(?:mae|pai)\b/i, reason: 'Invalidação parental destrutiva' },
+  { pattern: /\bnao\s+(?:merece|deveria|devia)\s+(?:ser\s+mae|ter\s+filho[s]?)\b/i, reason: 'Desqualificação parental agressiva' },
+  { pattern: /\bquem\s+mandou\s+ter\s+(?:filho[s]?|bebe|crianca)\b/i, reason: 'Culpabilização e desqualificação' },
   { pattern: /\b(?:desnaturad[ao]|irresponsavel|negligente|relaxad[ao]|preguicos[ao]|egoista)\b/i, reason: 'Acusação pejorativa' },
   { pattern: /\b(?:mae\s+louca|louca\s+varrida|desequilibrada|surtada|histerica)\b/i, reason: 'Desqualificação psicológica agressiva' },
   { pattern: /\bcoitad[ao]\s+(?:do\s+bebe|da\s+crianca|do\s+seu\s+filho|da\s+sua\s+filha)\b/i, reason: 'Julgamento culpabilizador' },
   { pattern: /\b(?:deveria\s+ter|tenha|crie)\s+vergonha\b/i, reason: 'Humilhação / Shaming' },
-  { pattern: /\bnao\s+(?:sabe\s+ser|serve\s+pra\s+ser)\s+(?:mae|pai)\b/i, reason: 'Invalidação parental' },
+  { pattern: /\bnao\s+(?:sabe\s+ser|serve\s+(?:pr?a|para)\s+ser)\s+(?:mae|pai)\b/i, reason: 'Invalidação parental' },
   { pattern: /\bnao\s+devia\s+ter\s+tido\s+filho\b/i, reason: 'Ataque pessoal extremo' },
   { pattern: /\b(?:estragando|destruindo|traumatizando)\s+(?:seu\s+filho|sua\s+filha|o\s+bebe|a\s+crianca)\b/i, reason: 'Acusação de dano à criança' },
-  { pattern: /\b(?:vai\s+matar|fazendo\s+mal\s+pr[ao])\s+(?:bebe|crianca|filh[ao])\b/i, reason: 'Acusação grave de perigo' },
+  { pattern: /\b(?:vai\s+matar|fazendo\s+mal\s+(?:pr[ao]|para\s+[oa]))\s+(?:bebe|crianca|filh[ao])\b/i, reason: 'Acusação grave de perigo' },
   { pattern: /\b(?:mimimi|frescura|vitimismo|para\s+de\s+drama|choradeira)\b/i, reason: 'Minimização agressiva / Julgamento' },
   { pattern: /\b(?:culpa\s+sua|a\s+culpa\s+e\s+toda\s+sua|voce\s+procurou|bem\s+feito)\b/i, reason: 'Culpabilização agressiva' },
 
@@ -231,13 +238,33 @@ export const checkAntiShaming = (text: string): { isFlagged: boolean; matchedWor
 };
 
 // Moderação Contextual Avançada com IA Gemini (via Supabase Edge Function) + Fallback Seguro
-export const checkContentSensitivityAI = async (text: string): Promise<ContentSensitivityResult> => {
+export const checkContentSensitivityAI = async (
+  text: string, 
+  title?: string, 
+  content?: string
+): Promise<ContentSensitivityResult> => {
   if (!text || !text.trim()) return { isFlagged: false };
 
-  // 1. Tentar análise contextual via Supabase Edge Function com IA Gemini
+  // 1. Verificação local instantânea de alta prioridade (título isolado, corpo isolado e texto completo)
+  if (title && title.trim()) {
+    const titleCheck = checkContentSensitivity(title.trim());
+    if (titleCheck.isFlagged) return titleCheck;
+  }
+
+  if (content && content.trim()) {
+    const contentCheck = checkContentSensitivity(content.trim());
+    if (contentCheck.isFlagged) return contentCheck;
+  }
+
+  const fullLocalCheck = checkContentSensitivity(text.trim());
+  if (fullLocalCheck.isFlagged) {
+    return fullLocalCheck;
+  }
+
+  // 2. Análise contextual avançada via Supabase Edge Function com IA Gemini
   try {
     const timeoutPromise = new Promise<{ error: string }>((resolve) =>
-      setTimeout(() => resolve({ error: 'TIMEOUT' }), 4000)
+      setTimeout(() => resolve({ error: 'TIMEOUT' }), 6500)
     );
 
     const invokePromise = supabase.functions.invoke('moderate-content', {
@@ -266,8 +293,8 @@ export const checkContentSensitivityAI = async (text: string): Promise<ContentSe
     console.warn('IA moderation fallback notice:', err);
   }
 
-  // 2. Fallback de contingência instantâneo no cliente com regex e normalização avançada
-  return checkContentSensitivity(text);
+  // 3. Fallback de contingência
+  return fullLocalCheck;
 };
 
 const ANON_PREFIXES = [

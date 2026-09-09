@@ -87,8 +87,10 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      const fullText = `${title.trim()} ${content.trim()}`;
-      const sensitivity = await checkContentSensitivityAI(fullText);
+      const cleanTitle = title.trim();
+      const cleanContent = content.trim();
+      const fullText = `Título: ${cleanTitle}\nMensagem: ${cleanContent}`;
+      const sensitivity = await checkContentSensitivityAI(fullText, cleanTitle, cleanContent);
 
       createPost({
         journeyId: postType === 'jornada' ? selectedJourneyId : undefined,
@@ -96,8 +98,8 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
         ageBracketId: postType === 'idade' ? selectedAgeId : undefined,
         emotionalIntention: postType === 'jornada' ? selectedIntention : undefined,
         moduleTopic: 'Geral',
-        title: title.trim(),
-        content: content.trim(),
+        title: cleanTitle,
+        content: cleanContent,
         isAnonymous: isConfessionario,
         sensitivityCheck: sensitivity
       });
