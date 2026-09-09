@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useCommunity } from '../../context/CommunityContext';
+import { useCommunity, checkContentSensitivity } from '../../context/CommunityContext';
+import { useToast } from '../../context/ToastContext';
 import { JOURNEYS_DATA } from '../../data/journeysData';
 import { TRANSVERSAL_ROOMS, AGE_BRACKET_ROOMS } from '../../data/communityData';
 import { EmotionalIntention } from '../../types';
@@ -22,6 +23,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   activeSelection
 }) => {
   const { createPost } = useCommunity();
+  const { showToast } = useToast();
 
   // Resolve current active room context as dynamic state
   const [postType, setPostType] = useState<'jornada' | 'transversal' | 'idade'>(
@@ -82,6 +84,9 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
 
+    const fullText = `${title.trim()} ${content.trim()}`;
+    const sensitivity = checkContentSensitivity(fullText);
+
     createPost({
       journeyId: postType === 'jornada' ? selectedJourneyId : undefined,
       transversalRoomId: postType === 'transversal' ? selectedTransversalId : undefined,
@@ -92,6 +97,10 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       content: content.trim(),
       isAnonymous: isConfessionario
     });
+
+    if (sensitivity.isFlagged && sensitivity.type === 'vulnerabilidade') {
+      showToast('info', 'Recebemos seu relato com carinho. Nossa equipe está acolhendo você. Você não está sozinha.');
+    }
 
     onClose();
   };

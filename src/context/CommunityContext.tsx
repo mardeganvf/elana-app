@@ -15,6 +15,53 @@ interface CreatePostPayload {
   isAnonymous?: boolean;
 }
 
+// Expressões de Sofrimento Profundo, Exaustão Crítica, Ideação e Acolhimento Prioritário
+export const VULNERABILITY_KEYWORDS = [
+  'vontade de sumir',
+  'quero sumir',
+  'pensando em sumir',
+  'sumir de vez',
+  'sumir do mapa',
+  'preciso sumir',
+  'vontade de morrer',
+  'quero morrer',
+  'pensando em morrer',
+  'desejo de morrer',
+  'vontade de desaparecer',
+  'quero desaparecer',
+  'desaparecer do mundo',
+  'não aguento mais',
+  'nao aguento mais',
+  'não aguento mais viver',
+  'nao aguento mais viver',
+  'não suporto mais',
+  'nao suporto mais',
+  'não vejo saída',
+  'nao vejo saida',
+  'sem saída',
+  'sem saida',
+  'acabar com tudo',
+  'por um fim',
+  'pôr um fim',
+  'fazer besteira',
+  'fazer uma besteira',
+  'me machucar',
+  'me ferir',
+  'tirar minha vida',
+  'não quero mais viver',
+  'nao quero mais viver',
+  'não dou mais conta',
+  'nao dou mais conta',
+  'não tenho mais forças',
+  'nao tenho mais forcas',
+  'perdi o sentido',
+  'sem vontade de viver',
+  'sem forças pra continuar',
+  'sem forcas pra continuar',
+  'esgotamento extremo'
+];
+
+// Expressões de Antijulgamento, Hostilidade ou Mom-Shaming
 export const SHAMING_KEYWORDS = [
   'irresponsavel', 'irresponsável',
   'relaxada', 'preguicosa', 'preguiçosa',
@@ -25,17 +72,60 @@ export const SHAMING_KEYWORDS = [
   'sem nocao', 'sem noção',
   'coitado do bebe', 'coitado do bebê',
   'absurdo fazer isso', 'mae louca', 'mãe louca',
-  'negligente', 'egoista', 'egoísta'
+  'negligente', 'egoista', 'egoísta',
+  'burra', 'idiota', 'mimimi', 'frescura'
 ];
 
-export const checkAntiShaming = (text: string): { isFlagged: boolean; matchedWord?: string } => {
+export type SensitivityFlagType = 'vulnerabilidade' | 'antijulgamento';
+
+export interface ContentSensitivityResult {
+  isFlagged: boolean;
+  type?: SensitivityFlagType;
+  matchedWord?: string;
+  flagReason?: string;
+  suggestsCrisisSupport?: boolean;
+}
+
+export const checkContentSensitivity = (text: string): ContentSensitivityResult => {
+  if (!text) return { isFlagged: false };
   const lower = text.toLowerCase();
-  for (const word of SHAMING_KEYWORDS) {
+
+  // 1. Prioridade Máxima: Sofrimento profundo / acolhimento e vulnerabilidade
+  for (const word of VULNERABILITY_KEYWORDS) {
     if (lower.includes(word)) {
-      return { isFlagged: true, matchedWord: word };
+      return {
+        isFlagged: true,
+        type: 'vulnerabilidade',
+        matchedWord: word,
+        flagReason: `Alerta de Acolhimento: "${word}"`,
+        suggestsCrisisSupport: true
+      };
     }
   }
+
+  // 2. Moderação Antijulgamento / mom-shaming / hostilidade
+  for (const word of SHAMING_KEYWORDS) {
+    if (lower.includes(word)) {
+      return {
+        isFlagged: true,
+        type: 'antijulgamento',
+        matchedWord: word,
+        flagReason: `Alerta Antijulgamento: "${word}"`,
+        suggestsCrisisSupport: false
+      };
+    }
+  }
+
   return { isFlagged: false };
+};
+
+export const checkAntiShaming = (text: string): { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType } => {
+  const res = checkContentSensitivity(text);
+  return {
+    isFlagged: res.isFlagged,
+    matchedWord: res.matchedWord,
+    flagType: res.type
+  };
 };
 
 const ANON_PREFIXES = [
@@ -394,8 +484,12 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const createPost = (payload: CreatePostPayload) => {
     if (!user) return;
 
+    const sensitivityCheck = checkContentSensitivity(`${payload.title} ${payload.content}`);
+
     let sensitivity: SensitivityLevel = 'padrao';
-    if (payload.journeyId === 'singular' || payload.journeyId === 'amor-escolhido' || payload.transversalRoomId === 'espaco-dois') {
+    if (sensitivityCheck.type === 'vulnerabilidade') {
+      sensitivity = 'critico';
+    } else if (payload.journeyId === 'singular' || payload.journeyId === 'amor-escolhido' || payload.transversalRoomId === 'espaco-dois') {
       sensitivity = 'elevado';
     } else if (payload.journeyId === 'depois-do-silencio' || payload.transversalRoomId === 'confessionario') {
       sensitivity = 'critico';
@@ -409,8 +503,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ? 'https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=150&auto=format&fit=crop&q=80' 
       : user.avatar;
 
-    const { isFlagged } = checkAntiShaming(`${payload.title} ${payload.content}`);
-    const postStatus: 'sob_moderacao' | 'aprovado' = isFlagged ? 'sob_moderacao' : 'aprovado';
+    const postStatus: 'sob_moderacao' | 'aprovado' = sensitivityCheck.isFlagged ? 'sob_moderacao' : 'aprovado';
 
     const newPost: CommunityPost = {
       id: `post-${Date.now()}`,

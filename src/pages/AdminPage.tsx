@@ -27,7 +27,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAuth, isAdminUser } from '../context/AuthContext';
-import { useCommunity, checkAntiShaming } from '../context/CommunityContext';
+import { useCommunity, checkContentSensitivity } from '../context/CommunityContext';
 import { useToast } from '../context/ToastContext';
 import { useJourneys } from '../context/JourneysContext';
 import { supabase } from '../lib/supabase';
@@ -245,13 +245,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         if (data && data.length > 0) {
           const items: ModerationItem[] = data.map(p => {
             const isPersistedApproved = p.category === 'aprovado' || approvedIds.has(p.id);
-            const antiShamingCheck = checkAntiShaming(`${p.title || ''} ${p.content || ''}`);
+            const sensitivityCheck = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
             const isExplicitlyFlagged = p.category === 'sob_moderacao';
-            const isSensitive = antiShamingCheck.isFlagged || isExplicitlyFlagged;
+            const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
 
-            let flagReason = 'Conteúdo acolhedor';
-            if (antiShamingCheck.isFlagged) {
-              flagReason = `Termo sensível detectado: "${antiShamingCheck.matchedWord}"`;
+            let flagReason = 'Conteúdo livre';
+            if (sensitivityCheck.isFlagged) {
+              flagReason = sensitivityCheck.flagReason || `Termo sensível: "${sensitivityCheck.matchedWord}"`;
             } else if (isExplicitlyFlagged) {
               flagReason = 'Retido para moderação preventiva';
             }
@@ -1260,12 +1260,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
                       <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1.5 w-fit ${
                         item.status === 'pendente'
-                          ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                          ? item.flagReason.includes('Acolhimento')
+                            ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 shadow-sm'
+                            : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                           : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
                       }`}>
                         {item.status === 'pendente' ? (
                           <>
-                            <AlertTriangle className="w-3 h-3 text-amber-400" />
+                            {item.flagReason.includes('Acolhimento') ? (
+                              <Heart className="w-3 h-3 text-rose-400 fill-rose-400/20" />
+                            ) : (
+                              <AlertTriangle className="w-3 h-3 text-amber-400" />
+                            )}
                             {item.flagReason}
                           </>
                         ) : (
