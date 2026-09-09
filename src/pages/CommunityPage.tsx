@@ -13,6 +13,7 @@ import { CreatePostModal } from '../components/community/CreatePostModal';
 import { PublicProfileModal, PublicUserProfile, ChildInfo, ProfileTestimonial } from '../components/community/PublicProfileModal';
 import { CommunityPollBanner } from '../components/community/CommunityPollBanner';
 import { PostSkeleton } from '../components/common/SkeletonLoader';
+import { BreathingModal } from '../components/common/BreathingModal';
 import { getLevelFromXP } from '../data/gamificationData';
 import { useToast } from '../context/ToastContext';
 import { 
@@ -228,8 +229,6 @@ export const CommunityPage: React.FC = () => {
 
   // Respiro 60s Breathing Modal State
   const [isBreathingModalOpen, setIsBreathingModalOpen] = useState(false);
-  const [breathingTimer, setBreathingTimer] = useState(60);
-  const [breathingPhase, setBreathingPhase] = useState<'puxe' | 'segure' | 'solte'>('puxe');
 
   // Modals & Inline Comments State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -500,34 +499,7 @@ export const CommunityPage: React.FC = () => {
     sessionStorage.setItem('elana_daily_checkin_session_' + todayStr, 'true');
   };
 
-  // 60-Second Breathing Timer Effect
-  useEffect(() => {
-    let interval: any;
-    if (isBreathingModalOpen && breathingTimer > 0) {
-      interval = setInterval(() => {
-        setBreathingTimer(prev => prev - 1);
-      }, 1000);
-    } else if (breathingTimer === 0) {
-      setIsBreathingModalOpen(false);
-      setBreathingTimer(60);
-    }
-    return () => clearInterval(interval);
-  }, [isBreathingModalOpen, breathingTimer]);
 
-  // Breathing Phase Loop: Puxe o Ar (4s) -> Segure (4s) -> Solte o Ar (4s)
-  useEffect(() => {
-    let interval: any;
-    if (isBreathingModalOpen) {
-      interval = setInterval(() => {
-        setBreathingPhase(prev => {
-          if (prev === 'puxe') return 'segure';
-          if (prev === 'segure') return 'solte';
-          return 'puxe';
-        });
-      }, 4000);
-    }
-    return () => clearInterval(interval);
-  }, [isBreathingModalOpen]);
 
   // Reaction Icon Renderer Helper
   const renderReactionIcon = (iconName: string, color: string) => {
@@ -760,67 +732,14 @@ export const CommunityPage: React.FC = () => {
         document.body
       )}
 
-      {/* Respiro de 60 Segundos Modal (Portal to document.body for true viewport centering) */}
-      {isBreathingModalOpen && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#101B1E] rounded-3xl max-w-md w-full p-8 shadow-2xl border border-white/10 text-center relative text-white space-y-6 m-auto max-h-[90vh] overflow-y-auto">
-            
-            <button
-              onClick={() => setIsBreathingModalOpen(false)}
-              aria-label="Fechar Respiro"
-              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-[#8A9A5B] uppercase tracking-wider block">
-                Pausa Acolhedora
-              </span>
-              <h3 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                Respiro de 60 Segundos
-              </h3>
-              <p className="text-xs text-slate-400">
-                Desacelere seu ritmo. Acompanhe a animação para respirar com calma.
-              </p>
-            </div>
-
-            {/* Animated Breathing Circle (Puxe o Ar -> Segure -> Solte o Ar) */}
-            <div className="py-6 flex flex-col items-center justify-center space-y-4">
-              <div className="relative flex items-center justify-center w-48 h-48">
-                <div 
-                  className={`w-40 h-40 rounded-full border-4 border-[#8A9A5B] bg-[#8A9A5B]/10 flex items-center justify-center transition-all duration-[4000ms] ease-in-out ${
-                    breathingPhase === 'puxe' 
-                      ? 'scale-125 bg-[#8A9A5B]/30 border-[#FF7F5B]' 
-                      : breathingPhase === 'segure' 
-                      ? 'scale-125 bg-[#FFD166]/30 border-[#FFD166]' 
-                      : 'scale-90 bg-[#8A9A5B]/05 border-[#8A9A5B]'
-                  }`}
-                >
-                  <span className="text-base font-black uppercase text-white tracking-wider animate-pulse text-center px-2">
-                    {breathingPhase === 'puxe' && '🌊 Puxe o Ar...'}
-                    {breathingPhase === 'segure' && '🧘 Segure...'}
-                    {breathingPhase === 'solte' && '🍃 Solte o Ar...'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="font-mono text-xl font-bold text-[#FFD166]">
-                00:{breathingTimer.toString().padStart(2, '0')}
-              </div>
-            </div>
-
-            <button
-              onClick={() => setIsBreathingModalOpen(false)}
-              className="w-full bg-[#8A9A5B] hover:bg-[#7a8a4b] text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl shadow-lg transition-all"
-            >
-              Concluir Respiro
-            </button>
-
-          </div>
-        </div>,
-        document.body
-      )}
+      {/* Respiro de 60 Segundos Modal */}
+      <BreathingModal
+        isOpen={isBreathingModalOpen}
+        onClose={() => setIsBreathingModalOpen(false)}
+        onComplete={() => {
+          awardBadge('b23'); // Pausa Necessária (60s de respiro)
+        }}
+      />
 
       {/* ── Pull to Refresh Visual Indicator (Mobile) ── */}
       <div 
@@ -1045,8 +964,6 @@ export const CommunityPage: React.FC = () => {
           {/* Button Respiro de 60 Segundos Above Criar Tópico */}
           <button
             onClick={() => {
-              setBreathingTimer(60);
-              setBreathingPhase('puxe');
               setIsBreathingModalOpen(true);
               window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             }}
