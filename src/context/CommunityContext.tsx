@@ -39,15 +39,21 @@ export const VULNERABILITY_PATTERNS = [
   { pattern: /(?:nunca\s+devia|nunca\s+deveria)\s+ter\s+nascid[ao]/i, reason: 'Rejeição à própria existência' },
 
   // Sentimento de Não Ter Importância / Desvalia / Rejeição / Fardo
+  { pattern: /(?:minha\s+vida|minha\s+existencia|minha\s+historia|tudo\s+em\s+mim)\s+(?:nao|nunca)\s+(?:importa|tem\s+valor|tem\s+sentido|vale\s+nada|faz\s+sentido|vale\s+a\s+pena)/i, reason: 'Desvalia da própria vida' },
+  { pattern: /(?:minha\s+vida|viver)\s+nao\s+vale\s+a\s+pena/i, reason: 'Desvalia extrema de viver' },
+  { pattern: /(?:eu|minha\s+vida|nada)\s+(?:nao|nunca)\s+import[ao]/i, reason: 'Sentimento de não importar' },
+  { pattern: /(?:nao|nunca)\s+importo\s*(?:pra|para)?/i, reason: 'Sentimento de não ter valor ou importância' },
   { pattern: /(?:nao|nunca)\s+(?:sou|sinto\s+que\s+sou|sou\s+nada|tenho)\s+(?:importante|importancia|valor|relevante)/i, reason: 'Sentimento de desvalia / Não ser importante' },
   { pattern: /(?:nao|nunca)\s+importo\s+(?:pra|para)\s+(?:ninguem|ele|ela|eles)/i, reason: 'Sentimento de não importar a ninguém' },
-  { pattern: /(?:nao|nunca)\s+(?:faco|faria|faz)\s+falta/i, reason: 'Sentimento de não fazer falta' },
+  { pattern: /(?:nao|nunca)\s+(?:faco|faria|faz)\s+(?:a\s+menor\s+)?(?:falta|diferenca)/i, reason: 'Sentimento de não fazer falta ou diferença' },
   { pattern: /ninguem\s+(?:vai\s+|iria\s+)?sentir\s+(?:minha\s+)?falta/i, reason: 'Sentimento de ausência de falta' },
   { pattern: /ninguem\s+(?:se\s+importa\s+comigo|se\s+importa|precisa\s+de\s+mim|liga\s+pra\s+mim|me\s+ama)/i, reason: 'Sensação de desamparo / Ninguém se importa' },
   { pattern: /(?:ele|ela|eles)\s+nao\s+precisa[m]?\s+de\s+mim/i, reason: 'Sensação de inutilidade familiar' },
   { pattern: /(?:sou|me\s+sinto)\s+(?:um\s+)?(?:fardo|peso|estorvo|lixo|fracasso\s+total)/i, reason: 'Sentimento de ser fardo / peso' },
   { pattern: /(?:seria\s+)?melhor\s+(?:sem\s+mim|se\s+eu\s+(?:sumisse|morresse|nao\s+existisse))/i, reason: 'Ideação de que outros estariam melhor sem si' },
   { pattern: /(?:estariam|ficariam)\s+melhor\s+sem\s+mim/i, reason: 'Ideação de que estariam melhor sem si' },
+  { pattern: /(?:tanto\s+faz|nao\s+faz\s+diferenca)\s+se\s+eu\s+(?:morrer|sumir|viver|existir)/i, reason: 'Indiferença à própria vida' },
+  { pattern: /(?:cansei|cansad[ao])\s+de\s+viver/i, reason: 'Perda do desejo de viver' },
 
   // Perda de Forças / "Não dou conta" / Desesperança Crítica
   { pattern: /(?:nao|nunca)\s+(?:estou|to)?\s*dando\s+conta/i, reason: 'Exaustão crítica / Não estar dando conta' },
@@ -80,6 +86,8 @@ export const VULNERABILITY_PATTERNS = [
 
 // Expressões legadas de vulnerabilidade para verificação direta
 export const VULNERABILITY_KEYWORDS = [
+  'minha vida não importa', 'minha vida nao importa', 'minha vida não vale a pena', 'minha vida não tem valor',
+  'não importo pra ninguém', 'nao importo pra ninguem', 'não faço diferença', 'nao faco diferenca',
   'vontade de sumir', 'quero sumir', 'pensando em sumir', 'sumir de vez', 'sumir do mapa', 'preciso sumir',
   'vontade de morrer', 'quero morrer', 'pensando em morrer', 'desejo de morrer', 'vontade de desaparecer',
   'quero desaparecer', 'desaparecer do mundo', 'não aguento mais', 'nao aguento mais', 'não aguento mais viver',
