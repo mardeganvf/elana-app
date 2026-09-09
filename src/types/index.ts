@@ -100,7 +100,7 @@ export interface UserProfile {
   }[];
 }
 
-export type EmotionalIntention = 'ajuda' | 'desabafar' | 'celebrar';
+export type EmotionalIntention = 'ajuda' | 'desabafar' | 'celebrar' | 'abertas';
 export type SensitivityLevel = 'padrao' | 'elevado' | 'critico';
 export type UserRoleType = 'membro' | 'guia' | 'curadoria';
 

@@ -7,7 +7,7 @@ import { EmotionalIntention } from '../../types';
 import { X, Send, Lock, EyeOff } from 'lucide-react';
 
 export type ActiveSelection = 
-  | { type: 'jornada'; journeyId: string; subOption: 'ajuda' | 'celebrar' | 'desabafar' | 'abertas' }
+  | { type: 'jornada'; journeyId: string; subOption: EmotionalIntention }
   | { type: 'geral'; roomId: string }
   | { type: 'idade'; ageId: string }
   | null;
@@ -40,7 +40,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
   const [selectedIntention, setSelectedIntention] = useState<EmotionalIntention>(
     activeSelection?.type === 'jornada'
-      ? (activeSelection.subOption === 'celebrar' ? 'celebrar' : activeSelection.subOption === 'desabafar' ? 'desabafar' : 'ajuda')
+      ? (activeSelection.subOption || 'ajuda')
       : 'ajuda'
   );
 
