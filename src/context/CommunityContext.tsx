@@ -110,6 +110,8 @@ export const VULNERABILITY_KEYWORDS = [
 export const OFFENSIVE_PATTERNS = [
   // Palavras de Baixo Calão / Xingamentos com limites de palavra
   { pattern: /\b(?:puta|putas|filh[ao]\s+da\s+puta|fdp|pqp|porra|caralho|merda|bosta)\b/i, reason: 'Linguagem obscena / ofensiva' },
+  { pattern: /\b(?:foder|fuder|fodendo|fudendo|fudeu|fodeu|foda-se|fodasse)\b/i, reason: 'Linguagem vulgar / explícita' },
+  { pattern: /\b(?:buceta|piroca|caralhada|punheta|boquete|siririca|xoxota)\b/i, reason: 'Termos sexuais explícitos' },
   { pattern: /\b(?:arrombad[ao]|babaca|otari[ao]|imbecil|idiota|estupid[ao]|retardad[ao]|burr[ao]|burr[ao]s|incompetente)\b/i, reason: 'Xingamento / Ofensa direta' },
   { pattern: /\b(?:vagabund[ao]|desgracad[ao]|desgraca|escrot[ao]|cuz[ao]o|canalha|cretin[ao]|nojent[ao])\b/i, reason: 'Xingamento / Ofensa degradante' },
   { pattern: /\b(?:vai\s+se\s+foder|vai\s+tomar\s+no\s+cu|vsf|vtnc|vsfd)\b/i, reason: 'Ofensa verbal grave' },

@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     }
 
     // Chamar a API REST do Gemini com redundância multi-modelo
-    const models = ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.7-flash'];
+    const models = ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.7-flash'];
     let lastError: any = null;
     let parsed: any = null;
 
@@ -100,18 +100,38 @@ Deno.serve(async (req) => {
         if (!geminiResponse.ok) {
           const errText = await geminiResponse.text();
           console.warn(`Aviso na API do Gemini (${model}):`, geminiResponse.status, errText);
-          lastError = { status: geminiResponse.status, message: errText };
+          lastError = { model, status: geminiResponse.status, message: errText };
           continue;
         }
 
         const data = await geminiResponse.json();
-        const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (candidateText) {
-          parsed = JSON.parse(candidateText);
+        const candidate = data?.candidates?.[0];
+        const finishReason = candidate?.finishReason;
+        const blockReason = data?.promptFeedback?.blockReason;
+
+        // Se o próprio filtro de segurança nativo da IA bloqueou por conteúdo explícito/sexual/violência (ex: PROHIBITED_CONTENT, SAFETY)
+        if (blockReason || finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT' || data?.promptFeedback?.safetyRatings?.some((r: any) => r.blocked)) {
+          parsed = {
+            isFlagged: true,
+            category: 'antijulgamento',
+            reason: 'Conteúdo bloqueado por linguagem sexual explícita ou termos impróprios.',
+            matchedContext: text.trim().slice(0, 100),
+            suggestsCrisisSupport: false
+          };
           break;
         }
+
+        const candidateText = candidate?.content?.parts?.[0]?.text;
+        if (candidateText) {
+          try {
+            parsed = JSON.parse(candidateText);
+            break;
+          } catch (jsonErr: any) {
+            console.warn('Erro ao parsear resposta JSON do Gemini:', jsonErr);
+          }
+        }
       } catch (e: any) {
-        lastError = { message: e?.message || String(e), name: e?.name };
+        lastError = { model, message: e?.message || String(e), name: e?.name };
       }
     }
 

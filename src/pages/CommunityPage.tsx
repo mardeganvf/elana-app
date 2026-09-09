@@ -1672,18 +1672,23 @@ export const CommunityPage: React.FC = () => {
                       {/* Content Section */}
                       <div className="space-y-3">
                         {post.status === 'sob_moderacao' && (
-                          post.flagType === 'vulnerabilidade' || post.sensitivityLevel === 'critico' ? (
+                          post.flagType === 'vulnerabilidade' ? (
                             <div className="bg-rose-500/10 border border-rose-500/30 p-3.5 rounded-2xl flex items-center gap-2.5 text-rose-200 text-xs">
                               <Heart className="w-4 h-4 shrink-0 text-rose-400" />
-                              <p className="text-rose-100 text-xs leading-relaxed font-medium">
-                                Você não está só. Se precisar de apoio imediato, ligue gratuitamente para o <strong>CVV (188)</strong>.
-                              </p>
+                              <div className="space-y-0.5">
+                                <p className="text-rose-100 text-xs font-semibold">
+                                  Essa mensagem está passando por uma análise da nossa equipe de moderação.
+                                </p>
+                                <p className="text-rose-200/80 text-[11px]">
+                                  Você não está só. Se precisar de apoio imediato, ligue gratuitamente para o <strong>CVV (188)</strong>.
+                                </p>
+                              </div>
                             </div>
                           ) : (
                             <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-2xl flex items-center gap-2.5 text-amber-200 text-xs">
                               <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400" />
                               <p className="text-amber-100 text-xs leading-relaxed font-medium">
-                                Esta publicação foi retida para análise preventiva da moderação (visível apenas para você).
+                                Essa mensagem está passando por uma análise da nossa equipe de moderação.
                               </p>
                             </div>
                           )
@@ -1787,7 +1792,7 @@ export const CommunityPage: React.FC = () => {
                                             {c.status === 'sob_moderacao' && (
                                               <div className="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl flex items-center gap-2 text-amber-300 text-[11px] my-1.5">
                                                 <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400 animate-pulse" />
-                                                <span><strong>IA Antijulgamento:</strong> Comentário retido para moderação preventiva da equipe.</span>
+                                                <span>Essa mensagem está passando por uma análise da nossa equipe de moderação.</span>
                                               </div>
                                             )}
 

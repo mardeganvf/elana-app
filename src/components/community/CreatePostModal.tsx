@@ -106,9 +106,9 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
       if (sensitivity.isFlagged) {
         if (sensitivity.type === 'vulnerabilidade') {
-          showToast('info', 'Recebemos seu relato com carinho, mas notamos algo sensível. Nossa equipe está dando uma olhadinha na publicação.');
+          showToast('info', 'Recebemos seu relato com carinho. Essa mensagem está passando por uma análise da nossa equipe de moderação.');
         } else {
-          showToast('warning', 'Identificamos termos sensíveis. Sua publicação foi enviada para análise preventiva da nossa equipe.');
+          showToast('warning', 'Essa mensagem está passando por uma análise da nossa equipe de moderação.');
         }
       }
 
