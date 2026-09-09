@@ -1655,7 +1655,7 @@ export const CommunityPage: React.FC = () => {
                           <div className="bg-rose-500/10 border border-rose-500/30 p-3.5 rounded-2xl flex items-center gap-2.5 text-rose-200 text-xs">
                             <Heart className="w-4 h-4 shrink-0 text-rose-400" />
                             <p className="text-rose-100 text-xs leading-relaxed font-medium">
-                              Você não está sozinha. Se precisar de apoio imediato, ligue gratuitamente para o <strong>CVV (188)</strong>.
+                              Você não está Só. Se precisar de apoio imediato, ligue gratuitamente para o <strong>CVV (188)</strong>.
                             </p>
                           </div>
                         )}
