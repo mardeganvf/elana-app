@@ -13,6 +13,7 @@ interface CreatePostPayload {
   title: string;
   content: string;
   isAnonymous?: boolean;
+  sensitivityCheck?: ContentSensitivityResult;
 }
 
 // Função de normalização textual (remove acentos, comprime repetições e passa para minúsculas)
@@ -229,6 +230,46 @@ export const checkAntiShaming = (text: string): { isFlagged: boolean; matchedWor
   };
 };
 
+// Moderação Contextual Avançada com IA Gemini (via Supabase Edge Function) + Fallback Seguro
+export const checkContentSensitivityAI = async (text: string): Promise<ContentSensitivityResult> => {
+  if (!text || !text.trim()) return { isFlagged: false };
+
+  // 1. Tentar análise contextual via Supabase Edge Function com IA Gemini
+  try {
+    const timeoutPromise = new Promise<{ error: string }>((resolve) =>
+      setTimeout(() => resolve({ error: 'TIMEOUT' }), 2500)
+    );
+
+    const invokePromise = supabase.functions.invoke('moderate-content', {
+      body: { text: text.trim() }
+    });
+
+    const result: any = await Promise.race([invokePromise, timeoutPromise]);
+
+    if (result && !result.error && result.data && !result.data.fallbackRequired) {
+      const data = result.data;
+      if (data.isFlagged && (data.category === 'vulnerabilidade' || data.category === 'antijulgamento')) {
+        const flagType = data.category as SensitivityFlagType;
+        const prefix = flagType === 'vulnerabilidade' ? 'Alerta de Acolhimento' : 'Alerta Antijulgamento';
+        return {
+          isFlagged: true,
+          type: flagType,
+          matchedWord: data.matchedContext || 'análise contextual de IA',
+          flagReason: `${prefix}: "${data.matchedContext || 'análise de IA'}" (${data.reason})`,
+          suggestsCrisisSupport: !!data.suggestsCrisisSupport
+        };
+      } else if (data.category === 'livre') {
+        return { isFlagged: false };
+      }
+    }
+  } catch (err) {
+    console.warn('IA moderation fallback notice:', err);
+  }
+
+  // 2. Fallback de contingência instantâneo no cliente com regex e normalização avançada
+  return checkContentSensitivity(text);
+};
+
 const ANON_PREFIXES = [
   'Coração', 'Alma', 'Respiro', 'Farol', 'Brisa', 'Semente', 'Horizonte', 'Abraço',
   'Luz', 'Gota', 'Vento', 'Sol', 'Refúgio', 'Estrela', 'Flor', 'Ninho', 'Porto',
@@ -259,9 +300,7 @@ interface CommunityContextType {
   loadMorePosts: () => Promise<void>;
   createPost: (payload: CreatePostPayload) => void;
   toggleReaction: (postId: string, reactionKey: string) => void;
-  toggleCommentReaction: (postId: string, commentId: string, reactionKey: string) => void;
-  addComment: (postId: string, content: string, isAnonymous?: boolean) => { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType };
-  refreshPosts: () => Promise<void>;
+  addComment: (postId: string, content: string, isAnonymous?: boolean, customSensitivity?: ContentSensitivityResult) => { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType };
   // 🗳️ Enquetes da Comunidade ("Sua Voz Importa")
   polls: CommunityPoll[];
   activePoll: CommunityPoll | null;
@@ -585,7 +624,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const createPost = (payload: CreatePostPayload) => {
     if (!user) return;
 
-    const sensitivityCheck = checkContentSensitivity(`${payload.title} ${payload.content}`);
+    const sensitivityCheck = payload.sensitivityCheck || checkContentSensitivity(`${payload.title} ${payload.content}`);
 
     let sensitivity: SensitivityLevel = 'padrao';
     if (sensitivityCheck.type === 'vulnerabilidade') {
@@ -747,10 +786,18 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }));
   };
 
-  const addComment = (postId: string, content: string, isAnonymousInput?: boolean): { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType } => {
+  const addComment = (
+    postId: string, 
+    content: string, 
+    isAnonymousInput?: boolean,
+    customSensitivity?: ContentSensitivityResult
+  ): { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType } => {
     if (!user) return { isFlagged: false };
 
-    const { isFlagged, matchedWord, flagType } = checkAntiShaming(content);
+    const sensitivity = customSensitivity || checkAntiShaming(content);
+    const isFlagged = sensitivity.isFlagged;
+    const matchedWord = sensitivity.matchedWord;
+    const flagType = sensitivity.type;
     const commentStatus = isFlagged ? ('sob_moderacao' as const) : ('aprovado' as const);
 
     const isConfession = posts.find(p => p.id === postId)?.transversalRoomId === 'confessionario';

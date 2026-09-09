@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useCommunity } from '../context/CommunityContext';
+import { useCommunity, checkContentSensitivityAI } from '../context/CommunityContext';
 import { useAuth } from '../context/AuthContext';
 import { JOURNEYS_DATA } from '../data/journeysData';
 import { supabase } from '../lib/supabase';
@@ -874,13 +874,14 @@ export const CommunityPage: React.FC = () => {
     setExpandedCommentsMap(prev => ({ ...prev, [postId]: !prev[postId] }));
   };
 
-  const handleInlineCommentSubmit = (postId: string, e: React.FormEvent) => {
+  const handleInlineCommentSubmit = async (postId: string, e: React.FormEvent) => {
     e.preventDefault();
     const content = commentInputs[postId];
     if (!content || !content.trim()) return;
 
     const isAnon = commentAnonMap[postId] || false;
-    const result = addComment(postId, content.trim(), isAnon);
+    const sensitivity = await checkContentSensitivityAI(content.trim());
+    const result = addComment(postId, content.trim(), isAnon, sensitivity);
 
     if (result && result.isFlagged) {
       setFlaggedCommentInfo({ isOpen: true, matchedWord: result.matchedWord, flagType: result.flagType });

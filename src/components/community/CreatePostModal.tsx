@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useCommunity, checkContentSensitivity } from '../../context/CommunityContext';
+import { useCommunity, checkContentSensitivityAI } from '../../context/CommunityContext';
 import { useToast } from '../../context/ToastContext';
 import { JOURNEYS_DATA } from '../../data/journeysData';
 import { TRANSVERSAL_ROOMS, AGE_BRACKET_ROOMS } from '../../data/communityData';
@@ -50,6 +50,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isConfessionario = postType === 'transversal' && selectedTransversalId === 'confessionario';
 
@@ -80,33 +81,41 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     return 'Comunidade Elana';
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
+    if (!title.trim() || !content.trim() || isSubmitting) return;
 
-    const fullText = `${title.trim()} ${content.trim()}`;
-    const sensitivity = checkContentSensitivity(fullText);
+    setIsSubmitting(true);
+    try {
+      const fullText = `${title.trim()} ${content.trim()}`;
+      const sensitivity = await checkContentSensitivityAI(fullText);
 
-    createPost({
-      journeyId: postType === 'jornada' ? selectedJourneyId : undefined,
-      transversalRoomId: postType === 'transversal' ? selectedTransversalId : undefined,
-      ageBracketId: postType === 'idade' ? selectedAgeId : undefined,
-      emotionalIntention: postType === 'jornada' ? selectedIntention : undefined,
-      moduleTopic: 'Geral',
-      title: title.trim(),
-      content: content.trim(),
-      isAnonymous: isConfessionario
-    });
+      createPost({
+        journeyId: postType === 'jornada' ? selectedJourneyId : undefined,
+        transversalRoomId: postType === 'transversal' ? selectedTransversalId : undefined,
+        ageBracketId: postType === 'idade' ? selectedAgeId : undefined,
+        emotionalIntention: postType === 'jornada' ? selectedIntention : undefined,
+        moduleTopic: 'Geral',
+        title: title.trim(),
+        content: content.trim(),
+        isAnonymous: isConfessionario,
+        sensitivityCheck: sensitivity
+      });
 
-    if (sensitivity.isFlagged) {
-      if (sensitivity.type === 'vulnerabilidade') {
-        showToast('info', 'Recebemos seu relato com carinho, mas notamos algo sensível. Nossa equipe está dando uma olhadinha na publicação.');
-      } else {
-        showToast('warning', 'Identificamos termos sensíveis. Sua publicação foi enviada para análise preventiva da nossa equipe.');
+      if (sensitivity.isFlagged) {
+        if (sensitivity.type === 'vulnerabilidade') {
+          showToast('info', 'Recebemos seu relato com carinho, mas notamos algo sensível. Nossa equipe está dando uma olhadinha na publicação.');
+        } else {
+          showToast('warning', 'Identificamos termos sensíveis. Sua publicação foi enviada para análise preventiva da nossa equipe.');
+        }
       }
-    }
 
-    onClose();
+      onClose();
+    } catch (err) {
+      console.error('Erro ao processar publicação:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return createPortal(
@@ -370,10 +379,22 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               </button>
               <button
                 type="submit"
-                className="flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all cursor-pointer transform hover:scale-105 active:scale-95"
+                disabled={isSubmitting}
+                className={`flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all ${
+                  isSubmitting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer transform hover:scale-105 active:scale-95'
+                }`}
               >
-                <Send className="w-3.5 h-3.5" />
-                DIVIDIR COM A COMUNIDADE
+                {isSubmitting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    PUBLICANDO...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    DIVIDIR COM A COMUNIDADE
+                  </>
+                )}
               </button>
             </div>
           </div>
