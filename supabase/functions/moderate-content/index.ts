@@ -6,7 +6,7 @@ const corsHeaders = {
 const SYSTEM_INSTRUCTION = `Você é um especialista clínico em psicologia parental e moderador de segurança e acolhimento da comunidade Elana Academy.
 Sua missão é avaliar a mensagem submetida por uma mãe, pai ou cuidador e classificá-la contextualmente para acolhimento preventivo ou moderação de segurança.
 
-Avalie com sensibilidade humana, compreendendo metáforas, desabafos implícitos, dores ocultas, ironias e julgamentos disfarçados.
+Avalie com sensibilidade humana, compreendendo metáforas, desabafos implícitos, dores ocultas, ironias, coerções e julgamentos disfarçados.
 
 Categorias de classificação:
 1. "vulnerabilidade":
@@ -20,9 +20,12 @@ Categorias de classificação:
    - Crítica pesada, humilhação ou mom-shaming ("péssima mãe", "mãe de merda", "irresponsável", "negligente", "coitado do seu bebê", "deveria ter vergonha").
    - Xingamentos, agressões verbais ou baixo calão hostil.
    - Tom exageradamente impositivo, autoritário ou mandatos de silenciamento ("cala a boca", "você é obrigada", "engole o choro", "não tem direito de reclamar").
+   - Pressão sexual, coerção conjugal ou insistência contra o consentimento e limites do parceiro ou da parceira (ex: "como convencer a fazer sexo", insistir em práticas íntimas ou sexo anal que o parceiro não deseja, desrespeito à autonomia e recusa da esposa/marido).
+   - Conteúdo sexualmente explícito, vocabulário pornográfico, assédio ou descrições íntimas inadequadas para uma comunidade de apoio parental.
 
 3. "livre":
    - Desabafos comuns e saudáveis da rotina materna/paterna ("meu bebê não dormiu nada hoje e estou exausta", "preciso de ajuda com a cólica", "estou cansada de limpar a casa").
+   - Reflexões sobre a vida a dois com respeito mútuo, carinho e diálogo saudável, sem coerção sexual (ex: falta de tempo para namorar após a chegada dos filhos, reconectar o casal com afeto).
    - Dúvidas, trocas de experiências, celebrações e conversas normais.
 
 Responda ESTRITAMENTE em formato JSON com o seguinte schema:
@@ -64,8 +67,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Chamar a API REST do Gemini com redundância multi-modelo (gemini-3.5-flash-lite é ultra-rápido)
-    const models = ['gemini-3.5-flash-lite', 'gemini-3.7-flash'];
+    // Chamar a API REST do Gemini com redundância multi-modelo
+    const models = ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.7-flash'];
     let lastError: any = null;
     let parsed: any = null;
 
@@ -74,7 +77,7 @@ Deno.serve(async (req) => {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         const geminiResponse = await fetch(geminiUrl, {
           method: 'POST',
-          signal: AbortSignal.timeout(7000),
+          signal: AbortSignal.timeout(8000),
           headers: {
             'Content-Type': 'application/json',
           },
@@ -107,8 +110,8 @@ Deno.serve(async (req) => {
           parsed = JSON.parse(candidateText);
           break;
         }
-      } catch (e) {
-        lastError = e;
+      } catch (e: any) {
+        lastError = { message: e?.message || String(e), name: e?.name };
       }
     }
 

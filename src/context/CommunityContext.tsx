@@ -147,7 +147,16 @@ export const OFFENSIVE_PATTERNS = [
   { pattern: /\bnao\s+tem\s+moral\b/i, reason: 'Tom impositivo / Ofensa moral' },
   { pattern: /\bpara\s+de\s+(?:reclamar|falar\s+besteira|falar\s+bobagem)\b/i, reason: 'Tom impositivo: Interrupção agressiva' },
   { pattern: /\b(?:faca\s+o\s+que\s+eu\s+mando|quem\s+manda\s+sou\s+eu)\b/i, reason: 'Tom impositivo: Autoritarismo' },
-  { pattern: /\bvoce\s+nao\s+sabe\s+nada\b/i, reason: 'Desqualificação intelectual agressiva' }
+  { pattern: /\bvoce\s+nao\s+sabe\s+nada\b/i, reason: 'Desqualificação intelectual agressiva' },
+
+  // Pressão Sexual, Coerção Conjugal e Violação de Consentimento
+  { pattern: /\b(?:como\s+)?(?:convencer|forcar|obrigar|pressionar|insistir)\b.*?\b(?:sexo|transar|fazer\s+sexo|penetracao|pratica\s+sexual)\b/i, reason: 'Pressão ou coerção sexual contra a vontade do parceiro(a)' },
+  { pattern: /\b(?:esposa|namorada|mulher|marido|parceir[ao])\s+nao\s+quer\b.*?\b(?:sexo|transar|anal|oral|penetracao)\b/i, reason: 'Incentivo à violação de limites íntimos e consentimento' },
+  { pattern: /\b(?:nao\s+quer|recusa|nao\s+aceita)\b.*?\b(?:sexo|transar|sexo\s+anal|oral|penetracao)\b/i, reason: 'Desrespeito ao consentimento e limites sexuais' },
+  { pattern: /\b(?:fazer|praticar)\s+sexo\s+anal\b/i, reason: 'Conteúdo íntimo explícito em desacordo com as diretrizes' },
+  { pattern: /\bsexo\s+anal\b/i, reason: 'Termo sexual explícito sob moderação preventiva' },
+  { pattern: /\b(?:estupr[ao]|violencia\s+sexual|abuso\s+sexual|assedio\s+sexual)\b/i, reason: 'Violência ou violação sexual' },
+  { pattern: /\b(?:pornografia|conteudo\s+adulto|prostituicao|venda\s+de\s+nudez)\b/i, reason: 'Conteúdo adulto / explícito proibido' }
 ];
 
 // Expressões legadas de antijulgamento para verificação direta
@@ -277,17 +286,17 @@ export const checkContentSensitivityAI = async (
 
     if (result && !result.error && result.data && !result.data.fallbackRequired) {
       const data = result.data;
-      if (data.isFlagged && (data.category === 'vulnerabilidade' || data.category === 'antijulgamento')) {
-        const flagType = data.category as SensitivityFlagType;
+      if (data.isFlagged) {
+        const flagType: SensitivityFlagType = data.category === 'vulnerabilidade' ? 'vulnerabilidade' : 'antijulgamento';
         const prefix = flagType === 'vulnerabilidade' ? 'Alerta de Acolhimento' : 'Alerta Antijulgamento';
         return {
           isFlagged: true,
           type: flagType,
           matchedWord: data.matchedContext || 'análise contextual de IA',
-          flagReason: `${prefix}: "${data.matchedContext || 'análise de IA'}" (${data.reason})`,
+          flagReason: `${prefix}: "${data.matchedContext || 'análise de IA'}" (${data.reason || 'Sinalizado pelas diretrizes da comunidade'})`,
           suggestsCrisisSupport: !!data.suggestsCrisisSupport
         };
-      } else if (data.category === 'livre') {
+      } else if (data.category === 'livre' || data.isFlagged === false) {
         return { isFlagged: false };
       }
     }
@@ -422,26 +431,32 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   };
 
-  const mapPostFromDb = (item: any): CommunityPost => ({
-    id: item.id,
-    journeyId: item.journey_id,
-    transversalRoomId: item.transversal_room_id,
-    ageBracketId: item.age_bracket_id,
-    emotionalIntention: item.emotional_intention,
-    authorId: item.author_id || 'demo-user',
-    authorName: item.author_name || 'Membro da Comunidade',
-    authorAvatar: item.author_avatar || '',
-    authorRole: 'membro',
-    isAnonymous: !!item.is_anonymous,
-    sensitivityLevel: item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
-    status: item.category === 'sob_moderacao' ? 'sob_moderacao' : 'aprovado',
-    title: item.title || '',
-    content: item.content || '',
-    createdAt: item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora',
-    reactions: item.reactions && typeof item.reactions === 'object' ? item.reactions : {},
-    userReactions: {},
-    comments: Array.isArray(item.comments) ? item.comments : []
-  });
+  const mapPostFromDb = (item: any): CommunityPost => {
+    const localSensitivity = checkContentSensitivity(`${item.title || ''} ${item.content || ''}`);
+    const isUnderMod = item.category === 'sob_moderacao' || localSensitivity.isFlagged;
+    return {
+      id: item.id,
+      journeyId: item.journey_id,
+      transversalRoomId: item.transversal_room_id,
+      ageBracketId: item.age_bracket_id,
+      emotionalIntention: item.emotional_intention,
+      authorId: item.author_id || 'demo-user',
+      authorName: item.author_name || 'Membro da Comunidade',
+      authorAvatar: item.author_avatar || '',
+      authorRole: 'membro',
+      isAnonymous: !!item.is_anonymous,
+      sensitivityLevel: localSensitivity.type === 'vulnerabilidade' || item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
+      status: isUnderMod ? 'sob_moderacao' : 'aprovado',
+      flagReason: localSensitivity.flagReason,
+      flagType: localSensitivity.type,
+      title: item.title || '',
+      content: item.content || '',
+      createdAt: item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora',
+      reactions: item.reactions && typeof item.reactions === 'object' ? item.reactions : {},
+      userReactions: {},
+      comments: Array.isArray(item.comments) ? item.comments : []
+    };
+  };
 
   const fetchSupabasePosts = async (showLoading = false) => {
     if (showLoading) setIsLoading(true);
@@ -738,6 +753,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       isAnonymous,
       sensitivityLevel: sensitivity,
       status: postStatus,
+      flagReason: sensitivityCheck.flagReason,
+      flagType: sensitivityCheck.type,
       title: payload.title,
       content: payload.content,
       createdAt: 'Agora mesmo',

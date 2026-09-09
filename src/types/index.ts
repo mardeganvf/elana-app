@@ -142,6 +142,8 @@ export interface CommunityPost {
   isAnonymous?: boolean;
   sensitivityLevel: SensitivityLevel;
   status?: 'aprovado' | 'sob_moderacao';
+  flagReason?: string;
+  flagType?: 'vulnerabilidade' | 'antijulgamento';
   title: string;
   content: string;
   createdAt: string;

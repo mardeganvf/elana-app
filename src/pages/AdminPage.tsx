@@ -271,7 +271,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               authorName: p.author_name || 'Anônimo',
               authorAvatar: p.author_avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
               roomName: p.transversal_room_id || p.journey_id || 'Comunidade Geral',
-              content: p.content,
+              content: p.title ? `[${p.title}] ${p.content}` : p.content,
               flagReason,
               createdAt: new Date(p.created_at).toLocaleString('pt-BR'),
               status

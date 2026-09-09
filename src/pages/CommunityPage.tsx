@@ -845,6 +845,13 @@ export const CommunityPage: React.FC = () => {
   const filteredPosts = safePosts.filter(post => {
     if (!post) return false;
 
+    // Moderação preventiva: postagens sob moderação são visíveis apenas para o próprio autor ou moderadores/guias
+    if (post.status === 'sob_moderacao') {
+      const isAuthor = user?.id && post.authorId === user.id;
+      const isAdminOrGuia = user?.role === 'admin' || user?.role === 'guia';
+      if (!isAuthor && !isAdminOrGuia) return false;
+    }
+
     // Selection filter (if null, show all posts)
     if (activeSelection) {
       if (activeSelection.type === 'jornada') {
@@ -1665,12 +1672,21 @@ export const CommunityPage: React.FC = () => {
                       {/* Content Section */}
                       <div className="space-y-3">
                         {post.status === 'sob_moderacao' && (
-                          <div className="bg-rose-500/10 border border-rose-500/30 p-3.5 rounded-2xl flex items-center gap-2.5 text-rose-200 text-xs">
-                            <Heart className="w-4 h-4 shrink-0 text-rose-400" />
-                            <p className="text-rose-100 text-xs leading-relaxed font-medium">
-                              Você não está só. Se precisar de apoio imediato, ligue gratuitamente para o <strong>CVV (188)</strong>.
-                            </p>
-                          </div>
+                          post.flagType === 'vulnerabilidade' || post.sensitivityLevel === 'critico' ? (
+                            <div className="bg-rose-500/10 border border-rose-500/30 p-3.5 rounded-2xl flex items-center gap-2.5 text-rose-200 text-xs">
+                              <Heart className="w-4 h-4 shrink-0 text-rose-400" />
+                              <p className="text-rose-100 text-xs leading-relaxed font-medium">
+                                Você não está só. Se precisar de apoio imediato, ligue gratuitamente para o <strong>CVV (188)</strong>.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-2xl flex items-center gap-2.5 text-amber-200 text-xs">
+                              <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400" />
+                              <p className="text-amber-100 text-xs leading-relaxed font-medium">
+                                Esta publicação foi retida para análise preventiva da moderação (visível apenas para você).
+                              </p>
+                            </div>
+                          )
                         )}
 
                         <h4 className="text-lg font-black text-white leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
