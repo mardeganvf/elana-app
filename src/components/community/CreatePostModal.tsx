@@ -102,7 +102,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       if (sensitivity.type === 'vulnerabilidade') {
         showToast('info', 'Recebemos seu relato com carinho, mas notamos algo sensível. Nossa equipe está dando uma olhadinha na publicação.');
       } else {
-        showToast('warning', 'Identificamos termos sensíveis ou de tom impositivo. Sua publicação foi enviada para moderação preventiva da equipe.');
+        showToast('warning', 'Identificamos termos sensíveis. Sua publicação foi enviada para análise preventiva da nossa equipe.');
       }
     }
 
