@@ -257,6 +257,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'jornada',
       categoryLabel: 'Jornada',
       roomName: 'Pais Recém-Nascidos',
+      subTopicLabel: 'Preciso de Ajuda',
       emoji: '🌅',
       badgeBg: 'rgba(255, 127, 91, 0.12)',
       badgeBorder: 'rgba(255, 127, 91, 0.35)',
@@ -269,6 +270,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'jornada',
       categoryLabel: 'Jornada',
       roomName: 'Construindo Pontes',
+      subTopicLabel: 'Preciso de Ajuda',
       emoji: '🌉',
       badgeBg: 'rgba(45, 212, 191, 0.12)',
       badgeBorder: 'rgba(45, 212, 191, 0.35)',
@@ -281,6 +283,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'jornada',
       categoryLabel: 'Jornada',
       roomName: 'Singular',
+      subTopicLabel: 'Preciso de Ajuda',
       emoji: '✨',
       badgeBg: 'rgba(255, 209, 102, 0.12)',
       badgeBorder: 'rgba(255, 209, 102, 0.35)',
@@ -293,6 +296,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'jornada',
       categoryLabel: 'Jornada',
       roomName: 'Amor Escolhido',
+      subTopicLabel: 'Preciso de Ajuda',
       emoji: '💖',
       badgeBg: 'rgba(230, 103, 149, 0.12)',
       badgeBorder: 'rgba(230, 103, 149, 0.35)',
@@ -305,6 +309,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'jornada',
       categoryLabel: 'Jornada',
       roomName: 'Depois do Silêncio',
+      subTopicLabel: 'Preciso Desabafar',
       emoji: '🕊️',
       badgeBg: 'rgba(167, 139, 250, 0.12)',
       badgeBorder: 'rgba(167, 139, 250, 0.35)',
@@ -317,6 +322,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'jornada',
       categoryLabel: 'Jornada',
       roomName: 'Novos Caminhos',
+      subTopicLabel: 'Preciso Desabafar',
       emoji: '🌿',
       badgeBg: 'rgba(138, 154, 91, 0.12)',
       badgeBorder: 'rgba(138, 154, 91, 0.35)',
@@ -1577,6 +1583,9 @@ export const CommunityPage: React.FC = () => {
                 {visiblePosts.map(post => {
                   const isInlineExpanded = !!expandedCommentsMap[post.id];
                   const roomDetails = getPostRoomDetails(post);
+                  const roomLabel = roomDetails.subTopicLabel
+                    ? `${roomDetails.roomName}: ${roomDetails.subTopicLabel}`
+                    : roomDetails.roomName;
 
                   return (
                     <div 
@@ -1584,20 +1593,20 @@ export const CommunityPage: React.FC = () => {
                       className="bg-[#101B1E] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-lg space-y-5 hover:border-white/20 transition-all relative overflow-hidden"
                     >
                       
-                      {/* Top Author & Badges */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      {/* Top Author & Room Badge */}
+                      <div className="flex items-start sm:items-center justify-between gap-3">
                         <div 
                           onClick={post.isAnonymous ? undefined : () => openAuthorProfile({ id: post.authorId, name: post.authorName, avatar: post.authorAvatar, role: post.authorRole, tag: post.authorTag, isAnonymous: post.isAnonymous })}
-                          className={`flex items-center gap-3 ${post.isAnonymous ? '' : 'cursor-pointer group'}`}
+                          className={`flex items-center gap-3 min-w-0 ${post.isAnonymous ? '' : 'cursor-pointer group'}`}
                         >
                           <img
                             src={post.authorAvatar}
                             alt={post.authorName}
                             className={`w-10 h-10 rounded-full object-cover border border-white/20 shrink-0 ${post.isAnonymous ? '' : 'group-hover:scale-105 transition-transform'}`}
                           />
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`font-bold text-xs text-white ${post.isAnonymous ? '' : 'group-hover:text-[#FF7F5B] transition-colors'}`}>
+                              <span className={`font-bold text-xs text-white truncate ${post.isAnonymous ? '' : 'group-hover:text-[#FF7F5B] transition-colors'}`}>
                                 {post.authorName}
                               </span>
 
@@ -1611,21 +1620,14 @@ export const CommunityPage: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Moderation / Critical Badge only */}
-                        {post.sensitivityLevel === 'critico' && (
-                          <div className="self-start sm:self-auto">
+                        {/* Canto Superior Direito: Contêiner da Sala (sem ícones, simplificado) */}
+                        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                          {post.sensitivityLevel === 'critico' && (
                             <span className="text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                              <ShieldCheck className="w-3 h-3" /> Suporte & Moderação
+                              <ShieldCheck className="w-3 h-3" /> Suporte
                             </span>
-                          </div>
-                        )}
-                      </div>
+                          )}
 
-                      {/* Content Section */}
-                      <div className="space-y-3">
-                        {/* 🏷️ Sinalização Clara da Sala e Subtópico */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {/* Badge Principal da Sala com filtro ao clicar */}
                           <button
                             type="button"
                             onClick={(e) => {
@@ -1634,43 +1636,21 @@ export const CommunityPage: React.FC = () => {
                                 setActiveSelection(roomDetails.selectionTarget);
                               }
                             }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black transition-all border shadow-sm group hover:scale-[1.02] active:scale-95 cursor-pointer"
+                            className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border shadow-sm hover:opacity-90 active:scale-95 cursor-pointer max-w-[200px] sm:max-w-none truncate"
                             style={{
                               backgroundColor: roomDetails.badgeBg,
                               borderColor: roomDetails.badgeBorder,
                               color: roomDetails.badgeText
                             }}
-                            title={`Clique para filtrar posts desta sala: ${roomDetails.roomName}`}
+                            title={`Filtrar posts desta sala: ${roomLabel}`}
                           >
-                            <span className="text-sm shrink-0">{roomDetails.emoji}</span>
-                            <span className="text-[10px] font-extrabold uppercase tracking-wider opacity-75 shrink-0">
-                              {roomDetails.categoryLabel} ›
-                            </span>
-                            <span>{roomDetails.roomName}</span>
+                            <span className="truncate">{roomLabel}</span>
                           </button>
-
-                          {/* Subtópico / Intenção Emocional (se for Jornada) */}
-                          {roomDetails.subTopicLabel && (
-                            <span 
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-extrabold border shrink-0 shadow-sm"
-                              style={{
-                                backgroundColor: roomDetails.subBadgeBg,
-                                borderColor: roomDetails.subBadgeBorder,
-                                color: roomDetails.subBadgeText
-                              }}
-                            >
-                              <span>{roomDetails.subTopicEmoji}</span>
-                              <span>{roomDetails.subTopicLabel}</span>
-                            </span>
-                          )}
-
-                          {/* Módulo de aula específico (se houver e não for apenas 'Geral') */}
-                          {post.moduleTopic && post.moduleTopic !== 'Geral' && (
-                            <span className="text-[10px] font-bold text-slate-300 bg-white/5 border border-white/10 px-2.5 py-1 rounded-xl shrink-0">
-                              {post.moduleTopic}
-                            </span>
-                          )}
                         </div>
+                      </div>
+
+                      {/* Content Section */}
+                      <div className="space-y-3">
 
                         <h4 className="text-lg font-black text-white leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                           {post.title}
