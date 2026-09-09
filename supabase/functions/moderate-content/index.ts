@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         const geminiResponse = await fetch(geminiUrl, {
           method: 'POST',
-          signal: AbortSignal.timeout(5000),
+          signal: AbortSignal.timeout(7000),
           headers: {
             'Content-Type': 'application/json',
           },
