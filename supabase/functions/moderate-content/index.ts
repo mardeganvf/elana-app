@@ -64,54 +64,63 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Chamar a API REST oficial do Gemini 2.5 Flash
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // Chamar a API REST do Gemini com redundância multi-modelo
+    const models = ['gemini-flash-latest', 'gemini-3.5-flash-lite', 'gemini-3.7-flash'];
+    let lastError: any = null;
+    let parsed: any = null;
 
-    const geminiResponse = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: SYSTEM_INSTRUCTION }]
-        },
-        contents: [
-          {
-            parts: [{ text: `Analise a seguinte mensagem postada na comunidade Elana:\n\n"${text.trim()}"` }]
-          }
-        ],
-        generationConfig: {
-          response_mime_type: 'application/json',
-          temperature: 0.1
+    for (const model of models) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const geminiResponse = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [{ text: SYSTEM_INSTRUCTION }]
+            },
+            contents: [
+              {
+                parts: [{ text: `Analise a seguinte mensagem postada na comunidade Elana:\n\n"${text.trim()}"` }]
+              }
+            ],
+            generationConfig: {
+              response_mime_type: 'application/json',
+              temperature: 0.1
+            }
+          })
+        });
+
+        if (!geminiResponse.ok) {
+          const errText = await geminiResponse.text();
+          console.warn(`Aviso na API do Gemini (${model}):`, geminiResponse.status, errText);
+          lastError = { status: geminiResponse.status, message: errText };
+          continue;
         }
-      })
-    });
 
-    if (!geminiResponse.ok) {
-      const errText = await geminiResponse.text();
-      console.error('Erro na API do Gemini:', geminiResponse.status, errText);
+        const data = await geminiResponse.json();
+        const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (candidateText) {
+          parsed = JSON.parse(candidateText);
+          break;
+        }
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    if (!parsed) {
       return new Response(
         JSON.stringify({
-          error: 'GEMINI_API_ERROR',
-          status: geminiResponse.status,
+          error: 'GEMINI_MODELS_UNAVAILABLE',
+          lastError,
           fallbackRequired: true
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const data = await geminiResponse.json();
-    const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!candidateText) {
-      return new Response(
-        JSON.stringify({ isFlagged: false, category: 'livre', fallbackRequired: true }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const parsed = JSON.parse(candidateText);
 
     return new Response(
       JSON.stringify({
