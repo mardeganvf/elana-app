@@ -157,7 +157,16 @@ export const OFFENSIVE_PATTERNS = [
   { pattern: /\b(?:nao\s+quer|recusa|nao\s+aceita)\b.*?\b(?:sexo|transar|sexo\s+anal|oral|penetracao)\b/i, reason: 'Desrespeito ao consentimento e limites sexuais' },
   { pattern: /\b(?:fazer|praticar)\s+sexo\s+anal\b/i, reason: 'Conteúdo íntimo explícito em desacordo com as diretrizes' },
   { pattern: /\bsexo\s+anal\b/i, reason: 'Termo sexual explícito sob moderação preventiva' },
-  { pattern: /\b(?:estupr[ao]|violencia\s+sexual|abuso\s+sexual|assedio\s+sexual)\b/i, reason: 'Violência ou violação sexual' },
+
+  // Não Consentimento, Estupro, Violação e Abuso de Vulnerável (ex: parceiro dormindo/inconsciente)
+  { pattern: /\b(?:fazer|ter|praticar)\s+sexo\b.*?\b(?:dormindo|desacordad[ao]|inconsciente|apagad[ao]|dopad[ao]|bebad[ao]|embriagad[ao])\b/i, reason: 'Violação grave: Ato sexual não consentido / Estupro de vulnerável' },
+  { pattern: /\b(?:sexo|transar|penetracao|penetrar|tocar|passar\s+a\s+mao|pratica\s+sexual|alisar)\b.*?\b(?:dormindo|desacordad[ao]|inconsciente|apagad[ao]|dopad[ao]|bebad[ao]|embriagad[ao]|drogad[ao]|sem\s+consciencia|sem\s+acordar)\b/i, reason: 'Violação grave: Não consentimento / Estupro de vulnerável' },
+  { pattern: /\b(?:dormindo|desacordad[ao]|inconsciente|apagad[ao]|dopad[ao]|bebad[ao]|embriagad[ao])\b.*?\b(?:sexo|transar|penetracao|penetrar|tocar|fazer\s+sexo)\b/i, reason: 'Violação grave: Não consentimento / Estupro de vulnerável' },
+  { pattern: /\b(?:estupr[ao]|estuprar|estuprador|estuprada|estupros)\b/i, reason: 'Violência sexual / Crime de estupro' },
+  { pattern: /\b(?:abuso\s+sexual|abusar\s+sexualmente|violencia\s+sexual|violacao\s+sexual|estupro\s+marital|estupro\s+conjugal)\b/i, reason: 'Violência ou abuso sexual' },
+  { pattern: /\b(?:forcar|obrigar)\b.*?\b(?:a\s+)?(?:transar|fazer\s+sexo|abrir\s+as\s+pernas)\b/i, reason: 'Coerção sexual física / Estupro' },
+  { pattern: /\bsem\s+(?:o\s+)?(?:consentimento|ela\s+querer|ele\s+querer|ela\s+saber|ele\s+saber|permissao)\b.*?\b(?:sexo|transar|penetracao|tocar)\b/i, reason: 'Ato sexual sem consentimento' },
+  { pattern: /\b(?:sexo|transar)\b.*?\bsem\s+(?:o\s+)?(?:consentimento|ela\s+querer|ele\s+querer|ela\s+saber|ele\s+saber|permissao)\b/i, reason: 'Ato sexual sem consentimento' },
   { pattern: /\b(?:pornografia|conteudo\s+adulto|prostituicao|venda\s+de\s+nudez)\b/i, reason: 'Conteúdo adulto / explícito proibido' }
 ];
 
@@ -277,7 +286,7 @@ export const checkContentSensitivityAI = async (
   // 2. Análise contextual avançada via Supabase Edge Function com IA Gemini
   try {
     const timeoutPromise = new Promise<{ error: string }>((resolve) =>
-      setTimeout(() => resolve({ error: 'TIMEOUT' }), 8000)
+      setTimeout(() => resolve({ error: 'TIMEOUT' }), 12000)
     );
 
     const invokePromise = supabase.functions.invoke('moderate-content', {
