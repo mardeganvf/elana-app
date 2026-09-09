@@ -84,6 +84,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.badges)) {
+          const badgeXpSum = parsed.badges.reduce((acc: number, b: any) => acc + (b.rewardXp || 0), 0);
+          parsed.xp = badgeXpSum;
+          const levelInfo = getLevelFromXP(badgeXpSum);
+          parsed.level = levelInfo.level;
+          parsed.levelTitle = levelInfo.title;
+        }
         return parsed;
       } catch (e) {
         console.error('Error parsing stored session', e);
@@ -617,9 +624,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const badges = ALL_BADGES.filter(b => unlockedBadgeIds.has(b.id));
 
+      // Pontuação de XP estritamente igual à soma real das conquistas (badges) desbloqueadas
       const badgeXpSum = badges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
-      const calculatedMinimumXp = badgeXpSum;
-      const xp = Math.max(profile.xp || 0, adminRecoveredXp, calculatedMinimumXp);
+      const xp = badgeXpSum;
       const levelInfo = getLevelFromXP(xp);
       const isTourFinished = profile.tag === 'onboarded' || xp >= 25 || (isUserAdmin && xp > 0);
 
@@ -627,8 +634,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const finalPhone = profile.phone || adminRecoveredPhone || undefined;
       const finalChildren = children.length > 0 ? children : adminRecoveredChildren;
 
-      // Auto-heal Supabase se profiles.xp, bio ou streak_days de admin estiverem desatualizados
-      if ((xp > (profile.xp || 0) || calculatedStreak > (profile.streak_days || 1) || (isUserAdmin && adminRecoveredBio && !profile.bio)) && profileId) {
+      // Auto-heal Supabase se profiles.xp estiver desalinhado da soma das badges, ou bio/streak desatualizados
+      if ((xp !== (profile.xp || 0) || calculatedStreak > (profile.streak_days || 1) || (isUserAdmin && adminRecoveredBio && !profile.bio)) && profileId) {
         supabase
           .from('profiles')
           .update({
@@ -749,11 +756,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const currentBadges = updates.badges !== undefined ? updates.badges : (baseUser.badges || []);
     const badgeXpSum = currentBadges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
-    const guaranteedMinXp = badgeXpSum;
 
     const previousLevel = baseUser.level || getLevelFromXP(baseUser.xp).level;
-    const requestedXp = updates.xp !== undefined ? updates.xp : baseUser.xp;
-    const nextXp = Math.max(requestedXp, guaranteedMinXp);
+    const nextXp = badgeXpSum;
     const nextLevelInfo = getLevelFromXP(nextXp);
 
     const updatedUser: UserProfile = {
@@ -912,14 +917,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const addXP = async (amount: number) => {
+  const addXP = async (_amount?: number) => {
     const currentUser = userRef.current || user;
     if (!currentUser) return;
-    const newXP = currentUser.xp + amount;
-    const levelInfo = getLevelFromXP(newXP);
+    const badgeXpSum = (currentUser.badges || []).reduce((acc, b) => acc + (b.rewardXp || 0), 0);
+    const levelInfo = getLevelFromXP(badgeXpSum);
     
     await updateUser({
-      xp: newXP,
+      xp: badgeXpSum,
       level: levelInfo.level,
       levelTitle: levelInfo.title
     });
@@ -1026,7 +1031,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const previousLevel = currentUser.level || getLevelFromXP(currentUser.xp).level;
     const nextBadges = [...currentUser.badges, badgeToAward];
     const badgeXpSum = nextBadges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
-    const newXP = Math.max(currentUser.xp + (badgeToAward.rewardXp || 0), badgeXpSum);
+    const newXP = badgeXpSum;
     const levelInfo = getLevelFromXP(newXP);
 
     if (levelInfo.level > previousLevel && previousLevel >= 1) {

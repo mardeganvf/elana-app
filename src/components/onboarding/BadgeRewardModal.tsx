@@ -21,7 +21,7 @@ export const BadgeRewardModal: React.FC<BadgeRewardModalProps> = ({ isOpen, onCl
     const sementeBadge = ALL_BADGES[0];
     const hasBadge = user.badges.some(b => b.id === sementeBadge.id);
     const updatedBadges = hasBadge ? user.badges : [...user.badges, sementeBadge];
-    const newXP = user.xp < 25 ? 25 : user.xp;
+    const newXP = updatedBadges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
     const levelInfo = getLevelFromXP(newXP);
 
     if (updateUser) {

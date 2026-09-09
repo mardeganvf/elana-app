@@ -127,7 +127,7 @@ const INITIAL_POLLS: CommunityPoll[] = [
 const PAGE_SIZE = 15;
 
 export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, addXP, awardBadge } = useAuth();
+  const { user, awardBadge } = useAuth();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasMorePosts, setHasMorePosts] = useState<boolean>(true);
@@ -468,9 +468,6 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (payload.transversalRoomId === 'cuidando-de-quem-cuida') {
       awardBadge('b33'); // Máscara de Oxigênio
     }
-
-    // Reward XP for community participation (+20 XP)
-    addXP(20);
   };
 
   const toggleReaction = (postId: string, reactionKey: string) => {
@@ -605,8 +602,6 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (error) console.warn('Supabase comment notice:', error.message);
           else console.log('✅ Comentário salvo com sucesso no Supabase!');
         });
-
-      addXP(10);
 
       // 🏆 Conquistas de Comentários / Rede de Apoio:
       awardBadge('b36'); // Primeiro Acolhimento

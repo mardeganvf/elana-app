@@ -19,7 +19,7 @@ interface OnboardingTutorialModalProps {
 }
 
 export const OnboardingTutorialModal: React.FC<OnboardingTutorialModalProps> = ({ isOpen, onClose }) => {
-  const { user, addXP } = useAuth();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
 
   if (!isOpen || !user) return null;
@@ -83,8 +83,6 @@ export const OnboardingTutorialModal: React.FC<OnboardingTutorialModalProps> = (
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      // Finish Tour: Award +50 XP bonus!
-      addXP(50);
       localStorage.setItem(`elana_onboarding_done_${user.email}`, 'true');
       onClose();
     }
