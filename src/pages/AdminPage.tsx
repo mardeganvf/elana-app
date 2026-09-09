@@ -369,7 +369,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       } catch (err) {
         console.warn('Erro ao salvar aprovação no Supabase:', err);
       }
-      showToast('Publicação aprovada e mantida na comunidade!', 'success');
+      showToast('success', 'Publicação aprovada e mantida na comunidade!');
     } else if (newStatus === 'rejeitado') {
       removeApprovedPostId(id);
       try {
@@ -380,7 +380,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       } catch (err) {
         console.warn('Erro ao deletar post rejeitado no Supabase:', err);
       }
-      showToast('Publicação removida com sucesso.', 'info');
+      showToast('info', 'Publicação removida com sucesso.');
     }
   };
 
