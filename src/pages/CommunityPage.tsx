@@ -23,7 +23,6 @@ import {
   Send, 
   ShieldCheck,
   ShieldAlert,
-  EyeOff, 
   Heart, 
   Sun, 
   Waves, 
@@ -1629,12 +1628,6 @@ export const CommunityPage: React.FC = () => {
                               <span className={`font-bold text-xs text-white truncate ${post.isAnonymous ? '' : 'group-hover:text-[#FF7F5B] transition-colors'}`}>
                                 {post.authorName}
                               </span>
-
-                              {post.isAnonymous && (
-                                <span className="text-[9px] font-bold bg-purple-500/20 text-purple-300 border border-purple-400/30 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                  <EyeOff className="w-3 h-3" /> Confessionário
-                                </span>
-                              )}
                             </div>
                             <span className="text-[11px] text-slate-400 block mt-0.5">{post.createdAt}</span>
                           </div>
