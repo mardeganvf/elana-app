@@ -21,7 +21,6 @@ import {
   MessageSquare, 
   Plus, 
   Send, 
-  ShieldCheck,
   ShieldAlert,
   Heart, 
   Sun, 
@@ -1635,12 +1634,6 @@ export const CommunityPage: React.FC = () => {
 
                         {/* Canto Superior Direito: Contêiner da Sala (sem ícones, simplificado) */}
                         <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                          {post.sensitivityLevel === 'critico' && (
-                            <span className="text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                              <ShieldCheck className="w-3 h-3" /> Suporte
-                            </span>
-                          )}
-
                           <button
                             type="button"
                             onClick={(e) => {
