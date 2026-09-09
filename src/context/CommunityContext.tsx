@@ -568,7 +568,20 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (room === 'cuidando-quem-cuida' || room === 'cuidando-de-quem-cuida') {
           awardBadge('b33');
         }
+        if (p.reactions && typeof p.reactions === 'object') {
+          Object.values(p.reactions).forEach(count => {
+            if (typeof count === 'number') totalReactions += count;
+          });
+        }
       });
+
+      // 💖 Conquistas por Reações Recebidas (b48 a b53)
+      if (totalReactions >= 1) awardBadge('b48');
+      if (totalReactions >= 50) awardBadge('b49');
+      if (totalReactions >= 250) awardBadge('b50');
+      if (totalReactions >= 500) awardBadge('b51');
+      if (totalReactions >= 1000) awardBadge('b52');
+      if (totalReactions >= 2500) awardBadge('b53');
     }
   }, [user?.id, user?.name, posts]);
 

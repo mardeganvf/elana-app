@@ -589,20 +589,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 💬 5. Espaços de Troca & 🤝 6. Rede de Apoio & 💖 8. Acolhimento
       try {
-        const [postsRes, commentsRes, testimonialsRes] = await Promise.all([
-          supabase.from('community_posts').select('id, transversal_room_id, is_anonymous').eq('author_id', profileId),
+        const [postsRes, commentsRes, testimonialsRes, sentTestimonialsRes] = await Promise.all([
+          supabase.from('community_posts').select('id, transversal_room_id, is_anonymous, reactions').eq('author_id', profileId),
           supabase.from('community_comments').select('id').eq('author_id', profileId),
-          supabase.from('profile_testimonials').select('id').eq('recipient_profile_id', profileId)
+          supabase.from('profile_testimonials').select('id').eq('recipient_profile_id', profileId),
+          supabase.from('profile_testimonials').select('id').eq('author_profile_id', profileId)
         ]);
 
         if (postsRes.data && postsRes.data.length > 0) {
           checkAndAddBadge('b29'); // Voz de Coragem (1º post)
+          let totalReactionsReceived = 0;
           postsRes.data.forEach(p => {
             if (p.is_anonymous || p.transversal_room_id === 'confessionario') checkAndAddBadge('b30');
             if (p.transversal_room_id === 'cantinho-mel' || p.transversal_room_id === 'cantinho-da-mel' || p.transversal_room_id === 'trocas-livres') checkAndAddBadge('b31');
             if (p.transversal_room_id === 'espaco-dois') checkAndAddBadge('b32');
             if (p.transversal_room_id === 'cuidando-quem-cuida' || p.transversal_room_id === 'cuidando-de-quem-cuida') checkAndAddBadge('b33');
+
+            if (p.reactions && typeof p.reactions === 'object') {
+              Object.values(p.reactions).forEach((count: any) => {
+                if (typeof count === 'number') totalReactionsReceived += count;
+              });
+            }
           });
+
+          // 💖 Conquistas por Reações Recebidas (b48 a b53)
+          if (totalReactionsReceived >= 1) checkAndAddBadge('b48'); // Não Estamos Sós
+          if (totalReactionsReceived >= 50) checkAndAddBadge('b49'); // Eco de Afeto
+          if (totalReactionsReceived >= 250) checkAndAddBadge('b50'); // Vizinhança Segura
+          if (totalReactionsReceived >= 500) checkAndAddBadge('b51'); // Centelha Compartilhada
+          if (totalReactionsReceived >= 1000) checkAndAddBadge('b52'); // Presença Luminosa
+          if (totalReactionsReceived >= 2500) checkAndAddBadge('b53'); // Coração da Comunidade
         }
         if (unlockedBadgeIds.has('b30') && unlockedBadgeIds.has('b31') && unlockedBadgeIds.has('b32') && unlockedBadgeIds.has('b33')) {
           checkAndAddBadge('b34'); // Explorador da Comunidade
@@ -616,6 +632,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (commentCount >= 100) checkAndAddBadge('b39');
           if (commentCount >= 250) checkAndAddBadge('b40');
           if (commentCount >= 500) checkAndAddBadge('b41');
+        }
+
+        if (sentTestimonialsRes.data && sentTestimonialsRes.data.length > 0) {
+          checkAndAddBadge('b56'); // Palavra de Carinho (enviou depoimento)
         }
 
         if (testimonialsRes.data && testimonialsRes.data.length > 0) {

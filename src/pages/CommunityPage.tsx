@@ -656,6 +656,13 @@ export const CommunityPage: React.FC = () => {
     setVisibleCount(15);
   }, [activeSelection, selectedEmotionId, searchQuery]);
 
+  // 🏆 Conquista: Buscando Respostas (b10) ao pesquisar na comunidade
+  useEffect(() => {
+    if (searchQuery.trim().length >= 3) {
+      awardBadge('b10');
+    }
+  }, [searchQuery]);
+
 
   // Helper to format current local date (YYYY-MM-DD) resetting at 00:00:00 local time
   const getTodayDateKey = () => {

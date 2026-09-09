@@ -29,6 +29,7 @@ export const getHowToUnlock = (badge: Badge): string => {
     b4: 'Assista ao primeiro vídeo em qualquer uma das 6 Jornadas Guiadas.',
     b5: 'Conclua 25% de todas as aulas de uma jornada de conhecimento.',
     b6: 'Conclua 50% de todas as aulas de uma jornada de conhecimento.',
+    b58: 'Conclua 75% de todas as aulas de uma jornada de conhecimento.',
     b7: 'Conclua 100% das aulas de uma jornada e emita seu certificado.',
     b8: 'Aproveite uma aula em formato de áudio enquanto realiza suas tarefas.',
     b9: 'Escreva e salve sua primeira reflexão na aba de Anotações da aula.',
