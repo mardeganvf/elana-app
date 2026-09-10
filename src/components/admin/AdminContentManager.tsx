@@ -893,21 +893,20 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     );
   };
 
-  const hasMultipleModules = (activeJourney?.modules?.length || 0) > 1;
   const selectedModule = propSelectedModuleId 
     ? activeJourney?.modules?.find(m => m.id === propSelectedModuleId)
     : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       {/* DETALHES DA JORNADA SELECIONADA */}
       {activeJourney ? (
-        <div className="space-y-6">
+        <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           {/* Header da Jornada Simplificado */}
-          <div className="bg-[#101B1E] px-6 py-4 rounded-2xl border border-white/10 shadow-md flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0 flex-wrap sm:flex-nowrap">
+          <div className={`flex items-center justify-between gap-4 ${selectedModule ? 'border-b border-white/10 pb-4' : ''}`}>
+            <div className="flex items-center gap-3 min-w-0">
               <span 
-                className={`w-2.5 h-2.5 rounded-full shrink-0 shadow-sm ${
+                className={`w-3 h-3 rounded-full shrink-0 shadow-sm ${
                   activeJourney.isEnabled === false
                     ? 'bg-slate-400 ring-2 ring-slate-400/25'
                     : activeJourney.isComingSoon 
@@ -920,69 +919,16 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
                     : activeJourney.isComingSoon ? 'Status: Em Breve' : 'Status: Ativa'
                 }
               />
-              <h3 className="text-xl font-black text-white truncate" style={{ fontFamily: 'var(--font-heading)' }}>
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight truncate" style={{ fontFamily: 'var(--font-heading)' }}>
                 {activeJourney.title}
-              </h3>
-              {activeJourney.isEnabled === false ? (
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-white/10 text-slate-300 border border-white/15 shrink-0">
-                  Desabilitada
-                </span>
-              ) : activeJourney.isComingSoon ? (
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
-                  Em Breve
-                </span>
-              ) : (
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
-                  Ativa
-                </span>
-              )}
+              </h2>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-              {/* Seletor rápido de Status: Ativa, Em Breve, Desabilitada */}
-              <div className="bg-[#070D0F] p-0.5 rounded-xl border border-white/10 flex items-center">
-                <button
-                  type="button"
-                  onClick={() => handleSetJourneyStatus(activeJourney, 'active')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    activeJourney.isEnabled !== false && !activeJourney.isComingSoon
-                      ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="Definir status como Ativa"
-                >
-                  Ativa
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetJourneyStatus(activeJourney, 'coming_soon')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    activeJourney.isEnabled !== false && activeJourney.isComingSoon
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="Definir status como Em Breve"
-                >
-                  Em Breve
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetJourneyStatus(activeJourney, 'disabled')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    activeJourney.isEnabled === false
-                      ? 'bg-slate-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="Definir status como Desabilitada"
-                >
-                  Desabilitada
-                </button>
-              </div>
-
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => handleOpenInterestsModal(activeJourney)}
-                className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-slate-200 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-white/10 active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
                 title="Ver e exportar lista de usuários interessados nesta jornada"
               >
                 <Users className="w-3.5 h-3.5 text-amber-400" />
@@ -991,196 +937,65 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
 
               <button
                 onClick={() => openEditJourney(activeJourney)}
-                className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
                 title="Editar dados desta jornada"
               >
-                <Edit3 className="w-4 h-4" />
+                <Edit3 className="w-3.5 h-3.5 text-[#FF7F5B]" />
                 <span>Editar</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setDeleteConfirm({
-                  type: 'journey',
-                  journeyId: activeJourney.id,
-                  title: activeJourney.title
-                })}
-                className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-rose-500/20 active:scale-95"
-                title="Excluir jornada"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Excluir</span>
               </button>
             </div>
           </div>
 
-          {/* LISTAGEM DE CONTEÚDOS / MÓDULOS */}
-          {hasMultipleModules ? (
-            /* CASO A: JORNADA COM MÚLTIPLOS MÓDULOS */
-            selectedModule ? (
-              /* A.1: MÓDULO ESPECÍFICO SELECIONADO -> EXIBE APENAS OS VÍDEOS DESSE MÓDULO */
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <button
-                    type="button"
-                    onClick={() => propOnSelectModuleId?.(null)}
-                    className="text-xs text-[#FF7F5B] hover:text-[#e06847] font-bold flex items-center gap-1.5 cursor-pointer w-fit"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Voltar para todos os módulos da jornada</span>
-                  </button>
+          {/* LISTAGEM DE CONTEÚDOS: APENAS QUANDO O SUBTÓPICO (MÓDULO) FOR SELECIONADO */}
+          {selectedModule && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-300">
+                    Módulo: <span className="text-white font-extrabold">{selectedModule.title}</span>
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-400 font-mono">
+                    {selectedModule.lessons?.length || 0} conteúdo{selectedModule.lessons?.length === 1 ? '' : 's'}
+                  </span>
+                </div>
 
-                  <div className="relative w-full sm:w-64">
+                <div className="flex items-center gap-2">
+                  <div className="relative w-full sm:w-60">
                     <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Buscar conteúdos..."
-                      className="w-full pl-8 pr-3 py-1.5 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B]"
+                      className="w-full pl-8 pr-3 py-1.5 bg-[#070D0F] border border-white/10 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B]"
                     />
                   </div>
-                </div>
-
-                {renderModuleWithLessons(selectedModule, activeJourney.modules.indexOf(selectedModule), true)}
-              </div>
-            ) : (
-              /* A.2: NENHUM MÓDULO SELECIONADO AINDA -> NÃO MOSTRA VÍDEOS, APENAS VISÃO GERAL DOS MÓDULOS */
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-black text-white flex items-center gap-2">
-                      <span>Módulos da Jornada</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-300 font-mono">
-                        {activeJourney.modules?.length || 0} módulos
-                      </span>
-                    </h4>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Selecione um módulo na barra lateral ou clique abaixo para gerenciar seus conteúdos.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {activeJourney.modules?.map((mod, modIdx) => (
-                    <div
-                      key={mod.id}
-                      onClick={() => propOnSelectModuleId?.(mod.id)}
-                      className="p-5 bg-[#101B1E] border border-white/10 hover:border-[#FF7F5B]/50 rounded-2xl transition-all cursor-pointer group flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="w-7 h-7 rounded-xl bg-[#FF7F5B]/15 text-[#FF7F5B] font-black text-xs flex items-center justify-center border border-[#FF7F5B]/30">
-                            #{modIdx + 1}
-                          </span>
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={() => openEditModule(activeJourney.id, mod)}
-                              className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-                              title="Editar título do módulo"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirm({
-                                type: 'module',
-                                journeyId: activeJourney.id,
-                                moduleId: mod.id,
-                                title: mod.title
-                              })}
-                              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
-                              title="Excluir módulo"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <h5 className="text-sm font-bold text-white group-hover:text-[#FF7F5B] transition-colors line-clamp-1">
-                          {mod.title}
-                        </h5>
-                        {mod.description && (
-                          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                            {mod.description}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                        <span className="text-[11px] text-slate-400 font-mono">
-                          {mod.lessons?.length || 0} {mod.lessons?.length === 1 ? 'conteúdo' : 'conteúdos'}
-                        </span>
-                        <span className="text-xs font-bold text-[#FF7F5B] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                          <span>Acessar Conteúdos</span>
-                          <span>→</span>
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )
-          ) : (
-            /* CASO B: JORNADA COM APENAS UM MÓDULO (OU SEM MÓDULOS) -> JÁ EXPANDE OS VÍDEOS DIRETAMENTE */
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <span>Conteúdos & Vídeos da Jornada</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white font-mono">
-                    {activeJourney.modules?.[0]?.lessons?.length || 0} conteúdos cadastrados
-                  </span>
-                </h4>
-
-                <div className="relative w-full sm:w-64">
-                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Buscar conteúdos..."
-                    className="w-full pl-8 pr-3 py-1.5 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B]"
-                  />
+                  <button
+                    onClick={() => openEditModule(activeJourney.id, selectedModule)}
+                    className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors cursor-pointer border border-white/5"
+                    title="Editar título do módulo"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm({
+                      type: 'module',
+                      journeyId: activeJourney.id,
+                      moduleId: selectedModule.id,
+                      title: selectedModule.title
+                    })}
+                    className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer border border-white/5"
+                    title="Excluir módulo"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
-              {activeJourney.modules?.[0] ? (
-                renderModuleWithLessons(activeJourney.modules[0], 0, false)
-              ) : (
-                <div className="p-8 bg-[#101B1E] border border-white/10 rounded-3xl text-center space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 mx-auto flex items-center justify-center text-slate-400">
-                    <FolderPlus className="w-6 h-6 text-[#FF7F5B]" />
-                  </div>
-                  <h4 className="text-sm font-bold text-white">Nenhum conteúdo cadastrado nesta jornada</h4>
-                  <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    Adicione o primeiro vídeo ou material de apoio para disponibilizar às famílias.
-                  </p>
-                  <div className="flex items-center justify-center gap-3 pt-1">
-                    <button
-                      onClick={() => openEditJourney(activeJourney)}
-                      className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer inline-flex items-center gap-2 active:scale-95"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                      <span>Editar Jornada para Adicionar Módulos</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteConfirm({
-                        type: 'journey',
-                        journeyId: activeJourney.id,
-                        title: activeJourney.title
-                      })}
-                      className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 font-bold text-xs rounded-xl transition-all cursor-pointer inline-flex items-center gap-2 active:scale-95"
-                      title="Excluir jornada"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Excluir Jornada</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+              {renderModuleWithLessons(selectedModule, activeJourney.modules.indexOf(selectedModule), false)}
             </div>
           )}
-        </div>
+        </section>
       ) : (
         <div className="p-8 text-center text-slate-400">
           Nenhuma jornada disponível. Clique em "Criar Jornada" na barra lateral para começar.

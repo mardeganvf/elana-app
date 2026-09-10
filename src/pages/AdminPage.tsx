@@ -1241,8 +1241,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   ) : (
                     journeys.map(journey => {
                       const isTrilhaSelected = activeAdminTab === 'content' && selectedJourneyId === journey.id;
-                      const hasMultipleModules = (journey.modules?.length || 0) > 1;
-                      const isTrilhaExpanded = hasMultipleModules && (openTrilhas[journey.id] ?? isTrilhaSelected);
+                      const hasModules = (journey.modules?.length || 0) > 0;
+                      const isTrilhaExpanded = hasModules && (openTrilhas[journey.id] ?? isTrilhaSelected);
 
                       return (
                         <div key={journey.id} className="space-y-0.5">
@@ -1257,10 +1257,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                             }`}
                             onClick={() => {
                               setActiveAdminTab('content');
+                              const isAlreadySelected = selectedJourneyId === journey.id;
                               setSelectedJourneyId(journey.id);
                               setSelectedModuleId(null);
-                              if (hasMultipleModules) {
-                                toggleTrilha(journey.id);
+                              if (hasModules) {
+                                if (isAlreadySelected) {
+                                  toggleTrilha(journey.id);
+                                } else {
+                                  setOpenTrilhas(prev => ({ ...prev, [journey.id]: true }));
+                                }
                               }
                               setIsMobileMenuOpen(false);
                             }}
@@ -1284,9 +1289,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                               <span className={`truncate ${journey.isEnabled === false ? 'text-slate-400' : ''}`}>{journey.title}</span>
                             </div>
 
-                            {/* Se tem múltiplos módulos, exibe seta do dropdown temática */}
-                            {hasMultipleModules && (
-                              <div className="flex items-center shrink-0 ml-1.5">
+                            {/* Se tem módulos, exibe seta do dropdown temática */}
+                            {hasModules && (
+                              <div 
+                                className="flex items-center shrink-0 ml-1.5 p-1 -mr-1 rounded-md hover:bg-white/10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleTrilha(journey.id);
+                                }}
+                              >
                                 <ChevronDown
                                   className={`w-3.5 h-3.5 transition-transform duration-200 ${
                                     isTrilhaExpanded ? 'rotate-0' : '-rotate-90'
@@ -1300,8 +1311,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                             )}
                           </div>
 
-                          {/* Módulos aninhados da Jornada (apenas se tiver mais de 1 módulo) */}
-                          {hasMultipleModules && isTrilhaExpanded && (
+                          {/* Módulos aninhados da Jornada (subtópicos) */}
+                          {hasModules && isTrilhaExpanded && (
                             <div className="pl-3.5 space-y-0.5 border-l border-white/10 ml-3 my-1">
                               {(journey.modules || []).map((mod, modIdx) => {
                                 const isModSelected = isTrilhaSelected && selectedModuleId === mod.id;
