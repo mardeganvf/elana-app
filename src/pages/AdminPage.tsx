@@ -146,22 +146,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'permissions' | 'polls' | 'destaques' | null>(null);
 
   // Permissões por Papel / Categoria (Customizáveis)
-  const [rolePermissions, setRolePermissions] = useState<Record<'membro' | 'guia' | 'admin', RolePermissionsRecord>>(() => {
-    try {
-      const saved = localStorage.getItem('elana_role_permissions');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          membro: { ...DEFAULT_ROLE_PERMISSIONS.membro, ...(parsed.membro || {}) },
-          guia: { ...DEFAULT_ROLE_PERMISSIONS.guia, ...(parsed.guia || {}) },
-          admin: { ...DEFAULT_ROLE_PERMISSIONS.admin, ...(parsed.admin || {}) }
-        };
-      }
-    } catch (err) {
-      console.warn('Erro ao ler permissões locais:', err);
-    }
-    return DEFAULT_ROLE_PERMISSIONS;
-  });
+  // Inicializa com padrão — o Supabase atualiza o estado no useEffect (loadRolePermissions)
+  const [rolePermissions, setRolePermissions] = useState<Record<'membro' | 'guia' | 'admin', RolePermissionsRecord>>(DEFAULT_ROLE_PERMISSIONS);
 
   const [activePermissionRoleTab, setActivePermissionRoleTab] = useState<'membro' | 'guia' | 'admin'>('guia');
   const [hasUnsavedPermissions, setHasUnsavedPermissions] = useState(false);
@@ -284,31 +270,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [trainFilterActive, setTrainFilterActive] = useState(true);
   const [isSubmittingRejection, setIsSubmittingRejection] = useState(false);
 
-  // Helpers para persistência de aprovações locais e remotas
-  const getApprovedPostIds = (): Set<string> => {
-    try {
-      const raw = localStorage.getItem('elana_approved_post_ids');
-      return new Set(raw ? JSON.parse(raw) : []);
-    } catch {
-      return new Set();
-    }
-  };
-
-  const saveApprovedPostId = (id: string) => {
-    try {
-      const set = getApprovedPostIds();
-      set.add(id);
-      localStorage.setItem('elana_approved_post_ids', JSON.stringify(Array.from(set)));
-    } catch {}
-  };
-
-  const removeApprovedPostId = (id: string) => {
-    try {
-      const set = getApprovedPostIds();
-      set.delete(id);
-      localStorage.setItem('elana_approved_post_ids', JSON.stringify(Array.from(set)));
-    } catch {}
-  };
+  // Moderation status is persisted directly in Supabase (community_posts.status / community_comments.status)
 
   // 👥 Members State
   const [members, setMembers] = useState<MemberUser[]>([]);
@@ -771,15 +733,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     loadLearnedExamples();
 
     const loadMembers = async () => {
-      // Ler eventuais overrides locais para resiliência imediata entre reloads
-      let localRoleOverrides: Record<string, 'membro' | 'guia' | 'admin'> = {};
-      try {
-        const saved = localStorage.getItem('elana_member_roles_override');
-        if (saved) localRoleOverrides = JSON.parse(saved);
-      } catch (e) {
-        console.warn('Erro ao ler overrides locais de papéis:', e);
-      }
-
       const { data } = await supabase
         .from('profiles')
         .select('*')
@@ -790,11 +743,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           const r = (p.role || '').toLowerCase();
           if (r === 'admin' || r.includes('admin')) role = 'admin';
           else if (r === 'guia' || r.includes('guia')) role = 'guia';
-
-          // Aplicar override local salvo se houver
-          if (localRoleOverrides[p.id]) {
-            role = localRoleOverrides[p.id];
-          }
 
           return {
             id: p.id,
@@ -825,7 +773,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             }
           });
           setRolePermissions(updated);
-          localStorage.setItem('elana_role_permissions', JSON.stringify(updated));
         }
       } catch (err) {
         console.warn('Erro ao carregar permissões do Supabase:', err);
@@ -1118,18 +1065,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // Role Update Handler (Usuário, Guia ou Admin)
   const handleUpdateMemberRole = async (userId: string, newRole: 'membro' | 'guia' | 'admin') => {
-    // 1. Atualizar estado React em memória
+    // 1. Atualizar estado React em memória (optimistic update)
     setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m));
-
-    // 2. Salvar imediatamente no localStorage para garantir que não volte no reload
-    try {
-      const saved = localStorage.getItem('elana_member_roles_override');
-      const overrides = saved ? JSON.parse(saved) : {};
-      overrides[userId] = newRole;
-      localStorage.setItem('elana_member_roles_override', JSON.stringify(overrides));
-    } catch (e) {
-      console.warn('Erro ao salvar override local de categoria:', e);
-    }
 
     const roleLabels: Record<string, string> = {
       membro: 'Usuário',
@@ -1139,25 +1076,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     const roleTag = newRole === 'admin' ? 'Administrador' : newRole === 'guia' ? 'Guia' : 'Membro da Comunidade';
 
     try {
-      // 3. Persistir no Supabase (colunas role e tag)
-      const { data, error } = await supabase
+      // 2. Persistir no Supabase (colunas role e tag)
+      const { error } = await supabase
         .from('profiles')
         .update({
           role: newRole,
           tag: roleTag
         })
-        .eq('id', userId)
-        .select();
+        .eq('id', userId);
 
       if (error) {
         console.warn('Erro ao atualizar categoria no Supabase:', error);
-        showToast('info', `Categoria ${roleLabels[newRole]} salva localmente! (Aviso do banco: ${error.message})`);
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        console.warn('Aviso: Atualização afetou 0 linhas no Supabase (política RLS pode estar restrita a auth.uid() = id).');
-        showToast('info', `Categoria ${roleLabels[newRole]} ativa! Lembre-se de rodar a política RLS no Supabase para sincronizar com todos.`);
+        showToast('error', `Erro ao salvar categoria: ${error.message}`);
         return;
       }
 
@@ -1195,8 +1125,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const handleSavePermissions = async () => {
     setIsSavingPermissions(true);
     try {
-      localStorage.setItem('elana_role_permissions', JSON.stringify(rolePermissions));
-
       const roles: Array<'membro' | 'guia' | 'admin'> = ['membro', 'guia', 'admin'];
       for (const r of roles) {
         await supabase.from('role_permissions').upsert({
@@ -1210,8 +1138,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       showToast('success', 'Autorizações e acessos salvos com sucesso! ✨');
     } catch (err) {
       console.warn('Erro ao salvar permissões no Supabase:', err);
-      showToast('info', 'Permissões salvas no navegador (localmente).');
-      setHasUnsavedPermissions(false);
+      showToast('error', 'Erro ao salvar permissões. Verifique a conexão e tente novamente.');
     } finally {
       setIsSavingPermissions(false);
     }
