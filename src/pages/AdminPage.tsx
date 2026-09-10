@@ -44,6 +44,8 @@ import { useJourneys } from '../context/JourneysContext';
 import { supabase } from '../lib/supabase';
 import { AdminContentManager } from '../components/admin/AdminContentManager';
 import { AdminDestaquesManager } from '../components/admin/AdminDestaquesManager';
+import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
+import { getLevelFromXP } from '../data/gamificationData';
 
 // Types for Admin Data
 interface SOSTicket {
@@ -270,6 +272,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [members, setMembers] = useState<MemberUser[]>([]);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [memberCategoryFilter, setMemberCategoryFilter] = useState<'todos' | 'membro' | 'guia' | 'admin'>('todos');
+  const [selectedMemberProfile, setSelectedMemberProfile] = useState<PublicUserProfile | null>(null);
 
   // 📊 Termômetro Emocional Real State
   const [emotionalStats, setEmotionalStats] = useState<EmotionalStats | null>(null);
@@ -1072,6 +1075,73 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     } catch (err) {
       console.warn('Error clearing member bio in Supabase:', err);
     }
+  };
+
+  // Abrir Perfil Completo do Usuário
+  const handleOpenMemberProfile = async (member: MemberUser) => {
+    let profileData: any = null;
+    let children: any[] = [];
+    let testimonials: any[] = [];
+
+    try {
+      const [profileRes, familyRes, testRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', member.id).maybeSingle(),
+        supabase.from('family_members').select('*').eq('profile_id', member.id),
+        supabase.from('profile_testimonials').select('*').eq('recipient_profile_id', member.id).order('created_at', { ascending: false })
+      ]);
+
+      if (profileRes.data) {
+        profileData = profileRes.data;
+      }
+
+      if (familyRes.data && familyRes.data.length > 0) {
+        children = familyRes.data.map(f => ({
+          id: f.id,
+          name: f.name || 'Filho(a)',
+          age: f.age,
+          emoji: f.emoji || '👶',
+          birthdate: f.birthdate,
+          isPregnancy: f.is_pregnancy
+        }));
+      } else if (profileRes.data?.family_tag && profileRes.data.family_tag.startsWith('JSON_CHILDREN:')) {
+        try {
+          children = JSON.parse(profileRes.data.family_tag.replace('JSON_CHILDREN:', ''));
+        } catch (e) {}
+      }
+
+      if (testRes.data && testRes.data.length > 0) {
+        testimonials = testRes.data.map(t => ({
+          id: t.id,
+          authorName: t.author_name,
+          authorAvatar: t.author_avatar,
+          content: t.content,
+          createdAt: new Date(t.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+          likesCount: t.likes_count || 0
+        }));
+      }
+    } catch (err) {
+      console.warn('Error fetching member full profile:', err);
+    }
+
+    const xp = profileData?.xp ?? member.xp ?? 0;
+    const levelInfo = getLevelFromXP(xp);
+
+    setSelectedMemberProfile({
+      id: member.id,
+      name: profileData?.name || member.name,
+      avatar: profileData?.avatar || member.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120',
+      role: member.role,
+      tag: profileData?.tag || (member.role === 'admin' ? 'Administrador' : member.role === 'guia' ? 'Guia & Mentora' : 'Membro da Comunidade'),
+      levelNumber: profileData?.level_number || levelInfo.level,
+      levelName: profileData?.level_name || member.levelTitle || levelInfo.title,
+      levelIcon: profileData?.level_icon || member.levelIcon || levelInfo.icon,
+      xp,
+      bio: profileData?.bio || member.bio,
+      joinedDate: profileData?.created_at ? new Date(profileData.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : 'Recentemente',
+      streakDays: profileData?.streak_days || 0,
+      children,
+      testimonials
+    });
   };
 
   // Filtered SOS Tickets for Email Inbox
@@ -2595,60 +2665,35 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   </div>
                 ) : (
                   filteredMembers.map(member => (
-                    <div key={member.id} className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div key={member.id} className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 flex items-center justify-between gap-4 hover:border-white/20 transition-all">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <img 
                           src={member.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120'} 
                           alt={member.name} 
-                          className={`w-12 h-12 rounded-full object-cover border-2 shrink-0 ${
+                          onClick={() => handleOpenMemberProfile(member)}
+                          className={`w-11 h-11 rounded-full object-cover border-2 shrink-0 cursor-pointer hover:opacity-85 transition-opacity ${
                             member.role === 'admin' 
                               ? 'border-purple-400' 
                               : member.role === 'guia' 
                               ? 'border-[#8A9A5B]' 
                               : 'border-[#E66795]'
                           }`} 
+                          title="Clique para ver o perfil completo"
                         />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-bold text-white truncate">{member.name}</h4>
-                            <span className="bg-[#FF7F5B]/20 text-[#FF7F5B] text-[10px] font-bold px-2.5 py-0.5 rounded-md border border-[#FF7F5B]/30 flex items-center gap-1 shrink-0">
-                              <span>{member.levelIcon}</span>
-                              <span>{member.levelTitle}</span>
-                            </span>
-                            {member.role === 'admin' && (
-                              <span className="text-[10px] font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
-                                <ShieldAlert className="w-3 h-3 text-purple-400" /> Administrador
-                              </span>
-                            )}
-                            {member.role === 'guia' && (
-                              <span className="text-[10px] font-extrabold bg-[#8A9A5B]/20 text-[#8A9A5B] border border-[#8A9A5B]/30 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
-                                <ShieldCheck className="w-3 h-3 text-[#8A9A5B]" /> Guia & Mentora
-                              </span>
-                            )}
-                            {member.role === 'membro' && (
-                              <span className="text-[10px] text-slate-400 font-bold bg-white/5 border border-white/10 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
-                                <User className="w-3 h-3 text-slate-400" /> Usuário
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[10px] text-slate-400 mt-0.5 truncate">
-                            {member.email} • {member.joinedDays} dias conosco • {member.xp} pontos
-                          </p>
-                          {member.bio && (
-                            <div className="mt-1 flex items-center gap-2">
-                              <span className="text-[11px] text-slate-300 italic bg-white/5 px-2.5 py-0.5 rounded-lg border border-white/10 truncate max-w-xs">
-                                "{member.bio}"
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleClearMemberBio(member.id)}
-                                className="text-[10px] text-rose-400 hover:text-rose-300 underline font-bold cursor-pointer shrink-0"
-                                title="Zerar bio deste membro"
-                              >
-                                Zerar Bio
-                              </button>
-                            </div>
-                          )}
+                        <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenMemberProfile(member)}
+                            className="text-sm font-bold text-white hover:text-[#FF7F5B] transition-colors cursor-pointer text-left truncate hover:underline"
+                            title="Ver perfil completo do usuário"
+                          >
+                            {member.name}
+                          </button>
+
+                          <span className="bg-[#FF7F5B]/20 text-[#FF7F5B] text-[10px] font-bold px-2.5 py-0.5 rounded-md border border-[#FF7F5B]/30 flex items-center gap-1 shrink-0">
+                            <span>{member.levelIcon}</span>
+                            <span>{member.levelTitle}</span>
+                          </span>
                         </div>
                       </div>
 
@@ -3415,6 +3460,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de Perfil Completo do Usuário */}
+      {selectedMemberProfile && (
+        <PublicProfileModal
+          profile={selectedMemberProfile}
+          onClose={() => setSelectedMemberProfile(null)}
+        />
       )}
 
     </div>
