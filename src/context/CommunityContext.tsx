@@ -854,9 +854,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  // Carregar enquetes e votos locais/remotos
+  // Carregar enquetes e votos — prioridade: Supabase poll_votes > localStorage cache
   useEffect(() => {
     const userKey = user?.id || 'anon';
+
+    // 1. Seed rápido do cache local enquanto aguarda o Supabase
     try {
       const stored = localStorage.getItem(`elana_poll_votes_${userKey}`);
       if (stored) {
@@ -864,6 +866,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     } catch {}
 
+    // 2. Carregar enquetes do Supabase
     supabase
       .from('community_polls')
       .select('*')
@@ -885,6 +888,30 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (openPoll) setActivePoll(openPoll);
         }
       });
+
+    // 3. Buscar votos do usuário da tabela poll_votes (source of truth cross-device)
+    if (user?.id) {
+      supabase
+        .from('poll_votes')
+        .select('poll_id, option_id')
+        .eq('profile_id', user.id)
+        .then(({ data: votesData, error: votesError }) => {
+          if (!votesError && votesData && votesData.length > 0) {
+            const remoteVotesMap: Record<string, string> = {};
+            votesData.forEach(v => {
+              remoteVotesMap[v.poll_id] = v.option_id;
+            });
+            // Mescla: votos remotos têm prioridade sobre cache local
+            setUserVotedPollsMap(prev => {
+              const merged = { ...prev, ...remoteVotesMap };
+              try {
+                localStorage.setItem(`elana_poll_votes_${user.id}`, JSON.stringify(merged));
+              } catch {}
+              return merged;
+            });
+          }
+        });
+    }
   }, [user?.id]);
 
   // Fetch posts from Supabase on mount
@@ -1543,6 +1570,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     if (updatedPollObj && pollId.length > 20) {
       try {
+        // 1. Atualiza contagem de votos na enquete
         await supabase
           .from('community_polls')
           .update({
@@ -1550,6 +1578,21 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             total_votes: (updatedPollObj as CommunityPoll).totalVotes
           })
           .eq('id', pollId);
+
+        // 2. Registra o voto do usuário na tabela poll_votes (persistência cross-device)
+        if (user?.id) {
+          await supabase
+            .from('poll_votes')
+            .upsert(
+              {
+                poll_id: pollId,
+                profile_id: user.id,
+                option_id: optionId,
+                voted_at: new Date().toISOString()
+              },
+              { onConflict: 'poll_id,profile_id' }
+            );
+        }
       } catch (err) {
         console.warn('Supabase poll vote notice:', err);
       }

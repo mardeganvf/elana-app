@@ -755,6 +755,44 @@ CREATE POLICY "polls_update_auth"
   USING (auth.uid() IS NOT NULL);
 
 -- --------------------------------------------------------
+-- 13.1. TABELA DE VOTOS DE ENQUETES (PERSISTÊNCIA POR USUÁRIO)
+-- Garante que cada usuário vote apenas uma vez por enquete,
+-- e que o voto persista entre navegadores e dispositivos.
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.poll_votes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  poll_id UUID NOT NULL REFERENCES public.community_polls(id) ON DELETE CASCADE,
+  profile_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  option_id TEXT NOT NULL,
+  voted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(poll_id, profile_id)  -- um voto por usuário por enquete
+);
+
+ALTER TABLE public.poll_votes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "poll_votes_select_own" ON public.poll_votes;
+DROP POLICY IF EXISTS "poll_votes_insert_own" ON public.poll_votes;
+DROP POLICY IF EXISTS "poll_votes_update_own" ON public.poll_votes;
+
+-- Usuário lê apenas seus próprios votos
+CREATE POLICY "poll_votes_select_own"
+  ON public.poll_votes FOR SELECT
+  USING (auth.uid() = profile_id);
+
+-- Usuário pode registrar seu voto
+CREATE POLICY "poll_votes_insert_own"
+  ON public.poll_votes FOR INSERT
+  WITH CHECK (auth.uid() = profile_id);
+
+-- Usuário pode atualizar seu próprio voto (upsert)
+CREATE POLICY "poll_votes_update_own"
+  ON public.poll_votes FOR UPDATE
+  USING (auth.uid() = profile_id);
+
+CREATE INDEX IF NOT EXISTS idx_poll_votes_profile ON public.poll_votes(profile_id);
+CREATE INDEX IF NOT EXISTS idx_poll_votes_poll ON public.poll_votes(poll_id);
+
+-- --------------------------------------------------------
 -- 14. TABELA DE JORNADAS, SUBTEMAS E CONTEÚDOS DINÂMICOS
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.journeys (
