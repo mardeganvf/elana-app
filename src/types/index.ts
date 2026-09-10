@@ -142,7 +142,7 @@ export interface CommunityPost {
   authorTag?: string; // e.g. "Mãe de 2 (0-2 anos)"
   isAnonymous?: boolean;
   sensitivityLevel: SensitivityLevel;
-  status?: 'aprovado' | 'sob_moderacao';
+  status?: 'aprovado' | 'sob_moderacao' | 'removido_usuario';
   flagReason?: string;
   flagType?: 'vulnerabilidade' | 'antijulgamento';
   title: string;

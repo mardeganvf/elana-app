@@ -36,7 +36,9 @@ import {
   X,
   Sparkles,
   RefreshCw,
-  Flag
+  Flag,
+  Trash2,
+  User
 } from 'lucide-react';
 import { ReportModal } from '../components/community/ReportModal';
 
@@ -44,6 +46,7 @@ export type ActiveSelection =
   | { type: 'jornada'; journeyId: string; subOption: 'ajuda' | 'celebrar' | 'desabafar' }
   | { type: 'geral'; roomId: string }
   | { type: 'idade'; ageId: string }
+  | { type: 'minhas-publicacoes' }
   | null;
 
 export interface PostRoomDetails {
@@ -467,6 +470,7 @@ export const CommunityPage: React.FC = () => {
     isLoadingMore, 
     loadMorePosts, 
     refreshPosts, 
+    deletePost,
     toggleReaction, 
     toggleCommentReaction, 
     addComment,
@@ -560,6 +564,10 @@ export const CommunityPage: React.FC = () => {
 
   // IA Antijulgamento & Acolhimento Modal State
   const [flaggedCommentInfo, setFlaggedCommentInfo] = useState<{ isOpen: boolean; matchedWord?: string; flagType?: 'vulnerabilidade' | 'antijulgamento' } | null>(null);
+
+  // Exclusão de Post Próprio
+  const [postToDelete, setPostToDelete] = useState<CommunityPost | null>(null);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
 
   // Feed Pagination State (Initial 15 topics, +15 on "Carregar Mais")
   const [visibleCount, setVisibleCount] = useState(15);
@@ -841,6 +849,7 @@ export const CommunityPage: React.FC = () => {
   const safePosts = Array.isArray(posts) ? posts : [];
   const filteredPosts = safePosts.filter(post => {
     if (!post) return false;
+    if (post.status === 'removido_usuario') return false;
 
     // Moderação preventiva: postagens sob moderação são visíveis apenas para o próprio autor ou moderadores/guias
     if (post.status === 'sob_moderacao') {
@@ -851,7 +860,9 @@ export const CommunityPage: React.FC = () => {
 
     // Selection filter (if null, show all posts)
     if (activeSelection) {
-      if (activeSelection.type === 'jornada') {
+      if (activeSelection.type === 'minhas-publicacoes') {
+        if (post.authorId !== user?.id) return false;
+      } else if (activeSelection.type === 'jornada') {
         if (post.journeyId !== activeSelection.journeyId) return false;
         if (activeSelection.subOption === 'ajuda' && post.emotionalIntention !== 'ajuda') return false;
         if (activeSelection.subOption === 'celebrar' && post.emotionalIntention !== 'celebrar') return false;
@@ -914,6 +925,13 @@ export const CommunityPage: React.FC = () => {
         categoryLabel: 'SUA REDE DE APOIO',
         mainTitle: 'Todas as Salas e Conteúdos',
         themeColor: '#FF7F5B'
+      };
+    }
+    if (activeSelection.type === 'minhas-publicacoes') {
+      return {
+        categoryLabel: 'MEU ESPAÇO',
+        mainTitle: 'Minhas Publicações',
+        themeColor: '#8A9A5B'
       };
     }
     if (activeSelection.type === 'jornada') {
@@ -1117,13 +1135,32 @@ export const CommunityPage: React.FC = () => {
           <button
             onClick={() => { setMobilePillCategory(null); setMobilePillJourneyId(null); setActiveSelection(null); }}
             className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
-              mobilePillCategory === null
+              mobilePillCategory === null && activeSelection === null
                 ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
                 : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
             }`}
           >
             Todas
           </button>
+
+          {/* Pill: Minhas Publicações */}
+          {user && (
+            <button
+              onClick={() => {
+                setMobilePillCategory(null);
+                setMobilePillJourneyId(null);
+                setActiveSelection({ type: 'minhas-publicacoes' });
+              }}
+              className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                activeSelection?.type === 'minhas-publicacoes'
+                  ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] font-black shadow-md'
+                  : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Minhas</span>
+            </button>
+          )}
 
           {/* Pill: Geral */}
           <button
@@ -1303,11 +1340,38 @@ export const CommunityPage: React.FC = () => {
           {/* Menu de Salas Panel */}
           <div className="bg-[#101B1E] rounded-3xl p-5 border border-white/10 shadow-xl space-y-6">
             
-            <div className="pb-3 border-b border-white/10">
+            <div className="pb-3 border-b border-white/10 flex items-center justify-between">
               <span className="font-extrabold text-xs text-white uppercase tracking-wider block">
                 Menu de Salas
               </span>
+              {activeSelection && (
+                <button
+                  onClick={() => setActiveSelection(null)}
+                  className="text-[10px] font-bold text-[#FF7F5B] hover:underline cursor-pointer"
+                >
+                  Ver Todas
+                </button>
+              )}
             </div>
+
+            {/* SEÇÃO: MEU ESPAÇO */}
+            {user && (
+              <div className="space-y-1 pb-3 border-b border-white/10">
+                <button
+                  onClick={() => setActiveSelection(activeSelection?.type === 'minhas-publicacoes' ? null : { type: 'minhas-publicacoes' })}
+                  className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all text-left border cursor-pointer ${
+                    activeSelection?.type === 'minhas-publicacoes'
+                      ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] font-black shadow-md'
+                      : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    <span>Minhas Publicações</span>
+                  </div>
+                </button>
+              </div>
+            )}
 
             {/* SECTION 1: GERAL */}
             <div className="space-y-2">
@@ -1699,10 +1763,23 @@ export const CommunityPage: React.FC = () => {
                             type="button"
                             title="Denunciar publicação"
                             onClick={() => setReportTarget({ contentType: 'post', contentId: post.id, postId: null })}
-                            className="ml-auto flex items-center gap-1 px-2 py-1.5 rounded-xl text-[10px] font-bold text-slate-500 border border-transparent hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all"
+                            className="ml-auto flex items-center gap-1 px-2 py-1.5 rounded-xl text-[10px] font-bold text-slate-500 border border-transparent hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer"
                           >
                             <Flag className="w-3 h-3" />
-                            Denunciar
+                            <span>Denunciar</span>
+                          </button>
+                        )}
+
+                        {/* Botão Excluir — só aparece para o próprio autor do post */}
+                        {user && post.authorId === user.id && (
+                          <button
+                            type="button"
+                            title="Excluir minha publicação"
+                            onClick={() => setPostToDelete(post)}
+                            className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 border border-white/10 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Excluir</span>
                           </button>
                         )}
                       </div>
@@ -1989,6 +2066,75 @@ export const CommunityPage: React.FC = () => {
           onClose={() => setReportTarget(null)}
           onReport={reportContent}
         />
+      )}
+
+      {/* 🗑️ Modal de Confirmação de Exclusão de Post */}
+      {postToDelete && createPortal(
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
+          <div className="bg-[#101B1E] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-red-500/30 text-white space-y-5 animate-scale-up text-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center mx-auto shadow-lg">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                Excluir publicação?
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Tem certeza de que deseja retirar esta publicação da plataforma? Ela deixará de ser visível para todos os membros da comunidade.
+              </p>
+            </div>
+
+            <div className="bg-[#070D0F] p-3.5 rounded-2xl border border-white/10 text-left space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
+                {postToDelete.isAnonymous ? '🎭 Confessionário (Anônimo)' : '💬 Comunidade'}
+              </span>
+              <p className="text-xs font-bold text-white truncate">
+                "{postToDelete.title}"
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setPostToDelete(null)}
+                disabled={isDeletingPost}
+                className="w-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!postToDelete) return;
+                  setIsDeletingPost(true);
+                  try {
+                    await deletePost(postToDelete.id);
+                    showToast('Publicação removida da plataforma com sucesso.', 'info');
+                    setPostToDelete(null);
+                  } catch (err) {
+                    showToast('Não foi possível excluir a publicação no momento.', 'error');
+                  } finally {
+                    setIsDeletingPost(false);
+                  }
+                }}
+                disabled={isDeletingPost}
+                className="w-full bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingPost ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Excluindo...</span>
+                  </>
+                ) : (
+                  <span>Sim, Excluir</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
     </div>

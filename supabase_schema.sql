@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS public.community_posts (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- status possíveis: 'aprovado', 'sob_moderacao', 'removido_usuario' (soft delete pelo autor)
 ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'aprovado';
 
 -- 6. TABELA DE COMENTÁRIOS DA COMUNIDADE

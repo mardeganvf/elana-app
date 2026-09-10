@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useJourneys } from '../context/JourneysContext';
+import { useCommunity } from '../context/CommunityContext';
 import { JOURNEYS_DATA as STATIC_JOURNEYS } from '../data/journeysData';
-import { Journey } from '../types';
-import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle, HelpCircle } from 'lucide-react';
+import { Journey, CommunityPost } from '../types';
+import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle, HelpCircle, Trash2, ArrowRight, MessageSquare } from 'lucide-react';
 import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
 import { BadgeGallery, getUnlockedBadgesCount } from '../components/gamification/BadgeGallery';
 import { UserLevelsModal } from '../components/gamification/UserLevelsModal';
@@ -19,6 +21,7 @@ interface DashboardPageProps {
   onOpenCertificate: (journey: Journey) => void;
   onExploreCatalog: () => void;
   onRestartTutorial?: () => void;
+  onGoToCommunity?: () => void;
 }
 
 // Helper para máscara de celular brasileiro: (00) 00000-0000 ou (00) 0000-0000
@@ -30,11 +33,42 @@ const formatPhoneMask = (val: string) => {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 };
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog, onRestartTutorial }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog, onRestartTutorial, onGoToCommunity }) => {
   const { user, logout, updateUser, awardBadge, refreshUserFromBackend } = useAuth();
+  const { fetchUserPosts, deletePost } = useCommunity();
   const { showToast } = useToast();
 
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  // User Authored Posts Management
+  const [userPosts, setUserPosts] = useState<CommunityPost[]>([]);
+  const [isLoadingUserPosts, setIsLoadingUserPosts] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<CommunityPost | null>(null);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
+
+  useEffect(() => {
+    if (user?.id) {
+      setIsLoadingUserPosts(true);
+      fetchUserPosts(user.id)
+        .then(posts => setUserPosts(posts))
+        .finally(() => setIsLoadingUserPosts(false));
+    }
+  }, [user?.id]);
+
+  const handleDeleteUserPost = async () => {
+    if (!postToDelete) return;
+    setIsDeletingPost(true);
+    try {
+      await deletePost(postToDelete.id);
+      setUserPosts(prev => prev.filter(p => p.id !== postToDelete.id));
+      showToast('Publicação removida da plataforma com sucesso.', 'info');
+      setPostToDelete(null);
+    } catch (err) {
+      showToast('Não foi possível remover a publicação no momento.', 'error');
+    } finally {
+      setIsDeletingPost(false);
+    }
+  };
 
   // Efeito reativo central: Concede a conquista "Criando Raízes" (b2) quando o perfil for completado
   const checkCriandoRaizes = () => {
@@ -1255,6 +1289,148 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
         <BadgeGallery unlockedBadges={user.badges} hideHeaderTitle={false} />
       </section>
 
+      {/* 💬 Minhas Publicações na Comunidade */}
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#8A9A5B]/20 border border-[#8A9A5B]/40 flex items-center justify-center text-[#8A9A5B] shrink-0">
+              <MessageSquare className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                Minhas Publicações na Comunidade
+              </h3>
+              <p className="text-xs text-slate-400">
+                Gerencie todas as publicações de sua autoria na plataforma
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-white/10 text-slate-300 border border-white/10">
+              {userPosts.length} {userPosts.length === 1 ? 'publicação' : 'publicações'}
+            </span>
+            <button
+              onClick={() => {
+                if (user?.id) {
+                  setIsLoadingUserPosts(true);
+                  fetchUserPosts(user.id)
+                    .then(posts => setUserPosts(posts))
+                    .finally(() => setIsLoadingUserPosts(false));
+                }
+              }}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+              title="Atualizar minhas publicações"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoadingUserPosts ? 'animate-spin text-[#FF7F5B]' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        {isLoadingUserPosts ? (
+          <div className="p-8 text-center bg-[#101B1E] rounded-3xl border border-white/10">
+            <RefreshCw className="w-6 h-6 animate-spin text-[#FF7F5B] mx-auto mb-2" />
+            <span className="text-xs text-slate-400">Carregando suas publicações...</span>
+          </div>
+        ) : userPosts.length === 0 ? (
+          <div className="p-8 text-center bg-[#101B1E] rounded-3xl border border-white/10 space-y-3">
+            <div className="w-12 h-12 rounded-full bg-[#8A9A5B]/10 border border-[#8A9A5B]/20 flex items-center justify-center text-[#8A9A5B] mx-auto text-xl">
+              🌱
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-white">Você ainda não fez nenhuma publicação</h4>
+              <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                Nossa comunidade é um espaço seguro de escuta e acolhimento. Compartilhe suas dúvidas, histórias ou desabafos com outros pais.
+              </p>
+            </div>
+            {onGoToCommunity && (
+              <button
+                onClick={onGoToCommunity}
+                className="inline-flex items-center gap-1.5 bg-[#8A9A5B] hover:bg-[#78884e] text-slate-950 font-black text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-md transition-all cursor-pointer"
+              >
+                <span>Ir para a Comunidade</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {userPosts.map(post => {
+              const reactionsCount = Object.values(post.reactions || {}).reduce((a, b) => a + b, 0);
+              const commentsCount = post.comments?.length || 0;
+
+              return (
+                <div
+                  key={post.id}
+                  className="bg-[#101B1E] p-5 sm:p-6 rounded-3xl border border-white/10 hover:border-white/20 transition-all space-y-3 relative group"
+                >
+                  <div className="flex items-start sm:items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {post.isAnonymous ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                          🎭 Post Anônimo no Confessionário
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30">
+                          💬 Publicação Aberta
+                        </span>
+                      )}
+
+                      {post.status === 'sob_moderacao' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          ⏳ Em Moderação
+                        </span>
+                      )}
+
+                      <span className="text-[11px] text-slate-400">
+                        {post.createdAt}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => setPostToDelete(post)}
+                      className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-red-400 p-1.5 sm:px-3 sm:py-1 rounded-xl hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all cursor-pointer"
+                      title="Excluir publicação da plataforma"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Excluir Post</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-extrabold text-white leading-snug">
+                      {post.title}
+                    </h4>
+                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                      {post.content}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1">
+                        <MessageSquare className="w-3.5 h-3.5 text-[#8A9A5B]" />
+                        {commentsCount} {commentsCount === 1 ? 'resposta' : 'respostas'}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Heart className="w-3.5 h-3.5 text-[#E66795]" />
+                        {reactionsCount} {reactionsCount === 1 ? 'reação' : 'reações'}
+                      </span>
+                    </div>
+
+                    {post.isAnonymous && (
+                      <span className="text-[10px] italic text-purple-300/80">
+                        Publicado como: {post.authorName}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       {/* Footer Actions: Rever Tutorial & Sair da Conta */}
       <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {onRestartTutorial && (
@@ -1280,6 +1456,63 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
       {/* 📖 Caderno de Anotações Modal */}
       {isNotebookOpen && (
         <NotebookModal onClose={() => setIsNotebookOpen(false)} />
+      )}
+
+      {/* 🗑️ Modal de Confirmação de Exclusão de Post */}
+      {postToDelete && createPortal(
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
+          <div className="bg-[#101B1E] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-red-500/30 text-white space-y-5 animate-scale-up text-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center mx-auto shadow-lg">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                Excluir publicação?
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Tem certeza de que deseja retirar esta publicação da plataforma? Ela deixará de ser visível para todos os membros da comunidade.
+              </p>
+            </div>
+
+            <div className="bg-[#070D0F] p-3.5 rounded-2xl border border-white/10 text-left space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
+                {postToDelete.isAnonymous ? '🎭 Confessionário (Anônimo)' : '💬 Comunidade'}
+              </span>
+              <p className="text-xs font-bold text-white truncate">
+                "{postToDelete.title}"
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setPostToDelete(null)}
+                disabled={isDeletingPost}
+                className="w-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDeleteUserPost}
+                disabled={isDeletingPost}
+                className="w-full bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingPost ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Excluindo...</span>
+                  </>
+                ) : (
+                  <span>Sim, Excluir</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
     </div>

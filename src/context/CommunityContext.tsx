@@ -358,7 +358,8 @@ interface CommunityContextType {
   toggleCommentReaction: (postId: string, commentId: string, reactionKey: string) => void;
   addComment: (postId: string, content: string, isAnonymous?: boolean, customSensitivity?: ContentSensitivityResult) => { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType };
   refreshPosts: () => Promise<void>;
-  deletePost: (postId: string) => void;
+  deletePost: (postId: string) => Promise<void>;
+  fetchUserPosts: (userId: string) => Promise<CommunityPost[]>;
   reportContent: (contentType: 'post' | 'comment', contentId: string, postId: string | null, reason: string) => Promise<{ success: boolean; alreadyReported?: boolean }>;
   polls: CommunityPoll[];
   activePoll: CommunityPoll | null;
@@ -451,7 +452,12 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const mapPostFromDb = (item: any): CommunityPost => {
     const localSensitivity = checkContentSensitivity(`${item.title || ''} ${item.content || ''}`);
-    const isUnderMod = item.category === 'sob_moderacao' || localSensitivity.isFlagged;
+    const isUnderMod = item.category === 'sob_moderacao' || item.status === 'sob_moderacao' || localSensitivity.isFlagged;
+    const postStatus: 'sob_moderacao' | 'aprovado' | 'removido_usuario' = 
+      item.status === 'removido_usuario' 
+        ? 'removido_usuario' 
+        : (isUnderMod ? 'sob_moderacao' : 'aprovado');
+
     return {
       id: item.id,
       journeyId: item.journey_id,
@@ -464,7 +470,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       authorRole: 'membro',
       isAnonymous: !!item.is_anonymous,
       sensitivityLevel: localSensitivity.type === 'vulnerabilidade' || item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
-      status: isUnderMod ? 'sob_moderacao' : 'aprovado',
+      status: postStatus,
       flagReason: localSensitivity.flagReason,
       flagType: localSensitivity.type,
       title: item.title || '',
@@ -482,6 +488,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const { data, error } = await supabase
         .from('community_posts')
         .select('*')
+        .neq('status', 'removido_usuario')
         .order('created_at', { ascending: false })
         .range(0, PAGE_SIZE - 1);
 
@@ -491,7 +498,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       if (data) {
-        const remotePosts: CommunityPost[] = data.map(mapPostFromDb);
+        const remotePosts: CommunityPost[] = data
+          .map(mapPostFromDb)
+          .filter(p => p.status !== 'removido_usuario');
         setPosts(remotePosts.map(sanitizePost));
         setHasMorePosts(data.length >= PAGE_SIZE);
       }
@@ -511,6 +520,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const { data, error } = await supabase
         .from('community_posts')
         .select('*')
+        .neq('status', 'removido_usuario')
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -520,7 +530,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       if (data && data.length > 0) {
-        const newPosts: CommunityPost[] = data.map(mapPostFromDb);
+        const newPosts: CommunityPost[] = data
+          .map(mapPostFromDb)
+          .filter(p => p.status !== 'removido_usuario');
         setPosts(prev => {
           const existingIds = new Set(prev.map(p => p.id));
           const filtered = newPosts.filter(p => !existingIds.has(p.id));
@@ -629,7 +641,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         (payload: any) => {
           const item = payload.new;
           if (!item) return;
+          if (item.status === 'removido_usuario') return;
           const newPost = mapPostFromDb(item);
+          if (newPost.status === 'removido_usuario') return;
           setPosts(prev => {
             if (prev.some(p => p.id === newPost.id)) return prev;
             return [sanitizePost(newPost), ...prev];
@@ -642,6 +656,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         (payload: any) => {
           const updated = payload.new;
           if (!updated) return;
+          if (updated.status === 'removido_usuario') {
+            setPosts(prev => prev.filter(p => p.id !== updated.id));
+            return;
+          }
           setPosts(prev => prev.map(p => {
             if (p.id === updated.id) {
               return {
@@ -1177,8 +1195,48 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const deletePost = (postId: string) => {
+  const deletePost = async (postId: string): Promise<void> => {
+    // 1. Otimista: remove do estado local imediatamente
     setPosts(prev => prev.filter(p => p.id !== postId));
+
+    // 2. Soft delete no Supabase: preserva o registro mas oculta da plataforma
+    try {
+      const { error } = await supabase
+        .from('community_posts')
+        .update({ status: 'removido_usuario' })
+        .eq('id', postId);
+
+      if (error) {
+        console.warn('Erro ao atualizar status do post para removido_usuario no Supabase:', error.message);
+      }
+    } catch (err) {
+      console.warn('Exceção ao excluir post no Supabase:', err);
+    }
+  };
+
+  const fetchUserPosts = async (userId: string): Promise<CommunityPost[]> => {
+    if (!userId) return [];
+    try {
+      const { data, error } = await supabase
+        .from('community_posts')
+        .select('*')
+        .eq('author_id', userId)
+        .neq('status', 'removido_usuario')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('Erro ao buscar posts do usuário no Supabase:', error.message);
+        return posts.filter(p => p.authorId === userId && p.status !== 'removido_usuario');
+      }
+
+      if (data) {
+        return data.map(mapPostFromDb).map(sanitizePost);
+      }
+      return [];
+    } catch (err) {
+      console.warn('Exceção ao buscar posts do usuário:', err);
+      return posts.filter(p => p.authorId === userId && p.status !== 'removido_usuario');
+    }
   };
 
   // ─── Auto-moderação: denúncia de conteúdo pelos usuários ───────────────────
@@ -1281,6 +1339,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       addComment,
       refreshPosts,
       deletePost,
+      fetchUserPosts,
       reportContent,
       polls,
       activePoll,

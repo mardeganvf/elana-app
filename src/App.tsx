@@ -222,6 +222,10 @@ const AppContent: React.FC = () => {
                     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
                   }}
                   onRestartTutorial={handleRestartTutorial}
+                  onGoToCommunity={() => {
+                    setActiveTab('community');
+                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  }}
                 />
               )}
 
