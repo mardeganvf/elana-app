@@ -388,25 +388,21 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                 setActiveTab('admin');
                 window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
               }}
-              className={`font-extrabold text-xs px-3.5 py-2 rounded-full flex items-center gap-1.5 shadow-md transition-all active:scale-95 whitespace-nowrap border cursor-pointer ${
+              className={`relative font-extrabold text-xs px-3.5 py-2 rounded-full flex items-center gap-1.5 shadow-md transition-all active:scale-95 whitespace-nowrap border cursor-pointer ${
                 activeTab === 'admin'
                   ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] font-black'
                   : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/15'
               }`}
-              title={
-                adminPendingCounts && adminPendingCounts.total > 0
-                  ? `Painel Admin (${adminPendingCounts.total} pendência(s): ${adminPendingCounts.sos} SOS, ${adminPendingCounts.moderation} Moderação)`
-                  : 'Painel do Administrador & Guardião'
-              }
+              title="Painel do Administrador & Guardião"
             >
               <ShieldCheck className={`w-4 h-4 shrink-0 transition-colors ${activeTab === 'admin' ? 'text-slate-950' : 'text-[#FF7F5B]'}`} />
               <span>Painel Admin</span>
               {adminPendingCounts && adminPendingCounts.total > 0 && (
-                <span className="flex items-center gap-1 ml-1" title={`${adminPendingCounts.total} pendência(s)`}>
-                  <Bell className="w-3.5 h-3.5 text-amber-300 animate-bounce fill-amber-300/30 shrink-0" />
-                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none shadow-sm">
-                    {adminPendingCounts.total}
-                  </span>
+                <span
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 border-2 border-[#070D0F] flex items-center justify-center shadow-lg pointer-events-none"
+                  title="Novas mensagens e pendências no Painel Admin"
+                >
+                  <Bell className="w-2.5 h-2.5 text-white fill-white animate-bounce" />
                 </span>
               )}
             </button>
@@ -580,11 +576,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                             <span>Painel do Administrador</span>
                           </div>
                           {adminPendingCounts && adminPendingCounts.total > 0 && (
-                            <span className="flex items-center gap-1 text-amber-300">
-                              <Bell className="w-3.5 h-3.5 text-amber-300 animate-bounce fill-amber-300/30" />
-                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none">
-                                {adminPendingCounts.total}
-                              </span>
+                            <span
+                              className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center shadow-md shrink-0 pointer-events-none"
+                              title="Novas mensagens e pendências no Painel Admin"
+                            >
+                              <Bell className="w-2.5 h-2.5 text-white fill-white animate-bounce" />
                             </span>
                           )}
                         </button>
