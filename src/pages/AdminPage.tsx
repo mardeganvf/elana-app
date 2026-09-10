@@ -33,7 +33,8 @@ import {
   X,
   Maximize2,
   Minimize2,
-  Minus
+  Minus,
+  Bell
 } from 'lucide-react';
 import { useAuth, isAdminUser, SOSMessage, deduplicateSosMessages } from '../context/AuthContext';
 import { useCommunity, checkContentSensitivity } from '../context/CommunityContext';
@@ -128,7 +129,7 @@ export interface AdminPageProps {
 }
 
 export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin }) => {
-  const { user, isAuthenticated, archiveSosTicket } = useAuth();
+  const { user, isAuthenticated, archiveSosTicket, setAdminPendingCounts } = useAuth();
   const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
 
@@ -1064,8 +1065,20 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   });
 
   const pendingCount = sosTickets.filter(t => t.status === 'pendente' || t.status === 'em_atendimento').length;
+  const pendingModCount = modItems.filter(m => m.status === 'pendente').length;
   const completedCount = sosTickets.filter(t => t.status === 'atendido' || t.status === 'arquivado').length;
   const trashCount = sosTickets.filter(t => t.status === 'deletado').length;
+
+  // Sincroniza contadores de notificações com a barra de navegação global
+  useEffect(() => {
+    if (setAdminPendingCounts) {
+      setAdminPendingCounts({
+        sos: pendingCount,
+        moderation: pendingModCount,
+        total: pendingCount + pendingModCount
+      });
+    }
+  }, [pendingCount, pendingModCount, setAdminPendingCounts]);
 
   // Security Guard 1: User is not authenticated
   if (!isAuthenticated || !user) {
@@ -1157,6 +1170,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           <span className="flex items-center gap-2">
             <Menu className="w-4 h-4 text-[#FF7F5B]" />
             <span>Navegação do Painel (Menu Lateral)</span>
+            {(pendingCount > 0 || pendingModCount > 0) && (
+              <Bell className="w-3.5 h-3.5 text-amber-400 animate-bounce fill-amber-400/20" />
+            )}
           </span>
           <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-180' : ''}`} />
         </button>
@@ -1328,7 +1344,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 onClick={() => toggleMenuGroup('community')}
                 className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
               >
-                <span>Comunidade & Moderação</span>
+                <span className="flex items-center gap-1.5">
+                  <span>Comunidade & Moderação</span>
+                  {!openMenuGroups.community && pendingModCount > 0 && (
+                    <Bell className="w-3.5 h-3.5 text-amber-400 animate-bounce fill-amber-400/20" title={`${pendingModCount} post(s) sob moderação`} />
+                  )}
+                </span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.community ? 'rotate-0' : '-rotate-90'}`} />
               </button>
 
@@ -1347,11 +1368,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     }`}
                   >
                     <span>Moderação de Posts</span>
-                    {modItems.filter(m => m.status === 'pendente').length > 0 && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
-                        activeAdminTab === 'moderation' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-amber-500/20 text-amber-300'
-                      }`}>
-                        {modItems.filter(m => m.status === 'pendente').length}
+                    {pendingModCount > 0 && (
+                      <span className="flex items-center gap-1 text-amber-300">
+                        <Bell className="w-3.5 h-3.5 text-amber-400 animate-bounce fill-amber-400/20 shrink-0" />
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
+                          activeAdminTab === 'moderation' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-amber-500/20 text-amber-300'
+                        }`}>
+                          {pendingModCount}
+                        </span>
                       </span>
                     )}
                   </button>
@@ -1386,7 +1410,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 onClick={() => toggleMenuGroup('support')}
                 className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
               >
-                <span>Acolhimento & SOS</span>
+                <span className="flex items-center gap-1.5">
+                  <span>Acolhimento & SOS</span>
+                  {!openMenuGroups.support && pendingCount > 0 && (
+                    <Bell className="w-3.5 h-3.5 text-red-400 animate-bounce fill-red-400/20" title={`${pendingCount} chamado(s) SOS pendente(s)`} />
+                  )}
+                </span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.support ? 'rotate-0' : '-rotate-90'}`} />
               </button>
 
@@ -1406,10 +1435,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   >
                     <span>Atendimento SOS</span>
                     {pendingCount > 0 && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
-                        activeAdminTab === 'sos' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-red-500/20 text-red-300'
-                      }`}>
-                        {pendingCount}
+                      <span className="flex items-center gap-1 text-red-300">
+                        <Bell className="w-3.5 h-3.5 text-red-400 animate-bounce fill-red-400/20 shrink-0" />
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
+                          activeAdminTab === 'sos' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-red-500/20 text-red-300'
+                        }`}>
+                          {pendingCount}
+                        </span>
                       </span>
                     )}
                   </button>

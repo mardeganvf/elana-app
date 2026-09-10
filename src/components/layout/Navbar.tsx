@@ -24,7 +24,8 @@ import {
   Wind,
   CheckCircle2,
   Clock,
-  Phone
+  Phone,
+  Bell
 } from 'lucide-react';
 import logoElana from '../../assets/logo-elana.png';
 import { BreathingModal } from '../common/BreathingModal';
@@ -56,7 +57,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     clearActiveSosTicket, 
     markSosResponseRead, 
     awardBadge,
-    refreshSosTicket
+    refreshSosTicket,
+    adminPendingCounts
   } = useAuth();
   const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
@@ -391,10 +393,22 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                   ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] font-black'
                   : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/15'
               }`}
-              title="Painel do Administrador & Guardião"
+              title={
+                adminPendingCounts && adminPendingCounts.total > 0
+                  ? `Painel Admin (${adminPendingCounts.total} pendência(s): ${adminPendingCounts.sos} SOS, ${adminPendingCounts.moderation} Moderação)`
+                  : 'Painel do Administrador & Guardião'
+              }
             >
               <ShieldCheck className={`w-4 h-4 shrink-0 transition-colors ${activeTab === 'admin' ? 'text-slate-950' : 'text-[#FF7F5B]'}`} />
               <span>Painel Admin</span>
+              {adminPendingCounts && adminPendingCounts.total > 0 && (
+                <span className="flex items-center gap-1 ml-1" title={`${adminPendingCounts.total} pendência(s)`}>
+                  <Bell className="w-3.5 h-3.5 text-amber-300 animate-bounce fill-amber-300/30 shrink-0" />
+                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none shadow-sm">
+                    {adminPendingCounts.total}
+                  </span>
+                </span>
+              )}
             </button>
           )}
 
@@ -559,10 +573,20 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                             setActiveTab('admin');
                             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
                           }}
-                          className="w-full text-xs font-extrabold text-[#FF7F5B] hover:text-[#FFD166] p-2.5 rounded-xl bg-[#FF7F5B]/10 hover:bg-[#FF7F5B]/20 border border-[#FF7F5B]/30 flex items-center gap-2 transition-all text-left cursor-pointer"
+                          className="w-full text-xs font-extrabold text-[#FF7F5B] hover:text-[#FFD166] p-2.5 rounded-xl bg-[#FF7F5B]/10 hover:bg-[#FF7F5B]/20 border border-[#FF7F5B]/30 flex items-center justify-between transition-all text-left cursor-pointer"
                         >
-                          <ShieldCheck className="w-4 h-4 text-[#FF7F5B]" />
-                          <span>Painel do Administrador</span>
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-[#FF7F5B]" />
+                            <span>Painel do Administrador</span>
+                          </div>
+                          {adminPendingCounts && adminPendingCounts.total > 0 && (
+                            <span className="flex items-center gap-1 text-amber-300">
+                              <Bell className="w-3.5 h-3.5 text-amber-300 animate-bounce fill-amber-300/30" />
+                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none">
+                                {adminPendingCounts.total}
+                              </span>
+                            </span>
+                          )}
                         </button>
                       )}
 

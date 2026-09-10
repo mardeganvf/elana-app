@@ -48,6 +48,12 @@ export const deduplicateSosMessages = (messages?: SOSMessage[]): SOSMessage[] =>
   return result;
 };
 
+export interface AdminPendingCounts {
+  sos: number;
+  moderation: number;
+  total: number;
+}
+
 export const ADMIN_EMAILS = [
   'admin@elana.com.br',
   'mariana@elana.com.br',
@@ -122,6 +128,9 @@ interface AuthContextType {
   markSosResponseRead: () => void;
   refreshSosTicket: () => Promise<void>;
   refreshUserFromBackend: () => Promise<void>;
+  adminPendingCounts: AdminPendingCounts;
+  setAdminPendingCounts: React.Dispatch<React.SetStateAction<AdminPendingCounts>>;
+  refreshAdminPendingCounts: () => Promise<void>;
 }
 
 const DEFAULT_USER: UserProfile = {
@@ -326,6 +335,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       supabase.removeChannel(channel);
     };
   }, [user?.id, refreshSosTicket]);
+
+  // 🔔 Sinalização e Notificações de Pendências para Administradores
+  const [adminPendingCounts, setAdminPendingCounts] = useState<AdminPendingCounts>({
+    sos: 0,
+    moderation: 0,
+    total: 0
+  });
+
+  const refreshAdminPendingCounts = useCallback(async () => {
+    if (!user || !isAdminUser(user)) {
+      setAdminPendingCounts({ sos: 0, moderation: 0, total: 0 });
+      return;
+    }
+
+    try {
+      // 1. Chamados SOS com mensagens pendentes ou em atendimento
+      const { data: sosData } = await supabase
+        .from('sos_tickets')
+        .select('id, status')
+        .in('status', ['pendente', 'em_atendimento']);
+
+      const sosCount = sosData ? sosData.length : 0;
+
+      // 2. Moderação de posts e comentários sob moderação ou denunciados
+      let modCount = 0;
+
+      const { data: modPosts } = await supabase
+        .from('community_posts')
+        .select('id, status, category')
+        .or('status.eq.sob_moderacao,category.eq.sob_moderacao');
+
+      if (modPosts) modCount += modPosts.length;
+
+      const { data: reports } = await supabase
+        .from('community_reports')
+        .select('id');
+
+      if (reports) modCount += reports.length;
+
+      const { data: modComments } = await supabase
+        .from('community_comments')
+        .select('id, status')
+        .eq('status', 'sob_moderacao');
+
+      if (modComments) modCount += modComments.length;
+
+      setAdminPendingCounts({
+        sos: sosCount,
+        moderation: modCount,
+        total: sosCount + modCount
+      });
+    } catch (err) {
+      console.warn('Notice fetching admin pending notifications:', err);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !isAdminUser(user)) return;
+
+    refreshAdminPendingCounts();
+    const interval = setInterval(refreshAdminPendingCounts, 12000);
+
+    const channel = supabase
+      .channel('admin_realtime_bell_notifications')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sos_tickets' }, () => {
+        refreshAdminPendingCounts();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, () => {
+        refreshAdminPendingCounts();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_reports' }, () => {
+        refreshAdminPendingCounts();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_comments' }, () => {
+        refreshAdminPendingCounts();
+      })
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [user, refreshAdminPendingCounts]);
 
   // Salvar no localStorage sempre que o estado user mudar
   useEffect(() => {
@@ -1578,7 +1670,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearActiveSosTicket,
         markSosResponseRead,
         refreshSosTicket,
-        refreshUserFromBackend
+        refreshUserFromBackend,
+        adminPendingCounts,
+        setAdminPendingCounts,
+        refreshAdminPendingCounts
       }}
     >
       {children}
