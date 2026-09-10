@@ -26,7 +26,9 @@ import {
   CheckCircle2,
   Clock,
   Phone,
-  Bell
+  Bell,
+  Sun,
+  BatteryLow
 } from 'lucide-react';
 import logoElana from '../../assets/logo-elana.png';
 import { BreathingModal } from '../common/BreathingModal';
@@ -42,9 +44,11 @@ interface NavbarProps {
 interface CalendarDay {
   day: number;
   month: string;
-  emoji: string | null;
+  emoji?: string | null;
+  emotionId?: string | null;
   label: string;
   isToday?: boolean;
+  isFirstOfMonth?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenAuthModal, onRestartTutorial }) => {
@@ -77,7 +81,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
   const [isBreathingModalOpen, setIsBreathingModalOpen] = useState(false);
 
   // User's Real Emotional Check-ins from Supabase
-  const [userCheckins, setUserCheckins] = useState<{ date: string; emoji: string; label: string }[]>([]);
+  const [userCheckins, setUserCheckins] = useState<{ date: string; emotionId: string; label: string }[]>([]);
   const [isLoadingCheckins, setIsLoadingCheckins] = useState(false);
 
   useEffect(() => {
@@ -97,18 +101,28 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
 
         if (!error && data) {
           const mapped = data.map(item => {
-            let emoji = '💖';
-            if (item.emotion_id === 'esperanca' || item.emotion_label?.toLowerCase().includes('esperança')) emoji = '☀️';
-            else if (item.emotion_id === 'celebrando' || item.emotion_label?.toLowerCase().includes('celebrando')) emoji = '🎉';
-            else if (item.emotion_id === 'sem_energia' || item.emotion_label?.toLowerCase().includes('energia') || item.emotion_label?.toLowerCase().includes('exausto')) emoji = '🪫';
-            else if (item.emotion_id === 'precisando_luz' || item.emotion_label?.toLowerCase().includes('luz') || item.emotion_label?.toLowerCase().includes('ajuda')) emoji = '🆘';
-            else if (item.emotion_id === 'calma' || item.emotion_label?.toLowerCase().includes('paz')) emoji = '🌿';
-            else if (item.emotion_id === 'ansiosa' || item.emotion_label?.toLowerCase().includes('ansiosa')) emoji = '🌊';
-            
+            let emotionId = 'esperanca';
+            const idLower = (item.emotion_id || '').toLowerCase();
+            const labelLower = (item.emotion_label || '').toLowerCase();
+
+            if (idLower.includes('esperanca') || labelLower.includes('esperança')) {
+              emotionId = 'esperanca';
+            } else if (idLower.includes('celebrando') || labelLower.includes('celebrando')) {
+              emotionId = 'celebrando';
+            } else if (idLower.includes('energia') || labelLower.includes('energia') || labelLower.includes('exausto')) {
+              emotionId = 'sem_energia';
+            } else if (idLower.includes('luz') || idLower.includes('ajuda') || labelLower.includes('luz') || labelLower.includes('ajuda') || labelLower.includes('colo')) {
+              emotionId = 'precisando_luz';
+            }
+
             return {
               date: item.checkin_date,
-              emoji: emoji,
-              label: item.emotion_label || 'Emoção'
+              emotionId,
+              label: item.emotion_label || (
+                emotionId === 'esperanca' ? 'Com Esperança' :
+                emotionId === 'celebrando' ? 'Celebrando' :
+                emotionId === 'sem_energia' ? 'Sem Energia' : 'Precisando de Luz'
+              )
             };
           });
           setUserCheckins(mapped);
@@ -135,7 +149,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
 
   // Deduplicate check-ins by unique calendar date (1 check-in per day)
   const uniqueDailyCheckins = React.useMemo(() => {
-    const seenMap = new Map<string, { date: string; emoji: string; label: string }>();
+    const seenMap = new Map<string, { date: string; emotionId: string; label: string }>();
     // userCheckins are ordered descending by date, so first occurrence is the latest
     userCheckins.forEach(c => {
       if (!seenMap.has(c.date)) {
@@ -151,9 +165,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     const today = new Date();
     const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-    const checkinMap = new Map<string, { emoji: string; label: string }>();
+    const checkinMap = new Map<string, { emotionId: string; label: string }>();
     uniqueDailyCheckins.forEach(c => {
-      checkinMap.set(c.date, { emoji: c.emoji, label: c.label });
+      checkinMap.set(c.date, { emotionId: c.emotionId, label: c.label });
     });
 
     for (let i = 27; i >= 0; i--) {
@@ -165,38 +179,117 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
       days.push({
         day: d.getDate(),
         month: monthNames[d.getMonth()],
-        emoji: match ? match.emoji : null,
+        emotionId: match ? match.emotionId : null,
         label: match ? match.label : 'Sem registro',
-        isToday: i === 0
+        isToday: i === 0,
+        isFirstOfMonth: d.getDate() === 1 || i === 27
       });
     }
 
     return days;
   }, [uniqueDailyCheckins]);
 
-  // Dynamically compute counts per emotional category (strictly 1 vote per unique day)
+  // Dynamically compute counts and proportion per emotional category (strictly 1 vote per unique day)
   const dynamicSummary = React.useMemo(() => {
     const counts: Record<string, number> = {
-      'Com Esperança': 0,
-      'Celebrando': 0,
-      'Sem Energia': 0,
-      'Precisando de Luz': 0,
+      esperanca: 0,
+      celebrando: 0,
+      sem_energia: 0,
+      precisando_luz: 0,
     };
 
     uniqueDailyCheckins.forEach(c => {
-      if (c.label.includes('Esperança') || c.emoji === '☀️') counts['Com Esperança']++;
-      else if (c.label.includes('Celebrando') || c.emoji === '🎉') counts['Celebrando']++;
-      else if (c.label.includes('Energia') || c.emoji === '🪫') counts['Sem Energia']++;
-      else if (c.label.includes('Luz') || c.emoji === '🆘') counts['Precisando de Luz']++;
+      if (c.emotionId === 'esperanca') counts.esperanca++;
+      else if (c.emotionId === 'celebrando') counts.celebrando++;
+      else if (c.emotionId === 'sem_energia') counts.sem_energia++;
+      else if (c.emotionId === 'precisando_luz') counts.precisando_luz++;
     });
 
-    return [
-      { emoji: '☀️', label: 'Com Esperança', count: counts['Com Esperança'], color: 'bg-[#FFD166]/10 border-[#FFD166]/30 text-[#FFD166]' },
-      { emoji: '🎉', label: 'Celebrando', count: counts['Celebrando'], color: 'bg-purple-500/10 border-purple-500/30 text-purple-300' },
-      { emoji: '🪫', label: 'Sem Energia', count: counts['Sem Energia'], color: 'bg-rose-500/10 border-rose-500/30 text-rose-300' },
-      { emoji: '🆘', label: 'Precisando de Luz', count: counts['Precisando de Luz'], color: 'bg-rose-600/20 border-rose-500/40 text-rose-300' },
-    ];
+    const total = uniqueDailyCheckins.length;
+
+    return {
+      total,
+      counts,
+      categories: [
+        {
+          id: 'esperanca',
+          label: 'Com Esperança',
+          count: counts.esperanca,
+          percent: total > 0 ? Math.round((counts.esperanca / total) * 100) : 0,
+          colorText: 'text-[#FFD166]',
+          colorBg: 'bg-[#FFD166]',
+          colorBorder: 'border-[#FFD166]/30',
+          chipBg: 'bg-[#FFD166]/10',
+        },
+        {
+          id: 'celebrando',
+          label: 'Celebrando',
+          count: counts.celebrando,
+          percent: total > 0 ? Math.round((counts.celebrando / total) * 100) : 0,
+          colorText: 'text-purple-300',
+          colorBg: 'bg-purple-400',
+          colorBorder: 'border-purple-500/30',
+          chipBg: 'bg-purple-500/10',
+        },
+        {
+          id: 'sem_energia',
+          label: 'Sem Energia',
+          count: counts.sem_energia,
+          percent: total > 0 ? Math.round((counts.sem_energia / total) * 100) : 0,
+          colorText: 'text-[#FF7F5B]',
+          colorBg: 'bg-[#FF7F5B]',
+          colorBorder: 'border-[#FF7F5B]/30',
+          chipBg: 'bg-[#FF7F5B]/10',
+        },
+        {
+          id: 'precisando_luz',
+          label: 'Precisando de Luz',
+          count: counts.precisando_luz,
+          percent: total > 0 ? Math.round((counts.precisando_luz / total) * 100) : 0,
+          colorText: 'text-rose-300',
+          colorBg: 'bg-rose-400',
+          colorBorder: 'border-rose-500/30',
+          chipBg: 'bg-rose-500/10',
+        },
+      ]
+    };
   }, [uniqueDailyCheckins]);
+
+  const emotionalInsight = React.useMemo(() => {
+    if (dynamicSummary.total === 0) {
+      return 'Você ainda não registrou emoções recentes. Acompanhe seu sentir no seu ritmo, com carinho e sem culpa.';
+    }
+
+    const { esperanca, celebrando, sem_energia, precisando_luz } = dynamicSummary.counts;
+    const leves = esperanca + celebrando;
+    const densos = sem_energia + precisando_luz;
+
+    if (leves >= densos) {
+      return 'A maioria dos seus dias foram de esperança e celebração. Que essa leveza continue nutrindo sua caminhada!';
+    } else {
+      return 'Acolher os dias que pedem pausa ou cuidado é um ato de profundo carinho. Respeite seu ritmo — você não precisa carregar tudo só.';
+    }
+  }, [dynamicSummary]);
+
+  const todayCheckedIn = React.useMemo(() => {
+    const todayKey = formatLocalDateKey(new Date());
+    return uniqueDailyCheckins.some(c => c.date === todayKey);
+  }, [uniqueDailyCheckins]);
+
+  const renderEmotionIcon = (emotionId: string | null, className: string = "w-3.5 h-3.5") => {
+    switch (emotionId) {
+      case 'esperanca':
+        return <Sun className={`${className} text-[#FFD166]`} />;
+      case 'celebrando':
+        return <Sparkles className={`${className} text-purple-300`} />;
+      case 'sem_energia':
+        return <BatteryLow className={`${className} text-[#FF7F5B]`} />;
+      case 'precisando_luz':
+        return <HeartHandshake className={`${className} text-rose-300`} />;
+      default:
+        return null;
+    }
+  };
 
   // SOS Private Message State & Dialogue
   const [sosMessage, setSosMessage] = useState('');
@@ -805,111 +898,197 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     </nav>
     {/* ── END MOBILE BOTTOM TAB BAR ───────────────────────────────────────── */}
 
-      {/* Feature 1 Modal: Diário de Emoções (Resumo de 4 Semanas e Calendário) */}
+      {/* Feature 1 Modal: Diário de Emoções (Resumo de 4 Semanas e Calendário - Opção A) */}
       {isEmotionalHistoryOpen && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
-          <div className="bg-[#101B1E] rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-white/15 relative text-center space-y-6 m-auto max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#0D1518] rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-white/10 relative space-y-6 m-auto max-h-[90vh] overflow-y-auto">
             
             <button
               onClick={() => setIsEmotionalHistoryOpen(false)}
               aria-label="Fechar Diário de Emoções"
-              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
-            <div className="space-y-2">
-              <div className="w-14 h-14 rounded-full bg-[#E66795]/20 border border-[#E66795]/40 text-[#E66795] flex items-center justify-center mx-auto text-2xl shadow-inner">
-                💖
+            {/* Cabeçalho Acolhedor sem Emojis */}
+            <div className="text-center space-y-2 pt-1">
+              <div className="w-12 h-12 rounded-full bg-[#FF7F5B]/15 border border-[#FF7F5B]/30 text-[#FF7F5B] flex items-center justify-center mx-auto shadow-inner">
+                <HeartHandshake className="w-6 h-6" />
               </div>
-              <h3 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                 Seu Diário de Emoções
               </h3>
-              <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+              <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
                 Acompanhe como você tem se sentido nos últimos dias e respeite cada fase, com carinho e sem culpa.
               </p>
             </div>
 
-            {/* 1. Resumo Quantitativo por Sentimento (Emotion Breakdown Chips) */}
+            {/* 1. Barra de Equilíbrio Emocional (Resumo das Últimas 4 Semanas) */}
             <div className="space-y-3 text-left">
-              <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">
-                Resumo das Últimas 4 Semanas:
-              </span>
-              
-              {userCheckins.length === 0 ? (
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+                  Equilíbrio (Últimas 4 Semanas)
+                </span>
+                <span className="text-[10px] text-slate-300 font-bold bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
+                  {dynamicSummary.total} {dynamicSummary.total === 1 ? 'dia registrado' : 'dias registrados'}
+                </span>
+              </div>
+
+              {dynamicSummary.total === 0 ? (
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 text-center space-y-1">
                   <p className="text-xs font-bold text-slate-300">
                     Você ainda não registrou nenhuma emoção recente.
                   </p>
                   <p className="text-[11px] text-slate-400">
-                    Faça seu primeiro check-in diário na aba <strong>Comunidade</strong> para ver seus gráficos! 💖
+                    Faça seu primeiro check-in diário na aba <strong>Comunidade</strong> para acompanhar seu sentir.
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {dynamicSummary.map((item, idx) => (
-                    <div 
-                      key={idx} 
-                      className={`flex items-center justify-between p-3 rounded-2xl border text-xs font-bold transition-all ${item.color}`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <span className="text-xl shrink-0">{item.emoji}</span>
-                        <span className="truncate text-xs font-bold text-white">{item.label}</span>
+                <div className="space-y-3">
+                  {/* Barra Contínua Segmentada */}
+                  <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden flex gap-0.5 p-0.5 border border-white/5">
+                    {dynamicSummary.categories.map(cat => 
+                      cat.count > 0 ? (
+                        <div
+                          key={cat.id}
+                          style={{ width: `${(cat.count / dynamicSummary.total) * 100}%` }}
+                          className={`h-full rounded-full transition-all duration-500 ${cat.colorBg}`}
+                          title={`${cat.label}: ${cat.count}x (${cat.percent}%)`}
+                        />
+                      ) : null
+                    )}
+                  </div>
+
+                  {/* 4 Chips de Sentimento em Grade 2x2 Elegante */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {dynamicSummary.categories.map(cat => (
+                      <div
+                        key={cat.id}
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
+                          cat.count > 0 
+                            ? `${cat.chipBg} ${cat.colorBorder} ${cat.colorText}` 
+                            : 'bg-white/[0.02] border-white/5 text-slate-500'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {renderEmotionIcon(cat.id, "w-3.5 h-3.5 shrink-0")}
+                          <span className="truncate text-[11px]">{cat.label}</span>
+                        </div>
+                        <span className="text-[11px] font-black shrink-0 ml-1.5 opacity-90">
+                          {cat.count}x
+                        </span>
                       </div>
-                      <span className="bg-black/50 px-3 py-1 rounded-full text-xs font-black text-white shrink-0 ml-2">
-                        {item.count}x
-                      </span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* 2. Calendário das Últimas 4 Semanas (28 Dias) */}
-            <div className="bg-[#070D0F] p-4 sm:p-5 rounded-3xl border border-white/10 space-y-4 text-left">
+            {/* 2. Calendário Minimalista dos Últimos 28 Dias */}
+            <div className="space-y-2.5 text-left">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-white uppercase tracking-wider">
-                  Histórico Diário (4 Semanas)
+                <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+                  Histórico Diário (28 Dias)
                 </span>
-                <span className="text-[10px] text-[#FF7F5B] font-bold bg-[#FF7F5B]/10 px-2.5 py-1 rounded-full border border-[#FF7F5B]/20">
-                  {userCheckins.length} {userCheckins.length === 1 ? 'Registro' : 'Registros'} 🌟
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {dynamicLast4WeeksDays[0] && dynamicLast4WeeksDays[27] 
+                    ? `${dynamicLast4WeeksDays[0].day} ${dynamicLast4WeeksDays[0].month} a ${dynamicLast4WeeksDays[27].day} ${dynamicLast4WeeksDays[27].month}`
+                    : ''}
                 </span>
               </div>
 
-              <div className="grid grid-cols-7 gap-2 pt-1 text-center">
-                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => (
-                  <span key={i} className="text-[10px] font-extrabold text-slate-500 uppercase">{d}</span>
-                ))}
+              <div className="bg-white/[0.02] p-3 sm:p-4 rounded-2xl border border-white/10 space-y-2">
+                {/* Dias da semana */}
+                <div className="grid grid-cols-7 gap-1 text-center">
+                  {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => (
+                    <span key={i} className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{d}</span>
+                  ))}
+                </div>
 
-                {dynamicLast4WeeksDays.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className={`aspect-square rounded-2xl border flex flex-col items-center justify-center p-1 transition-all ${
-                      item.isToday
-                        ? 'bg-[#FF7F5B]/20 border-[#FF7F5B] text-white shadow-lg ring-2 ring-[#FF7F5B]/40'
-                        : item.emoji
-                        ? 'bg-white/5 border-white/15 hover:border-white/30'
-                        : 'bg-[#070D0F] border-white/10 hover:border-white/20'
-                    }`}
-                    title={`${item.day} de ${item.month}: ${item.label}`}
-                  >
-                    <span className={`text-[9px] font-bold ${item.isToday ? 'text-[#FF7F5B]' : 'text-slate-400'}`}>
-                      {item.day}
-                    </span>
-                    <span className="text-sm my-0.5 select-none">
-                      {item.emoji ? item.emoji : <span className="text-slate-600 font-extrabold">•</span>}
-                    </span>
-                  </div>
-                ))}
+                {/* Grid das 28 células */}
+                <div className="grid grid-cols-7 gap-1.5 pt-1 text-center">
+                  {dynamicLast4WeeksDays.map((item, idx) => {
+                    const hasCheckin = Boolean(item.emotionId);
+                    return (
+                      <div
+                        key={idx}
+                        className={`aspect-square rounded-xl flex flex-col items-center justify-center p-1 transition-all relative ${
+                          item.isToday
+                            ? 'bg-[#FF7F5B]/15 border-2 border-[#FF7F5B] text-white shadow-lg ring-2 ring-[#FF7F5B]/30'
+                            : hasCheckin
+                            ? 'bg-white/5 border border-white/15 hover:border-white/30'
+                            : 'bg-white/[0.01] border border-white/5 hover:border-white/10'
+                        }`}
+                        title={`${item.day} de ${item.month}: ${item.label}${item.isToday ? ' (Hoje)' : ''}`}
+                      >
+                        {/* Número do dia com boa legibilidade */}
+                        <span className={`text-[11px] font-bold leading-none ${
+                          item.isToday ? 'text-[#FF7F5B] font-black' : hasCheckin ? 'text-white' : 'text-slate-500'
+                        }`}>
+                          {item.day}
+                        </span>
+
+                        {/* Ícone sutil ou ponto mínimo neutro */}
+                        <div className="mt-1 flex items-center justify-center h-4 w-4">
+                          {hasCheckin ? (
+                            renderEmotionIcon(item.emotionId, "w-3.5 h-3.5")
+                          ) : (
+                            <span className="h-1 w-1 rounded-full bg-white/10" />
+                          )}
+                        </div>
+
+                        {/* Tag de início de mês */}
+                        {item.isFirstOfMonth && (
+                          <span className="absolute -top-1.5 -right-1 bg-white/15 text-white text-[7px] font-extrabold uppercase px-1 rounded-sm tracking-tighter shadow-sm">
+                            {item.month}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            <button
-              onClick={() => setIsEmotionalHistoryOpen(false)}
-              className="w-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all cursor-pointer"
-            >
-              Fechar Histórico
-            </button>
+            {/* 3. Mensagem Acolhedora Dinâmica */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 text-center">
+              <p className="text-xs text-slate-300 leading-relaxed italic">
+                "{emotionalInsight}"
+              </p>
+            </div>
+
+            {/* 4. Rodapé e Ações Contextuais */}
+            <div className="flex items-center gap-2 pt-1">
+              {!todayCheckedIn ? (
+                <>
+                  <button
+                    onClick={() => setIsEmotionalHistoryOpen(false)}
+                    className="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs py-2.5 rounded-xl border border-white/10 transition-all cursor-pointer"
+                  >
+                    Fechar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEmotionalHistoryOpen(false);
+                      setActiveTab('community');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="flex-[2] bg-gradient-to-r from-[#FF7F5B] to-[#FF9E7D] hover:opacity-95 text-white font-extrabold text-xs py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <HeartHandshake className="w-3.5 h-3.5" />
+                    <span>Registrar Sentimento de Hoje</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setIsEmotionalHistoryOpen(false)}
+                  className="w-full bg-white/10 hover:bg-white/15 text-white font-bold text-xs py-2.5 rounded-xl transition-all cursor-pointer"
+                >
+                  Concluir e Voltar
+                </button>
+              )}
+            </div>
 
           </div>
         </div>,
