@@ -319,26 +319,32 @@ export const checkContentSensitivityAI = async (
   return fullLocalCheck;
 };
 
-const ANON_PREFIXES = [
-  'Coração', 'Alma', 'Respiro', 'Farol', 'Brisa', 'Semente', 'Horizonte', 'Abraço',
-  'Luz', 'Gota', 'Vento', 'Sol', 'Refúgio', 'Estrela', 'Flor', 'Ninho', 'Porto',
-  'Caminho', 'Sorriso', 'Sonho', 'Garoa', 'Jardim', 'Faísca', 'Oásis', 'Sombra',
-  'Paz', 'Orvalho', 'Aconchego', 'Aurora', 'Espaço'
+const ANON_ANIMALS = [
+  'Coruja', 'Lontra', 'Urso', 'Golfinho', 'Raposa', 
+  'Panda', 'Girafa', 'Baleia', 'Leão', 'Esquilo', 
+  'Lobo', 'Pinguim', 'Tartaruga', 'Falcão', 'Coala', 
+  'Cervo', 'Arara', 'Castor', 'Foca', 'Tucano', 
+  'Gazela', 'Colibri', 'Lince', 'Cisne', 'Cavalo', 
+  'Guaxinim', 'Tigre', 'Elefante', 'Borboleta', 'Andorinha'
 ];
 
 const ANON_DESCRIPTORS = [
-  'Leve', 'Curioso', 'Sereno', 'Genuíno', 'Atento', 'Acolhedor', 'Corajoso',
-  'Esperançoso', 'Tranquilo', 'Poético', 'Sincero', 'Profundo', 'Sensível',
-  'Radiante', 'Luminoso', 'Resiliente', 'Inspirado', 'Espontâneo', 'Cativante',
-  'Gentil', 'Vibrante', 'Constante', 'Presente', 'Verdadeiro', 'Paciente',
-  'Humilde', 'Discreto', 'Afetivo', 'Iluminado', 'Singular'
+  'Agradável', 'Alegre', 'Amável', 'Audaz', 'Benevolente',
+  'Brilhante', 'Calmante', 'Capaz', 'Cativante', 'Confiante',
+  'Confortável', 'Consciente', 'Constante', 'Cordial', 'Doce',
+  'Elegante', 'Emocionante', 'Especial', 'Espetacular', 'Estável',
+  'Excelente', 'Feliz', 'Fiel', 'Forte', 'Fraternal',
+  'Gentil', 'Hábil', 'Humilde', 'Ilustre', 'Imparável',
+  'Impecável', 'Incrível', 'Inteligente', 'Leal', 'Leve',
+  'Livre', 'Marcante', 'Nobre', 'Notável', 'Otimista',
+  'Paciente', 'Persistente', 'Presente', 'Prudente', 'Radiante',
+  'Resiliente', 'Sensível', 'Singular', 'Suave', 'Valente'
 ];
 
 export const getRandomAnonymousName = () => {
-  const p = ANON_PREFIXES[Math.floor(Math.random() * ANON_PREFIXES.length)];
-  const d = ANON_DESCRIPTORS[Math.floor(Math.random() * ANON_DESCRIPTORS.length)];
-  const num = Math.floor(Math.random() * 900) + 100;
-  return `${p} ${d} #${num}`;
+  const animal = ANON_ANIMALS[Math.floor(Math.random() * ANON_ANIMALS.length)];
+  const descriptor = ANON_DESCRIPTORS[Math.floor(Math.random() * ANON_DESCRIPTORS.length)];
+  return `${animal} ${descriptor}`;
 };
 
 interface CommunityContextType {
@@ -945,8 +951,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const isConfession = posts.find(p => p.id === postId)?.transversalRoomId === 'confessionario';
     const isAnon = isConfession ? !!isAnonymousInput : false;
 
-    const randomAnonNumber = Math.floor(Math.random() * 900) + 100;
-    const authorName = isAnon ? `Luz em Aprendizado #${randomAnonNumber}` : user.name;
+    const authorName = isAnon ? getRandomAnonymousName() : user.name;
     const authorAvatar = isAnon 
       ? 'https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=150&auto=format&fit=crop&q=80' 
       : user.avatar;
