@@ -310,8 +310,8 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
   },
   {
     key: 'community_guide_badge',
-    label: 'Selo Guia & Mentora',
-    description: 'Exibir distintivo de mentora qualificada no perfil e nas publicações.',
+    label: 'Selo Guia',
+    description: 'Exibir distintivo de Guia da comunidade no perfil e nas publicações.',
     category: 'community'
   },
   {

@@ -1110,7 +1110,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
       const roleLabels: Record<string, string> = {
         membro: 'Usuário',
-        guia: 'Guia & Mentora',
+        guia: 'Guia',
         admin: 'Administrador'
       };
       showToast('success', `Categoria alterada para ${roleLabels[newRole]} com sucesso! ✨`);
@@ -1240,7 +1240,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       name: profileData?.name || member.name,
       avatar: profileData?.avatar || member.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120',
       role: member.role,
-      tag: profileData?.tag || (member.role === 'admin' ? 'Administrador' : member.role === 'guia' ? 'Guia & Mentora' : 'Membro da Comunidade'),
+      tag: profileData?.tag || (member.role === 'admin' ? 'Administrador' : member.role === 'guia' ? 'Guia' : 'Membro da Comunidade'),
       levelNumber: profileData?.level_number || levelInfo.level,
       levelName: profileData?.level_name || member.levelTitle || levelInfo.title,
       levelIcon: profileData?.level_icon || member.levelIcon || levelInfo.icon,
@@ -2863,7 +2863,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                             title="Alterar Categoria de Acesso deste membro"
                           >
                             <option value="membro" className="bg-[#101B1E] text-white">Usuário</option>
-                            <option value="guia" className="bg-[#101B1E] text-white">Guia & Mentora</option>
+                            <option value="guia" className="bg-[#101B1E] text-white">Guia</option>
                             <option value="admin" className="bg-[#101B1E] text-white">Administrador</option>
                           </select>
                           <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2 top-1/2 -translate-y-1/2" />
@@ -3034,7 +3034,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 )}
               </button>
 
-              {/* 2. Guia & Mentora */}
+              {/* 2. Guia */}
               <button
                 type="button"
                 onClick={() => setActivePermissionRoleTab('guia')}
@@ -3051,8 +3051,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     <ShieldCheck className="w-4 h-4 text-[#8A9A5B]" />
                   </div>
                   <div>
-                    <span className="text-xs font-bold block text-white">Guia & Mentora</span>
-                    <span className="text-[10px] text-[#8A9A5B] font-bold">{totalGuiasCount} mentora(s)</span>
+                    <span className="text-xs font-bold block text-white">Guia</span>
+                    <span className="text-[10px] text-[#8A9A5B] font-bold">{totalGuiasCount} guia(s)</span>
                   </div>
                 </div>
                 {activePermissionRoleTab === 'guia' && (
@@ -3098,7 +3098,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 )}
                 {activePermissionRoleTab === 'guia' && (
                   <p>
-                    <strong>Perfil Guia & Mentora:</strong> Membros qualificados com escuta ativa. <span className="text-[#c2d689] font-bold">Você pode liberar acesso pontual a funções de gestão</span> (como responder a chamados SOS e moderar postagens flageadas pela IA) sem conceder controle total da plataforma.
+                    <strong>Perfil Guia:</strong> Membros qualificados com escuta ativa. <span className="text-[#c2d689] font-bold">Você pode liberar acesso pontual a funções de gestão</span> (como responder a chamados SOS e moderar postagens flageadas pela IA) sem conceder controle total da plataforma.
                   </p>
                 )}
                 {activePermissionRoleTab === 'admin' && (
