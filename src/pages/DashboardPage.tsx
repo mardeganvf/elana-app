@@ -61,10 +61,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     try {
       await deletePost(postToDelete.id);
       setUserPosts(prev => prev.filter(p => p.id !== postToDelete.id));
-      showToast('Publicação removida da plataforma com sucesso.', 'info');
+      showToast('info', 'Publicação removida da plataforma com sucesso.');
       setPostToDelete(null);
     } catch (err) {
-      showToast('Não foi possível remover a publicação no momento.', 'error');
+      showToast('error', 'Não foi possível remover a publicação no momento.');
     } finally {
       setIsDeletingPost(false);
     }

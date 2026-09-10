@@ -1971,7 +1971,7 @@ export const CommunityPage: React.FC = () => {
       {isCreateModalOpen && (
         <CreatePostModal 
           onClose={() => setIsCreateModalOpen(false)} 
-          activeSelection={activeSelection}
+          activeSelection={activeSelection?.type === 'minhas-publicacoes' ? null : activeSelection}
         />
       )}
 
@@ -2111,10 +2111,10 @@ export const CommunityPage: React.FC = () => {
                   setIsDeletingPost(true);
                   try {
                     await deletePost(postToDelete.id);
-                    showToast('Publicação removida da plataforma com sucesso.', 'info');
+                    showToast('info', 'Publicação removida da plataforma com sucesso.');
                     setPostToDelete(null);
                   } catch (err) {
-                    showToast('Não foi possível excluir a publicação no momento.', 'error');
+                    showToast('error', 'Não foi possível excluir a publicação no momento.');
                   } finally {
                     setIsDeletingPost(false);
                   }
