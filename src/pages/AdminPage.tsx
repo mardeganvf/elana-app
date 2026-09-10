@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   ShieldCheck,
   ShieldAlert,
+  User,
   Lock,
   Upload,
   Video,
@@ -91,7 +92,7 @@ interface MemberUser {
   name: string;
   email: string;
   avatar: string;
-  role: 'membro' | 'guia';
+  role: 'membro' | 'guia' | 'admin';
   levelTitle: string;
   levelIcon: string;
   xp: number;
@@ -267,6 +268,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // 👥 Members State
   const [members, setMembers] = useState<MemberUser[]>([]);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [memberCategoryFilter, setMemberCategoryFilter] = useState<'todos' | 'membro' | 'guia' | 'admin'>('todos');
 
   // 📊 Termômetro Emocional Real State
   const [emotionalStats, setEmotionalStats] = useState<EmotionalStats | null>(null);
@@ -728,18 +731,25 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         .select('*')
         .order('created_at', { ascending: false });
       if (data) {
-        setMembers(data.map(p => ({
-          id: p.id,
-          name: p.name || 'Sem nome',
-          email: p.email || '',
-          avatar: p.avatar || '',
-          role: p.role || 'membro',
-          levelTitle: p.level_name || 'Semente Plantada',
-          levelIcon: p.level_icon || '🌱',
-          xp: p.xp || 0,
-          joinedDays: Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000),
-          bio: p.bio || undefined
-        })));
+        setMembers(data.map(p => {
+          let role: 'membro' | 'guia' | 'admin' = 'membro';
+          const r = (p.role || '').toLowerCase();
+          if (r === 'admin') role = 'admin';
+          else if (r === 'guia') role = 'guia';
+
+          return {
+            id: p.id,
+            name: p.name || 'Sem nome',
+            email: p.email || '',
+            avatar: p.avatar || '',
+            role,
+            levelTitle: p.level_name || 'Semente Plantada',
+            levelIcon: p.level_icon || '🌱',
+            xp: p.xp || 0,
+            joinedDays: Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000),
+            bio: p.bio || undefined
+          };
+        }));
       }
     };
     loadMembers();
@@ -1028,17 +1038,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     }
   };
 
+  // Role Update Handler (Usuário, Guia ou Admin)
+  const handleUpdateMemberRole = async (userId: string, newRole: 'membro' | 'guia' | 'admin') => {
+    setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m));
+    try {
+      await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+      const roleLabels: Record<string, string> = {
+        membro: 'Usuário',
+        guia: 'Guia & Mentora',
+        admin: 'Administrador'
+      };
+      showToast('success', `Categoria alterada para ${roleLabels[newRole]} com sucesso! ✨`);
+    } catch (err) {
+      console.warn('Error updating member role in Supabase:', err);
+      showToast('error', 'Erro ao atualizar categoria do membro.');
+    }
+  };
+
   // Role Toggle Handler
   const handleToggleRole = async (userId: string) => {
     const target = members.find(m => m.id === userId);
     if (!target) return;
     const newRole = target.role === 'guia' ? 'membro' : 'guia';
-    setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m));
-    try {
-      await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
-    } catch (err) {
-      console.warn('Error updating member role in Supabase:', err);
-    }
+    await handleUpdateMemberRole(userId, newRole);
   };
 
   // Limpar Bio de Membro (caso tenha herdado dados indevidamente)
@@ -2490,77 +2512,354 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       )}
 
       {/* TAB 5: 👥 GESTÃO DE MEMBROS */}
-      {activeAdminTab === 'users' && (
-        <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
-                <Users className="w-5 h-5 text-[#FF7F5B]" />
-                Gestão de Membros & Guia de Acolhimento
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Atribua o selo especial de Guia & Mentora para membros experientes e acompanhe a pontuação.
-              </p>
-            </div>
-          </div>
+      {activeAdminTab === 'users' && (() => {
+        const totalUsersCount = members.filter(m => m.role === 'membro').length;
+        const totalGuiasCount = members.filter(m => m.role === 'guia').length;
+        const totalAdminsCount = members.filter(m => m.role === 'admin').length;
 
-          <div className="space-y-3">
-            {members.map(member => (
-              <div key={member.id} className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <img src={member.avatar} alt={member.name} className="w-12 h-12 rounded-full object-cover border-2 border-[#E66795]" />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-white">{member.name}</h4>
-                      <span className="bg-[#FF7F5B]/20 text-[#FF7F5B] text-[10px] font-bold px-2.5 py-0.5 rounded-md border border-[#FF7F5B]/30 flex items-center gap-1">
-                        <span>{member.levelIcon}</span>
-                        <span>{member.levelTitle}</span>
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      {member.email} • {member.joinedDays} dias conosco • {member.xp} pontos
-                    </p>
-                    {member.bio && (
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="text-[11px] text-slate-300 italic bg-white/5 px-2.5 py-0.5 rounded-lg border border-white/10 truncate max-w-xs">
-                          "{member.bio}"
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleClearMemberBio(member.id)}
-                          className="text-[10px] text-rose-400 hover:text-rose-300 underline font-bold cursor-pointer shrink-0"
-                          title="Zerar bio deste membro"
-                        >
-                          Zerar Bio
-                        </button>
-                      </div>
-                    )}
+        const filteredMembers = members.filter(member => {
+          if (memberCategoryFilter !== 'todos' && member.role !== memberCategoryFilter) {
+            return false;
+          }
+          if (memberSearchQuery.trim()) {
+            const q = memberSearchQuery.toLowerCase().trim();
+            const nameMatch = (member.name || '').toLowerCase().includes(q);
+            const emailMatch = (member.email || '').toLowerCase().includes(q);
+            const bioMatch = (member.bio || '').toLowerCase().includes(q);
+            if (!nameMatch && !emailMatch && !bioMatch) return false;
+          }
+          return true;
+        });
+
+        return (
+          <div className="space-y-6">
+            {/* CONTÊINER 1: MEMBROS */}
+            <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Membros
+                  </h2>
+
+                  {/* Filtro por Categoria de Membro (Usuário, Guia e Admin) */}
+                  <div className="relative inline-flex items-center">
+                    <select
+                      value={memberCategoryFilter}
+                      onChange={(e) => setMemberCategoryFilter(e.target.value as 'todos' | 'membro' | 'guia' | 'admin')}
+                      className="appearance-none bg-[#070D0F] text-xs font-bold text-slate-200 hover:text-white pl-3.5 pr-8 py-2 rounded-2xl border border-white/10 hover:border-white/20 focus:outline-none focus:border-[#FF7F5B] cursor-pointer transition-all shadow-sm"
+                      title="Filtrar por Categoria de Membro"
+                    >
+                      <option value="todos" className="bg-[#101B1E] text-white">Todos ({members.length})</option>
+                      <option value="membro" className="bg-[#101B1E] text-white">Usuário ({totalUsersCount})</option>
+                      <option value="guia" className="bg-[#101B1E] text-white">Guia ({totalGuiasCount})</option>
+                      <option value="admin" className="bg-[#101B1E] text-white">Admin ({totalAdminsCount})</option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  {member.role === 'guia' ? (
-                    <span className="text-[10px] font-extrabold bg-[#8A9A5B]/20 text-[#8A9A5B] border border-[#8A9A5B]/30 px-3 py-1 rounded-full flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3" /> Guia & Mentora Oficial
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-slate-400 font-bold bg-white/5 px-2.5 py-1 rounded-full">
-                      Membro da Comunidade
-                    </span>
-                  )}
-
-                  <button
-                    onClick={() => handleToggleRole(member.id)}
-                    className="text-xs font-bold text-[#FF7F5B] hover:text-[#FFD166] bg-[#FF7F5B]/10 hover:bg-[#FF7F5B]/20 border border-[#FF7F5B]/30 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
-                  >
-                    {member.role === 'guia' ? 'Remover Selo Guia' : 'Conceder Selo Guia'}
-                  </button>
+                {/* Caixa de Busca de Membros */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={memberSearchQuery}
+                      onChange={(e) => setMemberSearchQuery(e.target.value)}
+                      placeholder="Buscar por nome ou e-mail..."
+                      className="w-full pl-8 pr-7 py-2 bg-[#070D0F] border border-white/10 rounded-2xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-all shadow-sm"
+                    />
+                    {memberSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setMemberSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs cursor-pointer"
+                        title="Limpar busca"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            ))}
+
+              {/* Lista de Membros */}
+              <div className="space-y-3">
+                {filteredMembers.length === 0 ? (
+                  <div className="bg-[#070D0F] p-8 rounded-2xl border border-white/5 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
+                    <Users className="w-8 h-8 text-slate-500 opacity-60" />
+                    <span className="font-bold text-slate-300">Nenhum membro encontrado</span>
+                    <span className="text-[11px] text-slate-500">
+                      Tente ajustar a busca ou o filtro de categoria para encontrar outros membros.
+                    </span>
+                  </div>
+                ) : (
+                  filteredMembers.map(member => (
+                    <div key={member.id} className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <img 
+                          src={member.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120'} 
+                          alt={member.name} 
+                          className={`w-12 h-12 rounded-full object-cover border-2 shrink-0 ${
+                            member.role === 'admin' 
+                              ? 'border-purple-400' 
+                              : member.role === 'guia' 
+                              ? 'border-[#8A9A5B]' 
+                              : 'border-[#E66795]'
+                          }`} 
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-white truncate">{member.name}</h4>
+                            <span className="bg-[#FF7F5B]/20 text-[#FF7F5B] text-[10px] font-bold px-2.5 py-0.5 rounded-md border border-[#FF7F5B]/30 flex items-center gap-1 shrink-0">
+                              <span>{member.levelIcon}</span>
+                              <span>{member.levelTitle}</span>
+                            </span>
+                            {member.role === 'admin' && (
+                              <span className="text-[10px] font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+                                <ShieldAlert className="w-3 h-3 text-purple-400" /> Administrador
+                              </span>
+                            )}
+                            {member.role === 'guia' && (
+                              <span className="text-[10px] font-extrabold bg-[#8A9A5B]/20 text-[#8A9A5B] border border-[#8A9A5B]/30 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+                                <ShieldCheck className="w-3 h-3 text-[#8A9A5B]" /> Guia & Mentora
+                              </span>
+                            )}
+                            {member.role === 'membro' && (
+                              <span className="text-[10px] text-slate-400 font-bold bg-white/5 border border-white/10 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+                                <User className="w-3 h-3 text-slate-400" /> Usuário
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                            {member.email} • {member.joinedDays} dias conosco • {member.xp} pontos
+                          </p>
+                          {member.bio && (
+                            <div className="mt-1 flex items-center gap-2">
+                              <span className="text-[11px] text-slate-300 italic bg-white/5 px-2.5 py-0.5 rounded-lg border border-white/10 truncate max-w-xs">
+                                "{member.bio}"
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleClearMemberBio(member.id)}
+                                className="text-[10px] text-rose-400 hover:text-rose-300 underline font-bold cursor-pointer shrink-0"
+                                title="Zerar bio deste membro"
+                              >
+                                Zerar Bio
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Seletor de Categoria do Membro */}
+                      <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hidden sm:inline">
+                          Categoria:
+                        </span>
+                        <div className="relative inline-flex items-center">
+                          <select
+                            value={member.role}
+                            onChange={(e) => handleUpdateMemberRole(member.id, e.target.value as 'membro' | 'guia' | 'admin')}
+                            className={`appearance-none text-xs font-bold pl-3 pr-7 py-1.5 rounded-xl border transition-all cursor-pointer shadow-sm ${
+                              member.role === 'admin'
+                                ? 'bg-purple-950/40 text-purple-200 border-purple-500/40 hover:border-purple-400'
+                                : member.role === 'guia'
+                                ? 'bg-[#8A9A5B]/20 text-[#c2d689] border-[#8A9A5B]/40 hover:border-[#8A9A5B]'
+                                : 'bg-[#101B1E] text-slate-200 border-white/10 hover:border-white/20'
+                            }`}
+                            title="Alterar Categoria de Acesso deste membro"
+                          >
+                            <option value="membro" className="bg-[#101B1E] text-white">Usuário</option>
+                            <option value="guia" className="bg-[#101B1E] text-white">Guia & Mentora</option>
+                            <option value="admin" className="bg-[#101B1E] text-white">Administrador</option>
+                          </select>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2 top-1/2 -translate-y-1/2" />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+
+            {/* CONTÊINER 2: AUTORIZAÇÕES E ACESSOS POR CATEGORIA */}
+            <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Autorizações e Acessos por Categoria
+                </h2>
+              </div>
+
+              {/* Grid das 3 Categorias */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                {/* 1. Usuário */}
+                <div className="bg-[#070D0F] p-5 sm:p-6 rounded-2xl border border-white/10 flex flex-col justify-between space-y-5">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 font-bold text-xs flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-slate-400" /> Usuário
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {totalUsersCount} membros
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Membros cadastrados que consomem jornadas, realizam check-ins e interagem ativamente na comunidade da Aldeia.
+                    </p>
+
+                    <div className="space-y-2 pt-2 border-t border-white/5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Permissões & Acessos:
+                      </span>
+                      <ul className="space-y-2 text-xs text-slate-300">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>Acesso às trilhas, aulas e conteúdos liberados</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>Participação na comunidade (criar posts e acolher)</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>Check-in diário e histórico no Termômetro Emocional</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>Votar nas enquetes ativas da comunidade</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>Abertura de chamados e suporte na Central SOS</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/5">
+                    <span className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                      <Lock className="w-3 h-3 text-slate-600" />
+                      Sem acesso ao Painel de Administração
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Guia & Mentora */}
+                <div className="bg-[#070D0F] p-5 sm:p-6 rounded-2xl border border-[#8A9A5B]/30 flex flex-col justify-between space-y-5">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="px-3 py-1 rounded-full bg-[#8A9A5B]/20 border border-[#8A9A5B]/40 text-[#8A9A5B] font-extrabold text-xs flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-[#8A9A5B]" /> Guia & Mentora
+                      </span>
+                      <span className="text-[10px] text-[#8A9A5B] font-mono font-bold">
+                        {totalGuiasCount} membros
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Membros de referência reconhecidos pela escuta ativa e acolhimento parental qualificado para orientar a comunidade.
+                    </p>
+
+                    <div className="space-y-2 pt-2 border-t border-white/5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9A5B] block">
+                        Permissões & Acessos:
+                      </span>
+                      <ul className="space-y-2 text-xs text-slate-300">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>Todas as permissões da categoria Usuário</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>Selo distintivo Guia & Mentora no perfil e publicações</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>Destaque visual em respostas e acolhimentos empáticos</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>Reconhecimento comunitário para liderança de rodas</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>Acesso a materiais e fóruns especiais de mentoria</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/5">
+                    <span className="text-[11px] text-[#8A9A5B] flex items-center gap-1.5 font-bold">
+                      <Sparkles className="w-3 h-3 text-[#8A9A5B]" />
+                      Voz de referência e acolhimento oficial
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Administrador */}
+                <div className="bg-[#070D0F] p-5 sm:p-6 rounded-2xl border border-purple-500/30 flex flex-col justify-between space-y-5">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 font-extrabold text-xs flex items-center gap-1.5">
+                        <ShieldAlert className="w-3.5 h-3.5 text-purple-400" /> Administrador
+                      </span>
+                      <span className="text-[10px] text-purple-400 font-mono font-bold">
+                        {totalAdminsCount} membros
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Gestão completa da plataforma Elana: controle de publicações, conteúdo curricular, enquetes e usuários.
+                    </p>
+
+                    <div className="space-y-2 pt-2 border-t border-white/5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400 block">
+                        Permissões & Acessos:
+                      </span>
+                      <ul className="space-y-2 text-xs text-slate-300">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                          <span>Acesso integral e irrestrito ao Painel Admin</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                          <span>Moderação antijulgamento e exclusão de posts/comentários</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                          <span>Gestão de Jornadas, Módulos, Aulas e Upload de Vídeos</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                          <span>Criação e controle de Enquetes e Vídeos em Destaque</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                          <span>Atribuição e alteração de papéis de Membros</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                          <span>Atendimento de chamados e respostas na Central SOS</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/5">
+                    <span className="text-[11px] text-purple-300 flex items-center gap-1.5 font-bold">
+                      <ShieldAlert className="w-3 h-3 text-purple-400" />
+                      Permissão máxima de controle e governança
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
-        </section>
-      )}
+        );
+      })()}
 
       {/* TAB 6: 🗳️ GESTÃO DE ENQUETES (SUA VOZ IMPORTA) */}
       {activeAdminTab === 'polls' && (() => {
