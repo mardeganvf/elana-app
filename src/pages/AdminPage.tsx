@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   XCircle,
   Users,
-  TrendingUp,
   Send,
   AlertTriangle,
   Heart,
@@ -566,8 +565,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       const breakdown: EmotionStatBreakdown[] = [
         {
           id: 'exausto',
-          label: 'Cansaço & Exaustão',
-          emoji: '🪫',
+          label: 'Cansaço e Exaustão',
+          emoji: '',
           count: exaustoCount,
           percentage: totalCheckins > 0 ? Math.round((exaustoCount / totalCheckins) * 100) : 0,
           barColor: 'bg-amber-400',
@@ -575,8 +574,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         },
         {
           id: 'esperanca',
-          label: 'Esperança & Leveza',
-          emoji: '☀️',
+          label: 'Esperança e Leveza',
+          emoji: '',
           count: esperancaCount,
           percentage: totalCheckins > 0 ? Math.round((esperancaCount / totalCheckins) * 100) : 0,
           barColor: 'bg-emerald-400',
@@ -584,8 +583,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         },
         {
           id: 'preciso_luz',
-          label: 'Precisando de Luz / Colo',
-          emoji: '🆘',
+          label: 'Precisando de Luz e Colo',
+          emoji: '',
           count: luzCount,
           percentage: totalCheckins > 0 ? Math.round((luzCount / totalCheckins) * 100) : 0,
           barColor: 'bg-rose-400',
@@ -593,8 +592,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         },
         {
           id: 'celebrando',
-          label: 'Gratidão & Celebração',
-          emoji: '🎉',
+          label: 'Gratidão e Celebração',
+          emoji: '',
           count: celebrandoCount,
           percentage: totalCheckins > 0 ? Math.round((celebrandoCount / totalCheckins) * 100) : 0,
           barColor: 'bg-[#FFD166]',
@@ -2219,22 +2218,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       {/* TAB 3: 📊 TERMÔMETRO EMOCIONAL DA COMUNIDADE */}
       {activeAdminTab === 'analytics' && (
         <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+          <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
             <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
-                <TrendingUp className="w-5 h-5 text-[#FFD166]" />
-                Termômetro Emocional (Saúde da Comunidade)
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                Termômetro Emocional da Comunidade
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Métricas reais calculadas exclusivamente a partir de check-ins e interações de usuários cadastrados.
-              </p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={loadEmotionalAnalytics}
                 disabled={isLoadingAnalytics}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-50 shadow-sm"
                 title="Recarregar dados reais do termômetro"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isLoadingAnalytics ? 'animate-spin text-[#FF7F5B]' : ''}`} />
@@ -2250,7 +2245,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               <span className="text-xl sm:text-2xl font-black text-[#FF7F5B]">
                 {isLoadingAnalytics ? '...' : (emotionalStats?.totalActiveUsers ?? members.length).toLocaleString('pt-BR')}
               </span>
-              <span className="text-[10px] text-emerald-400 block">Perfis registrados reais</span>
+              <span className="text-[10px] text-emerald-400 block">Membros</span>
             </div>
 
             <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
@@ -2258,7 +2253,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               <span className="text-xl sm:text-2xl font-black text-[#38BDF8]">
                 {isLoadingAnalytics ? '...' : (emotionalStats?.totalPosts ?? 0).toLocaleString('pt-BR')}
               </span>
-              <span className="text-[10px] text-slate-400 block">Publicações ativas no feed</span>
+              <span className="text-[10px] text-slate-400 block">Publicações</span>
             </div>
 
             <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
@@ -2336,8 +2331,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           {/* Emotional Breakdown Progress */}
           <div className="bg-[#070D0F] p-6 rounded-2xl border border-white/10 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Heart className="w-4 h-4 text-[#E66795]" />
+              <h3 className="text-sm font-bold text-white">
                 Sentimentos Registrados nos Check-ins
               </h3>
               <span className="text-xs text-slate-400">
@@ -2356,9 +2350,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 {emotionalStats.breakdown.map(item => (
                   <div key={item.id} className="space-y-1.5">
                     <div className="flex justify-between font-bold">
-                      <span className={`flex items-center gap-1.5 ${item.textColor}`}>
-                        <span>{item.emoji}</span>
-                        <span>{item.label}</span>
+                      <span className={item.textColor}>
+                        {item.label}
                       </span>
                       <span className="text-slate-300">
                         {item.percentage}% ({item.count} {item.count === 1 ? 'registro' : 'registros'})
