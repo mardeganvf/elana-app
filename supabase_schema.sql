@@ -1014,3 +1014,38 @@ DELETE FROM public.emotional_checkins
 WHERE profile_id IS NULL 
    OR profile_id NOT IN (SELECT id FROM public.profiles);
 
+-- --------------------------------------------------------
+-- 36. TABELA DE REAÇÕES DA COMUNIDADE (ACOLHIMENTOS)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.community_reactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id UUID REFERENCES public.community_posts(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  reaction_key TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(post_id, user_id)
+);
+
+ALTER TABLE public.community_reactions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "reactions_select_auth" ON public.community_reactions;
+DROP POLICY IF EXISTS "reactions_insert_own" ON public.community_reactions;
+DROP POLICY IF EXISTS "reactions_update_own" ON public.community_reactions;
+DROP POLICY IF EXISTS "reactions_delete_own" ON public.community_reactions;
+
+CREATE POLICY "reactions_select_auth"
+  ON public.community_reactions FOR SELECT
+  USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "reactions_insert_own"
+  ON public.community_reactions FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "reactions_update_own"
+  ON public.community_reactions FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "reactions_delete_own"
+  ON public.community_reactions FOR DELETE
+  USING (auth.uid() = user_id);
+

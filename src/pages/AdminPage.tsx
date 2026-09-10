@@ -151,7 +151,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   };
 
   // 🗳️ Enquetes State
-  const { polls, createPoll, togglePollStatus, deletePost, refreshPosts } = useCommunity();
+  const { polls, createPoll, togglePollStatus, deletePost, refreshPosts, posts } = useCommunity();
   const [newPollTitle, setNewPollTitle] = useState('');
   const [newPollDesc, setNewPollDesc] = useState('');
   const [newPollOptions, setNewPollOptions] = useState<string[]>(['', '']);
@@ -361,14 +361,51 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       const totalActiveUsers = registered.length;
       const totalXpDistributed = registered.reduce((acc, p) => acc + (p.xp || 0), 0);
 
-      // 2. Obter contagem de reações e comentários em posts de usuários registrados
-      const { data: postsData } = await supabase
-        .from('community_posts')
-        .select('id, author_id, likes_count, comments_count')
-        .not('author_id', 'is', null);
-      
-      const realPosts = (postsData || []).filter(p => p.author_id && registeredIds.has(p.author_id));
-      const totalAcolhimentos = realPosts.reduce((acc, p) => acc + (p.likes_count || 0) + (p.comments_count || 0), 0);
+      // 2. Obter contagem de reações e comentários reais (Acolhimentos na Comunidade)
+      let currentPosts = posts;
+      if (!currentPosts || currentPosts.length === 0) {
+        try {
+          const cached = localStorage.getItem('elana_community_posts_cache');
+          if (cached) currentPosts = JSON.parse(cached);
+        } catch {}
+      }
+
+      // a) Contabilizar comentários únicos (Supabase + Contexto local)
+      const { data: commentsData } = await supabase
+        .from('community_comments')
+        .select('id, author_id, post_id');
+
+      const commentIds = new Set<string>();
+      (commentsData || []).forEach(c => {
+        if (c.id) commentIds.add(c.id);
+      });
+      (currentPosts || []).forEach(p => {
+        (p.comments || []).forEach(c => {
+          if (c.id) commentIds.add(c.id);
+        });
+      });
+      const totalComments = commentIds.size;
+
+      // b) Contabilizar reações (Supabase + Contexto local)
+      let remoteReactionsCount = 0;
+      try {
+        const { data: reactionsData } = await supabase
+          .from('community_reactions')
+          .select('id');
+        if (reactionsData) remoteReactionsCount = reactionsData.length;
+      } catch {}
+
+      let localReactionsCount = 0;
+      (currentPosts || []).forEach(p => {
+        if (p.reactions && typeof p.reactions === 'object') {
+          Object.values(p.reactions).forEach(count => {
+            if (typeof count === 'number') localReactionsCount += count;
+          });
+        }
+      });
+
+      const totalReactions = Math.max(remoteReactionsCount, localReactionsCount);
+      const totalAcolhimentos = totalComments + totalReactions;
 
       // 3. Obter check-ins emocionais de usuários registrados
       const { data: checkinsData } = await supabase
@@ -557,6 +594,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     loadMembers();
     loadEmotionalAnalytics();
   }, []);
+
+  // Recalcula métricas do termômetro sempre que a aba for selecionada ou houver novas reações/comentários
+  useEffect(() => {
+    if (activeAdminTab === 'analytics') {
+      loadEmotionalAnalytics();
+    }
+  }, [activeAdminTab, posts]);
 
   // 🛟 SOS Ticket Handlers
   const handleSendSosReply = async () => {

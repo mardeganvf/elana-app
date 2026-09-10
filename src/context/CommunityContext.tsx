@@ -902,11 +902,14 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         emotional_intention: payload.emotionalIntention || null,
         is_anonymous: isAnonymous
       }])
-      .then(({ error }) => {
+      .select('id')
+      .single()
+      .then(({ data, error }) => {
         if (error) {
           console.warn('Supabase post insert notice:', error.message);
-        } else {
-          console.log('✅ Post salvo com sucesso no Supabase!');
+        } else if (data?.id) {
+          console.log('✅ Post salvo com sucesso no Supabase com ID:', data.id);
+          setPosts(prev => prev.map(p => p.id === newPost.id ? { ...p, id: data.id } : p));
         }
       });
 
@@ -978,6 +981,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     }
 
+    let isNowActive = false;
+
     setPosts(prev => prev.map(post => {
       if (post.id === postId) {
         const currentUserReactions = post.userReactions || {};
@@ -997,6 +1002,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (!isAlreadyReacted) {
           updatedReactions[reactionKey] = (updatedReactions[reactionKey] || 0) + 1;
           updatedUserReactions[reactionKey] = true;
+          isNowActive = true;
         }
 
         return {
@@ -1007,6 +1013,31 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       return post;
     }));
+
+    // Sincronizar com o Supabase de forma assíncrona se logado e post com UUID válido
+    if (user?.id && postId.length > 20) {
+      if (isNowActive) {
+        supabase
+          .from('community_reactions')
+          .upsert({
+            post_id: postId,
+            user_id: user.id,
+            reaction_key: reactionKey
+          }, { onConflict: 'post_id,user_id' })
+          .then(({ error }) => {
+            if (error) console.warn('Supabase reaction notice:', error.message);
+          });
+      } else {
+        supabase
+          .from('community_reactions')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id)
+          .then(({ error }) => {
+            if (error) console.warn('Supabase reaction notice:', error.message);
+          });
+      }
+    }
   };
 
   const toggleCommentReaction = (postId: string, commentId: string, reactionKey: string) => {
