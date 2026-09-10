@@ -1324,23 +1324,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: formattedTime
     };
 
-    let updatedTicket: SOSTicketResponse | null = null;
+    const currentMessages: SOSMessage[] = [...(sosResponse?.messages || []), newMsg];
+    const nextTicket: SOSTicketResponse = {
+      ...(sosResponse || { userMessage: messageText.trim(), isRead: true }),
+      id: ticketId,
+      ticketId,
+      status: 'pendente',
+      messages: currentMessages
+    };
 
-    setSosResponse(prev => {
-      if (!prev) return null;
-      const updatedMessages = [...(prev.messages || []), newMsg];
-      updatedTicket = {
-        ...prev,
-        status: 'pendente',
-        messages: updatedMessages
-      };
-      localStorage.setItem('elana_sos_ticket_response', JSON.stringify(updatedTicket));
-      return updatedTicket;
-    });
+    setSosResponse(nextTicket);
+    localStorage.setItem('elana_sos_ticket_response', JSON.stringify(nextTicket));
 
     try {
       if (ticketId && ticketId.length > 20) {
-        const currentMessages = updatedTicket?.messages || [newMsg];
         await supabase
           .from('sos_tickets')
           .update({
