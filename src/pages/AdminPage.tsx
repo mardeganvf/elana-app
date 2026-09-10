@@ -3087,27 +3087,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               </button>
             </div>
 
-            {/* BANNER DESCRITIVO DA CATEGORIA ATIVA */}
-            <div className="p-4 rounded-2xl bg-[#070D0F] border border-white/10 flex items-start gap-3">
-              <Sparkles className="w-4 h-4 text-[#FF7F5B] shrink-0 mt-0.5" />
-              <div className="text-xs text-slate-300 leading-relaxed space-y-1">
-                {activePermissionRoleTab === 'membro' && (
-                  <p>
-                    <strong>Perfil Usuário:</strong> Membros que consomem trilhas de aulas, realizam check-ins no Termômetro Emocional e participam de publicações e enquetes comunitárias.
-                  </p>
-                )}
-                {activePermissionRoleTab === 'guia' && (
+            {/* BANNER INFORMATIVO (Apenas para perfil Guia) */}
+            {activePermissionRoleTab === 'guia' && (
+              <div className="p-4 rounded-2xl bg-[#070D0F] border border-white/10 flex items-start gap-3">
+                <Sparkles className="w-4 h-4 text-[#FF7F5B] shrink-0 mt-0.5" />
+                <div className="text-xs text-slate-300 leading-relaxed space-y-1">
                   <p>
                     <strong>Perfil Guia:</strong> Membros qualificados com escuta ativa. <span className="text-[#c2d689] font-bold">Você pode liberar acesso pontual a funções de gestão</span> (como responder a chamados SOS e moderar postagens flageadas pela IA) sem conceder controle total da plataforma.
                   </p>
-                )}
-                {activePermissionRoleTab === 'admin' && (
-                  <p>
-                    <strong>Perfil Administrador:</strong> Governança integral da plataforma, controle de conteúdos, moderação, gestão de membros e segurança das permissões.
-                  </p>
-                )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* LISTAGEM GRANULAR DE PERMISSÕES DIVIDIDA EM 4 BLOCOS */}
             <div className="space-y-6">
