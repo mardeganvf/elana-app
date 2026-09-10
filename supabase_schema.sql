@@ -987,3 +987,30 @@ DROP POLICY IF EXISTS "Allow all on moderation_rejected_examples" ON public.mode
 CREATE POLICY "Allow all on moderation_rejected_examples" ON public.moderation_rejected_examples
   FOR ALL USING (true) WITH CHECK (true);
 
+-- --------------------------------------------------------
+-- 35. PURGE DUMMY DATA & REAL EMOTIONAL THERMOMETER ACCESS
+-- --------------------------------------------------------
+-- Permite leitura de check-ins emocionais para usuários autenticados (para agregar métricas comunitárias e termômetro emocional)
+DROP POLICY IF EXISTS "checkins_select_own" ON public.emotional_checkins;
+DROP POLICY IF EXISTS "checkins_select_auth" ON public.emotional_checkins;
+CREATE POLICY "checkins_select_auth"
+  ON public.emotional_checkins FOR SELECT
+  USING (auth.uid() IS NOT NULL);
+
+-- Limpeza de posts dummies e dados órfãos sem autor cadastrado em profiles
+DELETE FROM public.community_comments 
+WHERE author_id IS NULL 
+   OR author_id NOT IN (SELECT id FROM public.profiles)
+   OR post_id IN (
+     SELECT id FROM public.community_posts 
+     WHERE author_id IS NULL OR author_id NOT IN (SELECT id FROM public.profiles)
+   );
+
+DELETE FROM public.community_posts 
+WHERE author_id IS NULL 
+   OR author_id NOT IN (SELECT id FROM public.profiles);
+
+DELETE FROM public.emotional_checkins 
+WHERE profile_id IS NULL 
+   OR profile_id NOT IN (SELECT id FROM public.profiles);
+

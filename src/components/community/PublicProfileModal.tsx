@@ -223,12 +223,13 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
           fetched = await fetchUserPosts(profile.id);
         }
 
-        // 2. Se for autor mock ou não retornou nenhum pelo ID, busca em allCommunityPosts por ID ou Nome
+        // 2. Se não retornou nenhum pelo ID, busca em allCommunityPosts por ID ou Nome de usuário registrado
         if (fetched.length === 0) {
           const targetName = profile.name.trim().toLowerCase();
           fetched = allCommunityPosts.filter(p => 
             !p.isAnonymous && 
             p.status !== 'removido_usuario' &&
+            p.authorId && p.authorId.length > 20 && !p.authorId.startsWith('u-') &&
             (
               (profile.id && p.authorId === profile.id) ||
               (p.authorName && p.authorName.trim().toLowerCase() === targetName)

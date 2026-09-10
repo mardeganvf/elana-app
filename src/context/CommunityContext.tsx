@@ -423,7 +423,14 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(sanitizePost);
+          // Filtrar estritamente apenas posts criados por usuários registrados (com authorId válido e sem mock 'u-')
+          const validPosts = parsed
+            .filter(p => p && p.authorId && p.authorId.length > 20 && !p.authorId.startsWith('u-') && p.status !== 'removido_usuario')
+            .map(sanitizePost);
+          if (validPosts.length !== parsed.length) {
+            localStorage.setItem('elana_community_posts_cache', JSON.stringify(validPosts));
+          }
+          return validPosts;
         }
       }
     } catch {}
@@ -532,6 +539,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const { data, error } = await supabase
         .from('community_posts')
         .select('*, community_comments(*)')
+        .not('author_id', 'is', null)
         .order('created_at', { ascending: false })
         .range(0, PAGE_SIZE - 1);
 
@@ -542,13 +550,19 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       if (data) {
         const remotePosts: CommunityPost[] = data
+          .filter(p => p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-'))
           .map(mapPostFromDb)
           .filter(p => p.status !== 'removido_usuario');
 
         setPosts(prev => {
           const remoteIds = new Set(remotePosts.map(p => p.id));
-          // Preserva posts criados localmente que ainda não foram sincronizados
-          const localOnly = prev.filter(p => !remoteIds.has(p.id) && p.status !== 'removido_usuario');
+          // Preserva APENAS posts locais do usuário registrado atual que ainda não sincronizaram (descarta qualquer post dummy anterior)
+          const localOnly = prev.filter(p => 
+            !remoteIds.has(p.id) && 
+            user?.id && 
+            p.authorId === user.id && 
+            p.status !== 'removido_usuario'
+          );
 
           // Mescla comentários de posts locais com comentários remotos
           const mergedRemote = remotePosts.map(rPost => {
@@ -558,7 +572,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             }
             const rComments = rPost.comments || [];
             const rCommentIds = new Set(rComments.map(c => c.id));
-            const extraLocalComments = localPost.comments.filter(c => !rCommentIds.has(c.id));
+            const extraLocalComments = localPost.comments.filter(c => 
+              !rCommentIds.has(c.id) && 
+              c.authorId && 
+              !c.authorId.startsWith('u-')
+            );
             return {
               ...rPost,
               comments: [...rComments, ...extraLocalComments]
@@ -585,6 +603,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const { data, error } = await supabase
         .from('community_posts')
         .select('*, community_comments(*)')
+        .not('author_id', 'is', null)
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -595,6 +614,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       if (data && data.length > 0) {
         const newPosts: CommunityPost[] = data
+          .filter(p => p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-'))
           .map(mapPostFromDb)
           .filter(p => p.status !== 'removido_usuario');
         setPosts(prev => {
@@ -1320,6 +1340,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       if (data) {
         const remoteUserPosts = data
+          .filter(p => p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-'))
           .map(mapPostFromDb)
           .filter(p => p.status !== 'removido_usuario')
           .map(sanitizePost);

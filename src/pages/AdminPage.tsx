@@ -29,6 +29,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Power,
+  RefreshCw,
   X
 } from 'lucide-react';
 import { useAuth, isAdminUser } from '../context/AuthContext';
@@ -87,6 +88,24 @@ interface MemberUser {
   xp: number;
   joinedDays: number;
   bio?: string;
+}
+
+interface EmotionStatBreakdown {
+  id: string;
+  label: string;
+  emoji: string;
+  count: number;
+  percentage: number;
+  barColor: string;
+  textColor: string;
+}
+
+interface EmotionalStats {
+  totalActiveUsers: number;
+  totalXpDistributed: number;
+  totalAcolhimentos: number;
+  totalCheckins: number;
+  breakdown: EmotionStatBreakdown[];
 }
 
 export interface AdminPageProps {
@@ -232,6 +251,263 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   // 👥 Members State
   const [members, setMembers] = useState<MemberUser[]>([]);
 
+  // 📊 Termômetro Emocional Real State
+  const [emotionalStats, setEmotionalStats] = useState<EmotionalStats | null>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+  const [isPurgingDummies, setIsPurgingDummies] = useState(false);
+
+  // 🛡️ Moderation Loader - estritamente posts de usuários reais registrados
+  const loadModeration = async () => {
+    try {
+      const approvedIds = getApprovedPostIds();
+
+      // 1. Carregar posts que possuem autor vinculado
+      const { data, error } = await supabase
+        .from('community_posts')
+        .select('*')
+        .not('author_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.warn('Erro ao carregar moderação do Supabase:', error);
+        return;
+      }
+
+      // 2. Carregar denúncias de usuários agrupadas por post
+      const { data: reportsData } = await supabase
+        .from('community_reports')
+        .select('content_id, reason')
+        .eq('content_type', 'post');
+
+      // Mapear content_id → { count, reasons }
+      const reportMap: Record<string, { count: number; reasons: string[] }> = {};
+      if (reportsData) {
+        for (const r of reportsData) {
+          if (!reportMap[r.content_id]) reportMap[r.content_id] = { count: 0, reasons: [] };
+          reportMap[r.content_id].count++;
+          if (!reportMap[r.content_id].reasons.includes(r.reason)) {
+            reportMap[r.content_id].reasons.push(r.reason);
+          }
+        }
+      }
+
+      // Filtrar estritamente apenas posts criados por usuários com IDs válidos (ignora dummies 'u-1', etc.)
+      const validPosts = (data || []).filter(p => 
+        p.author_id && 
+        p.author_id.length > 20 && 
+        !p.author_id.startsWith('u-') && 
+        p.status !== 'removido_usuario'
+      );
+
+      if (validPosts.length > 0) {
+        const items: ModerationItem[] = validPosts.map(p => {
+          const isPersistedApproved = p.category === 'aprovado' || approvedIds.has(p.id);
+          const sensitivityCheck = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
+          const isExplicitlyFlagged = p.status === 'sob_moderacao' || p.category === 'sob_moderacao';
+          const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
+          const postReports = reportMap[p.id];
+
+          let flagReason = 'Conteúdo livre';
+          if (postReports && postReports.count > 0) {
+            flagReason = `🚩 ${postReports.count} denúncia${postReports.count > 1 ? 's' : ''} de usuários: ${postReports.reasons.join(', ')}`;
+          } else if (sensitivityCheck.isFlagged) {
+            flagReason = sensitivityCheck.flagReason || `Termo sensível: "${sensitivityCheck.matchedWord}"`;
+          } else if (isExplicitlyFlagged) {
+            flagReason = 'Retido para moderação preventiva';
+          }
+
+          let status: 'pendente' | 'aprovado' | 'rejeitado' = 'aprovado';
+          if (isPersistedApproved) {
+            status = 'aprovado';
+          } else if (isSensitive || (postReports && postReports.count >= 3)) {
+            status = 'pendente';
+          } else {
+            status = 'aprovado';
+          }
+
+          return {
+            id: p.id,
+            authorName: p.author_name || 'Anônimo',
+            authorAvatar: p.author_avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+            roomName: p.transversal_room_id || p.journey_id || 'Comunidade Geral',
+            content: p.title ? `[${p.title}] ${p.content}` : p.content,
+            flagReason,
+            createdAt: new Date(p.created_at).toLocaleString('pt-BR'),
+            status,
+            reportCount: postReports?.count || p.report_count || 0
+          };
+        });
+
+        setModItems(items);
+      } else {
+        setModItems([]);
+      }
+    } catch (err) {
+      console.warn('Falha ao processar fila de moderação:', err);
+    }
+  };
+
+  // 📊 Analytics Loader - cálculo 100% dinâmico derivado de perfis cadastrados e check-ins reais
+  const loadEmotionalAnalytics = async () => {
+    setIsLoadingAnalytics(true);
+    try {
+      // 1. Obter membros registrados
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, xp');
+      const registered = profilesData || [];
+      const registeredIds = new Set(registered.map(p => p.id));
+      const totalActiveUsers = registered.length;
+      const totalXpDistributed = registered.reduce((acc, p) => acc + (p.xp || 0), 0);
+
+      // 2. Obter contagem de reações e comentários em posts de usuários registrados
+      const { data: postsData } = await supabase
+        .from('community_posts')
+        .select('id, author_id, likes_count, comments_count')
+        .not('author_id', 'is', null);
+      
+      const realPosts = (postsData || []).filter(p => p.author_id && registeredIds.has(p.author_id));
+      const totalAcolhimentos = realPosts.reduce((acc, p) => acc + (p.likes_count || 0) + (p.comments_count || 0), 0);
+
+      // 3. Obter check-ins emocionais de usuários registrados
+      const { data: checkinsData } = await supabase
+        .from('emotional_checkins')
+        .select('id, profile_id, emotion_id, emotion_label, created_at')
+        .not('profile_id', 'is', null);
+
+      const realCheckins = (checkinsData || []).filter(c => c.profile_id && registeredIds.has(c.profile_id));
+      const totalCheckins = realCheckins.length;
+
+      let exaustoCount = 0;
+      let esperancaCount = 0;
+      let luzCount = 0;
+      let celebrandoCount = 0;
+
+      for (const c of realCheckins) {
+        const eid = (c.emotion_id || '').toLowerCase();
+        if (eid === 'exausto' || eid === 'sem_energia' || eid === 'cansaco') {
+          exaustoCount++;
+        } else if (eid === 'esperanca' || eid === 'leveza') {
+          esperancaCount++;
+        } else if (eid === 'preciso_luz' || eid === 'precisando_luz' || eid === 'ajuda' || eid === 'sobrecarga') {
+          luzCount++;
+        } else if (eid === 'celebrando' || eid === 'gratidao' || eid === 'vitoria') {
+          celebrandoCount++;
+        } else {
+          exaustoCount++;
+        }
+      }
+
+      const breakdown: EmotionStatBreakdown[] = [
+        {
+          id: 'exausto',
+          label: 'Cansaço & Exaustão',
+          emoji: '🪫',
+          count: exaustoCount,
+          percentage: totalCheckins > 0 ? Math.round((exaustoCount / totalCheckins) * 100) : 0,
+          barColor: 'bg-amber-400',
+          textColor: 'text-amber-300'
+        },
+        {
+          id: 'esperanca',
+          label: 'Esperança & Leveza',
+          emoji: '☀️',
+          count: esperancaCount,
+          percentage: totalCheckins > 0 ? Math.round((esperancaCount / totalCheckins) * 100) : 0,
+          barColor: 'bg-emerald-400',
+          textColor: 'text-emerald-300'
+        },
+        {
+          id: 'preciso_luz',
+          label: 'Precisando de Luz / Colo',
+          emoji: '🆘',
+          count: luzCount,
+          percentage: totalCheckins > 0 ? Math.round((luzCount / totalCheckins) * 100) : 0,
+          barColor: 'bg-rose-400',
+          textColor: 'text-rose-300'
+        },
+        {
+          id: 'celebrando',
+          label: 'Gratidão & Celebração',
+          emoji: '🎉',
+          count: celebrandoCount,
+          percentage: totalCheckins > 0 ? Math.round((celebrandoCount / totalCheckins) * 100) : 0,
+          barColor: 'bg-[#FFD166]',
+          textColor: 'text-[#FFD166]'
+        }
+      ];
+
+      setEmotionalStats({
+        totalActiveUsers,
+        totalXpDistributed,
+        totalAcolhimentos,
+        totalCheckins,
+        breakdown
+      });
+    } catch (err) {
+      console.warn('Erro ao carregar métricas emocionais:', err);
+    } finally {
+      setIsLoadingAnalytics(false);
+    }
+  };
+
+  // 🧹 Ação administrativa para zerar posts dummies e limpar dados órfãos
+  const handlePurgeDummyData = async () => {
+    if (!window.confirm('Tem certeza que deseja zerar os posts dummies e limpar o termômetro emocional de dados de teste? Apenas registros de usuários cadastrados serão preservados.')) {
+      return;
+    }
+    setIsPurgingDummies(true);
+    try {
+      // 1. Limpar caches do navegador
+      localStorage.removeItem('elana_community_posts_cache');
+      localStorage.removeItem('elana_community_posts');
+
+      // 2. Buscar IDs de usuários cadastrados no banco
+      const { data: profs } = await supabase.from('profiles').select('id');
+      const registeredIds = (profs || []).map(p => p.id);
+
+      // 3. Deletar posts sem author_id
+      await supabase.from('community_posts').delete().is('author_id', null);
+
+      // 4. Deletar check-ins sem profile_id
+      await supabase.from('emotional_checkins').delete().is('profile_id', null);
+
+      // 5. Deletar posts com author_id dummy ou não cadastrado
+      const { data: allPosts } = await supabase.from('community_posts').select('id, author_id');
+      if (allPosts && allPosts.length > 0) {
+        const dummyPostIds = allPosts
+          .filter(p => !p.author_id || !registeredIds.includes(p.author_id) || p.author_id.startsWith('u-') || p.author_id.length <= 20)
+          .map(p => p.id);
+        if (dummyPostIds.length > 0) {
+          await supabase.from('community_comments').delete().in('post_id', dummyPostIds);
+          await supabase.from('community_posts').delete().in('id', dummyPostIds);
+        }
+      }
+
+      // 6. Deletar check-ins com profile_id dummy ou não cadastrado
+      const { data: allCheckins } = await supabase.from('emotional_checkins').select('id, profile_id');
+      if (allCheckins && allCheckins.length > 0) {
+        const dummyCheckinIds = allCheckins
+          .filter(c => !c.profile_id || !registeredIds.includes(c.profile_id) || c.profile_id.startsWith('u-') || c.profile_id.length <= 20)
+          .map(c => c.id);
+        if (dummyCheckinIds.length > 0) {
+          await supabase.from('emotional_checkins').delete().in('id', dummyCheckinIds);
+        }
+      }
+
+      await refreshPosts();
+      await loadModeration();
+      await loadEmotionalAnalytics();
+      showToast('success', 'Dados de testes e posts dummies zerados com sucesso!');
+    } catch (err) {
+      console.error('Erro ao zerar dummies:', err);
+      showToast('error', 'Erro ao zerar dados de testes.');
+    } finally {
+      setIsPurgingDummies(false);
+    }
+  };
+
   useEffect(() => {
     const loadTickets = async () => {
       const { data } = await supabase
@@ -255,88 +531,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       }
     };
     loadTickets();
-
-    const loadModeration = async () => {
-      try {
-        const approvedIds = getApprovedPostIds();
-
-        // Carregar posts
-        const { data, error } = await supabase
-          .from('community_posts')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(50);
-
-        if (error) {
-          console.warn('Erro ao carregar moderação do Supabase:', error);
-          return;
-        }
-
-        // Carregar denúncias de usuários agrupadas por post
-        const { data: reportsData } = await supabase
-          .from('community_reports')
-          .select('content_id, reason')
-          .eq('content_type', 'post');
-
-        // Mapear content_id → { count, reasons }
-        const reportMap: Record<string, { count: number; reasons: string[] }> = {};
-        if (reportsData) {
-          for (const r of reportsData) {
-            if (!reportMap[r.content_id]) reportMap[r.content_id] = { count: 0, reasons: [] };
-            reportMap[r.content_id].count++;
-            if (!reportMap[r.content_id].reasons.includes(r.reason)) {
-              reportMap[r.content_id].reasons.push(r.reason);
-            }
-          }
-        }
-
-        if (data && data.length > 0) {
-          const items: ModerationItem[] = data.map(p => {
-            const isPersistedApproved = p.category === 'aprovado' || approvedIds.has(p.id);
-            const sensitivityCheck = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
-            const isExplicitlyFlagged = p.status === 'sob_moderacao' || p.category === 'sob_moderacao';
-            const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
-            const postReports = reportMap[p.id];
-
-            let flagReason = 'Conteúdo livre';
-            if (postReports && postReports.count > 0) {
-              flagReason = `🚩 ${postReports.count} denúncia${postReports.count > 1 ? 's' : ''} de usuários: ${postReports.reasons.join(', ')}`;
-            } else if (sensitivityCheck.isFlagged) {
-              flagReason = sensitivityCheck.flagReason || `Termo sensível: "${sensitivityCheck.matchedWord}"`;
-            } else if (isExplicitlyFlagged) {
-              flagReason = 'Retido para moderação preventiva';
-            }
-
-            let status: 'pendente' | 'aprovado' | 'rejeitado' = 'aprovado';
-            if (isPersistedApproved) {
-              status = 'aprovado';
-            } else if (isSensitive || (postReports && postReports.count >= 3)) {
-              status = 'pendente';
-            } else {
-              status = 'aprovado';
-            }
-
-            return {
-              id: p.id,
-              authorName: p.author_name || 'Anônimo',
-              authorAvatar: p.author_avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-              roomName: p.transversal_room_id || p.journey_id || 'Comunidade Geral',
-              content: p.title ? `[${p.title}] ${p.content}` : p.content,
-              flagReason,
-              createdAt: new Date(p.created_at).toLocaleString('pt-BR'),
-              status,
-              reportCount: postReports?.count || p.report_count || 0
-            };
-          });
-
-          setModItems(items);
-        } else {
-          setModItems([]);
-        }
-      } catch (err) {
-        console.warn('Falha ao processar fila de moderação:', err);
-      }
-    };
     loadModeration();
     loadLearnedExamples();
 
@@ -361,6 +555,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       }
     };
     loadMembers();
+    loadEmotionalAnalytics();
   }, []);
 
   // 🛟 SOS Ticket Handlers
@@ -1602,86 +1797,107 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       {/* TAB 3: 📊 TERMÔMETRO EMOCIONAL DA COMUNIDADE */}
       {activeAdminTab === 'analytics' && (
         <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
                 <TrendingUp className="w-5 h-5 text-[#FFD166]" />
                 Termômetro Emocional (Saúde da Comunidade)
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Acompanhe o estado emocional predominante dos pais para planejar novos conteúdos e encontros.
+                Métricas reais calculadas exclusivamente a partir de check-ins e interações de usuários cadastrados.
               </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={loadEmotionalAnalytics}
+                disabled={isLoadingAnalytics}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-50"
+                title="Recarregar dados reais do termômetro"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingAnalytics ? 'animate-spin text-[#FF7F5B]' : ''}`} />
+                <span>Atualizar</span>
+              </button>
+              <button
+                type="button"
+                onClick={handlePurgeDummyData}
+                disabled={isPurgingDummies}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-xs font-semibold text-rose-300 hover:text-rose-200 transition-all cursor-pointer disabled:opacity-50"
+                title="Excluir postagens dummies de testes e limpar dados órfãos"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                <span>{isPurgingDummies ? 'Limpando...' : 'Zerar Dummies'}</span>
+              </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 text-center space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Usuários Ativos</span>
-              <span className="text-2xl font-black text-[#FF7F5B]">1.248</span>
-              <span className="text-[10px] text-emerald-400 block">+14% este mês</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Usuários Cadastrados</span>
+              <span className="text-2xl font-black text-[#FF7F5B]">
+                {isLoadingAnalytics ? '...' : (emotionalStats?.totalActiveUsers ?? members.length).toLocaleString('pt-BR')}
+              </span>
+              <span className="text-[10px] text-emerald-400 block">Perfis registrados reais</span>
             </div>
 
             <div className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 text-center space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pontos de Afeto Distribuídos</span>
-              <span className="text-2xl font-black text-[#FFD166]">184.920</span>
-              <span className="text-[10px] text-slate-400 block">Recompensas acumuladas</span>
+              <span className="text-2xl font-black text-[#FFD166]">
+                {isLoadingAnalytics ? '...' : (emotionalStats?.totalXpDistributed ?? 0).toLocaleString('pt-BR')}
+              </span>
+              <span className="text-[10px] text-slate-400 block">XP acumulado por usuários</span>
             </div>
 
             <div className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 text-center space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Acolhimentos na Comunidade</span>
-              <span className="text-2xl font-black text-[#8A9A5B]">8.410</span>
-              <span className="text-[10px] text-emerald-400 block">Reações de carinho trocadas</span>
+              <span className="text-2xl font-black text-[#8A9A5B]">
+                {isLoadingAnalytics ? '...' : (emotionalStats?.totalAcolhimentos ?? 0).toLocaleString('pt-BR')}
+              </span>
+              <span className="text-[10px] text-emerald-400 block">Reações e comentários reais</span>
             </div>
           </div>
 
           {/* Emotional Breakdown Progress */}
           <div className="bg-[#070D0F] p-6 rounded-2xl border border-white/10 space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Heart className="w-4 h-4 text-[#E66795]" />
-              Sentimentos Mais Registrados nos Check-ins (Últimos 7 dias)
-            </h3>
-
-            <div className="space-y-3 text-xs">
-              <div className="space-y-1">
-                <div className="flex justify-between font-bold">
-                  <span className="text-amber-300">😫 Cansaço & Exaustão</span>
-                  <span className="text-slate-300">42% (524 mães/pais)</span>
-                </div>
-                <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-400 rounded-full" style={{ width: '42%' }} />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between font-bold">
-                  <span className="text-emerald-300">🌅 Esperança & Leveza</span>
-                  <span className="text-slate-300">28% (349 mães/pais)</span>
-                </div>
-                <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-400 rounded-full" style={{ width: '28%' }} />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between font-bold">
-                  <span className="text-rose-300">🛑 Sobrecarga Materna/Paternal</span>
-                  <span className="text-slate-300">18% (224 mães/pais)</span>
-                </div>
-                <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-rose-400 rounded-full" style={{ width: '18%' }} />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between font-bold">
-                  <span className="text-[#FFD166]">🌸 Gratidão & Conexão</span>
-                  <span className="text-slate-300">12% (151 mães/pais)</span>
-                </div>
-                <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#FFD166] rounded-full" style={{ width: '12%' }} />
-                </div>
-              </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Heart className="w-4 h-4 text-[#E66795]" />
+                Sentimentos Registrados nos Check-ins
+              </h3>
+              <span className="text-xs text-slate-400">
+                {emotionalStats ? `${emotionalStats.totalCheckins} check-in${emotionalStats.totalCheckins === 1 ? '' : 's'} registrado${emotionalStats.totalCheckins === 1 ? '' : 's'}` : 'Carregando...'}
+              </span>
             </div>
+
+            {(!emotionalStats || emotionalStats.totalCheckins === 0) ? (
+              <div className="py-8 text-center space-y-2 border border-dashed border-white/10 rounded-xl bg-white/[0.02]">
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  Ainda não há check-ins emocionais registrados por usuários cadastrados. Assim que os membros registrarem seus sentimentos diários na Comunidade, as porcentagens aparecerão aqui automaticamente.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4 text-xs">
+                {emotionalStats.breakdown.map(item => (
+                  <div key={item.id} className="space-y-1.5">
+                    <div className="flex justify-between font-bold">
+                      <span className={`flex items-center gap-1.5 ${item.textColor}`}>
+                        <span>{item.emoji}</span>
+                        <span>{item.label}</span>
+                      </span>
+                      <span className="text-slate-300">
+                        {item.percentage}% ({item.count} {item.count === 1 ? 'registro' : 'registros'})
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${item.barColor} rounded-full transition-all duration-500`} 
+                        style={{ width: `${Math.max(item.percentage, item.count > 0 ? 3 : 0)}%` }} 
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}
