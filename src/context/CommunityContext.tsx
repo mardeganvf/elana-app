@@ -137,6 +137,13 @@ export const OFFENSIVE_PATTERNS = [
   { pattern: /\b(?:mimimi|frescura|vitimismo|para\s+de\s+drama|choradeira)\b/i, reason: 'Minimização agressiva / Julgamento' },
   { pattern: /\b(?:culpa\s+sua|a\s+culpa\s+e\s+toda\s+sua|voce\s+procurou|bem\s+feito)\b/i, reason: 'Culpabilização agressiva' },
 
+  // Depreciação Destrutiva do Cônjuge / Parceiro(a) e Desqualificação de Capacidade
+  { pattern: /\b(?:(?:minh[ao]|meu)\s+)?(?:mulher|esposa|marido|parceir[ao]|companheir[ao])\s+(?:e\s+|ta\s+|eh\s+)?(?:uma\s+|um\s+)?(?:pessim[ao]|horrivel|ruim|incompetente|incapaz|de\s+merda)\b/i, reason: 'Depreciação destrutiva do cônjuge/parceiro(a)' },
+  { pattern: /\b(?:pessim[ao]|horrivel|ruim|incompetente|incapaz|de\s+merda)\s+(?:mulher|esposa|marido|parceir[ao]|companheir[ao])\b/i, reason: 'Depreciação destrutiva do cônjuge/parceiro(a)' },
+  { pattern: /\b(?:(?:minh[ao]|meu)\s+)?(?:mulher|esposa|marido|parceir[ao]|companheir[ao])\s+nao\s+sabe\s+(?:o\s+que\s+faz|nada|cuidar|fazer\s+nada)\b/i, reason: 'Desqualificação agressiva do parceiro(a)' },
+  { pattern: /\b(?:voce|ele|ela)\s+nao\s+sabe\s+(?:o\s+que\s+faz|nada|cuidar|fazer\s+nada)\b/i, reason: 'Desqualificação agressiva de capacidade' },
+  { pattern: /\bnao\s+sabe\s+o\s+que\s+faz\b/i, reason: 'Desqualificação agressiva de conduta' },
+
   // Tom Exageradamente Impositivo / Intimidatório
   { pattern: /\bcala(?:r)?\s+(?:a\s+|sua\s+|essa\s+)?boca\b/i, reason: 'Tom impositivo: Mandato de silenciamento' },
   { pattern: /\bcala\s+e\s+escuta\b/i, reason: 'Tom impositivo: Silenciamento agressivo' },
@@ -186,6 +193,10 @@ export const OFFENSIVE_PATTERNS = [
 export const SHAMING_KEYWORDS = [
   'irresponsavel', 'irresponsável', 'relaxada', 'preguicosa', 'preguiçosa',
   'pessima mae', 'péssima mãe', 'pessimo pai', 'péssimo pai', 'mae ruim', 'mãe ruim',
+  'pessima mulher', 'péssima mulher', 'mulher pessima', 'mulher péssima',
+  'pessima esposa', 'péssima esposa', 'esposa pessima', 'esposa péssima',
+  'pessimo marido', 'péssimo marido', 'marido pessimo', 'marido péssimo',
+  'nao sabe o que faz', 'não sabe o que faz',
   'culpa sua', 'deveria ter vergonha', 'sem nocao', 'sem noção', 'coitado do bebe',
   'coitado do bebê', 'absurdo fazer isso', 'mae louca', 'mãe louca', 'negligente',
   'egoista', 'egoísta', 'burra', 'idiota', 'mimimi', 'frescura',

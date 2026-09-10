@@ -24,6 +24,7 @@ Categorias de classificação:
 
 2. "antijulgamento":
    - Crítica pesada, humilhação ou mom-shaming ("péssima mãe", "mãe de merda", "irresponsável", "negligente", "coitado do seu bebê", "deveria ter vergonha").
+   - Depreciação destrutiva, ataques conjugais ou desqualificação agressiva do cônjuge/parceiro(a) ("minha mulher é péssima", "meu marido é inútil", "péssima esposa", "não sabe o que faz").
    - Xingamentos, agressões verbais ou baixo calão hostil.
    - Tom exageradamente impositivo, autoritário ou mandatos de silenciamento ("cala a boca", "você é obrigada", "engole o choro", "não tem direito de reclamar").
    - Violação de consentimento, violência sexual, abuso ou estupro (inclusive conjugal ou de vulnerável), como manter relações sexuais ou toques íntimos com pessoa dormindo, desacordada, inconsciente, sob efeito de substâncias, sem consentimento mútuo ou contra sua vontade expressa ou tácita.
@@ -221,7 +222,7 @@ Deno.serve(async (req) => {
     }
 
     // Modelos oficiais Gemini recomendados pela Google API
-    const models = ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.7-flash'];
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
     const allErrors: any[] = [];
     let lastError: any = null;
     let parsed: any = null;
