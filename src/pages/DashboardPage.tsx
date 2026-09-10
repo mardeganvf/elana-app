@@ -7,6 +7,7 @@ import { JOURNEYS_DATA as STATIC_JOURNEYS } from '../data/journeysData';
 import { Journey, CommunityPost } from '../types';
 import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle, HelpCircle, Trash2, ArrowRight, MessageSquare, ChevronDown } from 'lucide-react';
 import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
+import { getFollowedMembers, FOLLOWED_MEMBERS_CHANGED_EVENT } from '../lib/followService';
 import { BadgeGallery, getUnlockedBadgesCount } from '../components/gamification/BadgeGallery';
 import { UserLevelsModal } from '../components/gamification/UserLevelsModal';
 import { NotebookModal } from '../components/gamification/NotebookModal';
@@ -224,7 +225,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   };
 
   // Followed Members state
-  const [followedMembers] = useState<PublicUserProfile[]>([]);
+  const [followedMembers, setFollowedMembers] = useState<PublicUserProfile[]>(() => getFollowedMembers(user?.id));
+
+  // Sincroniza membros acompanhados em tempo real
+  useEffect(() => {
+    const syncFollowed = () => {
+      setFollowedMembers(getFollowedMembers(user?.id));
+    };
+
+    syncFollowed();
+
+    window.addEventListener(FOLLOWED_MEMBERS_CHANGED_EVENT, syncFollowed);
+    window.addEventListener('storage', syncFollowed);
+
+    return () => {
+      window.removeEventListener(FOLLOWED_MEMBERS_CHANGED_EVENT, syncFollowed);
+      window.removeEventListener('storage', syncFollowed);
+    };
+  }, [user?.id]);
 
   interface DashboardTestimonial {
     id: string;
@@ -1138,39 +1156,67 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
       {/* 👥 Minha Rede de Apoio */}
       <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
-        <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
-            <Users className="w-5 h-5 text-[#FF7F5B]" />
-            Minha Rede de Apoio
-          </h2>
-          <p className="text-xs text-slate-400 font-medium mt-1">
-            Membros que estou acompanhando
-          </p>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
+              <Users className="w-5 h-5 text-[#FF7F5B]" />
+              Minha Rede de Apoio
+            </h2>
+            <p className="text-xs text-slate-400 font-medium mt-1">
+              Membros que estou acompanhando
+            </p>
+          </div>
+          {followedMembers.length > 0 && (
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              {followedMembers.length} {followedMembers.length === 1 ? 'membro acompanhado' : 'membros acompanhados'}
+            </span>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {followedMembers.map(member => (
-            <div
-              key={member.id}
-              onClick={() => setSelectedFollowedProfile(member)}
-              className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 hover:border-[#FF7F5B]/50 transition-all cursor-pointer group flex items-center gap-3 shadow-md"
-            >
-              <img
-                src={member.avatar}
-                alt={member.name}
-                className="w-12 h-12 rounded-full object-cover border border-white/20 group-hover:scale-105 transition-transform shrink-0"
-              />
-              <div className="min-w-0 flex-1">
-                <h4 className="text-xs font-bold text-white truncate group-hover:text-[#FF7F5B] transition-colors">
-                  {member.name}
-                </h4>
-                <span className="text-[10px] text-slate-400 block mt-1">
-                  {member.levelIcon} {member.levelName}
-                </span>
+        {followedMembers.length === 0 ? (
+          <div className="text-center py-8 px-4 bg-[#070D0F]/60 rounded-2xl border border-dashed border-white/10 space-y-3">
+            <Users className="w-8 h-8 text-slate-500 mx-auto" />
+            <p className="text-sm font-semibold text-slate-300">
+              Você ainda não está acompanhando nenhum membro.
+            </p>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Ao visitar publicações na Comunidade e clicar no perfil de outros pais, mães ou guias, clique em <strong>"Acompanhar"</strong> para adicioná-los à sua Rede de Apoio!
+            </p>
+            {onGoToCommunity && (
+              <button
+                onClick={onGoToCommunity}
+                className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-[#FF7F5B]/15 hover:bg-[#FF7F5B]/25 text-[#FF7F5B] text-xs font-bold rounded-xl border border-[#FF7F5B]/30 transition-all active:scale-95"
+              >
+                <span>Explorar membros na Comunidade</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {followedMembers.map(member => (
+              <div
+                key={member.id || member.name}
+                onClick={() => setSelectedFollowedProfile(member)}
+                className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 hover:border-[#FF7F5B]/50 transition-all cursor-pointer group flex items-center gap-3 shadow-md hover:bg-white/[0.02]"
+              >
+                <img
+                  src={member.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                  alt={member.name}
+                  className="w-12 h-12 rounded-full object-cover border border-white/20 group-hover:scale-105 transition-transform shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-bold text-white truncate group-hover:text-[#FF7F5B] transition-colors">
+                    {member.name}
+                  </h4>
+                  <span className="text-[10px] text-slate-400 block mt-1">
+                    {member.levelIcon || '🌱'} {member.levelName || 'Semente Curiosa'}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Modal for viewing followed member public profile */}

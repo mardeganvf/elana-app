@@ -209,6 +209,15 @@ CREATE TABLE IF NOT EXISTS public.sos_tickets (
 );
 ALTER TABLE public.sos_tickets ALTER COLUMN profile_id DROP NOT NULL;
 
+-- 13. TABELA DE REDE DE APOIO / SEGUIDORES (USER FOLLOWS)
+CREATE TABLE IF NOT EXISTS public.user_follows (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  follower_id TEXT NOT NULL,
+  followed_id TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(follower_id, followed_id)
+);
+
 -- ========================================================
 -- HABILITAR SEGURANÇA (RLS) E POLÍTICAS PERMISSIVAS
 -- ========================================================
@@ -223,6 +232,11 @@ ALTER TABLE public.user_completed_lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_lesson_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profile_testimonials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sos_tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_follows ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Permitir leitura de follows" ON public.user_follows FOR SELECT USING (true);
+CREATE POLICY "Permitir insercao de follows" ON public.user_follows FOR INSERT WITH CHECK (true);
+CREATE POLICY "Permitir remocao de follows" ON public.user_follows FOR DELETE USING (true);
 
 -- ========================================================
 -- POLÍTICAS RLS SEGURAS: auth.uid() por tabela

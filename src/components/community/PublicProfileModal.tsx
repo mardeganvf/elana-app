@@ -22,6 +22,7 @@ import { UserLevelsModal } from '../gamification/UserLevelsModal';
 import { JOURNEYS_DATA } from '../../data/journeysData';
 import { getLevelFromXP } from '../../data/gamificationData';
 import { supabase } from '../../lib/supabase';
+import { isFollowingMember, toggleFollowMember, FOLLOWED_MEMBERS_CHANGED_EVENT } from '../../lib/followService';
 
 export interface ChildInfo {
   id: string;
@@ -74,8 +75,31 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
 }) => {
   const { user, awardBadge } = useAuth();
   const isOwnProfile = Boolean(user && (user.id === profile.id || profile.name === user.name));
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(() => isFollowingMember(profile.id || profile.name, user?.id));
   const [supportSent, setSupportSent] = useState(false);
+
+  // Sincroniza estado de acompanhamento
+  useEffect(() => {
+    setIsFollowing(isFollowingMember(profile.id || profile.name, user?.id));
+
+    const handleSync = () => {
+      setIsFollowing(isFollowingMember(profile.id || profile.name, user?.id));
+    };
+
+    window.addEventListener(FOLLOWED_MEMBERS_CHANGED_EVENT, handleSync);
+    return () => {
+      window.removeEventListener(FOLLOWED_MEMBERS_CHANGED_EVENT, handleSync);
+    };
+  }, [profile.id, profile.name, user?.id]);
+
+  const handleToggleFollow = () => {
+    const next = toggleFollowMember(profile, user?.id);
+    setIsFollowing(next);
+    if (next) {
+      awardBadge('b54'); // Novo Laço (acompanhou alguém)
+      awardBadge('b55'); // Laço Retribuído (conexão mútua na rede)
+    }
+  };
 
   // Children info state
   const [childrenList] = useState<ChildInfo[]>(profile.children || []);
@@ -214,20 +238,13 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
             </div>
 
             {/* Support / Follow Action Buttons */}
-            {!profile.isAnonymous && (
+            {!profile.isAnonymous && !isOwnProfile && (
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => {
-                    const next = !isFollowing;
-                    setIsFollowing(next);
-                    if (next) {
-                      awardBadge('b54'); // Novo Laço (acompanhou alguém)
-                      awardBadge('b55'); // Laço Retribuído (conexão mútua na rede)
-                    }
-                  }}
+                  onClick={handleToggleFollow}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
                     isFollowing
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
                       : 'bg-white/10 hover:bg-white/20 text-white border-white/15'
                   }`}
                 >
