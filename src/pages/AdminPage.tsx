@@ -37,7 +37,7 @@ import {
   Minimize2,
   Minus
 } from 'lucide-react';
-import { useAuth, isAdminUser, SOSMessage } from '../context/AuthContext';
+import { useAuth, isAdminUser, SOSMessage, deduplicateSosMessages } from '../context/AuthContext';
 import { useCommunity, checkContentSensitivity } from '../context/CommunityContext';
 import { useToast } from '../context/ToastContext';
 import { useJourneys } from '../context/JourneysContext';
@@ -130,7 +130,7 @@ export interface AdminPageProps {
 }
 
 export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin }) => {
-  const { user, isAuthenticated, replySosTicket, archiveSosTicket } = useAuth();
+  const { user, isAuthenticated, archiveSosTicket } = useAuth();
   const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
 
@@ -221,6 +221,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   const [selectedSosTicket, setSelectedSosTicket] = useState<SOSTicket | null>(null);
   const [sosReplyText, setSosReplyText] = useState('');
+  const [isSendingSosReply, setIsSendingSosReply] = useState(false);
 
   // 🛡️ Moderation Items State
   const [modItems, setModItems] = useState<ModerationItem[]>([]);
@@ -625,7 +626,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const parseTicketFromRow = (t: any): SOSTicket => {
     let parsedMessages: SOSMessage[] = [];
     if (Array.isArray(t.messages) && t.messages.length > 0) {
-      parsedMessages = t.messages;
+      parsedMessages = deduplicateSosMessages(t.messages);
     } else {
       if (t.user_message || t.message) {
         parsedMessages.push({
@@ -772,66 +773,78 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // 🛟 SOS Ticket Handlers
   const handleSendSosReply = async () => {
-    if (!selectedSosTicket || !sosReplyText.trim()) return;
+    if (!selectedSosTicket || !sosReplyText.trim() || isSendingSosReply) return;
     const replyText = sosReplyText.trim();
-    const formattedTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    setIsSendingSosReply(true);
 
-    const adminMsg: SOSMessage = {
-      id: `admin-${Date.now()}`,
-      sender: 'admin',
-      senderName: user?.name || 'Equipe Elana',
-      senderAvatar: user?.avatar,
-      text: replyText,
-      createdAt: formattedTime
-    };
-
-    let latestMessages = selectedSosTicket.messages || [];
     try {
-      const { data: latestRow } = await supabase
-        .from('sos_tickets')
-        .select('messages')
-        .eq('id', selectedSosTicket.id)
-        .maybeSingle();
-      if (latestRow && Array.isArray(latestRow.messages) && latestRow.messages.length > 0) {
-        latestMessages = latestRow.messages;
+      const formattedTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+      const adminMsg: SOSMessage = {
+        id: `admin-${Date.now()}`,
+        sender: 'admin',
+        senderName: user?.name || 'Equipe Elana',
+        senderAvatar: user?.avatar,
+        text: replyText,
+        createdAt: formattedTime
+      };
+
+      let latestMessages = selectedSosTicket.messages || [];
+      try {
+        const { data: latestRow } = await supabase
+          .from('sos_tickets')
+          .select('messages')
+          .eq('id', selectedSosTicket.id)
+          .maybeSingle();
+        if (latestRow && Array.isArray(latestRow.messages) && latestRow.messages.length > 0) {
+          latestMessages = latestRow.messages;
+        }
+      } catch (err) {
+        console.warn('Erro ao ler mensagens mais recentes:', err);
       }
-    } catch (err) {
-      console.warn('Erro ao ler mensagens mais recentes:', err);
-    }
 
-    const nextMessages = [...latestMessages, adminMsg];
+      const cleanLatest = deduplicateSosMessages(latestMessages);
+      const lastMsg = cleanLatest[cleanLatest.length - 1];
+      const isAlreadyAdded = lastMsg && lastMsg.sender === 'admin' && lastMsg.text.trim() === replyText;
+      const nextMessages = isAlreadyAdded ? cleanLatest : [...cleanLatest, adminMsg];
 
-    await supabase
-      .from('sos_tickets')
-      .update({
+      if (!isAlreadyAdded) {
+        await supabase
+          .from('sos_tickets')
+          .update({
+            status: 'em_atendimento',
+            admin_reply: replyText,
+            replied_at: new Date().toISOString(),
+            messages: nextMessages,
+            is_read: false
+          })
+          .eq('id', selectedSosTicket.id);
+      }
+
+      setSosTickets(prev => prev.map(t => t.id === selectedSosTicket.id ? {
+        ...t,
         status: 'em_atendimento',
-        admin_reply: replyText,
-        replied_at: new Date().toISOString(),
-        messages: nextMessages,
-        is_read: false
-      })
-      .eq('id', selectedSosTicket.id);
+        adminReply: replyText,
+        repliedAt: new Date().toLocaleString('pt-BR'),
+        messages: nextMessages
+      } : t));
 
-    await replySosTicket(selectedSosTicket.id, replyText);
+      setSelectedSosTicket(prev => prev ? {
+        ...prev,
+        status: 'em_atendimento',
+        adminReply: replyText,
+        repliedAt: new Date().toLocaleString('pt-BR'),
+        messages: nextMessages
+      } : null);
 
-    setSosTickets(prev => prev.map(t => t.id === selectedSosTicket.id ? {
-      ...t,
-      status: 'em_atendimento',
-      adminReply: replyText,
-      repliedAt: new Date().toLocaleString('pt-BR'),
-      messages: nextMessages
-    } : t));
-
-    setSelectedSosTicket(prev => prev ? {
-      ...prev,
-      status: 'em_atendimento',
-      adminReply: replyText,
-      repliedAt: new Date().toLocaleString('pt-BR'),
-      messages: nextMessages
-    } : null);
-
-    setSosReplyText('');
-    showToast('success', 'Resposta enviada! O atendimento segue aberto para diálogo.');
+      setSosReplyText('');
+      showToast('success', 'Resposta enviada! O atendimento segue aberto para diálogo.');
+    } catch (err) {
+      console.error('Erro ao enviar resposta:', err);
+      showToast('error', 'Erro ao enviar resposta.');
+    } finally {
+      setIsSendingSosReply(false);
+    }
   };
 
   const handleArchiveTicket = async (ticketId: string) => {
@@ -1844,12 +1857,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                                         <div className="flex items-center justify-end gap-2.5">
                                           <button
                                             onClick={handleSendSosReply}
-                                            disabled={!sosReplyText.trim()}
+                                            disabled={!sosReplyText.trim() || isSendingSosReply}
                                             className="py-2.5 px-4 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
                                             title="Envia a resposta e mantém o atendimento aberto para continuar conversando"
                                           >
-                                            <Send className="w-3.5 h-3.5" />
-                                            <span>Enviar Resposta</span>
+                                            {isSendingSosReply ? (
+                                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                            ) : (
+                                              <Send className="w-3.5 h-3.5" />
+                                            )}
+                                            <span>{isSendingSosReply ? 'Enviando...' : 'Enviar Resposta'}</span>
                                           </button>
 
                                           <button
@@ -1859,7 +1876,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                                               }
                                               await handleArchiveTicket(ticket.id);
                                             }}
-                                            className="py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                            disabled={isSendingSosReply}
+                                            className="py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
                                             title="Conclui o atendimento e arquiva o chamado"
                                           >
                                             <CheckCircle2 className="w-3.5 h-3.5" />

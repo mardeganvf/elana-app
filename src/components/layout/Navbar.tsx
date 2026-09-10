@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useAuth, isAdminUser } from '../../context/AuthContext';
+import { useAuth, isAdminUser, deduplicateSosMessages } from '../../context/AuthContext';
 import { useFontSize } from '../../context/FontSizeContext';
 import { supabase } from '../../lib/supabase';
 import { 
@@ -895,7 +895,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                 {/* Scrollable messages container */}
                 <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[380px] min-h-[200px]">
                   {sosResponse.messages && sosResponse.messages.length > 0 ? (
-                    sosResponse.messages.map((msg, i) => {
+                    deduplicateSosMessages(sosResponse.messages).map((msg, i) => {
                       const isUser = msg.sender === 'user';
                       return (
                         <div
@@ -1002,7 +1002,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                 {/* Scrollable history of the concluded conversation */}
                 <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[320px] min-h-[160px]">
                   {sosResponse.messages && sosResponse.messages.length > 0 ? (
-                    sosResponse.messages.map((msg, i) => {
+                    deduplicateSosMessages(sosResponse.messages).map((msg, i) => {
                       const isUser = msg.sender === 'user';
                       return (
                         <div

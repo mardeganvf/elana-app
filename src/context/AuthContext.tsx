@@ -27,6 +27,27 @@ export interface SOSTicketResponse {
   messages?: SOSMessage[];
 }
 
+export const deduplicateSosMessages = (messages?: SOSMessage[]): SOSMessage[] => {
+  if (!messages || !Array.isArray(messages) || messages.length <= 1) {
+    return messages || [];
+  }
+  const result: SOSMessage[] = [];
+  for (let i = 0; i < messages.length; i++) {
+    const current = messages[i];
+    if (!current || !current.text) continue;
+    const prev = result[result.length - 1];
+    if (
+      prev &&
+      prev.sender === current.sender &&
+      prev.text.trim() === current.text.trim()
+    ) {
+      continue;
+    }
+    result.push(current);
+  }
+  return result;
+};
+
 export const ADMIN_EMAILS = [
   'admin@elana.com.br',
   'mariana@elana.com.br',
@@ -239,7 +260,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         let messagesList: SOSMessage[] = [];
         if (Array.isArray(ticketData.messages) && ticketData.messages.length > 0) {
-          messagesList = ticketData.messages;
+          messagesList = deduplicateSosMessages(ticketData.messages);
         } else {
           if (ticketData.user_message || ticketData.message) {
             messagesList.push({
@@ -1336,14 +1357,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendUserFollowUpMessage = async (ticketId: string, messageText: string) => {
     if (!user || !messageText.trim()) return;
-
+    const trimmed = messageText.trim();
     const formattedTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const newMsg: SOSMessage = {
       id: `msg-${Date.now()}`,
       sender: 'user',
       senderName: user.name,
       senderAvatar: user.avatar,
-      text: messageText.trim(),
+      text: trimmed,
       createdAt: formattedTime
     };
 
@@ -1363,9 +1384,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    const currentMessages: SOSMessage[] = [...baseMessages, newMsg];
+    const cleanBase = deduplicateSosMessages(baseMessages);
+    const last = cleanBase[cleanBase.length - 1];
+    const isAlreadyAdded = last && last.sender === 'user' && last.text.trim() === trimmed;
+    const currentMessages: SOSMessage[] = isAlreadyAdded ? cleanBase : [...cleanBase, newMsg];
+
     const nextTicket: SOSTicketResponse = {
-      ...(sosResponse || { userMessage: messageText.trim(), isRead: true }),
+      ...(sosResponse || { userMessage: trimmed, isRead: true }),
       id: ticketId,
       ticketId,
       status: 'pendente',
@@ -1376,14 +1401,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('elana_sos_ticket_response', JSON.stringify(nextTicket));
 
     try {
-      if (ticketId && ticketId.length > 20) {
+      if (ticketId && ticketId.length > 20 && !isAlreadyAdded) {
         await supabase
           .from('sos_tickets')
           .update({
             status: 'pendente',
             messages: currentMessages,
-            user_message: messageText.trim(),
-            message: messageText.trim()
+            user_message: trimmed,
+            message: trimmed
           })
           .eq('id', ticketId);
       }
@@ -1393,24 +1418,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const replySosTicket = async (ticketId: string, adminReply: string) => {
+    const trimmedReply = adminReply.trim();
+    if (!trimmedReply) return;
     const formattedTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const adminMsg: SOSMessage = {
       id: `admin-msg-${Date.now()}`,
       sender: 'admin',
       senderName: 'Equipe Elana',
-      text: adminReply.trim(),
+      text: trimmedReply,
       createdAt: formattedTime
     };
 
     setSosResponse(prev => {
       if (!prev) return null;
+      const prevMessages = deduplicateSosMessages(prev.messages || []);
+      const last = prevMessages[prevMessages.length - 1];
+      const isAlreadyAdded = last && last.sender === 'admin' && last.text.trim() === trimmedReply;
+      const nextMsgs = isAlreadyAdded ? prevMessages : [...prevMessages, adminMsg];
+
       const updated: SOSTicketResponse = {
         ...prev,
-        adminReply,
+        adminReply: trimmedReply,
         repliedAt: formattedTime,
         status: 'em_atendimento',
         isRead: false,
-        messages: [...(prev.messages || []), adminMsg]
+        messages: nextMsgs
       };
       localStorage.setItem('elana_sos_ticket_response', JSON.stringify(updated));
       return updated;
@@ -1422,21 +1454,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .from('sos_tickets')
           .select('messages')
           .eq('id', ticketId)
-          .single();
+          .maybeSingle();
 
-        const current = Array.isArray(data?.messages) ? data.messages : [];
-        const nextMessages = [...current, adminMsg];
-
-        await supabase
-          .from('sos_tickets')
-          .update({
-            admin_reply: adminReply,
-            replied_at: new Date().toISOString(),
-            is_read: false,
-            status: 'em_atendimento',
-            messages: nextMessages
-          })
-          .eq('id', ticketId);
+        const current = deduplicateSosMessages(Array.isArray(data?.messages) ? data.messages : []);
+        const last = current[current.length - 1];
+        const isAlreadyAdded = last && last.sender === 'admin' && last.text.trim() === trimmedReply;
+        if (!isAlreadyAdded) {
+          const nextMessages = [...current, adminMsg];
+          await supabase
+            .from('sos_tickets')
+            .update({
+              admin_reply: trimmedReply,
+              replied_at: new Date().toISOString(),
+              is_read: false,
+              status: 'em_atendimento',
+              messages: nextMessages
+            })
+            .eq('id', ticketId);
+        }
       }
     } catch (err) {
       console.warn('Erro ao responder ticket SOS no Supabase:', err);
