@@ -880,10 +880,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                 <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                   Como podemos te acolher agora?
                 </h3>
-                {sosResponse && sosResponse.status !== 'arquivado' && (
+                {sosResponse && sosResponse.status !== 'arquivado' && sosResponse.messages && sosResponse.messages.length > 1 && (
                   <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 mt-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    {sosResponse.messages && sosResponse.messages.length > 1 ? 'Em diálogo com a equipe' : 'Chamado enviado — equipe a postos'}
+                    Em diálogo com a equipe
                   </span>
                 )}
               </div>
@@ -961,7 +961,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                   {sosResponse.status === 'pendente' && (
                     <div className="flex items-center justify-center gap-1.5 pt-1.5 pb-0.5 text-[11px] text-amber-300/80">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                      <span>Mensagem recebida com carinho — a equipe responderá em breve por aqui.</span>
+                      <span>Mensagem recebida com carinho. A nossa equipe responderá em breve por aqui.</span>
                     </div>
                   )}
 
