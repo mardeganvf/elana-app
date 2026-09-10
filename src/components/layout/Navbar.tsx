@@ -848,32 +848,33 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
       {/* Feature 2 Modal: Canal SOS Privado & Acolhimento Humano */}
       {isEmergencyOpen && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in text-white">
-          <div className="bg-[#0D1518] rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-white/10 relative flex flex-col m-auto max-h-[88vh]">
+          <div className="bg-[#0D1518] rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-white/10 relative flex flex-col m-auto max-h-[92vh] overflow-y-auto">
             
-            {/* Top Bar: Caixa do CVV Centralizada + Botão Fechar (X) no Canto Superior Direito */}
-            <div className="flex items-start sm:items-center gap-3 mb-6 sm:mb-8 shrink-0">
-              <div className="flex-1 bg-rose-500/10 border border-rose-500/20 rounded-2xl px-4 py-3 text-center text-rose-200/90 text-xs leading-relaxed">
-                <span>
-                  O SOS da Elana oferece acolhimento e suporte humano, mas não substitui atendimento médico especializado ou de urgência. Em caso de crises, ligue gratuitamente para o{' '}
-                  <a href="tel:188" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">CVV (188)</a>
-                  {' '}ou para o{' '}
-                  <a href="tel:192" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">SAMU (192)</a>.
-                </span>
-              </div>
-
+            {/* Top Bar: Botão Fechar (X) Acima e à Direita */}
+            <div className="flex justify-end mb-2 shrink-0">
               <button
                 onClick={() => setIsEmergencyOpen(false)}
                 aria-label="Fechar Atendimento SOS"
-                className="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-2.5 rounded-full transition-colors cursor-pointer shrink-0 mt-0.5 sm:mt-0"
+                className="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Modal Header: Título maior e sem ícone ao lado */}
+            {/* Caixa do CVV / SAMU: 100% da Largura do Contêiner com Texto Alinhado à Esquerda */}
+            <div className="w-full bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 text-left text-rose-200/90 text-xs leading-relaxed mb-6 sm:mb-7 shrink-0">
+              <span>
+                O SOS da Elana oferece acolhimento e suporte humano, mas não substitui atendimento médico especializado ou de urgência. Em caso de crises, ligue gratuitamente para o{' '}
+                <a href="tel:188" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">CVV (188)</a>
+                {' '}ou para o{' '}
+                <a href="tel:192" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">SAMU (192)</a>.
+              </span>
+            </div>
+
+            {/* Modal Header: "Como podemos te acolher agora?" com Fonte Maior em Destaque */}
             <div className="pb-3 border-b border-white/10 shrink-0 mb-4 text-left">
-              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                Canal SOS de Acolhimento
+              <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                Como podemos te acolher agora?
               </h3>
               {sosResponse && sosResponse.status !== 'arquivado' && (
                 <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 mt-1">
@@ -1076,22 +1077,17 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             ) : (
               /* --- STATE 3: NEW TICKET FORM --- */
               <div className="space-y-4 text-left">
-                <div className="space-y-1 text-left">
-                  <h4 className="text-base font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                    Como podemos te acolher agora?
-                  </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Sua mensagem <strong>não será visível na comunidade</strong>. Ela é enviada de forma 100% privada e confidencial para nossa equipe de acolhimento.
-                  </p>
-                </div>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Sua mensagem <strong>não será visível na comunidade</strong>. Ela é enviada de forma 100% privada e confidencial para nossa equipe de acolhimento.
+                </p>
 
                 <div className="space-y-3">
                   <textarea
                     value={sosMessage}
                     onChange={(e) => setSosMessage(e.target.value)}
                     placeholder="Desabafe ou compartilhe o que você está sentindo... Estamos aqui para te escutar com todo o afeto."
-                    rows={4}
-                    className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B]/60 rounded-2xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all resize-none"
+                    rows={6}
+                    className="w-full min-h-[160px] sm:min-h-[180px] bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B]/60 rounded-2xl p-4 text-sm sm:text-xs text-white placeholder-slate-500 focus:outline-none transition-all resize-none leading-relaxed"
                   />
 
                   <button
