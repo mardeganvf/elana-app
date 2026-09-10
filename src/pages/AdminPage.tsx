@@ -217,6 +217,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // 🛟 SOS Tickets State with AI Urgency Classification
   const [sosTickets, setSosTickets] = useState<SOSTicket[]>([]);
+  const [isLoadingTickets, setIsLoadingTickets] = useState(false);
 
   const [selectedSosTicket, setSelectedSosTicket] = useState<SOSTicket | null>(null);
   const [sosReplyText, setSosReplyText] = useState('');
@@ -671,7 +672,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     };
   };
 
-  const loadTickets = useCallback(async () => {
+  const loadTickets = useCallback(async (isSilent = false) => {
+    if (!isSilent) setIsLoadingTickets(true);
     try {
       const { data } = await supabase
         .from('sos_tickets')
@@ -689,6 +691,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       }
     } catch (err) {
       console.warn('Erro ao carregar tickets SOS:', err);
+    } finally {
+      if (!isSilent) setIsLoadingTickets(false);
     }
   }, []);
 
@@ -743,8 +747,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   useEffect(() => {
     if (activeAdminTab !== 'sos') return;
 
-    loadTickets();
-    const interval = setInterval(loadTickets, 4000);
+    loadTickets(true);
+    const interval = setInterval(() => loadTickets(true), 4000);
 
     const channel = supabase
       .channel('admin_sos_realtime_sync')
@@ -753,7 +757,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         schema: 'public',
         table: 'sos_tickets'
       }, () => {
-        loadTickets();
+        loadTickets(true);
       })
       .subscribe();
 
@@ -1525,24 +1529,28 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
           {/* TAB 1: 🛟 ATENDIMENTO SOS */}
           {activeAdminTab === 'sos' && (
-            <section className="bg-[#101B1E] p-5 sm:p-7 rounded-3xl border border-white/10 shadow-xl space-y-6">
+            <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
 
               {/* Header com Título e Botão de Atualizar */}
-              <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
                 <div>
                   <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                     Atendimento SOS
                   </h2>
                 </div>
 
-                <button
-                  onClick={() => loadTickets()}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-[#070D0F] hover:bg-white/10 text-slate-300 hover:text-white rounded-2xl border border-white/10 text-xs font-bold transition-all cursor-pointer shrink-0 shadow-sm"
-                  title="Atualizar chamados"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 text-[#FF7F5B]" />
-                  <span>Atualizar</span>
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => loadTickets()}
+                    disabled={isLoadingTickets}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-50 shadow-sm shrink-0"
+                    title="Atualizar chamados"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-[#FF7F5B] ${isLoadingTickets ? 'animate-spin' : ''}`} />
+                    <span>Atualizar</span>
+                  </button>
+                </div>
               </div>
 
               {/* Estrutura Principal: Menu na Lateral Esquerda + Área ao Lado */}
@@ -2256,15 +2264,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 Termômetro Emocional da Comunidade
               </h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={loadEmotionalAnalytics}
                 disabled={isLoadingAnalytics}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-50 shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-50 shadow-sm shrink-0"
                 title="Recarregar dados reais do termômetro"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingAnalytics ? 'animate-spin text-[#FF7F5B]' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 text-[#FF7F5B] ${isLoadingAnalytics ? 'animate-spin' : ''}`} />
                 <span>Atualizar</span>
               </button>
             </div>
