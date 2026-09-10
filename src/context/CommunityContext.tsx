@@ -934,6 +934,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }))
       };
     }));
+
+    // Se usuário logado, sincroniza as reações oficiais do banco Supabase
+    if (user?.id) {
+      fetchSupabasePosts(false);
+    }
   }, [user?.id]);
 
   const refreshPosts = async () => {

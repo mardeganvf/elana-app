@@ -190,12 +190,15 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
         status: 'approved'
       }]);
       awardBadge('b56'); // Palavra de Carinho (enviou depoimento)
-      const sentCountKey = `elana_sent_testimonials_${user?.id || 'current_user'}`;
-      const prevSent = parseInt(localStorage.getItem(sentCountKey) || '0', 10);
-      const newSent = prevSent + 1;
-      localStorage.setItem(sentCountKey, newSent.toString());
-      if (newSent >= 5) awardBadge('b69'); // Semeando Carinho (5)
-      if (newSent >= 10) awardBadge('b70'); // Árvore de Afeto (10)
+      if (user?.id) {
+        const { count } = await supabase
+          .from('profile_testimonials')
+          .select('id', { count: 'exact', head: true })
+          .eq('author_id', user.id);
+        const totalSent = count || 1;
+        if (totalSent >= 5) awardBadge('b69'); // Semeando Carinho (5)
+        if (totalSent >= 10) awardBadge('b70'); // Árvore de Afeto (10)
+      }
     } catch (err) {
       console.error('Error saving testimonial to Supabase:', err);
     }

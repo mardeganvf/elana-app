@@ -90,6 +90,7 @@ export interface UserProfile {
   bio?: string;
   notificationsEnabled?: boolean;
   onboardingCompleted?: boolean;
+  respiroCycles?: number;
   children?: {
     id: string;
     emoji: string;

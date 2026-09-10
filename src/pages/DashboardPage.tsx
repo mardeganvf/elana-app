@@ -7,7 +7,7 @@ import { JOURNEYS_DATA as STATIC_JOURNEYS } from '../data/journeysData';
 import { Journey, CommunityPost } from '../types';
 import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle, HelpCircle, Trash2, ArrowRight, MessageSquare, ChevronDown } from 'lucide-react';
 import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
-import { getFollowedMembers, FOLLOWED_MEMBERS_CHANGED_EVENT } from '../lib/followService';
+import { getFollowedMembers, syncFollowedMembersFromSupabase, FOLLOWED_MEMBERS_CHANGED_EVENT } from '../lib/followService';
 import { BadgeGallery, getUnlockedBadgesCount } from '../components/gamification/BadgeGallery';
 import { UserLevelsModal } from '../components/gamification/UserLevelsModal';
 import { NotebookModal } from '../components/gamification/NotebookModal';
@@ -238,6 +238,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     };
 
     syncFollowed();
+    if (user?.id) {
+      syncFollowedMembersFromSupabase(user.id);
+    }
 
     window.addEventListener(FOLLOWED_MEMBERS_CHANGED_EVENT, syncFollowed);
     window.addEventListener('storage', syncFollowed);

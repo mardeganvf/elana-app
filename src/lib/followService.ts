@@ -195,3 +195,102 @@ export function toggleFollowMember(profile: PublicUserProfile, userId?: string):
     return true;
   }
 }
+
+/**
+ * Sincroniza a lista de membros acompanhados a partir do Supabase (user_follows + profiles),
+ * atualizando o cache local e notificando a aplicação.
+ */
+export async function syncFollowedMembersFromSupabase(userId?: string): Promise<PublicUserProfile[]> {
+  if (!userId || userId === 'current_user' || userId === 'anon') {
+    return getFollowedMembers(userId);
+  }
+
+  try {
+    const { data: followRows, error: followError } = await supabase
+      .from('user_follows')
+      .select('followed_id')
+      .eq('follower_id', userId);
+
+    if (followError) {
+      console.warn('Notice syncing user_follows from Supabase:', followError.message);
+      return getFollowedMembers(userId);
+    }
+
+    // Se já existem registros no Supabase, busca os perfis correspondentes
+    if (followRows && followRows.length > 0) {
+      const followedIds = followRows.map(r => r.followed_id).filter(Boolean);
+      const { data: profileRows, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', followedIds);
+
+      if (!profileError && profileRows) {
+        const profileMap = new Map(profileRows.map(p => [p.id, p]));
+        const localList = getFollowedMembers(userId);
+        const localMap = new Map(localList.map(m => [m.id, m]));
+
+        const synced: PublicUserProfile[] = followedIds.map(fId => {
+          const p = profileMap.get(fId);
+          const local = localMap.get(fId);
+          if (p) {
+            return {
+              id: p.id,
+              name: p.name || local?.name || 'Membro da Aldeia',
+              avatar: p.avatar || local?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+              role: p.role || local?.role || 'membro',
+              tag: p.tag || local?.tag || 'Membro da Comunidade',
+              levelName: p.level_name || local?.levelName || 'Semente Curiosa',
+              levelIcon: p.level_icon || local?.levelIcon || '🌱',
+              levelNumber: p.level_number || local?.levelNumber || 1,
+              xp: p.xp || local?.xp || 0,
+              bio: p.bio || local?.bio || '',
+              joinedDate: p.joined_date || local?.joinedDate || '2026',
+              streakDays: p.streak_days || local?.streakDays || 1,
+              postsCount: local?.postsCount ?? 0,
+              commentsCount: local?.commentsCount ?? 0,
+              reactionsReceivedCount: local?.reactionsReceivedCount ?? 0,
+              children: local?.children || [],
+              testimonials: local?.testimonials || []
+            };
+          }
+          return local || {
+            id: fId,
+            name: 'Membro da Aldeia',
+            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+            role: 'membro',
+            tag: 'Membro da Comunidade',
+            levelName: 'Semente Curiosa',
+            levelIcon: '🌱',
+            levelNumber: 1,
+            xp: 0
+          };
+        });
+
+        try {
+          localStorage.setItem(getFollowStorageKey(userId), JSON.stringify(synced));
+        } catch (_) {}
+
+        window.dispatchEvent(new CustomEvent(FOLLOWED_MEMBERS_CHANGED_EVENT, { detail: synced }));
+        return synced;
+      }
+    } else {
+      // Se não há registros no Supabase mas há dados no cache local, migra os locais para o Supabase
+      const localList = getFollowedMembers(userId);
+      if (localList.length > 0) {
+        for (const m of localList) {
+          if (m.id && !m.id.startsWith('member-')) {
+            await supabase.from('user_follows').upsert({
+              follower_id: userId,
+              followed_id: m.id,
+              created_at: new Date().toISOString()
+            });
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Erro ao sincronizar rede de apoio com Supabase:', err);
+  }
+
+  return getFollowedMembers(userId);
+}

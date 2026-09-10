@@ -57,6 +57,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     clearActiveSosTicket, 
     markSosResponseRead, 
     awardBadge,
+    updateUser,
     refreshSosTicket,
     adminPendingCounts
   } = useAuth();
@@ -1147,10 +1148,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         onClose={() => setIsBreathingModalOpen(false)}
         onComplete={() => {
           awardBadge('b23'); // Pausa Necessária (60s de respiro)
-          const breathKey = `elana_respiro_cycles_${user?.id || 'current_user'}`;
-          const currentCount = parseInt(localStorage.getItem(breathKey) || '0', 10) + 1;
-          localStorage.setItem(breathKey, currentCount.toString());
-          if (currentCount >= 10) {
+          const nextCount = (user?.respiroCycles || 0) + 1;
+          updateUser({ respiroCycles: nextCount });
+          if (nextCount >= 10) {
             awardBadge('b64'); // Mestre do Respiro (10 pausas)
           }
         }}

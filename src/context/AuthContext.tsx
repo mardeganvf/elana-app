@@ -846,11 +846,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
 
           // 🗝️ Desabafo Necessário (5 confissões)
-          let localConfessions = 0;
-          try {
-            localConfessions = parseInt(localStorage.getItem(`elana_confession_count_${profileId}`) || '0', 10);
-          } catch {}
-          if (confessionPostsCount >= 5 || localConfessions >= 5) {
+          if (confessionPostsCount >= 5) {
             checkAndAddBadge('b67');
           }
 
@@ -877,11 +873,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // 💌 Depoimentos enviados (b56, b69, b70)
-        let localSentTestimonials = 0;
-        try {
-          localSentTestimonials = parseInt(localStorage.getItem(`elana_sent_testimonials_${profileId}`) || '0', 10);
-        } catch {}
-        const sentCount = Math.max(sentTestimonialsRes.data?.length || 0, localSentTestimonials);
+        const sentCount = sentTestimonialsRes.data?.length || 0;
         if (sentCount >= 1) checkAndAddBadge('b56'); // Palavra de Carinho (1)
         if (sentCount >= 5) checkAndAddBadge('b69'); // Semeando Carinho (5)
         if (sentCount >= 10) checkAndAddBadge('b70'); // Árvore de Afeto (10)
@@ -900,12 +892,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (followedList.length >= 20) checkAndAddBadge('b63'); // Rede que Fortalece (20)
         } catch {}
 
-        // 🌬️ Pausas de Respiro Guiado (b23, b64)
+        // 🌬️ Pausas de Respiro Guiado (b23, b64) — persistência no perfil Supabase
+        let breathCycles = profile.respiro_cycles || 0;
         try {
-          const breathCycles = parseInt(localStorage.getItem(`elana_respiro_cycles_${profileId}`) || '0', 10);
-          if (breathCycles >= 1) checkAndAddBadge('b23'); // Pausa Necessária (1)
-          if (breathCycles >= 10) checkAndAddBadge('b64'); // Mestre do Respiro (10)
+          const localBreaths = parseInt(localStorage.getItem(`elana_respiro_cycles_${profileId}`) || '0', 10);
+          if (localBreaths > breathCycles) {
+            breathCycles = localBreaths;
+            supabase.from('profiles').update({ respiro_cycles: breathCycles }).eq('id', profileId).then();
+          }
         } catch {}
+        if (breathCycles >= 1) checkAndAddBadge('b23'); // Pausa Necessária (1)
+        if (breathCycles >= 10) checkAndAddBadge('b64'); // Mestre do Respiro (10)
 
         // 🤍 Apoios / Reações em Confissões Anônimas (b68)
         try {
@@ -981,6 +978,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         completedLessonIds,
         lessonNotes,
         badges,
+        respiroCycles: breathCycles,
         children: finalChildren
       };
 
@@ -1133,6 +1131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           level_icon: levelInfo.icon || '🌱',
           streak_days: updatedUser.streakDays,
           notifications_enabled: !!updatedUser.notificationsEnabled,
+          respiro_cycles: updatedUser.respiroCycles !== undefined ? updatedUser.respiroCycles : (baseUser.respiroCycles || 0),
           last_active_date: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };

@@ -479,7 +479,7 @@ export const CommunityPage: React.FC = () => {
     activePoll,
     userVotedPollsMap
   } = useCommunity();
-  const { user, isAuthenticated, awardBadge } = useAuth();
+  const { user, isAuthenticated, awardBadge, updateUser } = useAuth();
   const { showToast } = useToast();
 
   // Forçar atualização dos posts sempre que abrir a aba/página da Comunidade
@@ -689,19 +689,30 @@ export const CommunityPage: React.FC = () => {
     const todayStr = getTodayDateKey();
     const userKey = user?.id || 'anon';
     
-    // Check multiple storage flags to guarantee it only opens once per day
-    const isDoneToday = 
+    // Check multiple storage flags to guarantee it only opens once per day in this session
+    const isDoneTodayLocally = 
       localStorage.getItem('elana_daily_checkin_done_' + todayStr) === 'true' ||
       localStorage.getItem(`elana_daily_checkin_${userKey}`) === todayStr ||
       sessionStorage.getItem('elana_daily_checkin_session_' + todayStr) === 'true';
 
-    if (isDoneToday) {
+    if (isDoneTodayLocally) {
       return;
+    }
+
+    // Se ainda não temos user mas há uma sessão salva no localStorage aguardando re-hidratação, aguarda o user carregar
+    if (!user?.id) {
+      try {
+        const savedSession = localStorage.getItem('elana_user_session');
+        if (savedSession) {
+          // Há sessão salvando/hidratando, não abre para visitante prematuramente
+          return;
+        }
+      } catch (_) {}
     }
 
     let isCancelled = false;
 
-    // If logged in, check if user already recorded an emotional check-in today in Supabase
+    // Se usuário autenticado, consulta a fonte da verdade no Supabase (cross-device)
     if (user?.id) {
       supabase
         .from('emotional_checkins')
@@ -709,29 +720,32 @@ export const CommunityPage: React.FC = () => {
         .eq('profile_id', user.id)
         .eq('checkin_date', todayStr)
         .limit(1)
-        .then(({ data }) => {
+        .then(({ data, error }) => {
           if (isCancelled) return;
-          if (data && data.length > 0) {
+          if (!error && data && data.length > 0) {
+            // Já realizou check-in hoje no Supabase em outro navegador ou dispositivo!
             localStorage.setItem('elana_daily_checkin_done_' + todayStr, 'true');
-            localStorage.setItem(`elana_daily_checkin_${userKey}`, todayStr);
+            localStorage.setItem(`elana_daily_checkin_${user.id}`, todayStr);
             sessionStorage.setItem('elana_daily_checkin_session_' + todayStr, 'true');
             return;
           }
+          // Ainda não realizou hoje: abre o modal de acolhimento diário
           const timer = setTimeout(() => {
             if (!isCancelled) {
               setIsDailyCheckinModalOpen(true);
               window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             }
-          }, 300);
+          }, 400);
           return () => clearTimeout(timer);
         });
     } else {
+      // Visitante puro sem conta
       const timer = setTimeout(() => {
         if (!isCancelled) {
           setIsDailyCheckinModalOpen(true);
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         }
-      }, 300);
+      }, 500);
       return () => clearTimeout(timer);
     }
 
@@ -1096,10 +1110,9 @@ export const CommunityPage: React.FC = () => {
         onClose={() => setIsBreathingModalOpen(false)}
         onComplete={() => {
           awardBadge('b23'); // Pausa Necessária (60s de respiro)
-          const breathKey = `elana_respiro_cycles_${user?.id || 'current_user'}`;
-          const currentCount = parseInt(localStorage.getItem(breathKey) || '0', 10) + 1;
-          localStorage.setItem(breathKey, currentCount.toString());
-          if (currentCount >= 10) {
+          const nextCount = (user?.respiroCycles || 0) + 1;
+          updateUser({ respiroCycles: nextCount });
+          if (nextCount >= 10) {
             awardBadge('b64'); // Mestre do Respiro (10 pausas)
           }
         }}
