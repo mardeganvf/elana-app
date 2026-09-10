@@ -815,6 +815,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (calculatedStreak >= 60) checkAndAddBadge('b27');
       if (calculatedStreak >= 90) checkAndAddBadge('b28');
 
+      // 🌬️ Pausas de Respiro Guiado (persistência no perfil Supabase)
+      let breathCycles = profile.respiro_cycles || 0;
+
       // 💬 5. Espaços de Troca & 🤝 6. Rede de Apoio & 💖 8. Acolhimento
       try {
         const [postsRes, commentsRes, testimonialsRes, sentTestimonialsRes] = await Promise.all([
@@ -893,7 +896,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch {}
 
         // 🌬️ Pausas de Respiro Guiado (b23, b64) — persistência no perfil Supabase
-        let breathCycles = profile.respiro_cycles || 0;
+        breathCycles = profile.respiro_cycles || 0;
         try {
           const localBreaths = parseInt(localStorage.getItem(`elana_respiro_cycles_${profileId}`) || '0', 10);
           if (localBreaths > breathCycles) {
