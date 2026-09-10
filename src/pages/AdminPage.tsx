@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ShieldCheck, 
   ShieldAlert,
@@ -607,7 +607,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         postsWithoutRepliesCount,
         supportHealthStatus,
         supportHealthLabel,
-        supportHealthMessage,
         breakdown
       });
     } catch (err) {
@@ -617,56 +616,88 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     }
   };
 
-  useEffect(() => {
-    const loadTickets = async () => {
+  const parseTicketFromRow = (t: any): SOSTicket => {
+    let parsedMessages: SOSMessage[] = [];
+    if (Array.isArray(t.messages) && t.messages.length > 0) {
+      parsedMessages = t.messages;
+    } else {
+      if (t.user_message || t.message) {
+        parsedMessages.push({
+          id: `legacy-${t.id}`,
+          sender: 'user',
+          senderName: t.user_name || 'Membro',
+          senderAvatar: t.user_avatar,
+          text: t.user_message || t.message,
+          createdAt: new Date(t.created_at).toLocaleString('pt-BR')
+        });
+      }
+      if (t.admin_reply) {
+        parsedMessages.push({
+          id: `legacy-reply-${t.id}`,
+          sender: 'admin',
+          senderName: 'Equipe Elana',
+          text: t.admin_reply,
+          createdAt: t.replied_at ? new Date(t.replied_at).toLocaleString('pt-BR') : 'Anterior'
+        });
+      }
+    }
+
+    return {
+      id: t.id,
+      userName: t.user_name || 'Anônimo',
+      userEmail: t.user_email || '',
+      userAvatar: t.user_avatar || '',
+      urgency: t.urgency || 'media',
+      subject: t.subject || ((t.user_message || t.message || '').slice(0, 40) || 'Pedido de Acolhimento SOS'),
+      message: t.user_message || t.message || '',
+      createdAt: new Date(t.created_at).toLocaleString('pt-BR'),
+      status: t.status || 'pendente',
+      adminReply: t.admin_reply,
+      repliedAt: t.replied_at ? new Date(t.replied_at).toLocaleString('pt-BR') : undefined,
+      messages: parsedMessages
+    };
+  };
+
+  const loadTickets = useCallback(async () => {
+    try {
       const { data } = await supabase
         .from('sos_tickets')
         .select('*')
         .order('created_at', { ascending: false });
       if (data) {
-        setSosTickets(data.map(t => {
-          let parsedMessages: SOSMessage[] = [];
-          if (Array.isArray(t.messages) && t.messages.length > 0) {
-            parsedMessages = t.messages;
-          } else {
-            if (t.user_message || t.message) {
-              parsedMessages.push({
-                id: `legacy-${t.id}`,
-                sender: 'user',
-                senderName: t.user_name || 'Membro',
-                senderAvatar: t.user_avatar,
-                text: t.user_message || t.message,
-                createdAt: new Date(t.created_at).toLocaleString('pt-BR')
-              });
-            }
-            if (t.admin_reply) {
-              parsedMessages.push({
-                id: `legacy-reply-${t.id}`,
-                sender: 'admin',
-                senderName: 'Equipe Elana',
-                text: t.admin_reply,
-                createdAt: t.replied_at ? new Date(t.replied_at).toLocaleString('pt-BR') : 'Anterior'
-              });
-            }
-          }
+        const mapped = data.map(parseTicketFromRow);
+        setSosTickets(mapped);
 
-          return {
-            id: t.id,
-            userName: t.user_name || 'Anônimo',
-            userEmail: t.user_email || '',
-            userAvatar: t.user_avatar || '',
-            urgency: t.urgency || 'media',
-            subject: t.subject || ((t.user_message || t.message || '').slice(0, 40) || 'Pedido de Acolhimento SOS'),
-            message: t.user_message || t.message || '',
-            createdAt: new Date(t.created_at).toLocaleString('pt-BR'),
-            status: t.status || 'pendente',
-            adminReply: t.admin_reply,
-            repliedAt: t.replied_at ? new Date(t.replied_at).toLocaleString('pt-BR') : undefined,
-            messages: parsedMessages
-          };
-        }));
+        setSelectedSosTicket(prev => {
+          if (!prev) return null;
+          const fresh = mapped.find(t => t.id === prev.id);
+          return fresh || prev;
+        });
       }
-    };
+    } catch (err) {
+      console.warn('Erro ao carregar tickets SOS:', err);
+    }
+  }, []);
+
+  const handleSelectSosTicket = async (ticket: SOSTicket) => {
+    setSelectedSosTicket(ticket);
+    try {
+      const { data } = await supabase
+        .from('sos_tickets')
+        .select('*')
+        .eq('id', ticket.id)
+        .maybeSingle();
+      if (data) {
+        const fresh = parseTicketFromRow(data);
+        setSelectedSosTicket(fresh);
+        setSosTickets(prev => prev.map(t => t.id === ticket.id ? fresh : t));
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar detalhes do ticket selecionado:', err);
+    }
+  };
+
+  useEffect(() => {
     loadTickets();
     loadModeration();
     loadLearnedExamples();
@@ -693,7 +724,31 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     };
     loadMembers();
     loadEmotionalAnalytics();
-  }, []);
+  }, [loadTickets]);
+
+  // Polling e Realtime para aba SOS
+  useEffect(() => {
+    if (activeAdminTab !== 'sos') return;
+
+    loadTickets();
+    const interval = setInterval(loadTickets, 4000);
+
+    const channel = supabase
+      .channel('admin_sos_realtime_sync')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'sos_tickets'
+      }, () => {
+        loadTickets();
+      })
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [activeAdminTab, loadTickets]);
 
   // Recalcula métricas do termômetro sempre que a aba for selecionada ou houver novas reações/comentários
   useEffect(() => {
@@ -717,7 +772,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       createdAt: formattedTime
     };
 
-    const nextMessages = [...(selectedSosTicket.messages || []), adminMsg];
+    let latestMessages = selectedSosTicket.messages || [];
+    try {
+      const { data: latestRow } = await supabase
+        .from('sos_tickets')
+        .select('messages')
+        .eq('id', selectedSosTicket.id)
+        .maybeSingle();
+      if (latestRow && Array.isArray(latestRow.messages) && latestRow.messages.length > 0) {
+        latestMessages = latestRow.messages;
+      }
+    } catch (err) {
+      console.warn('Erro ao ler mensagens mais recentes:', err);
+    }
+
+    const nextMessages = [...latestMessages, adminMsg];
 
     await supabase
       .from('sos_tickets')
@@ -732,20 +801,20 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
     await replySosTicket(selectedSosTicket.id, replyText);
 
-    setSosTickets(prev => prev.map(t => t.id === selectedSosTicket.id ? { 
-      ...t, 
+    setSosTickets(prev => prev.map(t => t.id === selectedSosTicket.id ? {
+      ...t,
       status: 'em_atendimento',
       adminReply: replyText,
       repliedAt: new Date().toLocaleString('pt-BR'),
       messages: nextMessages
     } : t));
 
-    setSelectedSosTicket(prev => prev ? { 
-      ...prev, 
-      status: 'em_atendimento', 
-      adminReply: replyText, 
+    setSelectedSosTicket(prev => prev ? {
+      ...prev,
+      status: 'em_atendimento',
+      adminReply: replyText,
       repliedAt: new Date().toLocaleString('pt-BR'),
-      messages: nextMessages 
+      messages: nextMessages
     } : null);
 
     setSosReplyText('');
@@ -1414,43 +1483,54 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               </p>
             </div>
 
-            {/* Urgency Filter Pills (Without 'Triagem IA' title) */}
-            <div className="flex items-center gap-1.5 bg-[#070D0F] p-1.5 rounded-2xl border border-white/10 self-start sm:self-center">
+            {/* Urgency Filter Pills and Refresh Button */}
+            <div className="flex items-center gap-2 self-start sm:self-center">
               <button
-                onClick={() => setSosUrgencyFilter('todos')}
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
-                  sosUrgencyFilter === 'todos' ? 'bg-[#FF7F5B] text-slate-950 font-extrabold' : 'text-slate-400 hover:text-white'
-                }`}
+                onClick={() => loadTickets()}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#070D0F] hover:bg-white/10 text-slate-300 hover:text-white rounded-2xl border border-white/10 text-xs font-bold transition-all cursor-pointer"
+                title="Atualizar chamados"
               >
-                Todas
+                <RefreshCw className="w-3.5 h-3.5 text-[#FF7F5B]" />
+                <span>Atualizar</span>
               </button>
-              <button
-                onClick={() => setSosUrgencyFilter('alta')}
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
-                  sosUrgencyFilter === 'alta' ? 'bg-red-500 text-white' : 'text-red-400 hover:bg-red-500/10'
-                }`}
-                title="Filtrar Urgência Alta"
-              >
-                🔴
-              </button>
-              <button
-                onClick={() => setSosUrgencyFilter('media')}
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
-                  sosUrgencyFilter === 'media' ? 'bg-amber-500 text-slate-950' : 'text-amber-400 hover:bg-amber-500/10'
-                }`}
-                title="Filtrar Urgência Média"
-              >
-                🟡
-              </button>
-              <button
-                onClick={() => setSosUrgencyFilter('baixa')}
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
-                  sosUrgencyFilter === 'baixa' ? 'bg-emerald-500 text-slate-950' : 'text-emerald-400 hover:bg-emerald-500/10'
-                }`}
-                title="Filtrar Urgência Baixa"
-              >
-                🟢
-              </button>
+
+              <div className="flex items-center gap-1.5 bg-[#070D0F] p-1.5 rounded-2xl border border-white/10">
+                <button
+                  onClick={() => setSosUrgencyFilter('todos')}
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
+                    sosUrgencyFilter === 'todos' ? 'bg-[#FF7F5B] text-slate-950 font-extrabold' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Todas
+                </button>
+                <button
+                  onClick={() => setSosUrgencyFilter('alta')}
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
+                    sosUrgencyFilter === 'alta' ? 'bg-red-500 text-white' : 'text-red-400 hover:bg-red-500/10'
+                  }`}
+                  title="Filtrar Urgência Alta"
+                >
+                  🔴
+                </button>
+                <button
+                  onClick={() => setSosUrgencyFilter('media')}
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
+                    sosUrgencyFilter === 'media' ? 'bg-amber-500 text-slate-950' : 'text-amber-400 hover:bg-amber-500/10'
+                  }`}
+                  title="Filtrar Urgência Média"
+                >
+                  🟡
+                </button>
+                <button
+                  onClick={() => setSosUrgencyFilter('baixa')}
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
+                    sosUrgencyFilter === 'baixa' ? 'bg-emerald-500 text-slate-950' : 'text-emerald-400 hover:bg-emerald-500/10'
+                  }`}
+                  title="Filtrar Urgência Baixa"
+                >
+                  🟢
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1549,7 +1629,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 filteredSosTickets.map(ticket => (
                   <div
                     key={ticket.id}
-                    onClick={() => setSelectedSosTicket(ticket)}
+                    onClick={() => handleSelectSosTicket(ticket)}
                     className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1.5 text-left relative ${
                       selectedSosTicket?.id === ticket.id
                         ? 'bg-[#162327] border-[#FF7F5B] shadow-xl'

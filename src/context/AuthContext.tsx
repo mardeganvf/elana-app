@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { UserProfile, Badge } from '../types';
 import { ALL_BADGES, getLevelFromXP, USER_LEVELS } from '../data/gamificationData';
 import { JOURNEYS_DATA } from '../data/journeysData';
@@ -99,6 +99,7 @@ interface AuthContextType {
   archiveSosTicket: (ticketId: string) => Promise<void>;
   clearActiveSosTicket: () => void;
   markSosResponseRead: () => void;
+  refreshSosTicket: () => Promise<void>;
   refreshUserFromBackend: () => Promise<void>;
 }
 
@@ -218,70 +219,92 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Carregar último chamado SOS do usuário direto do Supabase
+  const refreshSosTicket = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const { data: ticketData } = await supabase
+        .from('sos_tickets')
+        .select('*')
+        .eq('profile_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (ticketData) {
+        // Se o ticket já foi arquivado e o usuário limpou localmente, não reabre
+        const localSaved = localStorage.getItem('elana_sos_ticket_response');
+        if (ticketData.status === 'arquivado' && !localSaved) {
+          return;
+        }
+
+        let messagesList: SOSMessage[] = [];
+        if (Array.isArray(ticketData.messages) && ticketData.messages.length > 0) {
+          messagesList = ticketData.messages;
+        } else {
+          if (ticketData.user_message || ticketData.message) {
+            messagesList.push({
+              id: 'leg-u',
+              sender: 'user',
+              senderName: ticketData.user_name || 'Você',
+              senderAvatar: ticketData.user_avatar,
+              text: ticketData.user_message || ticketData.message,
+              createdAt: ticketData.created_at ? new Date(ticketData.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora'
+            });
+          }
+          if (ticketData.admin_reply) {
+            messagesList.push({
+              id: 'leg-a',
+              sender: 'admin',
+              senderName: 'Equipe Elana',
+              text: ticketData.admin_reply,
+              createdAt: ticketData.replied_at ? new Date(ticketData.replied_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora'
+            });
+          }
+        }
+
+        const parsed: SOSTicketResponse = {
+          id: ticketData.id,
+          ticketId: ticketData.id,
+          userMessage: ticketData.user_message || ticketData.message || '',
+          adminReply: ticketData.admin_reply || undefined,
+          repliedAt: ticketData.replied_at
+            ? new Date(ticketData.replied_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+            : undefined,
+          isRead: Boolean(ticketData.is_read),
+          status: ticketData.status as any,
+          createdAt: ticketData.created_at ? new Date(ticketData.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          messages: messagesList
+        };
+
+        setSosResponse(parsed);
+        localStorage.setItem('elana_sos_ticket_response', JSON.stringify(parsed));
+      }
+    } catch (err) {
+      console.warn('Notice fetching SOS ticket:', err);
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     if (!user?.id) return;
-    const fetchUserSosTicket = async () => {
-      try {
-        const { data: ticketData } = await supabase
-          .from('sos_tickets')
-          .select('*')
-          .eq('profile_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+    refreshSosTicket();
 
-        if (ticketData) {
-          // Se o ticket já foi arquivado e o usuário limpou localmente, não reabre
-          const localSaved = localStorage.getItem('elana_sos_ticket_response');
-          if (ticketData.status === 'arquivado' && !localSaved) {
-            return;
-          }
+    // Inscrição em tempo real para sincronizar respostas e mensagens do chamado
+    const channel = supabase
+      .channel(`user_sos_realtime_${user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'sos_tickets',
+        filter: `profile_id=eq.${user.id}`
+      }, () => {
+        refreshSosTicket();
+      })
+      .subscribe();
 
-          let messagesList: SOSMessage[] = [];
-          if (Array.isArray(ticketData.messages) && ticketData.messages.length > 0) {
-            messagesList = ticketData.messages;
-          } else {
-            if (ticketData.user_message || ticketData.message) {
-              messagesList.push({
-                id: 'leg-u',
-                sender: 'user',
-                senderName: ticketData.user_name || 'Você',
-                senderAvatar: ticketData.user_avatar,
-                text: ticketData.user_message || ticketData.message,
-                createdAt: ticketData.created_at ? new Date(ticketData.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora'
-              });
-            }
-            if (ticketData.admin_reply) {
-              messagesList.push({
-                id: 'leg-a',
-                sender: 'admin',
-                senderName: 'Equipe Elana',
-                text: ticketData.admin_reply,
-                createdAt: ticketData.replied_at ? new Date(ticketData.replied_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora'
-              });
-            }
-          }
-
-          setSosResponse({
-            id: ticketData.id,
-            ticketId: ticketData.id,
-            userMessage: ticketData.user_message || ticketData.message || '',
-            adminReply: ticketData.admin_reply || undefined,
-            repliedAt: ticketData.replied_at
-              ? new Date(ticketData.replied_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-              : undefined,
-            isRead: Boolean(ticketData.is_read),
-            status: ticketData.status as any,
-            createdAt: ticketData.created_at ? new Date(ticketData.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : undefined,
-            messages: messagesList
-          });
-        }
-      } catch (err) {
-        console.warn('Notice fetching SOS ticket:', err);
-      }
+    return () => {
+      supabase.removeChannel(channel);
     };
-    fetchUserSosTicket();
-  }, [user?.id]);
+  }, [user?.id, refreshSosTicket]);
 
   // Salvar no localStorage sempre que o estado user mudar
   useEffect(() => {
@@ -1324,7 +1347,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: formattedTime
     };
 
-    const currentMessages: SOSMessage[] = [...(sosResponse?.messages || []), newMsg];
+    let baseMessages = sosResponse?.messages || [];
+    if (ticketId && ticketId.length > 20) {
+      try {
+        const { data: latestRow } = await supabase
+          .from('sos_tickets')
+          .select('messages')
+          .eq('id', ticketId)
+          .maybeSingle();
+        if (latestRow && Array.isArray(latestRow.messages) && latestRow.messages.length > 0) {
+          baseMessages = latestRow.messages;
+        }
+      } catch (err) {
+        console.warn('Notice fetching latest SOS messages:', err);
+      }
+    }
+
+    const currentMessages: SOSMessage[] = [...baseMessages, newMsg];
     const nextTicket: SOSTicketResponse = {
       ...(sosResponse || { userMessage: messageText.trim(), isRead: true }),
       id: ticketId,
@@ -1503,6 +1542,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         archiveSosTicket,
         clearActiveSosTicket,
         markSosResponseRead,
+        refreshSosTicket,
         refreshUserFromBackend
       }}
     >

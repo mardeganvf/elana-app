@@ -55,7 +55,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     sendUserFollowUpMessage, 
     clearActiveSosTicket, 
     markSosResponseRead, 
-    awardBadge 
+    awardBadge,
+    refreshSosTicket
   } = useAuth();
   const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
@@ -215,6 +216,17 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     }
   }, [isEmergencyOpen, sosResponse?.messages?.length]);
 
+  // Polling automático a cada 4 segundos enquanto o modal de acolhimento SOS estiver aberto
+  useEffect(() => {
+    if (isEmergencyOpen) {
+      refreshSosTicket();
+      const interval = setInterval(() => {
+        refreshSosTicket();
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [isEmergencyOpen, refreshSosTicket]);
+
   const handleSendSosTicket = async () => {
     if (!sosMessage.trim() || isSendingSos) return;
     setIsSendingSos(true);
@@ -237,6 +249,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     try {
       await sendUserFollowUpMessage(ticketId, sosFollowUpText.trim());
       setSosFollowUpText('');
+      await refreshSosTicket();
       showToast('success', 'Mensagem enviada com carinho para a equipe! 🌸');
     } catch (err) {
       console.error('Erro ao enviar follow-up:', err);
