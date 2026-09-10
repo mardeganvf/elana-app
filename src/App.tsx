@@ -145,6 +145,15 @@ const AppContent: React.FC = () => {
     setActiveTab('classroom');
   };
 
+  const handleRestartTutorial = () => {
+    setActiveTab('home');
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    setIsSpotlightTourOpen(false);
+    setTimeout(() => {
+      setIsSpotlightTourOpen(true);
+    }, 100);
+  };
+
   if (!user || activeTab === 'login') {
     return (
       <Suspense fallback={<PageLoadingFallback />}>
@@ -177,6 +186,7 @@ const AppContent: React.FC = () => {
             setActiveTab('login');
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
           }}
+          onRestartTutorial={handleRestartTutorial}
         />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-safe-nav md:pb-0">
@@ -211,6 +221,7 @@ const AppContent: React.FC = () => {
                     setActiveTab('home');
                     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
                   }}
+                  onRestartTutorial={handleRestartTutorial}
                 />
               )}
 
@@ -296,7 +307,9 @@ const AppContent: React.FC = () => {
           onClose={() => setIsSpotlightTourOpen(false)}
           onComplete={() => {
             setIsSpotlightTourOpen(false);
-            setIsBadgeRewardOpen(true);
+            if (!user?.onboardingCompleted) {
+              setIsBadgeRewardOpen(true);
+            }
           }}
         />
 

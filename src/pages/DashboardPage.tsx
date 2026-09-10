@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useJourneys } from '../context/JourneysContext';
 import { JOURNEYS_DATA as STATIC_JOURNEYS } from '../data/journeysData';
 import { Journey } from '../types';
-import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle } from 'lucide-react';
+import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle, HelpCircle } from 'lucide-react';
 import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
 import { BadgeGallery, getUnlockedBadgesCount } from '../components/gamification/BadgeGallery';
 import { UserLevelsModal } from '../components/gamification/UserLevelsModal';
@@ -18,6 +18,7 @@ interface DashboardPageProps {
   onStartLearning: (journey: Journey, lessonId?: string) => void;
   onOpenCertificate: (journey: Journey) => void;
   onExploreCatalog: () => void;
+  onRestartTutorial?: () => void;
 }
 
 // Helper para máscara de celular brasileiro: (00) 00000-0000 ou (00) 0000-0000
@@ -29,7 +30,7 @@ const formatPhoneMask = (val: string) => {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 };
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog, onRestartTutorial }) => {
   const { user, logout, updateUser, awardBadge, refreshUserFromBackend } = useAuth();
   const { showToast } = useToast();
 
@@ -1254,15 +1255,26 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
         <BadgeGallery unlockedBadges={user.badges} hideHeaderTitle={false} />
       </section>
 
-      {/* Logout button */}
-      <div className="pt-6 border-t border-white/10 flex justify-end">
-        <button
-          onClick={logout}
-          className="flex items-center gap-2 text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl border border-red-500/30 hover:bg-red-500/10 transition-all"
-        >
-          <LogOut className="w-4 h-4" />
-          Sair da Conta
-        </button>
+      {/* Footer Actions: Rever Tutorial & Sair da Conta */}
+      <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        {onRestartTutorial && (
+          <button
+            onClick={onRestartTutorial}
+            className="flex items-center justify-center gap-2 text-slate-300 hover:text-white text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all cursor-pointer"
+          >
+            <HelpCircle className="w-4 h-4 text-[#FF7F5B]" />
+            <span>Rever Tutorial de Boas-Vindas</span>
+          </button>
+        )}
+        <div className="flex justify-end">
+          <button
+            onClick={logout}
+            className="flex items-center justify-center gap-2 text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl border border-red-500/30 hover:bg-red-500/10 transition-all cursor-pointer w-full sm:w-auto"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sair da Conta</span>
+          </button>
+        </div>
       </div>
 
       {/* 📖 Caderno de Anotações Modal */}

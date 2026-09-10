@@ -30,6 +30,7 @@ interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onOpenAuthModal: () => void;
+  onRestartTutorial?: () => void;
 }
 
 interface CalendarDay {
@@ -40,7 +41,7 @@ interface CalendarDay {
   isToday?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenAuthModal }) => {
+export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenAuthModal, onRestartTutorial }) => {
   const { user, isAuthenticated, logout, sosResponse, sendSosTicket, markSosResponseRead, awardBadge } = useAuth();
   const isAdmin = isAdminUser(user);
   const { fontSize, setFontSize } = useFontSize();
@@ -467,8 +468,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                       <button
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
-                          localStorage.removeItem(`elana_spotlight_done_${user.email}`);
-                          window.location.reload();
+                          if (onRestartTutorial) {
+                            onRestartTutorial();
+                          }
                         }}
                         className="w-full text-xs font-bold text-slate-300 hover:text-white p-2 rounded-xl hover:bg-white/5 flex items-center gap-2 transition-colors text-left cursor-pointer"
                       >

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Sparkles, ArrowRight, ArrowLeft, CheckCircle2, Heart } from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, CheckCircle2, Heart, X } from 'lucide-react';
 
 interface GuidedSpotlightTourProps {
   isOpen: boolean;
@@ -138,6 +138,12 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
     };
   }, [isOpen, currentStep]);
 
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentStep(0);
+    }
+  }, [isOpen]);
+
   if (!isOpen || !user) return null;
 
   const current = steps[currentStep];
@@ -237,7 +243,7 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
         style={getCardStyle()}
       >
         
-        {/* Top Header Icon (No Close Button) */}
+        {/* Top Header Icon & Close Button */}
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-[#FF7F5B]/20 border border-[#FF7F5B]/50 flex items-center justify-center text-[#FF7F5B]">
@@ -249,6 +255,13 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
               </span>
             )}
           </div>
+          <button
+            onClick={onClose}
+            aria-label="Fechar tutorial"
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Content Box (Title AND Message inside the exact same container with matching left padding) */}
