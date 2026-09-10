@@ -169,6 +169,14 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
     }
   };
 
+  const handleClose = () => {
+    localStorage.setItem(`elana_spotlight_done_${user.email.toLowerCase().trim()}`, 'true');
+    if (updateUser) {
+      updateUser({ onboardingCompleted: true });
+    }
+    onClose();
+  };
+
   const getCardStyle = (): React.CSSProperties => {
     if (!targetRect || targetRect.width === 0 || targetRect.height === 0) {
       return {
@@ -256,7 +264,7 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
             )}
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Fechar tutorial"
             className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
           >

@@ -19,7 +19,7 @@ interface OnboardingTutorialModalProps {
 }
 
 export const OnboardingTutorialModal: React.FC<OnboardingTutorialModalProps> = ({ isOpen, onClose }) => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
 
   if (!isOpen || !user) return null;
@@ -84,6 +84,9 @@ export const OnboardingTutorialModal: React.FC<OnboardingTutorialModalProps> = (
       setCurrentStep(prev => prev + 1);
     } else {
       localStorage.setItem(`elana_onboarding_done_${user.email}`, 'true');
+      if (updateUser) {
+        updateUser({ onboardingCompleted: true });
+      }
       onClose();
     }
   };
@@ -99,6 +102,9 @@ export const OnboardingTutorialModal: React.FC<OnboardingTutorialModalProps> = (
         <button
           onClick={() => {
             localStorage.setItem(`elana_onboarding_done_${user.email}`, 'true');
+            if (updateUser) {
+              updateUser({ onboardingCompleted: true });
+            }
             onClose();
           }}
           className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-colors"

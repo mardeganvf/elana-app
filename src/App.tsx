@@ -42,7 +42,7 @@ const PageLoadingFallback: React.FC = () => (
 );
 
 const AppContent: React.FC = () => {
-  const { user, login, unlockedBadgeModal, closeBadgeModal, unlockedLevelUpModal, closeLevelUpModal } = useAuth();
+  const { user, login, updateUser, unlockedBadgeModal, closeBadgeModal, unlockedLevelUpModal, closeLevelUpModal } = useAuth();
   const { activePoll, userVotedPollsMap, refreshPosts } = useCommunity();
   const { journeys } = useJourneys();
   
@@ -105,7 +105,12 @@ const AppContent: React.FC = () => {
       const isTourDoneLocally = localStorage.getItem(tourKey) === 'true';
       const isTourDoneInBackend = Boolean(user.onboardingCompleted);
 
-      if (!isTourDoneLocally && !isTourDoneInBackend) {
+      // Auto-sincronização bidirecional entre backend e cache local
+      if (isTourDoneInBackend && !isTourDoneLocally) {
+        localStorage.setItem(tourKey, 'true');
+      } else if (isTourDoneLocally && !isTourDoneInBackend) {
+        updateUser({ onboardingCompleted: true });
+      } else if (!isTourDoneLocally && !isTourDoneInBackend) {
         const timer = setTimeout(() => {
           setIsSpotlightTourOpen(true);
         }, 500);

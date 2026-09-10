@@ -926,7 +926,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const badgeXpSum = badges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
       const xp = badgeXpSum;
       const levelInfo = getLevelFromXP(xp);
-      const isTourFinished = profile.tag === 'onboarded' || xp >= 25 || (isUserAdmin && xp > 0);
+      const isTourFinished = Boolean(profile.onboarding_completed) || profile.tag === 'onboarded' || xp >= 25 || (isUserAdmin && xp > 0);
 
       const finalBio = userBio || adminRecoveredBio || undefined;
       const finalPhone = profile.phone || adminRecoveredPhone || undefined;
@@ -1131,6 +1131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           level_icon: levelInfo.icon || '🌱',
           streak_days: updatedUser.streakDays,
           notifications_enabled: !!updatedUser.notificationsEnabled,
+          onboarding_completed: !!updatedUser.onboardingCompleted,
           respiro_cycles: updatedUser.respiroCycles !== undefined ? updatedUser.respiroCycles : (baseUser.respiroCycles || 0),
           last_active_date: new Date().toISOString(),
           updated_at: new Date().toISOString()
