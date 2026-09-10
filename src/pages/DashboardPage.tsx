@@ -5,7 +5,7 @@ import { useJourneys } from '../context/JourneysContext';
 import { useCommunity } from '../context/CommunityContext';
 import { JOURNEYS_DATA as STATIC_JOURNEYS } from '../data/journeysData';
 import { Journey, CommunityPost } from '../types';
-import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle, HelpCircle, Trash2, ArrowRight, MessageSquare } from 'lucide-react';
+import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle, HelpCircle, Trash2, ArrowRight, MessageSquare, ChevronDown } from 'lucide-react';
 import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
 import { BadgeGallery, getUnlockedBadgesCount } from '../components/gamification/BadgeGallery';
 import { UserLevelsModal } from '../components/gamification/UserLevelsModal';
@@ -42,6 +42,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
   // User Authored Posts Management
   const [userPosts, setUserPosts] = useState<CommunityPost[]>([]);
+  const [visibleUserPostsCount, setVisibleUserPostsCount] = useState<number>(5);
   const [isLoadingUserPosts, setIsLoadingUserPosts] = useState(false);
   const [postToDelete, setPostToDelete] = useState<CommunityPost | null>(null);
   const [isDeletingPost, setIsDeletingPost] = useState(false);
@@ -50,7 +51,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     if (user?.id) {
       setIsLoadingUserPosts(true);
       fetchUserPosts(user.id)
-        .then(posts => setUserPosts(posts))
+        .then(posts => {
+          setUserPosts(posts);
+          setVisibleUserPostsCount(5);
+        })
         .finally(() => setIsLoadingUserPosts(false));
     }
   }, [user?.id]);
@@ -1289,7 +1293,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
         <BadgeGallery unlockedBadges={user.badges} hideHeaderTitle={false} />
       </section>
 
-      {/* 💬 Minhas Publicações na Comunidade */}
+      {/* 💬 Minhas Publicações */}
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
           <div className="flex items-center gap-2.5">
@@ -1298,7 +1302,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                Minhas Publicações na Comunidade
+                Minhas Publicações
               </h3>
               <p className="text-xs text-slate-400">
                 Gerencie todas as publicações de sua autoria na plataforma
@@ -1308,14 +1312,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-white/10 text-slate-300 border border-white/10">
-              {userPosts.length} {userPosts.length === 1 ? 'publicação' : 'publicações'}
+              {userPosts.length > 5 
+                ? `${Math.min(visibleUserPostsCount, userPosts.length)} de ${userPosts.length} publicações`
+                : `${userPosts.length} ${userPosts.length === 1 ? 'publicação' : 'publicações'}`}
             </span>
             <button
               onClick={() => {
                 if (user?.id) {
                   setIsLoadingUserPosts(true);
                   fetchUserPosts(user.id)
-                    .then(posts => setUserPosts(posts))
+                    .then(posts => {
+                      setUserPosts(posts);
+                      setVisibleUserPostsCount(5);
+                    })
                     .finally(() => setIsLoadingUserPosts(false));
                 }
               }}
@@ -1355,7 +1364,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
           </div>
         ) : (
           <div className="space-y-3">
-            {userPosts.map(post => {
+            {userPosts.slice(0, visibleUserPostsCount).map(post => {
               const reactionsCount = Object.values(post.reactions || {}).reduce((a, b) => a + b, 0);
               const commentsCount = post.comments?.length || 0;
 
@@ -1427,6 +1436,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 </div>
               );
             })}
+
+            {visibleUserPostsCount < userPosts.length && (
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setVisibleUserPostsCount(prev => prev + 5)}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-white text-xs font-black uppercase tracking-wider transition-all border border-white/10 hover:border-white/20 cursor-pointer shadow-sm active:scale-95"
+                >
+                  <ChevronDown className="w-4 h-4 text-[#8A9A5B]" />
+                  <span>Carregar mais 5 publicações</span>
+                  <span className="text-[11px] font-normal text-slate-400">
+                    ({userPosts.length - visibleUserPostsCount} restantes)
+                  </span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </section>
