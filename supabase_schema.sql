@@ -266,6 +266,7 @@ DROP POLICY IF EXISTS "profiles_select_auth" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_update_all" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_admin_or_own" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_delete_own" ON public.profiles;
 
 CREATE POLICY "profiles_select_auth"
@@ -276,11 +277,23 @@ CREATE POLICY "profiles_insert_own"
   ON public.profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
--- Permite que o próprio usuário e administradores atualizem perfis e papéis
-CREATE POLICY "profiles_update_all"
+-- Função de segurança no Postgres para validação de papel Administrador
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid()
+    AND (role = 'admin' OR role = 'Administrador')
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Permite que o próprio usuário atualize seu perfil e que administradores gerenciem qualquer perfil
+CREATE POLICY "profiles_update_admin_or_own"
   ON public.profiles FOR UPDATE
-  USING (true)
-  WITH CHECK (true);
+  USING (auth.uid() = id OR public.is_admin())
+  WITH CHECK (auth.uid() = id OR public.is_admin());
 
 CREATE POLICY "profiles_delete_own"
   ON public.profiles FOR DELETE

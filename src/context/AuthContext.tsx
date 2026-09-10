@@ -54,18 +54,14 @@ export interface AdminPendingCounts {
   total: number;
 }
 
-export const ADMIN_EMAILS = [
-  'vitor.mardegan@redetv.com.br',
-  'mardeganvf@gmail.com'
-];
-
+/**
+ * Verificação de Administrador 100% segura e baseada no Banco de Dados (Supabase).
+ * Nenhum e-mail de administrador fica fixo ou exposto no código-fonte compilado.
+ */
 export const isAdminUser = (user: UserProfile | null): boolean => {
   if (!user) return false;
-  const emailClean = (user.email || '').trim().toLowerCase();
-  if (ADMIN_EMAILS.includes(emailClean)) return true;
-  const roleLower = (user.role || '').toLowerCase();
-  if (roleLower === 'admin' || roleLower === 'administrador') return true;
-  return false;
+  const roleLower = (user.role || '').toLowerCase().trim();
+  return roleLower === 'admin' || roleLower === 'administrador';
 };
 
 export const triggerSosPushNotification = (title: string, body: string) => {
@@ -611,7 +607,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const { data: adminProfiles } = await supabase
             .from('profiles')
             .select('*')
-            .in('email', ADMIN_EMAILS)
+            .or('role.eq.admin,role.eq.Administrador')
             .neq('id', profileId)
             .gt('xp', 0);
 
