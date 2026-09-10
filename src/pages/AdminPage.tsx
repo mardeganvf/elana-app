@@ -35,7 +35,8 @@ import {
   Maximize2,
   Minimize2,
   Minus,
-  Bell
+  Bell,
+  Save
 } from 'lucide-react';
 import { useAuth, isAdminUser, SOSMessage, deduplicateSosMessages } from '../context/AuthContext';
 import { useCommunity, checkContentSensitivity } from '../context/CommunityContext';
@@ -46,6 +47,12 @@ import { AdminContentManager } from '../components/admin/AdminContentManager';
 import { AdminDestaquesManager } from '../components/admin/AdminDestaquesManager';
 import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
 import { getLevelFromXP } from '../data/gamificationData';
+import {
+  PermissionKey,
+  RolePermissionsRecord,
+  PERMISSION_DEFINITIONS,
+  DEFAULT_ROLE_PERMISSIONS
+} from '../types';
 
 // Types for Admin Data
 interface SOSTicket {
@@ -137,6 +144,42 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const isAdmin = isAdminUser(user);
 
   const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'permissions' | 'polls' | 'destaques' | null>(null);
+
+  // Permissões por Papel / Categoria (Customizáveis)
+  const [rolePermissions, setRolePermissions] = useState<Record<'membro' | 'guia' | 'admin', RolePermissionsRecord>>(() => {
+    try {
+      const saved = localStorage.getItem('elana_role_permissions');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          membro: { ...DEFAULT_ROLE_PERMISSIONS.membro, ...(parsed.membro || {}) },
+          guia: { ...DEFAULT_ROLE_PERMISSIONS.guia, ...(parsed.guia || {}) },
+          admin: { ...DEFAULT_ROLE_PERMISSIONS.admin, ...(parsed.admin || {}) }
+        };
+      }
+    } catch (err) {
+      console.warn('Erro ao ler permissões locais:', err);
+    }
+    return DEFAULT_ROLE_PERMISSIONS;
+  });
+
+  const [activePermissionRoleTab, setActivePermissionRoleTab] = useState<'membro' | 'guia' | 'admin'>('guia');
+  const [hasUnsavedPermissions, setHasUnsavedPermissions] = useState(false);
+  const [isSavingPermissions, setIsSavingPermissions] = useState(false);
+
+  // Papel efetivo do usuário logado e verificação dinâmica de permissão
+  const currentUserRole = (() => {
+    if (isAdmin) return 'admin';
+    const r = (user?.role || '').toLowerCase();
+    if (r.includes('admin')) return 'admin';
+    if (r.includes('guia')) return 'guia';
+    return 'membro';
+  })();
+
+  const canAccess = useCallback((permKey: PermissionKey): boolean => {
+    if (currentUserRole === 'admin') return true;
+    return Boolean(rolePermissions[currentUserRole]?.[permKey]);
+  }, [currentUserRole, rolePermissions]);
 
   // Grupos expansíveis (drop-downs) do menu lateral - iniciam todos recolhidos
   const [openMenuGroups, setOpenMenuGroups] = useState<Record<string, boolean>>({
@@ -757,6 +800,25 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     };
     loadMembers();
     loadEmotionalAnalytics();
+
+    const loadRolePermissions = async () => {
+      try {
+        const { data } = await supabase.from('role_permissions').select('*');
+        if (data && data.length > 0) {
+          const updated = { ...DEFAULT_ROLE_PERMISSIONS };
+          data.forEach((row: { role: string; permissions: any }) => {
+            if (row.role === 'membro' || row.role === 'guia' || row.role === 'admin') {
+              updated[row.role] = { ...DEFAULT_ROLE_PERMISSIONS[row.role], ...(row.permissions || {}) };
+            }
+          });
+          setRolePermissions(updated);
+          localStorage.setItem('elana_role_permissions', JSON.stringify(updated));
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar permissões do Supabase:', err);
+      }
+    };
+    loadRolePermissions();
   }, [loadTickets]);
 
   // Polling e Realtime para aba SOS
@@ -1066,6 +1128,53 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     await handleUpdateMemberRole(userId, newRole);
   };
 
+  // 🛡️ Handlers para Customização de Permissões
+  const handleTogglePermission = (role: 'membro' | 'guia' | 'admin', key: PermissionKey) => {
+    if (role === 'admin' && key === 'admin_permissions_mgmt') {
+      showToast('error', 'A permissão de configurar acessos não pode ser desativada do Administrador.');
+      return;
+    }
+    setRolePermissions(prev => ({
+      ...prev,
+      [role]: {
+        ...prev[role],
+        [key]: !prev[role][key]
+      }
+    }));
+    setHasUnsavedPermissions(true);
+  };
+
+  const handleSavePermissions = async () => {
+    setIsSavingPermissions(true);
+    try {
+      localStorage.setItem('elana_role_permissions', JSON.stringify(rolePermissions));
+
+      const roles: Array<'membro' | 'guia' | 'admin'> = ['membro', 'guia', 'admin'];
+      for (const r of roles) {
+        await supabase.from('role_permissions').upsert({
+          role: r,
+          permissions: rolePermissions[r],
+          updated_at: new Date().toISOString()
+        });
+      }
+
+      setHasUnsavedPermissions(false);
+      showToast('success', 'Autorizações e acessos salvos com sucesso! ✨');
+    } catch (err) {
+      console.warn('Erro ao salvar permissões no Supabase:', err);
+      showToast('info', 'Permissões salvas no navegador (localmente).');
+      setHasUnsavedPermissions(false);
+    } finally {
+      setIsSavingPermissions(false);
+    }
+  };
+
+  const handleResetDefaultPermissions = () => {
+    setRolePermissions(DEFAULT_ROLE_PERMISSIONS);
+    setHasUnsavedPermissions(true);
+    showToast('info', 'Permissões restauradas para os padrões recomendados da Elana. Clique em "Salvar Alterações" para confirmar.');
+  };
+
   // Limpar Bio de Membro (caso tenha herdado dados indevidamente)
   const handleClearMemberBio = async (userId: string) => {
     setMembers(prev => prev.map(m => m.id === userId ? { ...m, bio: undefined } : m));
@@ -1235,8 +1344,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     );
   }
 
-  // Security Guard 2: User is logged in but does not have admin permissions
-  if (!isAdmin) {
+  // Security Guard 2: User is logged in but does not have any admin permissions
+  const hasAdminPrivileges = isAdmin || canAccess('admin_access') || canAccess('admin_sos_reply') || canAccess('admin_moderation');
+  if (!hasAdminPrivileges) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-[#101B1E] border border-amber-500/20 rounded-3xl p-8 text-center space-y-6 shadow-2xl backdrop-blur-xl">
@@ -1311,7 +1421,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         <aside className={`w-full lg:w-72 shrink-0 ${isMobileMenuOpen ? 'block' : 'hidden lg:block'}`}>
           <div className="bg-[#101B1E] border border-white/10 rounded-3xl p-4 sm:p-5 shadow-xl space-y-4 lg:sticky lg:top-24">
             {/* GRUPO 1: JORNADAS */}
-            <div className="space-y-1.5">
+            {canAccess('admin_content_mgmt') && (
+              <div className="space-y-1.5">
               <div className="flex items-center justify-between px-2.5 py-1">
                 <button
                   type="button"
@@ -1453,246 +1564,267 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 </div>
               )}
             </div>
+            )}
 
             {/* SEÇÃO DESTAQUES */}
-            <div className="space-y-1 pt-2 border-t border-white/5">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveAdminTab('destaques');
-                  setSelectedJourneyId('');
-                  setSelectedModuleId(null);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer select-none ${
-                  activeAdminTab === 'destaques'
-                    ? 'text-white bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                    : 'text-[#FF7F5B] hover:text-[#ff9b7d]'
-                }`}
-              >
-                <span>Destaques</span>
-              </button>
-            </div>
+            {canAccess('admin_destaques_mgmt') && (
+              <div className="space-y-1 pt-2 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveAdminTab('destaques');
+                    setSelectedJourneyId('');
+                    setSelectedModuleId(null);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer select-none ${
+                    activeAdminTab === 'destaques'
+                      ? 'text-white bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                      : 'text-[#FF7F5B] hover:text-[#ff9b7d]'
+                  }`}
+                >
+                  <span>Destaques</span>
+                </button>
+              </div>
+            )}
 
             {/* GRUPO 2: COMUNIDADE & MODERAÇÃO */}
-            <div className="space-y-1 pt-2 border-t border-white/5">
-              <div className="relative flex items-center">
-                {!openMenuGroups.community && pendingModCount > 0 && (
+            {(canAccess('admin_moderation') || canAccess('admin_polls_mgmt')) && (
+              <div className="space-y-1 pt-2 border-t border-white/5">
+                <div className="relative flex items-center">
+                  {!openMenuGroups.community && pendingModCount > 0 && canAccess('admin_moderation') && (
+                    <button
+                      type="button"
+                      onClick={() => toggleMenuGroup('community')}
+                      className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+                      title="Publicações sob moderação"
+                    >
+                      <Bell className="w-3 h-3 text-white fill-white animate-bounce" />
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => toggleMenuGroup('community')}
-                    className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
-                    title="Publicações sob moderação"
+                    className={`w-full h-8 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none ${
+                      !openMenuGroups.community && pendingModCount > 0 && canAccess('admin_moderation') ? 'pl-6 pr-2.5' : 'px-2.5'
+                    }`}
                   >
-                    <Bell className="w-3 h-3 text-white fill-white animate-bounce" />
+                    <span className="flex items-center gap-1.5">
+                      <span>Comunidade & Moderação</span>
+                    </span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.community ? 'rotate-0' : '-rotate-90'}`} />
                   </button>
-                )}
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => toggleMenuGroup('community')}
-                  className={`w-full h-8 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none ${
-                    !openMenuGroups.community && pendingModCount > 0 ? 'pl-6 pr-2.5' : 'px-2.5'
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <span>Comunidade & Moderação</span>
-                  </span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.community ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-              </div>
+                {openMenuGroups.community && (
+                  <div className="space-y-1 pl-1">
+                    {canAccess('admin_moderation') && (
+                      <div className="relative flex items-center">
+                        {pendingModCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveAdminTab('moderation');
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className="absolute -left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+                            title="Publicações sob moderação"
+                          >
+                            <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
+                          </button>
+                        )}
 
-              {openMenuGroups.community && (
-                <div className="space-y-1 pl-1">
-                  <div className="relative flex items-center">
-                    {pendingModCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveAdminTab('moderation');
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`w-full h-9 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                            pendingModCount > 0 ? 'pl-7 pr-3' : 'px-3'
+                          } ${
+                            activeAdminTab === 'moderation'
+                              ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none'
+                              : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none'
+                          }`}
+                        >
+                          <span>Moderação de Posts</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {canAccess('admin_polls_mgmt') && (
                       <button
                         type="button"
                         onClick={() => {
-                          setActiveAdminTab('moderation');
+                          setActiveAdminTab('polls');
                           setIsMobileMenuOpen(false);
                         }}
-                        className="absolute -left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
-                        title="Publicações sob moderação"
+                        className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                          activeAdminTab === 'polls'
+                            ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                            : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                        }`}
                       >
-                        <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
+                        <span>Enquetes</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
+                          activeAdminTab === 'polls' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-white/10 text-slate-400'
+                        }`}>
+                          {polls.length}
+                        </span>
                       </button>
                     )}
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveAdminTab('moderation');
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`w-full h-9 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                        pendingModCount > 0 ? 'pl-7 pr-3' : 'px-3'
-                      } ${
-                        activeAdminTab === 'moderation'
-                          ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none'
-                          : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none'
-                      }`}
-                    >
-                      <span>Moderação de Posts</span>
-                    </button>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('polls');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'polls'
-                        ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                        : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
-                    }`}
-                  >
-                    <span>Enquetes</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
-                      activeAdminTab === 'polls' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-white/10 text-slate-400'
-                    }`}>
-                      {polls.length}
-                    </span>
-                  </button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* GRUPO 3: ACOLHIMENTO & ATENDIMENTO */}
-            <div className="space-y-1 pt-2 border-t border-white/5">
-              <div className="relative flex items-center">
-                {!openMenuGroups.support && pendingCount > 0 && (
+            {(canAccess('admin_sos_reply') || canAccess('admin_analytics')) && (
+              <div className="space-y-1 pt-2 border-t border-white/5">
+                <div className="relative flex items-center">
+                  {!openMenuGroups.support && pendingCount > 0 && canAccess('admin_sos_reply') && (
+                    <button
+                      type="button"
+                      onClick={() => toggleMenuGroup('support')}
+                      className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+                      title="Chamados SOS pendentes"
+                    >
+                      <Bell className="w-3 h-3 text-white fill-white animate-bounce" />
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => toggleMenuGroup('support')}
-                    className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
-                    title="Chamados SOS pendentes"
+                    className={`w-full h-8 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none ${
+                      !openMenuGroups.support && pendingCount > 0 && canAccess('admin_sos_reply') ? 'pl-6 pr-2.5' : 'px-2.5'
+                    }`}
                   >
-                    <Bell className="w-3 h-3 text-white fill-white animate-bounce" />
+                    <span className="flex items-center gap-1.5">
+                      <span>Acolhimento & SOS</span>
+                    </span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.support ? 'rotate-0' : '-rotate-90'}`} />
                   </button>
-                )}
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => toggleMenuGroup('support')}
-                  className={`w-full h-8 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none ${
-                    !openMenuGroups.support && pendingCount > 0 ? 'pl-6 pr-2.5' : 'px-2.5'
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <span>Acolhimento & SOS</span>
-                  </span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.support ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-              </div>
+                {openMenuGroups.support && (
+                  <div className="space-y-1 pl-1">
+                    {canAccess('admin_sos_reply') && (
+                      <div className="relative flex items-center">
+                        {pendingCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveAdminTab('sos');
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className="absolute -left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+                            title="Chamados SOS pendentes"
+                          >
+                            <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
+                          </button>
+                        )}
 
-              {openMenuGroups.support && (
-                <div className="space-y-1 pl-1">
-                  <div className="relative flex items-center">
-                    {pendingCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveAdminTab('sos');
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`w-full h-9 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                            pendingCount > 0 ? 'pl-7 pr-3' : 'px-3'
+                          } ${
+                            activeAdminTab === 'sos'
+                              ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none'
+                              : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none'
+                          }`}
+                        >
+                          <span>Atendimento SOS</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {canAccess('admin_analytics') && (
                       <button
                         type="button"
                         onClick={() => {
-                          setActiveAdminTab('sos');
+                          setActiveAdminTab('analytics');
                           setIsMobileMenuOpen(false);
                         }}
-                        className="absolute -left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
-                        title="Chamados SOS pendentes"
+                        className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                          activeAdminTab === 'analytics'
+                            ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                            : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                        }`}
                       >
-                        <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
+                        <span>Termômetro Emocional</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* GRUPO 4: MEMBROS */}
+            {(canAccess('admin_members_mgmt') || canAccess('admin_permissions_mgmt')) && (
+              <div className="space-y-1 pt-2 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => toggleMenuGroup('users')}
+                  className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
+                >
+                  <span>Membros</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.users ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+
+                {openMenuGroups.users && (
+                  <div className="space-y-1 pl-1">
+                    {/* Botão 1: Gestão de Membros */}
+                    {canAccess('admin_members_mgmt') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveAdminTab('users');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                          activeAdminTab === 'users'
+                            ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                            : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                        }`}
+                      >
+                        <span>Gestão de Membros</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
+                          activeAdminTab === 'users' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-white/10 text-slate-400'
+                        }`}>
+                          {members.length}
+                        </span>
                       </button>
                     )}
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveAdminTab('sos');
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`w-full h-9 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                        pendingCount > 0 ? 'pl-7 pr-3' : 'px-3'
-                      } ${
-                        activeAdminTab === 'sos'
-                          ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none'
-                          : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none'
-                      }`}
-                    >
-                      <span>Atendimento SOS</span>
-                    </button>
+                    {/* Botão 2: Autorização e Acessos */}
+                    {canAccess('admin_permissions_mgmt') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveAdminTab('permissions');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                          activeAdminTab === 'permissions'
+                            ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                            : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                        }`}
+                      >
+                        <span>Autorização e Acessos</span>
+                      </button>
+                    )}
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('analytics');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'analytics'
-                        ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                        : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
-                    }`}
-                  >
-                    <span>Termômetro Emocional</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* GRUPO 4: MEMBROS */}
-            <div className="space-y-1 pt-2 border-t border-white/5">
-              <button
-                type="button"
-                onClick={() => toggleMenuGroup('users')}
-                className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
-              >
-                <span>Membros</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.users ? 'rotate-0' : '-rotate-90'}`} />
-              </button>
-
-              {openMenuGroups.users && (
-                <div className="space-y-1 pl-1">
-                  {/* Botão 1: Gestão de Membros */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('users');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'users'
-                        ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                        : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
-                    }`}
-                  >
-                    <span>Gestão de Membros</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-black ${
-                      activeAdminTab === 'users' ? 'bg-[#FF7F5B]/20 text-[#FF7F5B]' : 'bg-white/10 text-slate-400'
-                    }`}>
-                      {members.length}
-                    </span>
-                  </button>
-
-                  {/* Botão 2: Autorização e Acessos */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('permissions');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'permissions'
-                        ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                        : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
-                    }`}
-                  >
-                    <span>Autorização e Acessos</span>
-                  </button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
           </div>
         </aside>
@@ -2751,180 +2883,287 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         const totalGuiasCount = members.filter(m => m.role === 'guia').length;
         const totalAdminsCount = members.filter(m => m.role === 'admin').length;
 
+        const adminPerms = PERMISSION_DEFINITIONS.filter(p => p.category === 'admin');
+        const communityPerms = PERMISSION_DEFINITIONS.filter(p => p.category === 'community');
+        const contentPerms = PERMISSION_DEFINITIONS.filter(p => p.category === 'content');
+        const supportPerms = PERMISSION_DEFINITIONS.filter(p => p.category === 'support');
+
+        const activePermissions = rolePermissions[activePermissionRoleTab] || DEFAULT_ROLE_PERMISSIONS[activePermissionRoleTab];
+
+        const renderPermissionRow = (perm: typeof PERMISSION_DEFINITIONS[0]) => {
+          const isEnabled = Boolean(activePermissions[perm.key]);
+          const isMasterProtected = activePermissionRoleTab === 'admin' && perm.key === 'admin_permissions_mgmt';
+
+          return (
+            <div
+              key={perm.key}
+              className="p-4 sm:p-5 rounded-2xl bg-[#070D0F] border border-white/5 hover:border-white/15 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            >
+              <div className="space-y-1 min-w-0 flex-1">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="text-sm font-bold text-white tracking-tight">
+                    {perm.label}
+                  </span>
+                  {isMasterProtected && (
+                    <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-md font-mono border border-purple-500/30">
+                      Protegido (Mestre)
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {perm.description}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                {/* Badge de Status */}
+                <span className={`text-[10px] font-black px-2.5 py-1 rounded-full border tracking-wide transition-all ${
+                  isEnabled
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                    : 'bg-white/5 text-slate-400 border-white/10'
+                }`}>
+                  {isEnabled ? 'Liberado' : 'Bloqueado'}
+                </span>
+
+                {/* Interruptor Interativo (Toggle Switch) */}
+                <button
+                  type="button"
+                  disabled={isMasterProtected}
+                  onClick={() => handleTogglePermission(activePermissionRoleTab, perm.key)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    isMasterProtected ? 'opacity-40 cursor-not-allowed' : ''
+                  } ${isEnabled ? 'bg-emerald-500' : 'bg-slate-800'}`}
+                  title={
+                    isMasterProtected
+                      ? 'Esta permissão de segurança não pode ser desativada'
+                      : isEnabled
+                      ? 'Clique para bloquear este acesso'
+                      : 'Clique para liberar este acesso'
+                  }
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                      isEnabled ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          );
+        };
+
         return (
           <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-            <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
-              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                Autorizações e Acessos por Categoria
-              </h2>
+            {/* CABEÇALHO COM AÇÕES */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
+              <div className="space-y-1">
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Autorizações e Acessos por Categoria
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-400">
+                  Personalize de forma granular quais ferramentas e recursos cada papel pode acessar e operar na Elana.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 shrink-0">
+                {/* Restaurar Padrões */}
+                <button
+                  type="button"
+                  onClick={handleResetDefaultPermissions}
+                  className="px-3.5 py-2 rounded-2xl bg-[#070D0F] border border-white/10 text-xs font-bold text-slate-300 hover:text-white hover:border-white/20 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                  title="Restaurar valores padrão recomendados"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="hidden sm:inline">Restaurar Padrões</span>
+                  <span className="sm:hidden">Restaurar</span>
+                </button>
+
+                {/* Salvar Alterações */}
+                <button
+                  type="button"
+                  onClick={handleSavePermissions}
+                  disabled={isSavingPermissions}
+                  className={`px-4 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-md active:scale-95 ${
+                    hasUnsavedPermissions
+                      ? 'bg-[#FF7F5B] hover:bg-[#ff6f47] text-white ring-2 ring-[#FF7F5B]/30'
+                      : 'bg-emerald-600/25 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-600/35'
+                  }`}
+                  title="Salvar alterações no banco Supabase"
+                >
+                  {isSavingPermissions ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Save className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {isSavingPermissions
+                      ? 'Salvando...'
+                      : hasUnsavedPermissions
+                      ? 'Salvar Alterações'
+                      : 'Salvo no Supabase'}
+                  </span>
+                </button>
+              </div>
             </div>
 
-              {/* Grid das 3 Categorias */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                {/* 1. Usuário */}
-                <div className="bg-[#070D0F] p-5 sm:p-6 rounded-2xl border border-white/10 flex flex-col justify-between space-y-5">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 font-bold text-xs flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5 text-slate-400" /> Usuário
-                      </span>
-                      <span className="text-[10px] text-slate-500 font-mono">
-                        {totalUsersCount} membros
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Membros cadastrados que consomem jornadas, realizam check-ins e interagem ativamente na comunidade da Aldeia.
-                    </p>
-
-                    <div className="space-y-2 pt-2 border-t border-white/5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                        Permissões & Acessos:
-                      </span>
-                      <ul className="space-y-2 text-xs text-slate-300">
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>Acesso às trilhas, aulas e conteúdos liberados</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>Participação na comunidade (criar posts e acolher)</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>Check-in diário e histórico no Termômetro Emocional</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>Votar nas enquetes ativas da comunidade</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>Abertura de chamados e suporte na Central SOS</span>
-                        </li>
-                      </ul>
-                    </div>
+            {/* SELETOR DE CATEGORIA EM ABAS (Pill Tabs) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#070D0F] p-2 rounded-2xl border border-white/10">
+              {/* 1. Usuário */}
+              <button
+                type="button"
+                onClick={() => setActivePermissionRoleTab('membro')}
+                className={`p-3.5 rounded-xl text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                  activePermissionRoleTab === 'membro'
+                    ? 'bg-white/10 border border-white/20 shadow-lg text-white'
+                    : 'hover:bg-white/5 border border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-2 rounded-xl border ${
+                    activePermissionRoleTab === 'membro' ? 'bg-white/10 border-white/20 text-white' : 'bg-white/5 border-white/10 text-slate-400'
+                  }`}>
+                    <User className="w-4 h-4" />
                   </div>
-
-                  <div className="pt-3 border-t border-white/5">
-                    <span className="text-[11px] text-slate-500 flex items-center gap-1.5">
-                      <Lock className="w-3 h-3 text-slate-600" />
-                      Sem acesso ao Painel de Administração
-                    </span>
+                  <div>
+                    <span className="text-xs font-bold block text-white">Usuário</span>
+                    <span className="text-[10px] text-slate-400">{totalUsersCount} membros</span>
                   </div>
                 </div>
+                {activePermissionRoleTab === 'membro' && (
+                  <span className="w-2 h-2 rounded-full bg-white shrink-0" />
+                )}
+              </button>
 
-                {/* 2. Guia & Mentora */}
-                <div className="bg-[#070D0F] p-5 sm:p-6 rounded-2xl border border-[#8A9A5B]/30 flex flex-col justify-between space-y-5">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="px-3 py-1 rounded-full bg-[#8A9A5B]/20 border border-[#8A9A5B]/40 text-[#8A9A5B] font-extrabold text-xs flex items-center gap-1.5">
-                        <ShieldCheck className="w-3.5 h-3.5 text-[#8A9A5B]" /> Guia & Mentora
-                      </span>
-                      <span className="text-[10px] text-[#8A9A5B] font-mono font-bold">
-                        {totalGuiasCount} membros
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Membros de referência reconhecidos pela escuta ativa e acolhimento parental qualificado para orientar a comunidade.
-                    </p>
-
-                    <div className="space-y-2 pt-2 border-t border-white/5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9A5B] block">
-                        Permissões & Acessos:
-                      </span>
-                      <ul className="space-y-2 text-xs text-slate-300">
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>Todas as permissões da categoria Usuário</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>Selo distintivo Guia & Mentora no perfil e publicações</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>Destaque visual em respostas e acolhimentos empáticos</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>Reconhecimento comunitário para liderança de rodas</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>Acesso a materiais e fóruns especiais de mentoria</span>
-                        </li>
-                      </ul>
-                    </div>
+              {/* 2. Guia & Mentora */}
+              <button
+                type="button"
+                onClick={() => setActivePermissionRoleTab('guia')}
+                className={`p-3.5 rounded-xl text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                  activePermissionRoleTab === 'guia'
+                    ? 'bg-[#8A9A5B]/20 border border-[#8A9A5B]/50 shadow-lg text-[#c2d689]'
+                    : 'hover:bg-white/5 border border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-2 rounded-xl border ${
+                    activePermissionRoleTab === 'guia' ? 'bg-[#8A9A5B]/30 border-[#8A9A5B]/50 text-[#8A9A5B]' : 'bg-white/5 border-white/10 text-slate-400'
+                  }`}>
+                    <ShieldCheck className="w-4 h-4 text-[#8A9A5B]" />
                   </div>
-
-                  <div className="pt-3 border-t border-white/5">
-                    <span className="text-[11px] text-[#8A9A5B] flex items-center gap-1.5 font-bold">
-                      <Sparkles className="w-3 h-3 text-[#8A9A5B]" />
-                      Voz de referência e acolhimento oficial
-                    </span>
+                  <div>
+                    <span className="text-xs font-bold block text-white">Guia & Mentora</span>
+                    <span className="text-[10px] text-[#8A9A5B] font-bold">{totalGuiasCount} mentora(s)</span>
                   </div>
                 </div>
+                {activePermissionRoleTab === 'guia' && (
+                  <span className="w-2 h-2 rounded-full bg-[#8A9A5B] shrink-0" />
+                )}
+              </button>
 
-                {/* 3. Administrador */}
-                <div className="bg-[#070D0F] p-5 sm:p-6 rounded-2xl border border-purple-500/30 flex flex-col justify-between space-y-5">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 font-extrabold text-xs flex items-center gap-1.5">
-                        <ShieldAlert className="w-3.5 h-3.5 text-purple-400" /> Administrador
-                      </span>
-                      <span className="text-[10px] text-purple-400 font-mono font-bold">
-                        {totalAdminsCount} membros
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Gestão completa da plataforma Elana: controle de publicações, conteúdo curricular, enquetes e usuários.
-                    </p>
-
-                    <div className="space-y-2 pt-2 border-t border-white/5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400 block">
-                        Permissões & Acessos:
-                      </span>
-                      <ul className="space-y-2 text-xs text-slate-300">
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
-                          <span>Acesso integral e irrestrito ao Painel Admin</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
-                          <span>Moderação antijulgamento e exclusão de posts/comentários</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
-                          <span>Gestão de Jornadas, Módulos, Aulas e Upload de Vídeos</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
-                          <span>Criação e controle de Enquetes e Vídeos em Destaque</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
-                          <span>Atribuição e alteração de papéis de Membros</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
-                          <span>Atendimento de chamados e respostas na Central SOS</span>
-                        </li>
-                      </ul>
-                    </div>
+              {/* 3. Administrador */}
+              <button
+                type="button"
+                onClick={() => setActivePermissionRoleTab('admin')}
+                className={`p-3.5 rounded-xl text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                  activePermissionRoleTab === 'admin'
+                    ? 'bg-purple-950/40 border border-purple-500/50 shadow-lg text-purple-200'
+                    : 'hover:bg-white/5 border border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-2 rounded-xl border ${
+                    activePermissionRoleTab === 'admin' ? 'bg-purple-500/20 border-purple-500/40 text-purple-300' : 'bg-white/5 border-white/10 text-slate-400'
+                  }`}>
+                    <ShieldAlert className="w-4 h-4 text-purple-400" />
                   </div>
-
-                  <div className="pt-3 border-t border-white/5">
-                    <span className="text-[11px] text-purple-300 flex items-center gap-1.5 font-bold">
-                      <ShieldAlert className="w-3 h-3 text-purple-400" />
-                      Permissão máxima de controle e governança
-                    </span>
+                  <div>
+                    <span className="text-xs font-bold block text-white">Administrador</span>
+                    <span className="text-[10px] text-purple-400 font-bold">{totalAdminsCount} admin(s)</span>
                   </div>
+                </div>
+                {activePermissionRoleTab === 'admin' && (
+                  <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
+                )}
+              </button>
+            </div>
+
+            {/* BANNER DESCRITIVO DA CATEGORIA ATIVA */}
+            <div className="p-4 rounded-2xl bg-[#070D0F] border border-white/10 flex items-start gap-3">
+              <Sparkles className="w-4 h-4 text-[#FF7F5B] shrink-0 mt-0.5" />
+              <div className="text-xs text-slate-300 leading-relaxed space-y-1">
+                {activePermissionRoleTab === 'membro' && (
+                  <p>
+                    <strong>Perfil Usuário:</strong> Membros que consomem trilhas de aulas, realizam check-ins no Termômetro Emocional e participam de publicações e enquetes comunitárias.
+                  </p>
+                )}
+                {activePermissionRoleTab === 'guia' && (
+                  <p>
+                    <strong>Perfil Guia & Mentora:</strong> Membros qualificados com escuta ativa. <span className="text-[#c2d689] font-bold">Você pode liberar acesso pontual a funções de gestão</span> (como responder a chamados SOS e moderar postagens flageadas pela IA) sem conceder controle total da plataforma.
+                  </p>
+                )}
+                {activePermissionRoleTab === 'admin' && (
+                  <p>
+                    <strong>Perfil Administrador:</strong> Governança integral da plataforma, controle de conteúdos, moderação, gestão de membros e segurança das permissões.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* LISTAGEM GRANULAR DE PERMISSÕES DIVIDIDA EM 4 BLOCOS */}
+            <div className="space-y-6">
+              {/* BLOCO 1: PAINEL ADMINISTRATIVO & GESTÃO */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 px-1">
+                  <Lock className="w-4 h-4 text-purple-400" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-300">
+                    Painel Administrativo & Gestão
+                  </h3>
+                </div>
+                <div className="space-y-2.5">
+                  {adminPerms.map(renderPermissionRow)}
                 </div>
               </div>
-            </section>
+
+              {/* BLOCO 2: COMUNIDADE & INTERAÇÃO */}
+              <div className="space-y-3 pt-4 border-t border-white/10">
+                <div className="flex items-center gap-2 px-1">
+                  <Users className="w-4 h-4 text-[#FF7F5B]" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-300">
+                    Comunidade & Interação
+                  </h3>
+                </div>
+                <div className="space-y-2.5">
+                  {communityPerms.map(renderPermissionRow)}
+                </div>
+              </div>
+
+              {/* BLOCO 3: CONTEÚDOS & BEM-ESTAR */}
+              <div className="space-y-3 pt-4 border-t border-white/10">
+                <div className="flex items-center gap-2 px-1">
+                  <BookOpen className="w-4 h-4 text-emerald-400" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-300">
+                    Conteúdos & Bem-Estar
+                  </h3>
+                </div>
+                <div className="space-y-2.5">
+                  {contentPerms.map(renderPermissionRow)}
+                </div>
+              </div>
+
+              {/* BLOCO 4: SUPORTE AO USUÁRIO (SOS) */}
+              <div className="space-y-3 pt-4 border-t border-white/10">
+                <div className="flex items-center gap-2 px-1">
+                  <Inbox className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-300">
+                    Suporte & Acolhimento SOS
+                  </h3>
+                </div>
+                <div className="space-y-2.5">
+                  {supportPerms.map(renderPermissionRow)}
+                </div>
+              </div>
+            </div>
+          </section>
         );
       })()}
 

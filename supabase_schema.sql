@@ -1074,3 +1074,36 @@ CREATE POLICY "reactions_delete_all"
 ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS reactions JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE public.community_comments ADD COLUMN IF NOT EXISTS reactions JSONB DEFAULT '{}'::jsonb;
 
+-- ========================================================
+-- 19. TABELA DE PERMISSÕES E AUTORIZAÇÕES POR PAPEL (PUBLIC.ROLE_PERMISSIONS)
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.role_permissions (
+  role TEXT PRIMARY KEY, -- 'membro', 'guia', 'admin'
+  permissions JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.role_permissions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "role_permissions_select_all" ON public.role_permissions;
+DROP POLICY IF EXISTS "role_permissions_insert_all" ON public.role_permissions;
+DROP POLICY IF EXISTS "role_permissions_update_all" ON public.role_permissions;
+DROP POLICY IF EXISTS "role_permissions_delete_all" ON public.role_permissions;
+
+CREATE POLICY "role_permissions_select_all"
+  ON public.role_permissions FOR SELECT
+  USING (true);
+
+CREATE POLICY "role_permissions_insert_all"
+  ON public.role_permissions FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "role_permissions_update_all"
+  ON public.role_permissions FOR UPDATE
+  USING (true);
+
+CREATE POLICY "role_permissions_delete_all"
+  ON public.role_permissions FOR DELETE
+  USING (true);
+
+
