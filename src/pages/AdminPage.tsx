@@ -176,7 +176,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [pollSuccessMessage, setPollSuccessMessage] = useState(false);
   const [expandedPollIds, setExpandedPollIds] = useState<Record<string, boolean>>({});
   const [visiblePollsCount, setVisiblePollsCount] = useState(5);
-  const [isCreatePollOpen, setIsCreatePollOpen] = useState(false);
+  const [isCreatePollOpen, setIsCreatePollOpen] = useState(true);
 
   const toggleJourneyInPoll = (journeyTitle: string) => {
     if (selectedPollJourneys.includes(journeyTitle)) {
@@ -2543,392 +2543,412 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       )}
 
       {/* TAB 6: 🗳️ GESTÃO DE ENQUETES (SUA VOZ IMPORTA) */}
-      {activeAdminTab === 'polls' && (
-        <div className="space-y-8">
-          {/* Card 1: Criar Nova Enquete (Expansível / Retrátil) */}
-          <section className="bg-[#101B1E] rounded-3xl border border-white/10 shadow-xl overflow-hidden transition-all">
-            <button
-              type="button"
-              onClick={() => setIsCreatePollOpen(!isCreatePollOpen)}
-              className="w-full p-5 sm:p-6 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors cursor-pointer select-none"
+      {activeAdminTab === 'polls' && (() => {
+        const activePolls = polls.filter(p => p.status === 'open');
+        const finishedPolls = polls.filter(p => p.status !== 'open');
+
+        const renderPollItem = (poll: typeof polls[0]) => {
+          const total = Math.max(1, poll.totalVotes);
+          const isOpen = poll.status === 'open';
+          const isExpanded = !!expandedPollIds[poll.id];
+
+          return (
+            <div
+              key={poll.id}
+              className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 space-y-3 shadow-md transition-all"
             >
-              <div>
-                <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
-                  <span>Criar Nova Enquete</span>
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {isCreatePollOpen
-                    ? 'Preencha os campos abaixo para publicar uma nova enquete na comunidade.'
-                    : 'Clique para expandir e lançar uma nova enquete para os membros.'}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <span className={`text-xs font-bold px-3.5 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 ${
-                  isCreatePollOpen
-                    ? 'bg-white/5 text-slate-300 border-white/10'
-                    : 'bg-[#FF7F5B]/15 text-[#FF7F5B] border-[#FF7F5B]/30'
-                }`}>
-                  <span>{isCreatePollOpen ? 'Recolher' : '+ Nova Enquete'}</span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isCreatePollOpen ? 'rotate-180' : 'rotate-0'}`} />
-                </span>
-              </div>
-            </button>
-
-            {isCreatePollOpen && (
-              <div className="p-6 sm:p-8 pt-0 border-t border-white/5 space-y-4 animate-fade-in">
-                {pollSuccessMessage && (
-                  <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fade-in mt-4">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Enquete publicada com sucesso na Comunidade! 🎉</span>
-                  </div>
-                )}
-
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (!newPollTitle.trim()) return;
-                    const validOptions = newPollOptions.map(opt => opt.trim()).filter(Boolean);
-                    if (validOptions.length < 2) {
-                      alert('Por favor, preencha pelo menos 2 alternativas de voto para a enquete.');
-                      return;
-                    }
-
-                    setIsPublishingPoll(true);
-                    try {
-                      await createPoll({
-                        title: newPollTitle.trim(),
-                        description: newPollDesc.trim() || undefined,
-                        category: selectedPollJourneys.length > 0 ? selectedPollJourneys.join(', ') : undefined,
-                        isMultiSelect: isPollMultiSelect,
-                        options: validOptions
-                      });
-                      setNewPollTitle('');
-                      setNewPollDesc('');
-                      setNewPollOptions(['', '']);
-                      setSelectedPollJourneys([]);
-                      setIsPollMultiSelect(false);
-                      setPollSuccessMessage(true);
-                      setTimeout(() => {
-                        setPollSuccessMessage(false);
-                        setIsCreatePollOpen(false);
-                      }, 2000);
-                    } finally {
-                      setIsPublishingPoll(false);
-                    }
-                  }}
-                  className="space-y-5 pt-4"
-                >
-                  {/* 1. Pergunta da Enquete */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                      Pergunta da Enquete *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newPollTitle}
-                      onChange={(e) => setNewPollTitle(e.target.value)}
-                      placeholder="Ex: Qual o maior desafio na rotina com o seu filho atualmente?"
-                      className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
-                    />
-                  </div>
-
-                  {/* 2. Descrição ou Contexto */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                      Descrição ou Contexto (Opcional)
-                    </label>
-                    <input
-                      type="text"
-                      value={newPollDesc}
-                      onChange={(e) => setNewPollDesc(e.target.value)}
-                      placeholder="Ex: Sua resposta ajuda nossa curadoria a priorizar os próximos conteúdos e encontros."
-                      className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
-                    />
-                  </div>
-
-                  {/* 3. Alternativas de Voto da Enquete */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                        Alternativas de Voto *
-                      </label>
-                      <span className="text-xs font-mono font-bold text-[#FF7F5B]">
-                        {newPollOptions.filter(o => o.trim().length > 0).length} preenchida(s)
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                      isOpen
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                    }`}>
+                      {isOpen ? '🟢 Aberta para Votação' : '⚪ Encerrada'}
+                    </span>
+                    {poll.isMultiSelect && (
+                      <span className="text-[10px] font-bold bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 px-2 py-0.5 rounded-full">
+                        ☑️ Múltipla Escolha
                       </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {newPollOptions.map((opt, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold text-[#FF7F5B] w-6 shrink-0 text-right">
-                            {idx + 1}.
-                          </span>
-                          <input
-                            type="text"
-                            required
-                            value={opt}
-                            onChange={(e) => handleUpdatePollOption(idx, e.target.value)}
-                            placeholder={`Alternativa ${idx + 1} (ex: Dificuldades com o sono noturno)`}
-                            className="flex-1 bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
-                          />
-                          {newPollOptions.length > 2 && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemovePollOption(idx)}
-                              className="p-2.5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 rounded-xl transition-all cursor-pointer shrink-0"
-                              title="Remover esta alternativa"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="pt-1">
-                      <button
-                        type="button"
-                        onClick={handleAddPollOption}
-                        className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl text-xs font-bold border border-white/10 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
-                      >
-                        <Plus className="w-3.5 h-3.5 text-[#FF7F5B]" />
-                        <span>Adicionar Outra Alternativa</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 4. Jornadas de Conhecimento */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                        Jornadas de Conhecimento
-                      </label>
-                      <span className="text-xs font-mono font-bold text-slate-400">
-                        {selectedPollJourneys.length} vinculada(s)
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
-                      {journeys.map((j) => {
-                        const isSelected = selectedPollJourneys.includes(j.title);
-                        return (
-                          <button
-                            key={j.id}
-                            type="button"
-                            onClick={() => toggleJourneyInPoll(j.title)}
-                            className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
-                              isSelected
-                                ? 'bg-[#FF7F5B]/15 border-[#FF7F5B] text-white shadow-sm'
-                                : 'bg-[#070D0F] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
-                            }`}
-                          >
-                            <span className="truncate flex-1">{j.title}</span>
-                            <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] shrink-0 ${
-                              isSelected ? 'bg-[#FF7F5B] text-slate-950 font-black' : 'border border-white/20'
-                            }`}>
-                              {isSelected ? '✓' : ''}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {selectedPollJourneys.length > 0 && (
-                      <div className="pt-2 flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Jornadas vinculadas:</span>
-                        {selectedPollJourneys.map((tag, i) => (
-                          <span key={i} className="text-[11px] bg-white/5 text-slate-300 px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
-                            <span className="text-[#FF7F5B] font-mono font-bold">#</span>
-                            <span>{tag}</span>
-                            <button
-                              type="button"
-                              onClick={() => toggleJourneyInPoll(tag)}
-                              className="hover:text-rose-400 text-xs ml-1 cursor-pointer"
-                              title="Desvincular jornada"
-                            >
-                              ✕
-                            </button>
-                          </span>
-                        ))}
-                      </div>
                     )}
-                  </div>
-
-                  {/* 5. Switch de Múltipla Escolha */}
-                  <div className="flex items-center justify-between p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
-                    <div>
-                      <span className="text-xs font-bold text-white block">Possibilidade de Múltipla Escolha?</span>
-                      <span className="text-[11px] text-slate-400 block mt-0.5">
-                        Quando ativo, os membros da comunidade poderão selecionar mais de uma alternativa ao votar.
+                    {poll.category && (
+                      <span className="text-[10px] font-medium bg-white/5 text-slate-300 border border-white/10 px-2 py-0.5 rounded-full truncate max-w-xs">
+                        📂 {poll.category}
                       </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsPollMultiSelect(!isPollMultiSelect)}
-                      className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                        isPollMultiSelect ? 'bg-[#FF7F5B]' : 'bg-white/20'
-                      }`}
-                    >
-                      <span
-                        className={`w-5 h-5 rounded-full bg-white transition-transform absolute top-0.5 left-0.5 shadow-md ${
-                          isPollMultiSelect ? 'translate-x-6' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      disabled={isPublishingPoll}
-                      className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-3.5 px-6 rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-                    >
-                      <Send className="w-4 h-4" />
-                      <span>{isPublishingPoll ? 'Publicando...' : 'Publicar Enquete na Comunidade'}</span>
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-          </section>
-
-          {/* Card 2: Lista e Histórico de Enquetes */}
-          <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span>Enquetes Cadastradas & Resultados em Tempo Real</span>
-                  <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full text-slate-300">
-                    {polls.length}
-                  </span>
-                </h3>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {polls.slice(0, visiblePollsCount).map((poll) => {
-                const total = Math.max(1, poll.totalVotes);
-                const isOpen = poll.status === 'open';
-                const isExpanded = !!expandedPollIds[poll.id];
-
-                return (
-                  <div
-                    key={poll.id}
-                    className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 space-y-3 shadow-md transition-all"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                            isOpen
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
-                          }`}>
-                            {isOpen ? '🟢 Aberta para Votação' : '⚪ Encerrada'}
-                          </span>
-                          {poll.isMultiSelect && (
-                            <span className="text-[10px] font-bold bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 px-2 py-0.5 rounded-full">
-                              ☑️ Múltipla Escolha
-                            </span>
-                          )}
-                          {poll.category && (
-                            <span className="text-[10px] font-medium bg-white/5 text-slate-300 border border-white/10 px-2 py-0.5 rounded-full truncate max-w-xs">
-                              📂 {poll.category}
-                            </span>
-                          )}
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            • {poll.totalVotes} votos
-                          </span>
-                        </div>
-                        <h4 className="text-sm font-bold text-white mt-1.5 leading-snug">
-                          {poll.title}
-                        </h4>
-                        {poll.description && (
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            {poll.description}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                        {/* Botão de Expandir / Ocultar alternativas e resultados */}
-                        <button
-                          type="button"
-                          onClick={() => togglePollExpansion(poll.id)}
-                          className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
-                            isExpanded
-                              ? 'bg-[#FF7F5B]/15 text-[#FF7F5B] border-[#FF7F5B]/30'
-                              : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
-                          }`}
-                          title={isExpanded ? 'Ocultar alternativas e resultados' : 'Expandir alternativas e resultados'}
-                        >
-                          <span>{isExpanded ? 'Ocultar' : 'Ver Resultados'}</span>
-                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
-                        </button>
-
-                        <button
-                          onClick={() => togglePollStatus(poll.id)}
-                          className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                            isOpen
-                              ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                              : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          }`}
-                        >
-                          {isOpen ? 'Encerrar Votação' : 'Reabrir Enquete'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Progress bars per option (apenas visível quando expandido) */}
-                    {isExpanded && (
-                      <div className="space-y-2 pt-3 border-t border-white/10 animate-fade-in">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                          Alternativas & Resultados:
-                        </span>
-                        {(poll.options || []).map((opt) => {
-                          const pct = Math.round(((opt?.votesCount || 0) / total) * 100);
-                          return (
-                            <div key={opt.id} className="space-y-1">
-                              <div className="flex items-center justify-between text-xs text-slate-300">
-                                <span>{opt.text}</span>
-                                <span className="font-mono font-bold text-[#FFD166]">
-                                  {opt.votesCount || 0} ({pct}%)
-                                </span>
-                              </div>
-                              <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
-                                <div
-                                  className="bg-[#FF7F5B] h-full rounded-full transition-all duration-500"
-                                  style={{ width: `${pct}%` }}
-                                />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
                     )}
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      • {poll.totalVotes} {poll.totalVotes === 1 ? 'voto' : 'votos'}
+                    </span>
                   </div>
-                );
-              })}
+                  <h4 className="text-sm font-bold text-white mt-1.5 leading-snug">
+                    {poll.title}
+                  </h4>
+                  {poll.description && (
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {poll.description}
+                    </p>
+                  )}
+                </div>
 
-              {/* Botão Carregar Mais Enquetes */}
-              {polls.length > visiblePollsCount && (
-                <div className="pt-4 flex justify-center border-t border-white/5">
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                  {/* Botão de Expandir / Ocultar alternativas e resultados */}
                   <button
                     type="button"
-                    onClick={() => setVisiblePollsCount(prev => prev + 5)}
-                    className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold rounded-xl border border-white/10 transition-all cursor-pointer flex items-center gap-2 active:scale-95 shadow-sm"
+                    onClick={() => togglePollExpansion(poll.id)}
+                    className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      isExpanded
+                        ? 'bg-[#FF7F5B]/15 text-[#FF7F5B] border-[#FF7F5B]/30'
+                        : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
+                    }`}
+                    title={isExpanded ? 'Ocultar alternativas e resultados' : 'Expandir alternativas e resultados'}
                   >
-                    <span>Carregar Mais ({polls.length - visiblePollsCount} restantes)</span>
-                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>{isExpanded ? 'Ocultar' : 'Ver Resultados'}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
                   </button>
+
+                  <button
+                    onClick={() => togglePollStatus(poll.id)}
+                    className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                      isOpen
+                        ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    }`}
+                  >
+                    {isOpen ? 'Encerrar Votação' : 'Reabrir Enquete'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Progress bars per option (apenas visível quando expandido) */}
+              {isExpanded && (
+                <div className="space-y-2 pt-3 border-t border-white/10 animate-fade-in">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Alternativas & Resultados:
+                  </span>
+                  {(poll.options || []).map((opt) => {
+                    const pct = Math.round(((opt?.votesCount || 0) / total) * 100);
+                    return (
+                      <div key={opt.id} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs text-slate-300">
+                          <span>{opt.text}</span>
+                          <span className="font-mono font-bold text-[#FFD166]">
+                            {opt.votesCount || 0} ({pct}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="bg-[#FF7F5B] h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
-          </section>
-        </div>
-      )}
+          );
+        };
+
+        return (
+          <div className="space-y-6 w-full">
+            {/* CONTÊINER 1: NOVA ENQUETE */}
+            <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Nova Enquete
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatePollOpen(!isCreatePollOpen)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
+                  >
+                    <ChevronDown className={`w-3.5 h-3.5 text-[#FF7F5B] transition-transform duration-200 ${isCreatePollOpen ? 'rotate-180' : ''}`} />
+                    <span>{isCreatePollOpen ? 'Recolher' : '+ Criar Enquete'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {isCreatePollOpen && (
+                <div className="space-y-4 animate-fade-in">
+                  {pollSuccessMessage && (
+                    <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fade-in">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Enquete publicada com sucesso na Comunidade! 🎉</span>
+                    </div>
+                  )}
+
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!newPollTitle.trim()) return;
+                      const validOptions = newPollOptions.map(opt => opt.trim()).filter(Boolean);
+                      if (validOptions.length < 2) {
+                        alert('Por favor, preencha pelo menos 2 alternativas de voto para a enquete.');
+                        return;
+                      }
+
+                      setIsPublishingPoll(true);
+                      try {
+                        await createPoll({
+                          title: newPollTitle.trim(),
+                          description: newPollDesc.trim() || undefined,
+                          category: selectedPollJourneys.length > 0 ? selectedPollJourneys.join(', ') : undefined,
+                          isMultiSelect: isPollMultiSelect,
+                          options: validOptions
+                        });
+                        setNewPollTitle('');
+                        setNewPollDesc('');
+                        setNewPollOptions(['', '']);
+                        setSelectedPollJourneys([]);
+                        setIsPollMultiSelect(false);
+                        setPollSuccessMessage(true);
+                        setTimeout(() => {
+                          setPollSuccessMessage(false);
+                        }, 2500);
+                      } finally {
+                        setIsPublishingPoll(false);
+                      }
+                    }}
+                    className="space-y-5 pt-2"
+                  >
+                    {/* 1. Pergunta da Enquete */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                        Pergunta da Enquete *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newPollTitle}
+                        onChange={(e) => setNewPollTitle(e.target.value)}
+                        placeholder="Ex: Qual o maior desafio na rotina com o seu filho atualmente?"
+                        className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* 2. Descrição ou Contexto */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                        Descrição ou Contexto (Opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={newPollDesc}
+                        onChange={(e) => setNewPollDesc(e.target.value)}
+                        placeholder="Ex: Sua resposta ajuda nossa curadoria a priorizar os próximos conteúdos e encontros."
+                        className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* 3. Alternativas de Voto da Enquete */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                          Alternativas de Voto *
+                        </label>
+                        <span className="text-xs font-mono font-bold text-[#FF7F5B]">
+                          {newPollOptions.filter(o => o.trim().length > 0).length} preenchida(s)
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {newPollOptions.map((opt, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-bold text-[#FF7F5B] w-6 shrink-0 text-right">
+                              {idx + 1}.
+                            </span>
+                            <input
+                              type="text"
+                              required
+                              value={opt}
+                              onChange={(e) => handleUpdatePollOption(idx, e.target.value)}
+                              placeholder={`Alternativa ${idx + 1} (ex: Dificuldades com o sono noturno)`}
+                              className="flex-1 bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-slate-600 focus:outline-none transition-all"
+                            />
+                            {newPollOptions.length > 2 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePollOption(idx)}
+                                className="p-2.5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 rounded-xl transition-all cursor-pointer shrink-0"
+                                title="Remover esta alternativa"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={handleAddPollOption}
+                          className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl text-xs font-bold border border-white/10 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-[#FF7F5B]" />
+                          <span>Adicionar Outra Alternativa</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4. Jornadas de Conhecimento */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                          Jornadas de Conhecimento
+                        </label>
+                        <span className="text-xs font-mono font-bold text-slate-400">
+                          {selectedPollJourneys.length} vinculada(s)
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+                        {journeys.map((j) => {
+                          const isSelected = selectedPollJourneys.includes(j.title);
+                          return (
+                            <button
+                              key={j.id}
+                              type="button"
+                              onClick={() => toggleJourneyInPoll(j.title)}
+                              className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                                isSelected
+                                  ? 'bg-[#FF7F5B]/15 border-[#FF7F5B] text-white shadow-sm'
+                                  : 'bg-[#070D0F] border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
+                              }`}
+                            >
+                              <span className="truncate flex-1">{j.title}</span>
+                              <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] shrink-0 ${
+                                isSelected ? 'bg-[#FF7F5B] text-slate-950 font-black' : 'border border-white/20'
+                              }`}>
+                                {isSelected ? '✓' : ''}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {selectedPollJourneys.length > 0 && (
+                        <div className="pt-2 flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Jornadas vinculadas:</span>
+                          {selectedPollJourneys.map((tag, i) => (
+                            <span key={i} className="text-[11px] bg-white/5 text-slate-300 px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
+                              <span className="text-[#FF7F5B] font-mono font-bold">#</span>
+                              <span>{tag}</span>
+                              <button
+                                type="button"
+                                onClick={() => toggleJourneyInPoll(tag)}
+                                className="hover:text-rose-400 text-xs ml-1 cursor-pointer"
+                                title="Desvincular jornada"
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 5. Switch de Múltipla Escolha */}
+                    <div className="flex items-center justify-between p-4 bg-[#070D0F] border border-white/10 rounded-2xl">
+                      <div>
+                        <span className="text-xs font-bold text-white block">Possibilidade de Múltipla Escolha?</span>
+                        <span className="text-[11px] text-slate-400 block mt-0.5">
+                          Quando ativo, os membros da comunidade poderão selecionar mais de uma alternativa ao votar.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsPollMultiSelect(!isPollMultiSelect)}
+                        className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                          isPollMultiSelect ? 'bg-[#FF7F5B]' : 'bg-white/20'
+                        }`}
+                      >
+                        <span
+                          className={`w-5 h-5 rounded-full bg-white transition-transform absolute top-0.5 left-0.5 shadow-md ${
+                            isPollMultiSelect ? 'translate-x-6' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={isPublishingPoll}
+                        className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-3.5 px-6 rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>{isPublishingPoll ? 'Publicando...' : 'Publicar Enquete na Comunidade'}</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </section>
+
+            {/* CONTÊINER 2: ENQUETES ATIVAS */}
+            <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Enquetes Ativas
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-bold text-slate-400 px-3.5 py-2 rounded-2xl bg-[#070D0F] border border-white/10 shadow-sm shrink-0">
+                    {activePolls.length} ativa{activePolls.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+              </div>
+
+              {activePolls.length === 0 ? (
+                <div className="py-8 text-center space-y-2 border border-dashed border-white/10 rounded-2xl bg-[#070D0F] p-6">
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    Nenhuma enquete aberta para votação no momento. Crie uma nova enquete acima para engajar a comunidade.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {activePolls.map(poll => renderPollItem(poll))}
+                </div>
+              )}
+            </section>
+
+            {/* CONTÊINER 3: ENQUETES FINALIZADAS */}
+            <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Enquetes Finalizadas
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-bold text-slate-400 px-3.5 py-2 rounded-2xl bg-[#070D0F] border border-white/10 shadow-sm shrink-0">
+                    {finishedPolls.length} finalizada{finishedPolls.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+              </div>
+
+              {finishedPolls.length === 0 ? (
+                <div className="py-8 text-center space-y-2 border border-dashed border-white/10 rounded-2xl bg-[#070D0F] p-6">
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    Nenhuma enquete finalizada até o momento.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {finishedPolls.map(poll => renderPollItem(poll))}
+                </div>
+              )}
+            </section>
+          </div>
+        );
+      })()}
 
         </main>
       </div>
