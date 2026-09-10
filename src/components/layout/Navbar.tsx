@@ -69,6 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMamadaMode, setIsMamadaMode] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [showMadrugadaTooltip, setShowMadrugadaTooltip] = useState(false);
 
   // Modals State for Emoções, SOS and Respiro de 60s
   const [isEmotionalHistoryOpen, setIsEmotionalHistoryOpen] = useState(false);
@@ -502,9 +503,33 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                       
                       {/* Modo Madrugada */}
                       <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition-colors">
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2">
                           <Moon className={`w-4 h-4 transition-colors ${isMamadaMode ? 'text-[#FFD166]' : 'text-slate-400'}`} />
                           <span className="text-xs font-medium text-slate-200">Modo Madrugada</span>
+
+                          {/* Box Explicativo (?) */}
+                          <div className="relative inline-flex items-center">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowMadrugadaTooltip(prev => !prev);
+                              }}
+                              onMouseEnter={() => setShowMadrugadaTooltip(true)}
+                              onMouseLeave={() => setShowMadrugadaTooltip(false)}
+                              className="text-slate-400 hover:text-slate-200 transition-colors p-0.5 rounded-full cursor-help focus:outline-none"
+                              aria-label="Informações sobre o Modo Madrugada"
+                            >
+                              <HelpCircle className="w-3.5 h-3.5" />
+                            </button>
+
+                            {showMadrugadaTooltip && (
+                              <div className="absolute left-0 bottom-full mb-2 w-56 p-2.5 bg-[#142024] border border-white/15 rounded-xl text-[11px] leading-relaxed text-slate-300 shadow-2xl z-50 pointer-events-none animate-fade-in">
+                                Luz suave e contraste atenuado para navegar sem despertar o bebê durante mamadas e cuidados noturnos.
+                                <div className="absolute left-2.5 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-[#142024]" />
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         <button
