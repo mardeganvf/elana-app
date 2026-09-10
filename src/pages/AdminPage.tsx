@@ -262,7 +262,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   // 📊 Termômetro Emocional Real State
   const [emotionalStats, setEmotionalStats] = useState<EmotionalStats | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
-  const [isPurgingDummies, setIsPurgingDummies] = useState(false);
 
   // 🛡️ Moderation Loader - estritamente posts de usuários reais registrados
   const loadModeration = async () => {
@@ -537,62 +536,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       console.warn('Erro ao carregar métricas emocionais:', err);
     } finally {
       setIsLoadingAnalytics(false);
-    }
-  };
-
-  // 🧹 Ação administrativa para zerar posts dummies e limpar dados órfãos
-  const handlePurgeDummyData = async () => {
-    if (!window.confirm('Tem certeza que deseja zerar os posts dummies e limpar o termômetro emocional de dados de teste? Apenas registros de usuários cadastrados serão preservados.')) {
-      return;
-    }
-    setIsPurgingDummies(true);
-    try {
-      // 1. Limpar caches do navegador
-      localStorage.removeItem('elana_community_posts_cache');
-      localStorage.removeItem('elana_community_posts');
-
-      // 2. Buscar IDs de usuários cadastrados no banco
-      const { data: profs } = await supabase.from('profiles').select('id');
-      const registeredIds = (profs || []).map(p => p.id);
-
-      // 3. Deletar posts sem author_id
-      await supabase.from('community_posts').delete().is('author_id', null);
-
-      // 4. Deletar check-ins sem profile_id
-      await supabase.from('emotional_checkins').delete().is('profile_id', null);
-
-      // 5. Deletar posts com author_id dummy ou não cadastrado
-      const { data: allPosts } = await supabase.from('community_posts').select('id, author_id');
-      if (allPosts && allPosts.length > 0) {
-        const dummyPostIds = allPosts
-          .filter(p => !p.author_id || !registeredIds.includes(p.author_id) || p.author_id.startsWith('u-') || p.author_id.length <= 20)
-          .map(p => p.id);
-        if (dummyPostIds.length > 0) {
-          await supabase.from('community_comments').delete().in('post_id', dummyPostIds);
-          await supabase.from('community_posts').delete().in('id', dummyPostIds);
-        }
-      }
-
-      // 6. Deletar check-ins com profile_id dummy ou não cadastrado
-      const { data: allCheckins } = await supabase.from('emotional_checkins').select('id, profile_id');
-      if (allCheckins && allCheckins.length > 0) {
-        const dummyCheckinIds = allCheckins
-          .filter(c => !c.profile_id || !registeredIds.includes(c.profile_id) || c.profile_id.startsWith('u-') || c.profile_id.length <= 20)
-          .map(c => c.id);
-        if (dummyCheckinIds.length > 0) {
-          await supabase.from('emotional_checkins').delete().in('id', dummyCheckinIds);
-        }
-      }
-
-      await refreshPosts();
-      await loadModeration();
-      await loadEmotionalAnalytics();
-      showToast('success', 'Dados de testes e posts dummies zerados com sucesso!');
-    } catch (err) {
-      console.error('Erro ao zerar dummies:', err);
-      showToast('error', 'Erro ao zerar dados de testes.');
-    } finally {
-      setIsPurgingDummies(false);
     }
   };
 
@@ -1912,16 +1855,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isLoadingAnalytics ? 'animate-spin text-[#FF7F5B]' : ''}`} />
                 <span>Atualizar</span>
-              </button>
-              <button
-                type="button"
-                onClick={handlePurgeDummyData}
-                disabled={isPurgingDummies}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-xs font-semibold text-rose-300 hover:text-rose-200 transition-all cursor-pointer disabled:opacity-50"
-                title="Excluir postagens dummies de testes e limpar dados órfãos"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                <span>{isPurgingDummies ? 'Limpando...' : 'Zerar Dummies'}</span>
               </button>
             </div>
           </div>
