@@ -200,14 +200,24 @@ CREATE TABLE IF NOT EXISTS public.sos_tickets (
   profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   user_name TEXT NOT NULL,
   user_avatar TEXT NOT NULL,
+  user_email TEXT,
+  subject TEXT,
+  urgency TEXT DEFAULT 'media',
   user_message TEXT NOT NULL,
+  message TEXT,
   admin_reply TEXT,
   replied_at TIMESTAMPTZ,
   is_read BOOLEAN NOT NULL DEFAULT FALSE,
-  status TEXT NOT NULL DEFAULT 'open', -- 'open', 'in_progress', 'resolved'
+  status TEXT NOT NULL DEFAULT 'pendente', -- 'pendente', 'em_atendimento', 'atendido', 'arquivado', 'deletado'
+  messages JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ALTER TABLE public.sos_tickets ALTER COLUMN profile_id DROP NOT NULL;
+ALTER TABLE public.sos_tickets ADD COLUMN IF NOT EXISTS user_email TEXT;
+ALTER TABLE public.sos_tickets ADD COLUMN IF NOT EXISTS subject TEXT;
+ALTER TABLE public.sos_tickets ADD COLUMN IF NOT EXISTS urgency TEXT DEFAULT 'media';
+ALTER TABLE public.sos_tickets ADD COLUMN IF NOT EXISTS message TEXT;
+ALTER TABLE public.sos_tickets ADD COLUMN IF NOT EXISTS messages JSONB DEFAULT '[]'::jsonb;
 
 -- 13. TABELA DE REDE DE APOIO / SEGUIDORES (USER FOLLOWS)
 CREATE TABLE IF NOT EXISTS public.user_follows (
@@ -546,15 +556,19 @@ DROP POLICY IF EXISTS "sos_update_auth" ON public.sos_tickets;
 
 CREATE POLICY "sos_select_auth"
   ON public.sos_tickets FOR SELECT
-  USING (auth.uid() IS NOT NULL);
+  USING (true);
 
 CREATE POLICY "sos_insert_auth"
   ON public.sos_tickets FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL);
+  WITH CHECK (true);
 
 CREATE POLICY "sos_update_auth"
   ON public.sos_tickets FOR UPDATE
-  USING (auth.uid() IS NOT NULL);
+  USING (true);
+
+CREATE POLICY "sos_delete_auth"
+  ON public.sos_tickets FOR DELETE
+  USING (true);
 
 -- ========================================================
 -- STORAGE: BUCKET user-media — uploads apenas autenticados,

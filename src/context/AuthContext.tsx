@@ -6,11 +6,25 @@ import { supabase } from '../lib/supabase';
 import { getFollowedMembers } from '../lib/followService';
 import confetti from 'canvas-confetti';
 
+export interface SOSMessage {
+  id: string;
+  sender: 'user' | 'admin';
+  senderName: string;
+  senderAvatar?: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface SOSTicketResponse {
+  id?: string;
+  ticketId?: string;
   userMessage: string;
-  adminReply: string;
-  repliedAt: string;
+  adminReply?: string;
+  repliedAt?: string;
   isRead: boolean;
+  status?: 'pendente' | 'em_atendimento' | 'atendido' | 'arquivado' | 'concluido' | 'deletado';
+  createdAt?: string;
+  messages?: SOSMessage[];
 }
 
 export const ADMIN_EMAILS = [
@@ -33,6 +47,32 @@ export const isAdminUser = (user: UserProfile | null): boolean => {
   return ADMIN_EMAILS.includes(emailLower) || emailLower.includes('admin') || emailLower.includes('mardegan');
 };
 
+export const triggerSosPushNotification = (title: string, body: string) => {
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    if (Notification.permission === 'granted') {
+      try {
+        new Notification(title, {
+          body,
+          icon: '/favicon.ico',
+          badge: '/favicon.ico'
+        });
+      } catch {}
+    } else if (Notification.permission === 'default') {
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+          try {
+            new Notification(title, {
+              body,
+              icon: '/favicon.ico',
+              badge: '/favicon.ico'
+            });
+          } catch {}
+        }
+      });
+    }
+  }
+};
+
 export const GENERIC_DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23101B1E'/><circle cx='60' cy='45' r='22' fill='%23FF7F5B'/><path d='M25 105 C 25 75, 95 75, 95 105 Z' fill='%23FF7F5B'/></svg>";
 
 interface AuthContextType {
@@ -53,8 +93,11 @@ interface AuthContextType {
   closeLevelUpModal: () => void;
   triggerLevelUpModal: (level: number) => void;
   sosResponse: SOSTicketResponse | null;
-  sendSosTicket: (userMessage: string) => Promise<void>;
-  replySosTicket: (adminReply: string) => Promise<void>;
+  sendSosTicket: (userMessage: string, subject?: string) => Promise<void>;
+  sendUserFollowUpMessage: (ticketId: string, messageText: string) => Promise<void>;
+  replySosTicket: (ticketId: string, adminReply: string) => Promise<void>;
+  archiveSosTicket: (ticketId: string) => Promise<void>;
+  clearActiveSosTicket: () => void;
   markSosResponseRead: () => void;
   refreshUserFromBackend: () => Promise<void>;
 }
@@ -187,14 +230,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .limit(1)
           .maybeSingle();
 
-        if (ticketData && ticketData.admin_reply) {
+        if (ticketData) {
+          // Se o ticket já foi arquivado e o usuário limpou localmente, não reabre
+          const localSaved = localStorage.getItem('elana_sos_ticket_response');
+          if (ticketData.status === 'arquivado' && !localSaved) {
+            return;
+          }
+
+          let messagesList: SOSMessage[] = [];
+          if (Array.isArray(ticketData.messages) && ticketData.messages.length > 0) {
+            messagesList = ticketData.messages;
+          } else {
+            if (ticketData.user_message || ticketData.message) {
+              messagesList.push({
+                id: 'leg-u',
+                sender: 'user',
+                senderName: ticketData.user_name || 'Você',
+                senderAvatar: ticketData.user_avatar,
+                text: ticketData.user_message || ticketData.message,
+                createdAt: ticketData.created_at ? new Date(ticketData.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora'
+              });
+            }
+            if (ticketData.admin_reply) {
+              messagesList.push({
+                id: 'leg-a',
+                sender: 'admin',
+                senderName: 'Equipe Elana',
+                text: ticketData.admin_reply,
+                createdAt: ticketData.replied_at ? new Date(ticketData.replied_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora'
+              });
+            }
+          }
+
           setSosResponse({
-            userMessage: ticketData.user_message || '',
-            adminReply: ticketData.admin_reply,
+            id: ticketData.id,
+            ticketId: ticketData.id,
+            userMessage: ticketData.user_message || ticketData.message || '',
+            adminReply: ticketData.admin_reply || undefined,
             repliedAt: ticketData.replied_at
               ? new Date(ticketData.replied_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-              : new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-            isRead: Boolean(ticketData.is_read)
+              : undefined,
+            isRead: Boolean(ticketData.is_read),
+            status: ticketData.status as any,
+            createdAt: ticketData.created_at ? new Date(ticketData.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : undefined,
+            messages: messagesList
           });
         }
       } catch (err) {
@@ -1172,44 +1251,188 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const sendSosTicket = async (userMessage: string) => {
+  const sendSosTicket = async (userMessage: string, subject?: string) => {
     if (!user) return;
-    const mockReply: SOSTicketResponse = {
-      userMessage,
-      adminReply: `Oi, ${user.name.split(' ')[0]}! Recebemos seu pedido de acolhimento SOS. Nossa equipe já acolheu seu desabafo com todo carinho e sigilo. Você não está sozinha. Como podemos te ajudar melhor hoje? 💖`,
-      repliedAt: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      isRead: false
+    const formattedTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const initialMsg: SOSMessage = {
+      id: `msg-${Date.now()}`,
+      sender: 'user',
+      senderName: user.name,
+      senderAvatar: user.avatar,
+      text: userMessage.trim(),
+      createdAt: formattedTime
     };
 
-    setSosResponse(mockReply);
-    localStorage.setItem('elana_sos_ticket_response', JSON.stringify(mockReply));
+    const newTicket: SOSTicketResponse = {
+      id: `ticket-${Date.now()}`,
+      ticketId: `ticket-${Date.now()}`,
+      userMessage: userMessage.trim(),
+      adminReply: undefined,
+      repliedAt: undefined,
+      isRead: true,
+      status: 'pendente',
+      createdAt: formattedTime,
+      messages: [initialMsg]
+    };
+
+    setSosResponse(newTicket);
+    localStorage.setItem('elana_sos_ticket_response', JSON.stringify(newTicket));
+
+    // Notificação push acolhedora informando sobre a equipe e apoio especializado de urgência
+    triggerSosPushNotification(
+      'Elana — Acolhimento SOS Recebido 💖',
+      'Recebemos seu pedido de acolhimento. Nossa equipe entrará em contato em breve. Em caso de urgência médica ou crise grave, ligue para o CVV (188) ou SAMU (192).'
+    );
 
     try {
-      await supabase.from('sos_tickets').insert([{
-        profile_id: user.id,
+      const { data, error } = await supabase.from('sos_tickets').insert([{
+        profile_id: user.id && user.id.length > 20 ? user.id : null,
         user_name: user.name,
         user_avatar: user.avatar,
-        user_message: userMessage,
-        admin_reply: mockReply.adminReply,
-        replied_at: new Date().toISOString(),
-        is_read: false,
-        status: 'in_progress'
-      }]);
+        user_email: user.email || '',
+        subject: subject || (userMessage.trim().slice(0, 45) + (userMessage.trim().length > 45 ? '...' : '')),
+        urgency: 'alta',
+        user_message: userMessage.trim(),
+        message: userMessage.trim(),
+        admin_reply: null,
+        is_read: true,
+        status: 'pendente',
+        messages: [initialMsg]
+      }]).select('id').single();
+
+      if (data?.id) {
+        newTicket.id = data.id;
+        newTicket.ticketId = data.id;
+        setSosResponse({ ...newTicket, id: data.id, ticketId: data.id });
+        localStorage.setItem('elana_sos_ticket_response', JSON.stringify({ ...newTicket, id: data.id, ticketId: data.id }));
+      }
     } catch (e) {
       console.error('Error saving SOS ticket to Supabase:', e);
     }
   };
 
-  const replySosTicket = async (adminReply: string) => {
-    if (!sosResponse) return;
-    const updated: SOSTicketResponse = {
-      ...sosResponse,
-      adminReply,
-      repliedAt: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      isRead: false
+  const sendUserFollowUpMessage = async (ticketId: string, messageText: string) => {
+    if (!user || !messageText.trim()) return;
+
+    const formattedTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const newMsg: SOSMessage = {
+      id: `msg-${Date.now()}`,
+      sender: 'user',
+      senderName: user.name,
+      senderAvatar: user.avatar,
+      text: messageText.trim(),
+      createdAt: formattedTime
     };
-    setSosResponse(updated);
-    localStorage.setItem('elana_sos_ticket_response', JSON.stringify(updated));
+
+    let updatedTicket: SOSTicketResponse | null = null;
+
+    setSosResponse(prev => {
+      if (!prev) return null;
+      const updatedMessages = [...(prev.messages || []), newMsg];
+      updatedTicket = {
+        ...prev,
+        status: 'pendente',
+        messages: updatedMessages
+      };
+      localStorage.setItem('elana_sos_ticket_response', JSON.stringify(updatedTicket));
+      return updatedTicket;
+    });
+
+    try {
+      if (ticketId && ticketId.length > 20) {
+        const currentMessages = updatedTicket?.messages || [newMsg];
+        await supabase
+          .from('sos_tickets')
+          .update({
+            status: 'pendente',
+            messages: currentMessages,
+            user_message: messageText.trim(),
+            message: messageText.trim()
+          })
+          .eq('id', ticketId);
+      }
+    } catch (err) {
+      console.warn('Erro ao atualizar mensagem de réplica do SOS:', err);
+    }
+  };
+
+  const replySosTicket = async (ticketId: string, adminReply: string) => {
+    const formattedTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const adminMsg: SOSMessage = {
+      id: `admin-msg-${Date.now()}`,
+      sender: 'admin',
+      senderName: 'Equipe Elana',
+      text: adminReply.trim(),
+      createdAt: formattedTime
+    };
+
+    setSosResponse(prev => {
+      if (!prev) return null;
+      const updated: SOSTicketResponse = {
+        ...prev,
+        adminReply,
+        repliedAt: formattedTime,
+        status: 'em_atendimento',
+        isRead: false,
+        messages: [...(prev.messages || []), adminMsg]
+      };
+      localStorage.setItem('elana_sos_ticket_response', JSON.stringify(updated));
+      return updated;
+    });
+
+    try {
+      if (ticketId && ticketId.length > 20) {
+        const { data } = await supabase
+          .from('sos_tickets')
+          .select('messages')
+          .eq('id', ticketId)
+          .single();
+
+        const current = Array.isArray(data?.messages) ? data.messages : [];
+        const nextMessages = [...current, adminMsg];
+
+        await supabase
+          .from('sos_tickets')
+          .update({
+            admin_reply: adminReply,
+            replied_at: new Date().toISOString(),
+            is_read: false,
+            status: 'em_atendimento',
+            messages: nextMessages
+          })
+          .eq('id', ticketId);
+      }
+    } catch (err) {
+      console.warn('Erro ao responder ticket SOS no Supabase:', err);
+    }
+  };
+
+  const archiveSosTicket = async (ticketId: string) => {
+    setSosResponse(prev => {
+      if (!prev) return null;
+      const updated: SOSTicketResponse = {
+        ...prev,
+        status: 'arquivado'
+      };
+      localStorage.setItem('elana_sos_ticket_response', JSON.stringify(updated));
+      return updated;
+    });
+
+    try {
+      if (ticketId && ticketId.length > 20) {
+        await supabase
+          .from('sos_tickets')
+          .update({ status: 'arquivado' })
+          .eq('id', ticketId);
+      }
+    } catch (err) {
+      console.warn('Erro ao arquivar ticket no Supabase:', err);
+    }
+  };
+
+  const clearActiveSosTicket = () => {
+    setSosResponse(null);
+    localStorage.removeItem('elana_sos_ticket_response');
   };
 
   const markSosResponseRead = async () => {
@@ -1278,7 +1501,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         triggerLevelUpModal,
         sosResponse,
         sendSosTicket,
+        sendUserFollowUpMessage,
         replySosTicket,
+        archiveSosTicket,
+        clearActiveSosTicket,
         markSosResponseRead,
         refreshUserFromBackend
       }}

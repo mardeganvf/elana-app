@@ -34,7 +34,7 @@ import {
   AlertCircle,
   X
 } from 'lucide-react';
-import { useAuth, isAdminUser } from '../context/AuthContext';
+import { useAuth, isAdminUser, SOSMessage } from '../context/AuthContext';
 import { useCommunity, checkContentSensitivity } from '../context/CommunityContext';
 import { useToast } from '../context/ToastContext';
 import { useJourneys } from '../context/JourneysContext';
@@ -52,9 +52,10 @@ interface SOSTicket {
   subject: string;
   message: string;
   createdAt: string;
-  status: 'pendente' | 'atendido' | 'deletado';
+  status: 'pendente' | 'em_atendimento' | 'atendido' | 'arquivado' | 'deletado';
   adminReply?: string;
   repliedAt?: string;
+  messages?: SOSMessage[];
 }
 
 interface ModerationItem {
@@ -124,7 +125,7 @@ export interface AdminPageProps {
 }
 
 export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin }) => {
-  const { user, isAuthenticated, replySosTicket } = useAuth();
+  const { user, isAuthenticated, replySosTicket, archiveSosTicket } = useAuth();
   const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
 
@@ -623,19 +624,47 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         .select('*')
         .order('created_at', { ascending: false });
       if (data) {
-        setSosTickets(data.map(t => ({
-          id: t.id,
-          userName: t.user_name || 'Anônimo',
-          userEmail: t.user_email || '',
-          userAvatar: t.user_avatar || '',
-          urgency: t.urgency || 'media',
-          subject: t.subject || '',
-          message: t.message || '',
-          createdAt: new Date(t.created_at).toLocaleString('pt-BR'),
-          status: t.status || 'pendente',
-          adminReply: t.admin_reply,
-          repliedAt: t.replied_at ? new Date(t.replied_at).toLocaleString('pt-BR') : undefined
-        })));
+        setSosTickets(data.map(t => {
+          let parsedMessages: SOSMessage[] = [];
+          if (Array.isArray(t.messages) && t.messages.length > 0) {
+            parsedMessages = t.messages;
+          } else {
+            if (t.user_message || t.message) {
+              parsedMessages.push({
+                id: `legacy-${t.id}`,
+                sender: 'user',
+                senderName: t.user_name || 'Membro',
+                senderAvatar: t.user_avatar,
+                text: t.user_message || t.message,
+                createdAt: new Date(t.created_at).toLocaleString('pt-BR')
+              });
+            }
+            if (t.admin_reply) {
+              parsedMessages.push({
+                id: `legacy-reply-${t.id}`,
+                sender: 'admin',
+                senderName: 'Equipe Elana',
+                text: t.admin_reply,
+                createdAt: t.replied_at ? new Date(t.replied_at).toLocaleString('pt-BR') : 'Anterior'
+              });
+            }
+          }
+
+          return {
+            id: t.id,
+            userName: t.user_name || 'Anônimo',
+            userEmail: t.user_email || '',
+            userAvatar: t.user_avatar || '',
+            urgency: t.urgency || 'media',
+            subject: t.subject || ((t.user_message || t.message || '').slice(0, 40) || 'Pedido de Acolhimento SOS'),
+            message: t.user_message || t.message || '',
+            createdAt: new Date(t.created_at).toLocaleString('pt-BR'),
+            status: t.status || 'pendente',
+            adminReply: t.admin_reply,
+            repliedAt: t.replied_at ? new Date(t.replied_at).toLocaleString('pt-BR') : undefined,
+            messages: parsedMessages
+          };
+        }));
       }
     };
     loadTickets();
@@ -677,21 +706,65 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const handleSendSosReply = async () => {
     if (!selectedSosTicket || !sosReplyText.trim()) return;
     const replyText = sosReplyText.trim();
+    const formattedTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    const adminMsg: SOSMessage = {
+      id: `admin-${Date.now()}`,
+      sender: 'admin',
+      senderName: user?.name || 'Equipe Elana',
+      senderAvatar: user?.avatar,
+      text: replyText,
+      createdAt: formattedTime
+    };
+
+    const nextMessages = [...(selectedSosTicket.messages || []), adminMsg];
 
     await supabase
       .from('sos_tickets')
-      .update({ status: 'atendido', admin_reply: replyText, replied_at: new Date().toISOString() })
+      .update({
+        status: 'em_atendimento',
+        admin_reply: replyText,
+        replied_at: new Date().toISOString(),
+        messages: nextMessages,
+        is_read: false
+      })
       .eq('id', selectedSosTicket.id);
 
-    replySosTicket(replyText);
+    await replySosTicket(selectedSosTicket.id, replyText);
+
     setSosTickets(prev => prev.map(t => t.id === selectedSosTicket.id ? { 
       ...t, 
-      status: 'atendido',
+      status: 'em_atendimento',
       adminReply: replyText,
-      repliedAt: new Date().toLocaleString('pt-BR')
+      repliedAt: new Date().toLocaleString('pt-BR'),
+      messages: nextMessages
     } : t));
-    setSelectedSosTicket(prev => prev ? { ...prev, status: 'atendido', adminReply: replyText, repliedAt: new Date().toLocaleString('pt-BR') } : null);
+
+    setSelectedSosTicket(prev => prev ? { 
+      ...prev, 
+      status: 'em_atendimento', 
+      adminReply: replyText, 
+      repliedAt: new Date().toLocaleString('pt-BR'),
+      messages: nextMessages 
+    } : null);
+
     setSosReplyText('');
+    showToast('success', 'Resposta enviada! O atendimento segue aberto para diálogo.');
+  };
+
+  const handleArchiveTicket = async (ticketId: string) => {
+    await supabase
+      .from('sos_tickets')
+      .update({ status: 'arquivado' })
+      .eq('id', ticketId);
+
+    await archiveSosTicket(ticketId);
+
+    setSosTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'arquivado' } : t));
+    if (selectedSosTicket?.id === ticketId) {
+      setSelectedSosTicket(prev => prev ? { ...prev, status: 'arquivado' } : null);
+    }
+    showToast('success', 'Atendimento concluído e arquivado com carinho! 🌸');
   };
 
   const handleMoveToTrash = async (ticketId: string) => {
@@ -708,6 +781,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     if (selectedSosTicket?.id === ticketId) {
       setSelectedSosTicket(prev => prev ? { ...prev, status: 'pendente' } : null);
     }
+    showToast('info', 'Chamado reaberto para a Caixa de Entrada.');
   };
 
   const handlePermanentDelete = (ticketId: string) => {
@@ -870,8 +944,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   // Filtered SOS Tickets for Email Inbox
   const filteredSosTickets = sosTickets.filter(t => {
     // Filter by Folder Status
-    if (sosFolder === 'inbox' && t.status !== 'pendente') return false;
-    if (sosFolder === 'completed' && t.status !== 'atendido') return false;
+    if (sosFolder === 'inbox' && t.status !== 'pendente' && t.status !== 'em_atendimento') return false;
+    if (sosFolder === 'completed' && t.status !== 'atendido' && t.status !== 'arquivado') return false;
     if (sosFolder === 'trash' && t.status !== 'deletado') return false;
 
     // Filter by Urgency
@@ -882,8 +956,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       const q = sosSearchQuery.toLowerCase();
       return (
         t.userName.toLowerCase().includes(q) ||
+        t.userEmail.toLowerCase().includes(q) ||
         t.subject.toLowerCase().includes(q) ||
-        t.message.toLowerCase().includes(q)
+        t.message.toLowerCase().includes(q) ||
+        (t.messages && t.messages.some(m => m.text.toLowerCase().includes(q)))
       );
     }
 
@@ -894,8 +970,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     return urgencyOrder[a.urgency] - urgencyOrder[b.urgency];
   });
 
-  const pendingCount = sosTickets.filter(t => t.status === 'pendente').length;
-  const completedCount = sosTickets.filter(t => t.status === 'atendido').length;
+  const pendingCount = sosTickets.filter(t => t.status === 'pendente' || t.status === 'em_atendimento').length;
+  const completedCount = sosTickets.filter(t => t.status === 'atendido' || t.status === 'arquivado').length;
   const trashCount = sosTickets.filter(t => t.status === 'deletado').length;
 
   // Security Guard 1: User is not authenticated
@@ -1486,7 +1562,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         <h4 className="text-xs font-bold text-white truncate">{ticket.userName}</h4>
                       </div>
 
-                      {/* Colored Urgency Dot Indicator Only */}
+                      {/* Colored Urgency Dot Indicator */}
                       <span 
                         className={`w-2.5 h-2.5 rounded-full shrink-0 ${
                           ticket.urgency === 'alta' 
@@ -1499,7 +1575,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       />
                     </div>
 
-                    <h5 className="text-xs font-medium text-slate-300 truncate leading-snug">{ticket.subject}</h5>
+                    <div className="flex items-center justify-between gap-1 pt-0.5">
+                      <h5 className="text-xs font-medium text-slate-300 truncate leading-snug flex-1">{ticket.subject}</h5>
+                      {ticket.status === 'em_atendimento' && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 shrink-0">
+                          Em Atendimento
+                        </span>
+                      )}
+                      {ticket.status === 'pendente' && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 shrink-0">
+                          Pendente
+                        </span>
+                      )}
+                      {(ticket.status === 'arquivado' || ticket.status === 'atendido') && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 shrink-0">
+                          Finalizado
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
@@ -1553,47 +1646,124 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     </div>
                   </div>
 
-                  {/* Email Body Message */}
-                  <div className="bg-[#101B1E] p-4 rounded-xl border border-white/10 space-y-2">
-                    <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                      <h4 className="text-xs font-black text-[#FF7F5B]">{selectedSosTicket.subject}</h4>
-                      <span className="text-[10px] text-slate-400">{selectedSosTicket.createdAt}</span>
+                  {/* Subject & Status Banner */}
+                  <div className="flex items-center justify-between bg-[#101B1E] p-3 rounded-xl border border-white/10">
+                    <div className="min-w-0 flex-1 pr-2">
+                      <h4 className="text-xs font-black text-[#FF7F5B] truncate">{selectedSosTicket.subject}</h4>
+                      <span className="text-[10px] text-slate-400">Aberto em {selectedSosTicket.createdAt}</span>
                     </div>
-                    <p className="text-xs text-slate-100 italic leading-relaxed pt-1">
-                      "{selectedSosTicket.message}"
-                    </p>
+                    <div className="shrink-0">
+                      {selectedSosTicket.status === 'em_atendimento' ? (
+                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                          Em Atendimento
+                        </span>
+                      ) : selectedSosTicket.status === 'pendente' ? (
+                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          Aguardando
+                        </span>
+                      ) : (selectedSosTicket.status === 'arquivado' || selectedSosTicket.status === 'atendido') ? (
+                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          Concluído
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                          Lixeira
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Previous Admin Reply if completed */}
-                  {selectedSosTicket.adminReply && (
-                    <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-xl space-y-1 text-xs text-emerald-200">
-                      <div className="flex justify-between items-center font-bold text-[10px] text-emerald-400">
-                        <span>✓ Resposta Acolhedora Enviada:</span>
-                        <span>{selectedSosTicket.repliedAt}</span>
+                  {/* Conversation Messages Thread */}
+                  <div className="space-y-3 max-h-[380px] overflow-y-auto p-1 pr-2">
+                    {selectedSosTicket.messages && selectedSosTicket.messages.length > 0 ? (
+                      selectedSosTicket.messages.map((m, idx) => (
+                        <div
+                          key={m.id || idx}
+                          className={`p-3.5 rounded-2xl border text-xs leading-relaxed space-y-1.5 ${
+                            m.sender === 'admin'
+                              ? 'bg-[#162327] border-[#FF7F5B]/30 ml-4'
+                              : 'bg-[#101B1E] border-white/10 mr-4'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2 text-[10px]">
+                            <span className={`font-bold flex items-center gap-1.5 ${
+                              m.sender === 'admin' ? 'text-[#FF7F5B]' : 'text-slate-300'
+                            }`}>
+                              {m.sender === 'admin' ? '🌸 Equipe Elana' : (m.senderName || selectedSosTicket.userName)}
+                            </span>
+                            <span className="text-slate-500">{m.createdAt}</span>
+                          </div>
+                          <p className="text-slate-100 whitespace-pre-wrap">{m.text}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="bg-[#101B1E] p-4 rounded-xl border border-white/10 space-y-2">
+                        <p className="text-xs text-slate-100 italic leading-relaxed">
+                          "{selectedSosTicket.message}"
+                        </p>
+                        {selectedSosTicket.adminReply && (
+                          <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl space-y-1 text-xs text-emerald-200 mt-2">
+                            <span className="font-bold text-[10px] text-emerald-400 block">Resposta Anterior:</span>
+                            <p className="italic">"{selectedSosTicket.adminReply}"</p>
+                          </div>
+                        )}
                       </div>
-                      <p className="italic">"{selectedSosTicket.adminReply}"</p>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
-                  {/* Reply Form (If not deleted) */}
+                  {/* Reply Form & Action Buttons (If not deleted) */}
                   {selectedSosTicket.status !== 'deletado' && (
                     <div className="space-y-3 pt-2 border-t border-white/10">
-                      <textarea
-                        value={sosReplyText}
-                        onChange={(e) => setSosReplyText(e.target.value)}
-                        placeholder="Escreva uma resposta acolhedora e empática para enviar em privado..."
-                        rows={4}
-                        className="w-full p-3 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B] resize-none"
-                      />
+                      {(selectedSosTicket.status === 'arquivado' || selectedSosTicket.status === 'atendido') ? (
+                        <div className="bg-emerald-500/10 border border-emerald-500/30 p-3.5 rounded-xl flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 text-xs text-emerald-300 font-bold">
+                            <CheckCircle2 className="w-4 h-4 shrink-0" />
+                            <span>Atendimento concluído e arquivado.</span>
+                          </div>
+                          <button
+                            onClick={() => handleRestoreTicket(selectedSosTicket.id)}
+                            className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0"
+                          >
+                            Reabrir Chamado
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <textarea
+                            value={sosReplyText}
+                            onChange={(e) => setSosReplyText(e.target.value)}
+                            placeholder="Escreva uma resposta acolhedora para o membro da comunidade..."
+                            rows={3}
+                            className="w-full p-3 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B] resize-none"
+                          />
 
-                      <button
-                        onClick={handleSendSosReply}
-                        disabled={!sosReplyText.trim()}
-                        className="w-full py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-                      >
-                        <Send className="w-4 h-4" />
-                        <span>Enviar Acolhimento Privado & Finalizar</span>
-                      </button>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <button
+                              onClick={handleSendSosReply}
+                              disabled={!sosReplyText.trim()}
+                              className="py-2.5 px-3 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                              title="Envia a resposta e mantém o atendimento aberto para continuar conversando"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              <span>Enviar Resposta</span>
+                            </button>
+
+                            <button
+                              onClick={async () => {
+                                if (sosReplyText.trim()) {
+                                  await handleSendSosReply();
+                                }
+                                await handleArchiveTicket(selectedSosTicket.id);
+                              }}
+                              className="py-2.5 px-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                              title="Conclui o atendimento e arquiva o chamado"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Concluir & Arquivar</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 

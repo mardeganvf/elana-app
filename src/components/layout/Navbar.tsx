@@ -21,10 +21,14 @@ import {
   Send,
   Lock,
   ShieldCheck,
-  Wind
+  Wind,
+  CheckCircle2,
+  Clock,
+  Phone
 } from 'lucide-react';
 import logoElana from '../../assets/logo-elana.png';
 import { BreathingModal } from '../common/BreathingModal';
+import { useToast } from '../../context/ToastContext';
 
 interface NavbarProps {
   activeTab: string;
@@ -42,7 +46,18 @@ interface CalendarDay {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenAuthModal, onRestartTutorial }) => {
-  const { user, isAuthenticated, logout, sosResponse, sendSosTicket, markSosResponseRead, awardBadge } = useAuth();
+  const { 
+    user, 
+    isAuthenticated, 
+    logout, 
+    sosResponse, 
+    sendSosTicket, 
+    sendUserFollowUpMessage, 
+    clearActiveSosTicket, 
+    markSosResponseRead, 
+    awardBadge 
+  } = useAuth();
+  const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
   const { fontSize, setFontSize } = useFontSize();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -176,13 +191,60 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     ];
   }, [uniqueDailyCheckins]);
 
-  // SOS Private Message State
+  // SOS Private Message State & Dialogue
   const [sosMessage, setSosMessage] = useState('');
-  const [isSosSent, setIsSosSent] = useState(false);
+  const [sosFollowUpText, setSosFollowUpText] = useState('');
+  const [isSendingSos, setIsSendingSos] = useState(false);
+  const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
+  const sosChatEndRef = useRef<HTMLDivElement | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const hasUnreadSosReply = !!(sosResponse && sosResponse.adminReply && !sosResponse.isRead);
+  const hasUnreadSosReply = !!(
+    sosResponse && 
+    !sosResponse.isRead &&
+    (
+      Boolean(sosResponse.adminReply) ||
+      Boolean(sosResponse.messages && sosResponse.messages.length > 1 && sosResponse.messages[sosResponse.messages.length - 1].sender === 'admin')
+    )
+  );
+
+  useEffect(() => {
+    if (isEmergencyOpen && sosChatEndRef.current) {
+      sosChatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isEmergencyOpen, sosResponse?.messages?.length]);
+
+  const handleSendSosTicket = async () => {
+    if (!sosMessage.trim() || isSendingSos) return;
+    setIsSendingSos(true);
+    try {
+      await sendSosTicket(sosMessage.trim());
+      setSosMessage('');
+      showToast('success', 'Pedido de acolhimento SOS enviado! Nossa equipe responderá em breve. 💖');
+    } catch (err) {
+      console.error('Erro ao enviar SOS:', err);
+      showToast('error', 'Erro ao enviar pedido de acolhimento.');
+    } finally {
+      setIsSendingSos(false);
+    }
+  };
+
+  const handleSendSosFollowUp = async () => {
+    if (!sosFollowUpText.trim() || isSendingFollowUp || !sosResponse) return;
+    const ticketId = sosResponse.ticketId || sosResponse.id || '';
+    setIsSendingFollowUp(true);
+    try {
+      await sendUserFollowUpMessage(ticketId, sosFollowUpText.trim());
+      setSosFollowUpText('');
+      showToast('success', 'Mensagem enviada com carinho para a equipe! 🌸');
+    } catch (err) {
+      console.error('Erro ao enviar follow-up:', err);
+      showToast('error', 'Erro ao enviar mensagem.');
+    } finally {
+      setIsSendingFollowUp(false);
+    }
+  };
 
 
   const toggleMamadaMode = () => {
@@ -286,8 +348,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
           <button
             onClick={() => {
               setIsEmergencyOpen(true);
-              setIsSosSent(false);
-              setSosMessage('');
+              markSosResponseRead();
               window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             }}
             data-tour="sos-button"
@@ -537,8 +598,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
           <button
             onClick={() => {
               setIsEmergencyOpen(true);
-              setIsSosSent(false);
-              setSosMessage('');
+              markSosResponseRead();
             }}
             data-tour="sos-button"
             className={`flex items-center gap-1 font-black text-[11px] uppercase tracking-wider py-1.5 px-3 rounded-full transition-all active:scale-95 border relative cursor-pointer shadow-sm ${
@@ -775,118 +835,228 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
       {/* Feature 2 Modal: Canal SOS Privado & Acolhimento Humano */}
       {isEmergencyOpen && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
-          <div className="bg-[#101B1E] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-rose-500/30 relative text-center space-y-5 m-auto max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#101B1E] rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-rose-500/30 relative flex flex-col m-auto max-h-[90vh]">
             
-            <button
-              onClick={() => setIsEmergencyOpen(false)}
-              aria-label="Fechar Atendimento SOS"
-              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center">
+                  <LifeBuoy className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Canal SOS de Acolhimento
+                  </h3>
+                  {sosResponse && sosResponse.status !== 'arquivado' ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300">
+                      <Clock className="w-3 h-3 text-amber-400" />
+                      {sosResponse.status === 'em_atendimento' ? 'Em atendimento com a Equipe Elana' : 'Chamado enviado — aguardando resposta'}
+                    </span>
+                  ) : sosResponse?.status === 'arquivado' ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                      Atendimento Concluído
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-300">
+                      <Lock className="w-3 h-3" />
+                      100% Privado e Sigiloso
+                    </span>
+                  )}
+                </div>
+              </div>
 
-            {sosResponse && sosResponse.adminReply ? (
-              <div className="space-y-4 py-1 text-left animate-fade-in">
-                <div className="flex items-center justify-center gap-2 text-rose-400 bg-rose-500/10 p-3 rounded-2xl border border-rose-500/20 text-center">
-                  <HeartHandshake className="w-5 h-5" />
-                  <span className="text-xs font-black uppercase tracking-wider">Resposta da Nossa Equipe 💖</span>
+              <button
+                onClick={() => setIsEmergencyOpen(false)}
+                aria-label="Fechar Atendimento SOS"
+                className="text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Aviso Permanente de Emergência (CVV / SAMU) */}
+            <div className="bg-rose-950/40 border border-rose-500/30 rounded-2xl p-3 my-3 text-xs text-rose-200/90 flex items-start gap-2.5 shrink-0">
+              <Phone className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="text-[11px] leading-relaxed">
+                <strong className="text-rose-300 font-bold block">Em caso de emergência ou crise aguda:</strong>
+                Ligue gratuitamente para o <strong className="text-white underline">CVV (188)</strong> — apoio emocional 24h, ou para o <strong className="text-white underline">SAMU (192)</strong>. O SOS da Elana oferece acolhimento e suporte humano, mas não substitui socorro médico de urgência.
+              </div>
+            </div>
+
+            {/* Conditional Views: Ongoing Chat / Archived / New Ticket Form */}
+            {sosResponse && sosResponse.status !== 'arquivado' ? (
+              /* --- STATE 1: ACTIVE DIALOGUE --- */
+              <div className="flex flex-col flex-1 min-h-0 space-y-3">
+                {/* Scrollable messages container */}
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[360px] min-h-[180px]">
+                  {sosResponse.messages && sosResponse.messages.length > 0 ? (
+                    sosResponse.messages.map((msg, i) => (
+                      <div
+                        key={msg.id || i}
+                        className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                      >
+                        <span className="text-[10px] text-slate-400 mb-1 px-1">
+                          {msg.sender === 'user' ? (msg.senderName || 'Você') : '🌸 Equipe Elana'} • {msg.createdAt}
+                        </span>
+                        <div
+                          className={`max-w-[88%] rounded-2xl p-3.5 text-xs leading-relaxed ${
+                            msg.sender === 'user'
+                              ? 'bg-[#18393F] text-white rounded-tr-sm border border-[#2B5E66]'
+                              : 'bg-[#162327] text-slate-100 rounded-tl-sm border border-[#FF7F5B]/30 shadow-md'
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap">{msg.text}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    /* Legacy single message fallback */
+                    <div className="space-y-3">
+                      <div className="flex flex-col items-end">
+                        <span className="text-[10px] text-slate-400 mb-1 px-1">Você</span>
+                        <div className="max-w-[88%] rounded-2xl p-3.5 text-xs bg-[#18393F] text-white rounded-tr-sm border border-[#2B5E66]">
+                          <p className="whitespace-pre-wrap">{sosResponse.userMessage}</p>
+                        </div>
+                      </div>
+                      {sosResponse.adminReply && (
+                        <div className="flex flex-col items-start">
+                          <span className="text-[10px] text-[#FF7F5B] mb-1 px-1 font-bold">🌸 Equipe Elana • {sosResponse.repliedAt || ''}</span>
+                          <div className="max-w-[88%] rounded-2xl p-3.5 text-xs bg-[#162327] text-slate-100 rounded-tl-sm border border-[#FF7F5B]/30">
+                            <p className="whitespace-pre-wrap">{sosResponse.adminReply}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Feedback se acabou de mandar e aguarda equipe */}
+                  {sosResponse.status === 'pendente' && (
+                    <div className="bg-[#070D0F]/70 p-3 rounded-2xl border border-amber-500/20 text-center text-[11px] text-amber-200/90 flex items-center justify-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 animate-pulse" />
+                      <span>Mensagem recebida com carinho. Nossa equipe responderá em breve por aqui.</span>
+                    </div>
+                  )}
+
+                  <div ref={sosChatEndRef} />
                 </div>
 
-                <div className="space-y-1 bg-[#070D0F] p-3.5 rounded-2xl border border-white/10">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sua Pergunta / Desabafo:</span>
-                  <p className="text-xs text-slate-300 italic">"{sosResponse.userMessage}"</p>
+                {/* Follow-up input for dialogue */}
+                <div className="pt-2 border-t border-white/10 flex items-center gap-2 shrink-0">
+                  <input
+                    type="text"
+                    placeholder="Escreva uma resposta ou complemento..."
+                    value={sosFollowUpText}
+                    onChange={(e) => setSosFollowUpText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendSosFollowUp();
+                      }
+                    }}
+                    disabled={isSendingFollowUp}
+                    className="flex-1 bg-[#070D0F] border border-white/15 focus:border-[#FF7F5B] rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
+                  />
+                  <button
+                    onClick={handleSendSosFollowUp}
+                    disabled={!sosFollowUpText.trim() || isSendingFollowUp}
+                    className="bg-[#FF7F5B] hover:bg-[#e06847] disabled:opacity-40 text-slate-950 font-black p-2.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center shrink-0"
+                    title="Enviar resposta"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ) : sosResponse?.status === 'arquivado' ? (
+              /* --- STATE 2: ARCHIVED / CONCLUDED TICKET --- */
+              <div className="flex flex-col flex-1 min-h-0 space-y-3">
+                {/* Scrollable history of the concluded conversation */}
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[300px] min-h-[150px]">
+                  {sosResponse.messages && sosResponse.messages.length > 0 ? (
+                    sosResponse.messages.map((msg, i) => (
+                      <div
+                        key={msg.id || i}
+                        className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                      >
+                        <span className="text-[10px] text-slate-400 mb-1 px-1">
+                          {msg.sender === 'user' ? (msg.senderName || 'Você') : '🌸 Equipe Elana'} • {msg.createdAt}
+                        </span>
+                        <div
+                          className={`max-w-[88%] rounded-2xl p-3.5 text-xs leading-relaxed ${
+                            msg.sender === 'user'
+                              ? 'bg-[#18393F] text-white rounded-tr-sm border border-[#2B5E66]'
+                              : 'bg-[#162327] text-slate-100 rounded-tl-sm border border-[#FF7F5B]/30 shadow-md'
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap">{msg.text}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="bg-[#18393F] text-white rounded-2xl p-3.5 text-xs border border-[#2B5E66]">
+                        {sosResponse.userMessage}
+                      </div>
+                      {sosResponse.adminReply && (
+                        <div className="bg-[#162327] text-slate-100 rounded-2xl p-3.5 text-xs border border-[#FF7F5B]/30">
+                          {sosResponse.adminReply}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div ref={sosChatEndRef} />
                 </div>
 
-                <div className="bg-[#162327] p-4 rounded-2xl border border-[#FF7F5B]/30 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black text-[#FF7F5B] uppercase tracking-wider">Acolhimento Enviado pela Equipe:</span>
-                    <span className="text-[10px] text-slate-400">{sosResponse.repliedAt}</span>
+                <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-2xl text-center space-y-1">
+                  <div className="flex items-center justify-center gap-1.5 text-emerald-400 font-bold text-xs">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Atendimento concluído com carinho pela Equipe Elana 🌸</span>
                   </div>
-                  <p className="text-xs text-white leading-relaxed font-medium">
-                    "{sosResponse.adminReply}"
+                  <p className="text-[11px] text-slate-300">
+                    Esperamos ter oferecido o suporte necessário. Se precisar de apoio novamente, clique abaixo para abrir um novo chamado.
                   </p>
                 </div>
 
                 <button
                   onClick={() => {
-                    markSosResponseRead();
-                    setIsEmergencyOpen(false);
+                    clearActiveSosTicket();
                   }}
-                  className="w-full bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer"
+                  className="w-full bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
-                  Agradecer e Concluir Acolhimento 💖
+                  <HeartHandshake className="w-4 h-4" />
+                  <span>Iniciar Novo Acolhimento SOS</span>
                 </button>
               </div>
-            ) : !isSosSent ? (
-              <>
-                <div className="w-14 h-14 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center mx-auto animate-pulse">
-                  <LifeBuoy className="w-7 h-7" />
+            ) : (
+              /* --- STATE 3: NEW TICKET FORM --- */
+              <div className="space-y-4 text-left">
+                <div className="space-y-1.5 text-center">
+                  <h4 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Como podemos te acolher agora?
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
+                    Sua mensagem <strong>não será visível na comunidade</strong>. Ela é enviada de forma 100% privada e confidencial para nossa equipe de acolhimento.
+                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-1 bg-rose-500/20 text-rose-300 border border-rose-500/30 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
-                    <Lock className="w-3 h-3" /> Canal Privado E Confidencial
-                  </div>
-                  <h3 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                    Como podemos te ajudar agora?
-                  </h3>
-                  <div className="text-xs text-slate-300 space-y-1 text-center leading-relaxed">
-                    <p className="block">Sua mensagem <strong>não será publicada</strong> na comunidade.</p>
-                    <p className="block">Ela é enviada diretamente com <strong>prioridade</strong> para nossa equipe.</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 text-left">
+                <div className="space-y-3">
                   <textarea
                     value={sosMessage}
                     onChange={(e) => setSosMessage(e.target.value)}
-                    placeholder="O que está te incomodando hoje?"
-                    rows={4}
-                    className="w-full bg-[#070D0F] border border-white/15 focus:border-rose-400/60 rounded-2xl p-3.5 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none transition-all resize-none"
+                    placeholder="Desabafe ou compartilhe o que você está sentindo... Estamos aqui para te escutar com todo o afeto."
+                    rows={5}
+                    className="w-full bg-[#070D0F] border border-white/15 focus:border-rose-400/60 rounded-2xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all resize-none"
                   />
 
                   <button
-                    onClick={() => {
-                      if (!sosMessage.trim()) return;
-                      sendSosTicket(sosMessage.trim());
-                      setIsSosSent(true);
-                    }}
-                    disabled={!sosMessage.trim()}
+                    onClick={handleSendSosTicket}
+                    disabled={!sosMessage.trim() || isSendingSos}
                     className="w-full bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Send className="w-4 h-4" />
-                    Enviar Mensagem
+                    <span>{isSendingSos ? 'Enviando chamado...' : 'Pedir Acolhimento da Equipe'}</span>
                   </button>
-
-                  <p className="text-[11px] text-[#A0AEC0] text-center leading-relaxed pt-1">
-                    O Canal SOS é um espaço de escuta e acolhimento, mas não substitui acompanhamento médico, psicológico ou psiquiátrico. Se você está passando por uma crise grave, não espere! Ligue agora para o CVV (188) ou o SAMU (192).
-                  </p>
                 </div>
-              </>
-            ) : (
-              <div className="space-y-5 py-3 animate-fade-in">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto text-2xl shadow-lg">
-                  ✨
-                </div>
-
-                <div className="space-y-2">
-                  <span className="text-xs font-extrabold text-emerald-400 uppercase tracking-wider block">
-                    Sua Mensagem Foi Enviada
-                  </span>
-                  <h3 className="text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                    Respire fundo. Você não está só!
-                  </h3>
-                  <p className="text-xs text-slate-300 leading-relaxed bg-[#070D0F] p-4 rounded-2xl border border-white/10 text-center">
-                    Nossa rede de apoio já recebeu sua mensagem e entrará em contato em breve. 💖
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => setIsEmergencyOpen(false)}
-                  className="w-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-2xl transition-all cursor-pointer"
-                >
-                  Fechar SOS
-                </button>
               </div>
             )}
 
