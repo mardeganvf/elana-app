@@ -1361,47 +1361,34 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             {/* GRUPO 2: COMUNIDADE & MODERAÇÃO */}
             <div className="space-y-1 pt-2 border-t border-white/5">
               <div className="relative flex items-center">
+                {!openMenuGroups.community && pendingModCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => toggleMenuGroup('community')}
+                    className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+                    title="Publicações sob moderação"
+                  >
+                    <Bell className="w-3 h-3 text-white fill-white animate-bounce" />
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => toggleMenuGroup('community')}
-                  className="w-full h-8 px-2.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
+                  className={`w-full h-8 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none ${
+                    !openMenuGroups.community && pendingModCount > 0 ? 'pl-6 pr-2.5' : 'px-2.5'
+                  }`}
                 >
                   <span className="flex items-center gap-1.5">
                     <span>Comunidade & Moderação</span>
                   </span>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.community ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
-
-                {!openMenuGroups.community && pendingModCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => toggleMenuGroup('community')}
-                    className="absolute -right-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
-                    title="Publicações sob moderação"
-                  >
-                    <Bell className="w-3 h-3 text-white fill-white animate-bounce" />
-                  </button>
-                )}
               </div>
 
               {openMenuGroups.community && (
                 <div className="space-y-1 pl-1">
                   <div className="relative flex items-center">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveAdminTab('moderation');
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`w-full h-9 px-3 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                        activeAdminTab === 'moderation'
-                          ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                          : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
-                      }`}
-                    >
-                      <span>Moderação de Posts</span>
-                    </button>
-
                     {pendingModCount > 0 && (
                       <button
                         type="button"
@@ -1409,12 +1396,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                           setActiveAdminTab('moderation');
                           setIsMobileMenuOpen(false);
                         }}
-                        className="absolute -right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+                        className="absolute -left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
                         title="Publicações sob moderação"
                       >
                         <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
                       </button>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveAdminTab('moderation');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full h-9 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                        pendingModCount > 0 ? 'pl-7 pr-3' : 'px-3'
+                      } ${
+                        activeAdminTab === 'moderation'
+                          ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none'
+                          : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none'
+                      }`}
+                    >
+                      <span>Moderação de Posts</span>
+                    </button>
                   </div>
 
                   <button
@@ -1443,47 +1447,34 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             {/* GRUPO 3: ACOLHIMENTO & ATENDIMENTO */}
             <div className="space-y-1 pt-2 border-t border-white/5">
               <div className="relative flex items-center">
+                {!openMenuGroups.support && pendingCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => toggleMenuGroup('support')}
+                    className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+                    title="Chamados SOS pendentes"
+                  >
+                    <Bell className="w-3 h-3 text-white fill-white animate-bounce" />
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => toggleMenuGroup('support')}
-                  className="w-full h-8 px-2.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
+                  className={`w-full h-8 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none ${
+                    !openMenuGroups.support && pendingCount > 0 ? 'pl-6 pr-2.5' : 'px-2.5'
+                  }`}
                 >
                   <span className="flex items-center gap-1.5">
                     <span>Acolhimento & SOS</span>
                   </span>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.support ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
-
-                {!openMenuGroups.support && pendingCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => toggleMenuGroup('support')}
-                    className="absolute -right-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
-                    title="Chamados SOS pendentes"
-                  >
-                    <Bell className="w-3 h-3 text-white fill-white animate-bounce" />
-                  </button>
-                )}
               </div>
 
               {openMenuGroups.support && (
                 <div className="space-y-1 pl-1">
                   <div className="relative flex items-center">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveAdminTab('sos');
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`w-full h-9 px-3 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                        activeAdminTab === 'sos'
-                          ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                          : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
-                      }`}
-                    >
-                      <span>Atendimento SOS</span>
-                    </button>
-
                     {pendingCount > 0 && (
                       <button
                         type="button"
@@ -1491,12 +1482,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                           setActiveAdminTab('sos');
                           setIsMobileMenuOpen(false);
                         }}
-                        className="absolute -right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+                        className="absolute -left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
                         title="Chamados SOS pendentes"
                       >
                         <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
                       </button>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveAdminTab('sos');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full h-9 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                        pendingCount > 0 ? 'pl-7 pr-3' : 'px-3'
+                      } ${
+                        activeAdminTab === 'sos'
+                          ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none'
+                          : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none'
+                      }`}
+                    >
+                      <span>Atendimento SOS</span>
+                    </button>
                   </div>
 
                   <button
@@ -2304,160 +2312,169 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         );
       })()}
 
-      {/* TAB 3: 📊 TERMÔMETRO EMOCIONAL DA COMUNIDADE */}
+      {/* TAB 3: 📊 TERMÔMETRO EMOCIONAL DA COMUNIDADE (DIVIDIDO EM DOIS CONTÊINERES) */}
       {activeAdminTab === 'analytics' && (
-        <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-          <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                Termômetro Emocional da Comunidade
-              </h2>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={loadEmotionalAnalytics}
-                disabled={isLoadingAnalytics}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-50 shadow-sm shrink-0"
-                title="Recarregar dados reais do termômetro"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 text-[#FF7F5B] ${isLoadingAnalytics ? 'animate-spin' : ''}`} />
-                <span>Atualizar</span>
-              </button>
-            </div>
-          </div>
-
-          {/* CARDS DE VISÃO GERAL */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Usuários Cadastrados</span>
-              <span className="text-xl sm:text-2xl font-black text-[#FF7F5B]">
-                {isLoadingAnalytics ? '...' : (emotionalStats?.totalActiveUsers ?? members.length).toLocaleString('pt-BR')}
-              </span>
-              <span className="text-[10px] text-emerald-400 block">Membros</span>
+        <div className="space-y-6 w-full">
+          {/* CONTÊINER 1: TERMÔMETRO EMOCIONAL DA COMUNIDADE */}
+          <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+            <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Termômetro Emocional da Comunidade
+                </h2>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={loadEmotionalAnalytics}
+                  disabled={isLoadingAnalytics}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-50 shadow-sm shrink-0"
+                  title="Recarregar dados reais do termômetro"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#FF7F5B] ${isLoadingAnalytics ? 'animate-spin' : ''}`} />
+                  <span>Atualizar</span>
+                </button>
+              </div>
             </div>
 
-            <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tópicos Publicados</span>
-              <span className="text-xl sm:text-2xl font-black text-[#38BDF8]">
-                {isLoadingAnalytics ? '...' : (emotionalStats?.totalPosts ?? 0).toLocaleString('pt-BR')}
-              </span>
-              <span className="text-[10px] text-slate-400 block">Publicações</span>
+            {/* CARDS DE VISÃO GERAL */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Usuários Cadastrados</span>
+                <span className="text-xl sm:text-2xl font-black text-[#FF7F5B]">
+                  {isLoadingAnalytics ? '...' : (emotionalStats?.totalActiveUsers ?? members.length).toLocaleString('pt-BR')}
+                </span>
+                <span className="text-[10px] text-emerald-400 block">Membros</span>
+              </div>
+
+              <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tópicos Publicados</span>
+                <span className="text-xl sm:text-2xl font-black text-[#38BDF8]">
+                  {isLoadingAnalytics ? '...' : (emotionalStats?.totalPosts ?? 0).toLocaleString('pt-BR')}
+                </span>
+                <span className="text-[10px] text-slate-400 block">Publicações</span>
+              </div>
+
+              <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Acolhimentos Totais</span>
+                <span className="text-xl sm:text-2xl font-black text-[#8A9A5B]">
+                  {isLoadingAnalytics ? '...' : (emotionalStats?.totalAcolhimentos ?? 0).toLocaleString('pt-BR')}
+                </span>
+                <span className="text-[10px] text-emerald-400 block">Reações e comentários</span>
+              </div>
+
+              <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Média por Publicação</span>
+                <span className="text-xl sm:text-2xl font-black text-[#FFD166]">
+                  {isLoadingAnalytics ? '...' : `${emotionalStats?.averageAcolhimentosPerPost ?? 0}`}
+                </span>
+                <span className="text-[10px] text-slate-400 block">Acolhimentos / post</span>
+              </div>
             </div>
 
-            <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Acolhimentos Totais</span>
-              <span className="text-xl sm:text-2xl font-black text-[#8A9A5B]">
-                {isLoadingAnalytics ? '...' : (emotionalStats?.totalAcolhimentos ?? 0).toLocaleString('pt-BR')}
-              </span>
-              <span className="text-[10px] text-emerald-400 block">Reações e comentários</span>
-            </div>
-
-            <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Média por Publicação</span>
-              <span className="text-xl sm:text-2xl font-black text-[#FFD166]">
-                {isLoadingAnalytics ? '...' : `${emotionalStats?.averageAcolhimentosPerPost ?? 0}`}
-              </span>
-              <span className="text-[10px] text-slate-400 block">Acolhimentos / post</span>
-            </div>
-          </div>
-
-          {/* 🌡️ TERMÔMETRO DE SAÚDE DA REDE & ALERTA DE ESCUTA */}
-          <div className={`p-5 sm:p-6 rounded-2xl border transition-all ${
-            emotionalStats?.supportHealthStatus === 'alerta'
-              ? 'bg-rose-950/20 border-rose-500/30'
-              : emotionalStats?.supportHealthStatus === 'atencao'
-              ? 'bg-amber-950/20 border-amber-500/30'
-              : 'bg-emerald-950/20 border-emerald-500/30'
-          }`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <span className={`w-3 h-3 rounded-full shrink-0 ${
-                  emotionalStats?.supportHealthStatus === 'alerta'
-                    ? 'bg-rose-500 animate-ping'
-                    : emotionalStats?.supportHealthStatus === 'atencao'
-                    ? 'bg-amber-400 animate-pulse'
-                    : 'bg-emerald-400'
-                }`} />
-                <h3 className="text-sm font-bold text-white flex flex-wrap items-center gap-2">
-                  <span>Termômetro da Rede de Apoio:</span>
-                  <span className={
+            {/* 🌡️ TERMÔMETRO DE SAÚDE DA REDE & ALERTA DE ESCUTA */}
+            <div className={`p-5 sm:p-6 rounded-2xl border transition-all ${
+              emotionalStats?.supportHealthStatus === 'alerta'
+                ? 'bg-rose-950/20 border-rose-500/30'
+                : emotionalStats?.supportHealthStatus === 'atencao'
+                ? 'bg-amber-950/20 border-amber-500/30'
+                : 'bg-emerald-950/20 border-emerald-500/30'
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-3 h-3 rounded-full shrink-0 ${
                     emotionalStats?.supportHealthStatus === 'alerta'
-                      ? 'text-rose-400'
+                      ? 'bg-rose-500 animate-ping'
                       : emotionalStats?.supportHealthStatus === 'atencao'
-                      ? 'text-amber-300'
-                      : 'text-emerald-400'
-                  }>
-                    {emotionalStats?.supportHealthLabel || 'Rede Viva & Ativa 💚'}
+                      ? 'bg-amber-400 animate-pulse'
+                      : 'bg-emerald-400'
+                  }`} />
+                  <h3 className="text-sm font-bold text-white flex flex-wrap items-center gap-2">
+                    <span>Termômetro da Rede de Apoio:</span>
+                    <span className={
+                      emotionalStats?.supportHealthStatus === 'alerta'
+                        ? 'text-rose-400'
+                        : emotionalStats?.supportHealthStatus === 'atencao'
+                        ? 'text-amber-300'
+                        : 'text-emerald-400'
+                    }>
+                      {emotionalStats?.supportHealthLabel || 'Rede Viva & Ativa 💚'}
+                    </span>
+                  </h3>
+                </div>
+
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="text-slate-300">
+                    <strong className="text-white">{emotionalStats?.averageAcolhimentosPerPost ?? 0}</strong> acolhimentos/post
                   </span>
-                </h3>
+                  <span className="text-slate-600">•</span>
+                  <span className={emotionalStats && emotionalStats.postsWithoutRepliesCount > 0 ? 'text-amber-300 font-bold' : 'text-slate-400'}>
+                    {emotionalStats?.postsWithoutRepliesCount ?? 0} post(s) sem resposta
+                  </span>
+                </div>
               </div>
 
-              <div className="flex items-center gap-3 text-xs">
-                <span className="text-slate-300">
-                  <strong className="text-white">{emotionalStats?.averageAcolhimentosPerPost ?? 0}</strong> acolhimentos/post
-                </span>
-                <span className="text-slate-600">•</span>
-                <span className={emotionalStats && emotionalStats.postsWithoutRepliesCount > 0 ? 'text-amber-300 font-bold' : 'text-slate-400'}>
-                  {emotionalStats?.postsWithoutRepliesCount ?? 0} post(s) sem resposta
-                </span>
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-300">
+                <p className="leading-relaxed text-slate-300">
+                  {emotionalStats?.supportHealthMessage}
+                </p>
+                {emotionalStats && emotionalStats.postsWithoutRepliesCount > 0 && (
+                  <span className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Priorizar acolhimento da equipe
+                  </span>
+                )}
               </div>
             </div>
+          </section>
 
-            <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-300">
-              <p className="leading-relaxed text-slate-300">
-                {emotionalStats?.supportHealthMessage}
-              </p>
-              {emotionalStats && emotionalStats.postsWithoutRepliesCount > 0 && (
-                <span className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  Priorizar acolhimento da equipe
+          {/* CONTÊINER 2: SENTIMENTOS REGISTRADOS NOS CHECK-INS */}
+          <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+            <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Sentimentos Registrados nos Check-ins
+                </h2>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-bold text-slate-400 px-3.5 py-2 rounded-2xl bg-[#070D0F] border border-white/10 shadow-sm shrink-0">
+                  {emotionalStats ? `${emotionalStats.totalCheckins} check-in${emotionalStats.totalCheckins === 1 ? '' : 's'} registrado${emotionalStats.totalCheckins === 1 ? '' : 's'}` : 'Carregando...'}
                 </span>
-              )}
-            </div>
-          </div>
-
-          {/* Emotional Breakdown Progress */}
-          <div className="bg-[#070D0F] p-6 rounded-2xl border border-white/10 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white">
-                Sentimentos Registrados nos Check-ins
-              </h3>
-              <span className="text-xs text-slate-400">
-                {emotionalStats ? `${emotionalStats.totalCheckins} check-in${emotionalStats.totalCheckins === 1 ? '' : 's'} registrado${emotionalStats.totalCheckins === 1 ? '' : 's'}` : 'Carregando...'}
-              </span>
+              </div>
             </div>
 
             {(!emotionalStats || emotionalStats.totalCheckins === 0) ? (
-              <div className="py-8 text-center space-y-2 border border-dashed border-white/10 rounded-xl bg-white/[0.02]">
+              <div className="py-8 text-center space-y-2 border border-dashed border-white/10 rounded-2xl bg-[#070D0F] p-6">
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
                   Ainda não há check-ins emocionais registrados por usuários cadastrados. Assim que os membros registrarem seus sentimentos diários na Comunidade, as porcentagens aparecerão aqui automaticamente.
                 </p>
               </div>
             ) : (
-              <div className="space-y-4 text-xs">
-                {emotionalStats.breakdown.map(item => (
-                  <div key={item.id} className="space-y-1.5">
-                    <div className="flex justify-between font-bold">
-                      <span className={item.textColor}>
-                        {item.label}
-                      </span>
-                      <span className="text-slate-300">
-                        {item.percentage}% ({item.count} {item.count === 1 ? 'registro' : 'registros'})
-                      </span>
+              <div className="bg-[#070D0F] p-6 rounded-2xl border border-white/10 space-y-4">
+                <div className="space-y-4 text-xs">
+                  {emotionalStats.breakdown.map(item => (
+                    <div key={item.id} className="space-y-1.5">
+                      <div className="flex justify-between font-bold">
+                        <span className={item.textColor}>
+                          {item.label}
+                        </span>
+                        <span className="text-slate-300">
+                          {item.percentage}% ({item.count} {item.count === 1 ? 'registro' : 'registros'})
+                        </span>
+                      </div>
+                      <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${item.barColor} rounded-full transition-all duration-500`}
+                          style={{ width: `${Math.max(item.percentage, item.count > 0 ? 3 : 0)}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${item.barColor} rounded-full transition-all duration-500`}
-                        style={{ width: `${Math.max(item.percentage, item.count > 0 ? 3 : 0)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
-          </div>
-        </section>
+          </section>
+        </div>
       )}
 
       {/* TAB 4: 🎬 GESTÃO DE CONTEÚDOS & JORNADAS */}
