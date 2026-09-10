@@ -1,7 +1,13 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.8';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || '';
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 const SYSTEM_INSTRUCTION = `Você é um especialista clínico em psicologia parental e moderador de segurança e acolhimento da comunidade Elana Academy.
 Sua missão é avaliar a mensagem submetida por uma mãe, pai ou cuidador e classificá-la contextualmente para acolhimento preventivo ou moderação de segurança.
@@ -38,6 +44,32 @@ Responda ESTRITAMENTE em formato JSON com o seguinte schema:
   "suggestsCrisisSupport": boolean (true se houver risco ou ideação que demande apoio prioritário/CVV)
 }`;
 
+async function getEmbedding(text: string, apiKey: string): Promise<number[] | null> {
+  try {
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${apiKey}`;
+    const res = await fetch(geminiUrl, {
+      method: 'POST',
+      signal: AbortSignal.timeout(2500),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'models/text-embedding-004',
+        content: {
+          parts: [{ text: text.trim().slice(0, 1000) }]
+        }
+      })
+    });
+    if (!res.ok) {
+      console.warn('Falha na API de embedding Gemini:', res.status);
+      return null;
+    }
+    const data = await res.json();
+    return data?.embedding?.values || null;
+  } catch (err) {
+    console.warn('Erro ao requisitar embedding:', err);
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   // Tratar preflight CORS
   if (req.method === 'OPTIONS') {
@@ -45,7 +77,65 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { text } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const action = body.action || 'moderate';
+    const apiKey = Deno.env.get('GEMINI_API_KEY');
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // AÇÃO 1: Treinar / Adicionar Exemplo Banido (Active Learning Human-in-the-Loop)
+    // ──────────────────────────────────────────────────────────────────────────
+    if (action === 'train_example') {
+      const { text, category, reason, adminNotes } = body;
+      if (!text || typeof text !== 'string' || !text.trim()) {
+        return new Response(
+          JSON.stringify({ error: 'Texto não fornecido para aprendizado' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      let embedding: number[] | null = null;
+      if (apiKey) {
+        embedding = await getEmbedding(text, apiKey);
+      }
+
+      if (supabase) {
+        const { data: inserted, error: insertError } = await supabase
+          .from('moderation_rejected_examples')
+          .insert({
+            original_text: text.trim(),
+            category: category || 'antijulgamento',
+            reason: reason || 'Conteúdo rejeitado pela curadoria humana',
+            admin_notes: adminNotes || null,
+            embedding: embedding,
+            is_active: true
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.warn('Erro ao inserir exemplo na base de aprendizado:', insertError);
+          return new Response(
+            JSON.stringify({ error: insertError.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, item: inserted, hasEmbedding: !!embedding }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ error: 'SUPABASE_CLIENT_NOT_AVAILABLE' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // AÇÃO 2: Moderação de Mensagem (com Busca Semântica + Few-Shot)
+    // ──────────────────────────────────────────────────────────────────────────
+    const text = body.text;
 
     if (!text || typeof text !== 'string' || !text.trim()) {
       return new Response(
@@ -54,7 +144,37 @@ Deno.serve(async (req) => {
       );
     }
 
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
+    // 1. CAMADA VETORIAL (pgvector): Buscar similaridade semântica com conteúdos banidos
+    if (supabase && apiKey) {
+      try {
+        const queryEmbedding = await getEmbedding(text, apiKey);
+        if (queryEmbedding) {
+          const { data: matches, error: rpcError } = await supabase.rpc('match_rejected_examples', {
+            query_embedding: queryEmbedding,
+            match_threshold: 0.82,
+            match_count: 1
+          });
+
+          if (!rpcError && matches && matches.length > 0) {
+            const topMatch = matches[0];
+            const similarityPercent = Math.round(Number(topMatch.similarity || 0) * 100);
+            return new Response(
+              JSON.stringify({
+                isFlagged: true,
+                category: topMatch.category || 'antijulgamento',
+                reason: `Similar a conteúdo banido pela curadoria: "${topMatch.reason}" (${similarityPercent}% similaridade)`,
+                matchedContext: topMatch.original_text.slice(0, 120),
+                suggestsCrisisSupport: topMatch.category === 'vulnerabilidade',
+                matchedByLearningBase: true
+              }),
+              { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+      } catch (embErr) {
+        console.warn('Aviso na busca vetorial por similaridade:', embErr);
+      }
+    }
 
     if (!apiKey) {
       console.warn('GEMINI_API_KEY não configurada nos secrets do Supabase.');
@@ -66,6 +186,30 @@ Deno.serve(async (req) => {
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // 2. CAMADA CONTEXTUAL DINÂMICA (Few-Shot Learning):
+    // Injetar os últimos exemplos banidos da moderação humana na instrução do Gemini
+    let dynamicSystemInstruction = SYSTEM_INSTRUCTION;
+    if (supabase) {
+      try {
+        const { data: recentExamples } = await supabase
+          .from('moderation_rejected_examples')
+          .select('original_text, reason, category')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(8);
+
+        if (recentExamples && recentExamples.length > 0) {
+          const examplesText = recentExamples
+            .map((ex: any, idx: number) => `${idx + 1}. "${ex.original_text.replace(/\s+/g, ' ').slice(0, 160)}" -> Motivo do banimento: ${ex.reason} [${ex.category}]`)
+            .join('\n');
+
+          dynamicSystemInstruction += `\n\n4. EXEMPLOS REAIS RECENTEMENTE BANIDOS PELA CURADORIA HUMANA DA ELANA (DIRETRIZES ATIVAS):\n${examplesText}\n\nIMPORTANTE: Se a mensagem avaliada compartilhar tom de coação, insistência, desrespeito, abuso ou intenção semelhante a qualquer um destes exemplos banidos acima, classifique OBRIGATORIAMENTE com isFlagged: true e a respectiva categoria.`;
+        }
+      } catch (fetchErr) {
+        console.warn('Aviso ao carregar exemplos dinâmicos:', fetchErr);
+      }
     }
 
     // Chamar com prioridade o gemini-3.5-flash-lite (ultra-rápido: ~1.1s) e fallback para gemini-3.6-flash
@@ -85,7 +229,7 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             system_instruction: {
-              parts: [{ text: SYSTEM_INSTRUCTION }]
+              parts: [{ text: dynamicSystemInstruction }]
             },
             contents: [
               {
@@ -95,7 +239,7 @@ Deno.serve(async (req) => {
             generationConfig: {
               response_mime_type: 'application/json',
               temperature: 0.1,
-              max_output_tokens: 120
+              max_output_tokens: 140
             }
           })
         });
@@ -112,12 +256,12 @@ Deno.serve(async (req) => {
         const finishReason = candidate?.finishReason;
         const blockReason = data?.promptFeedback?.blockReason;
 
-        // Se o próprio filtro de segurança nativo da IA bloqueou por conteúdo explícito/sexual/violência (ex: PROHIBITED_CONTENT, SAFETY)
+        // Se o próprio filtro de segurança nativo da IA bloqueou por conteúdo explícito/sexual/violência
         if (blockReason || finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT' || data?.promptFeedback?.safetyRatings?.some((r: any) => r.blocked)) {
           parsed = {
             isFlagged: true,
             category: 'antijulgamento',
-            reason: 'Conteúdo bloqueado por linguagem sexual explícita ou termos impróprios.',
+            reason: 'Conteúdo bloqueado por linguagem explícita ou termos impróprios.',
             matchedContext: text.trim().slice(0, 100),
             suggestsCrisisSupport: false
           };

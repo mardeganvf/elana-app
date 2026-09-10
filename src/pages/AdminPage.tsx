@@ -24,7 +24,12 @@ import {
   ChevronRight,
   BookOpen,
   Menu,
-  Sparkles
+  Sparkles,
+  Brain,
+  ToggleLeft,
+  ToggleRight,
+  Power,
+  X
 } from 'lucide-react';
 import { useAuth, isAdminUser } from '../context/AuthContext';
 import { useCommunity, checkContentSensitivity } from '../context/CommunityContext';
@@ -59,6 +64,16 @@ interface ModerationItem {
   createdAt: string;
   status: 'pendente' | 'aprovado' | 'rejeitado';
   reportCount?: number;
+}
+
+interface LearnedExample {
+  id: string;
+  original_text: string;
+  category: string;
+  reason: string;
+  admin_notes?: string;
+  is_active: boolean;
+  created_at: string;
 }
 
 interface MemberUser {
@@ -174,7 +189,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // 🛡️ Moderation Items State
   const [modItems, setModItems] = useState<ModerationItem[]>([]);
-  const [moderationFilter, setModerationFilter] = useState<'pendentes' | 'aprovados' | 'todos'>('pendentes');
+  const [moderationFilter, setModerationFilter] = useState<'pendentes' | 'aprovados' | 'todos' | 'aprendizado'>('pendentes');
+
+  // 🧠 Base de Auto-Aprendizado da IA (Human-in-the-Loop)
+  const [learnedExamples, setLearnedExamples] = useState<LearnedExample[]>([]);
+  const [isLoadingLearned, setIsLoadingLearned] = useState(false);
+  const [learnedSearchQuery, setLearnedSearchQuery] = useState('');
+
+  // 🚫 Modal de Remoção e Calibração da IA
+  const [rejectModalItem, setRejectModalItem] = useState<ModerationItem | null>(null);
+  const [rejectCategory, setRejectCategory] = useState<'antijulgamento' | 'vulnerabilidade' | 'sexual' | 'outro'>('antijulgamento');
+  const [rejectReason, setRejectReason] = useState('');
+  const [trainFilterActive, setTrainFilterActive] = useState(true);
+  const [isSubmittingRejection, setIsSubmittingRejection] = useState(false);
 
   // Helpers para persistência de aprovações locais e remotas
   const getApprovedPostIds = (): Set<string> => {
@@ -311,6 +338,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       }
     };
     loadModeration();
+    loadLearnedExamples();
 
     const loadMembers = async () => {
       const { data } = await supabase
@@ -379,16 +407,32 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     }
   };
 
+  const loadLearnedExamples = async () => {
+    setIsLoadingLearned(true);
+    try {
+      const { data, error } = await supabase
+        .from('moderation_rejected_examples')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setLearnedExamples(data);
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar base de aprendizado:', err);
+    } finally {
+      setIsLoadingLearned(false);
+    }
+  };
+
   // Moderation Handlers
   const handleModerateItem = async (id: string, newStatus: 'aprovado' | 'rejeitado') => {
-    setModItems(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
-
     if (newStatus === 'aprovado') {
+      setModItems(prev => prev.map(item => item.id === id ? { ...item, status: 'aprovado' } : item));
       saveApprovedPostId(id);
       try {
         await supabase
           .from('community_posts')
-          .update({ category: 'aprovado' })
+          .update({ category: 'aprovado', status: 'aprovado' })
           .eq('id', id);
         await refreshPosts();
       } catch (err) {
@@ -396,18 +440,80 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       }
       showToast('success', 'Publicação aprovada e mantida na comunidade!');
     } else if (newStatus === 'rejeitado') {
-      removeApprovedPostId(id);
-      deletePost(id);
-      try {
-        await supabase
-          .from('community_posts')
-          .delete()
-          .eq('id', id);
-        await refreshPosts();
-      } catch (err) {
-        console.warn('Erro ao deletar post rejeitado no Supabase:', err);
+      const targetItem = modItems.find(item => item.id === id);
+      if (targetItem) {
+        setRejectModalItem(targetItem);
+        const cleanReason = targetItem.flagReason.replace(/^🚩 \d+ denúncias? de usuários: /, '');
+        setRejectReason(cleanReason !== 'Conteúdo livre' ? cleanReason : '');
+        setRejectCategory(targetItem.flagReason.includes('Acolhimento') || targetItem.flagReason.includes('vulnerabilidade') ? 'vulnerabilidade' : 'antijulgamento');
+        setTrainFilterActive(true);
       }
-      showToast('info', 'Publicação removida com sucesso.');
+    }
+  };
+
+  // Confirmar Rejeição & Ensinar Filtro (Human-in-the-Loop)
+  const handleConfirmRejection = async () => {
+    if (!rejectModalItem) return;
+    setIsSubmittingRejection(true);
+    const item = rejectModalItem;
+
+    try {
+      if (trainFilterActive) {
+        // Enviar para a Edge Function treinar o exemplo com embedding e persistir no banco
+        await supabase.functions.invoke('moderate-content', {
+          body: {
+            action: 'train_example',
+            text: item.content,
+            category: rejectCategory,
+            reason: rejectReason.trim() || 'Conteúdo rejeitado na moderação',
+            adminNotes: `Post de ${item.authorName} na sala ${item.roomName}`
+          }
+        });
+      }
+
+      // Remover post de community_posts
+      removeApprovedPostId(item.id);
+      deletePost(item.id);
+      await supabase.from('community_posts').delete().eq('id', item.id);
+      await refreshPosts();
+
+      // Atualizar estado local
+      setModItems(prev => prev.map(m => m.id === item.id ? { ...m, status: 'rejeitado' } : m));
+      await loadLearnedExamples();
+
+      showToast('success', trainFilterActive 
+        ? 'Publicação removida e padrão ensinado ao filtro com sucesso!'
+        : 'Publicação removida com sucesso.');
+      
+      setRejectModalItem(null);
+    } catch (err) {
+      console.warn('Erro ao processar rejeição:', err);
+      showToast('error', 'Erro ao remover publicação. Tente novamente.');
+    } finally {
+      setIsSubmittingRejection(false);
+    }
+  };
+
+  // Alternar ativação de regra de aprendizado
+  const handleToggleLearnedActive = async (id: string, currentActive: boolean) => {
+    const nextState = !currentActive;
+    setLearnedExamples(prev => prev.map(ex => ex.id === id ? { ...ex, is_active: nextState } : ex));
+    try {
+      await supabase.from('moderation_rejected_examples').update({ is_active: nextState }).eq('id', id);
+      showToast('info', nextState ? 'Regra ativada no filtro!' : 'Regra pausada temporariamente.');
+    } catch (err) {
+      console.warn('Erro ao alternar regra:', err);
+    }
+  };
+
+  // Excluir regra da base de aprendizado
+  const handleDeleteLearnedExample = async (id: string) => {
+    setLearnedExamples(prev => prev.filter(ex => ex.id !== id));
+    try {
+      await supabase.from('moderation_rejected_examples').delete().eq('id', id);
+      showToast('success', 'Exemplo removido da base de aprendizado.');
+    } catch (err) {
+      console.warn('Erro ao excluir regra:', err);
     }
   };
 
@@ -1253,11 +1359,140 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 >
                   <span>Todos ({modItems.length})</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModerationFilter('aprendizado');
+                    loadLearnedExamples();
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    moderationFilter === 'aprendizado'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Brain className="w-3.5 h-3.5 text-purple-300" />
+                  <span>Base IA ({learnedExamples.length})</span>
+                </button>
               </div>
             </div>
 
             <div className="space-y-4">
-              {displayedModItems.length === 0 ? (
+              {moderationFilter === 'aprendizado' ? (
+                <div className="space-y-4">
+                  {/* Header informativo da Base de Aprendizado */}
+                  <div className="bg-purple-950/20 border border-purple-500/30 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div className="flex items-start gap-3">
+                      <Brain className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="font-extrabold text-purple-200">Auto-Aprendizado Ativo (Human-in-the-Loop)</h4>
+                        <p className="text-purple-300/80 text-[11px] leading-relaxed mt-0.5">
+                          Toda vez que você remove uma publicação, ela alimenta o banco vetorial e as diretrizes do Gemini. Novos posts com semântica ou intenção semelhante são barrados automaticamente.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[11px] px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">
+                        {learnedExamples.filter(e => e.is_active).length} ativas / {learnedExamples.length} regras
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Campo de Busca nos Padrões Banidos */}
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={learnedSearchQuery}
+                      onChange={e => setLearnedSearchQuery(e.target.value)}
+                      placeholder="Pesquisar nos padrões banidos ou motivos..."
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#070D0F] border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
+                    />
+                  </div>
+
+                  {/* Lista de Exemplos Aprendidos */}
+                  {isLoadingLearned ? (
+                    <div className="p-8 text-center text-slate-400 text-xs">Carregando base de aprendizado...</div>
+                  ) : learnedExamples.length === 0 ? (
+                    <div className="bg-[#070D0F] p-8 rounded-2xl border border-white/5 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
+                      <Brain className="w-8 h-8 text-purple-400/40" />
+                      <span className="font-bold text-slate-300">Nenhum padrão cadastrado ainda</span>
+                      <span className="text-[11px] text-slate-500 max-w-md">
+                        Quando você clicar em "Remover Post" na fila de moderação, o padrão da publicação será salvo aqui automaticamente.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {learnedExamples
+                        .filter(ex => {
+                          if (!learnedSearchQuery.trim()) return true;
+                          const q = learnedSearchQuery.toLowerCase();
+                          return ex.original_text.toLowerCase().includes(q) || ex.reason.toLowerCase().includes(q);
+                        })
+                        .map(ex => (
+                          <div
+                            key={ex.id}
+                            className={`p-4 rounded-2xl border transition-all ${
+                              ex.is_active
+                                ? 'bg-[#070D0F] border-purple-500/20 shadow-sm'
+                                : 'bg-[#070D0F]/50 border-white/5 opacity-60'
+                            }`}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-2.5 mb-2.5">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                                  ex.category === 'vulnerabilidade'
+                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                    : 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                                }`}>
+                                  {ex.category === 'vulnerabilidade' ? '💔 Vulnerabilidade' : '🛡️ Antijulgamento / Violação'}
+                                </span>
+                                <span className="text-[11px] text-slate-300 font-bold">
+                                  {ex.reason}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 self-end sm:self-auto">
+                                <span className="text-[10px] text-slate-500">
+                                  {new Date(ex.created_at).toLocaleDateString('pt-BR')}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleLearnedActive(ex.id, ex.is_active)}
+                                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border flex items-center gap-1 cursor-pointer ${
+                                    ex.is_active
+                                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                                      : 'bg-slate-800 text-slate-400 border-white/10 hover:text-white'
+                                  }`}
+                                  title={ex.is_active ? 'Clique para pausar esta regra' : 'Clique para reativar esta regra'}
+                                >
+                                  <Power className="w-3 h-3" />
+                                  <span>{ex.is_active ? 'Ativo no Filtro' : 'Pausado'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteLearnedExample(ex.id)}
+                                  className="p-1 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                                  title="Excluir da base de aprendizado"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                            <p className="text-xs text-slate-300 italic bg-[#101B1E] p-3 rounded-xl border border-white/5">
+                              "{ex.original_text}"
+                            </p>
+                            {ex.admin_notes && (
+                              <span className="text-[10px] text-slate-500 block mt-1.5 pl-1">
+                                Nota: {ex.admin_notes}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              ) : displayedModItems.length === 0 ? (
                 <div className="bg-[#070D0F] p-8 rounded-2xl border border-white/5 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
                   <ShieldCheck className="w-8 h-8 text-[#8A9A5B] opacity-60" />
                   <span className="font-bold text-slate-300">
@@ -1932,6 +2167,112 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
         </main>
       </div>
+
+      {/* 🚫 Modal de Remoção e Calibração da IA */}
+      {rejectModalItem && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setRejectModalItem(null)}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-lg bg-[#0E1A1E] border border-white/10 rounded-3xl shadow-2xl p-6 flex flex-col gap-5 animate-fade-in"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Brain className="w-5 h-5 text-purple-400" />
+                <h3 className="text-sm font-black text-white">Remover & Ensinar Filtro da IA</h3>
+              </div>
+              <button
+                onClick={() => setRejectModalItem(null)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-slate-300 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-[#070D0F] p-3.5 rounded-2xl border border-white/5">
+                <span className="text-[10px] font-bold text-slate-400 block mb-1">
+                  Publicação de {rejectModalItem.authorName} ({rejectModalItem.roomName}):
+                </span>
+                <p className="text-xs text-slate-200 italic line-clamp-3">"{rejectModalItem.content}"</p>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-300 block mb-1.5">
+                  Classificação da Violação:
+                </label>
+                <select
+                  value={rejectCategory}
+                  onChange={e => setRejectCategory(e.target.value as any)}
+                  className="w-full px-3.5 py-2.5 bg-[#070D0F] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500/50"
+                >
+                  <option value="antijulgamento">🛡️ Antijulgamento / Agressão / Mom-shaming</option>
+                  <option value="antijulgamento">🚫 Violação de consentimento / Abuso sexual / Coerção</option>
+                  <option value="antijulgamento">🔞 Conteúdo sexualmente explícito / Pornográfico</option>
+                  <option value="vulnerabilidade">💔 Risco à vida / Sofrimento extremo / Ideação</option>
+                  <option value="outro">🗑️ Outro / Spam / Desrespeito às regras</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-300 block mb-1.5">
+                  Motivo da Remoção (diretriz para a IA):
+                </label>
+                <input
+                  type="text"
+                  value={rejectReason}
+                  onChange={e => setRejectReason(e.target.value)}
+                  placeholder="Ex: Coerção sexual velada / Desrespeito à recusa do parceiro"
+                  className="w-full px-3.5 py-2.5 bg-[#070D0F] border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
+                />
+              </div>
+
+              <label className="flex items-start gap-3 bg-purple-950/20 border border-purple-500/30 p-3.5 rounded-2xl cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={trainFilterActive}
+                  onChange={e => setTrainFilterActive(e.target.checked)}
+                  className="accent-purple-500 w-4 h-4 mt-0.5 shrink-0"
+                />
+                <div className="space-y-0.5">
+                  <span className="text-xs font-bold text-purple-200 block">
+                    Salvar na Base de Auto-Aprendizado da IA
+                  </span>
+                  <p className="text-[11px] text-purple-300/80 leading-relaxed">
+                    Gera embedding vetorial e adiciona este texto como exemplo no filtro nativo, barrando automaticamente posts futuros parecidos.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setRejectModalItem(null)}
+                disabled={isSubmittingRejection}
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRejection}
+                disabled={isSubmittingRejection}
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-lg cursor-pointer"
+              >
+                {isSubmittingRejection ? (
+                  <span>Processando...</span>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4" />
+                    <span>Confirmar Remoção</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

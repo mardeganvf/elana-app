@@ -913,3 +913,62 @@ DROP POLICY IF EXISTS "Allow public select on journey_interests" ON public.journ
 CREATE POLICY "Allow public select on journey_interests" 
   ON public.journey_interests FOR SELECT USING (true);
 
+-- --------------------------------------------------------
+-- AUTO-APRENDIZADO DA MODERAÇÃO (HUMAN-IN-THE-LOOP / PGVECTOR)
+-- --------------------------------------------------------
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE IF NOT EXISTS public.moderation_rejected_examples (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  original_text TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'antijulgamento',
+  reason TEXT NOT NULL,
+  admin_notes TEXT,
+  embedding vector(768),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Função de busca por similaridade semântica de cosseno
+CREATE OR REPLACE FUNCTION match_rejected_examples(
+  query_embedding vector(768),
+  match_threshold float DEFAULT 0.80,
+  match_count int DEFAULT 5
+)
+RETURNS TABLE (
+  id UUID,
+  original_text TEXT,
+  category TEXT,
+  reason TEXT,
+  similarity float
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    m.id,
+    m.original_text,
+    m.category,
+    m.reason,
+    (1 - (m.embedding <=> query_embedding))::float AS similarity
+  FROM public.moderation_rejected_examples m
+  WHERE m.is_active = TRUE
+    AND m.embedding IS NOT NULL
+    AND (1 - (m.embedding <=> query_embedding)) > match_threshold
+  ORDER BY m.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+
+ALTER TABLE public.moderation_rejected_examples ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read on moderation_rejected_examples" ON public.moderation_rejected_examples;
+CREATE POLICY "Allow public read on moderation_rejected_examples" ON public.moderation_rejected_examples
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow all on moderation_rejected_examples" ON public.moderation_rejected_examples;
+CREATE POLICY "Allow all on moderation_rejected_examples" ON public.moderation_rejected_examples
+  FOR ALL USING (true) WITH CHECK (true);
+
