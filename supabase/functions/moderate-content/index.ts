@@ -29,6 +29,7 @@ Categorias de classificação:
    - Violação de consentimento, violência sexual, abuso ou estupro (inclusive conjugal ou de vulnerável), como manter relações sexuais ou toques íntimos com pessoa dormindo, desacordada, inconsciente, sob efeito de substâncias, sem consentimento mútuo ou contra sua vontade expressa ou tácita.
    - Pressão sexual, coerção conjugal ou insistência contra o consentimento e limites do parceiro ou da parceira (ex: "como convencer a fazer sexo", insistir em práticas íntimas ou sexo anal que o parceiro não deseja, desrespeito à autonomia e recusa da esposa/marido).
    - Conteúdo sexualmente explícito, vocabulário pornográfico, assédio ou descrições íntimas inadequadas para uma comunidade de apoio parental.
+   - Assédio sexual, cantadas invasivas ou inoportunas, investidas de teor sexual, importunação ou objetificação corporal de membros da comunidade (ex: "gostosa", "quero te pegar", "delícia", "vem cá", "vou te pegar", investidas amorosas ou sexuais direcionadas a participantes da comunidade).
 
 3. "livre":
    - Desabafos comuns e saudáveis da rotina materna/paterna ("meu bebê não dormiu nada hoje e estou exausta", "preciso de ajuda com a cólica", "estou cansada de limpar a casa").
@@ -219,8 +220,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Chamar com prioridade o gemini-3.5-flash-lite e fallback para gemini-2.5-flash / gemini-3.7-flash
-    const models = ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-3.7-flash'];
+    // Modelos oficiais Gemini recomendados pela Google API
+    const models = ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.7-flash'];
+    const allErrors: any[] = [];
     let lastError: any = null;
     let parsed: any = null;
     let usedModel: string = '';
@@ -254,6 +256,7 @@ Deno.serve(async (req) => {
         if (!geminiResponse.ok) {
           const errText = await geminiResponse.text();
           console.warn(`Aviso na API do Gemini (${model}):`, geminiResponse.status, errText);
+          allErrors.push({ model, status: geminiResponse.status, message: errText.slice(0, 200) });
           lastError = { model, status: geminiResponse.status, message: errText };
           continue;
         }
@@ -296,6 +299,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           error: 'GEMINI_MODELS_UNAVAILABLE',
           lastError,
+          allErrors,
           fallbackRequired: true
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

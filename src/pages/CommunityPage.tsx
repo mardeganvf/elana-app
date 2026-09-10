@@ -471,6 +471,7 @@ export const CommunityPage: React.FC = () => {
     loadMorePosts, 
     refreshPosts, 
     deletePost,
+    deleteComment,
     toggleReaction, 
     toggleCommentReaction, 
     addComment,
@@ -568,6 +569,11 @@ export const CommunityPage: React.FC = () => {
   // Exclusão de Post Próprio
   const [postToDelete, setPostToDelete] = useState<CommunityPost | null>(null);
   const [isDeletingPost, setIsDeletingPost] = useState(false);
+
+  // Exclusão de Comentário Próprio
+  const [commentToDelete, setCommentToDelete] = useState<{ postId: string; commentId: string; authorName: string; content: string } | null>(null);
+  const [isDeletingComment, setIsDeletingComment] = useState(false);
+  const [isSubmittingCommentMap, setIsSubmittingCommentMap] = useState<Record<string, boolean>>({});
 
   // Feed Pagination State (Initial 15 topics, +15 on "Carregar Mais")
   const [visibleCount, setVisibleCount] = useState(15);
@@ -904,18 +910,23 @@ export const CommunityPage: React.FC = () => {
   const handleInlineCommentSubmit = async (postId: string, e: React.FormEvent) => {
     e.preventDefault();
     const content = commentInputs[postId];
-    if (!content || !content.trim()) return;
+    if (!content || !content.trim() || isSubmittingCommentMap[postId]) return;
 
-    const isAnon = commentAnonMap[postId] || false;
-    const sensitivity = await checkContentSensitivityAI(content.trim());
-    const result = addComment(postId, content.trim(), isAnon, sensitivity);
+    setIsSubmittingCommentMap(prev => ({ ...prev, [postId]: true }));
+    try {
+      const isAnon = commentAnonMap[postId] || false;
+      const sensitivity = await checkContentSensitivityAI(content.trim());
+      const result = addComment(postId, content.trim(), isAnon, sensitivity);
 
-    if (result && result.isFlagged) {
-      setFlaggedCommentInfo({ isOpen: true, matchedWord: result.matchedWord, flagType: result.flagType });
+      if (result && result.isFlagged) {
+        setFlaggedCommentInfo({ isOpen: true, matchedWord: result.matchedWord, flagType: result.flagType });
+      }
+
+      // Reset input
+      setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+    } finally {
+      setIsSubmittingCommentMap(prev => ({ ...prev, [postId]: false }));
     }
-
-    // Reset input
-    setCommentInputs(prev => ({ ...prev, [postId]: '' }));
   };
 
   // Active header title computation
@@ -1792,7 +1803,14 @@ export const CommunityPage: React.FC = () => {
 
                       {/* Rede de Apoio com X Respostas Button (Inline Expand Toggle) */}
                       {(() => {
-                        const postComments = Array.isArray(post.comments) ? post.comments : [];
+                        const postComments = (Array.isArray(post.comments) ? post.comments : []).filter(c => {
+                          if (c.status === 'sob_moderacao') {
+                            const isAuthor = user && c.authorId === user.id;
+                            const isAdmin = user && user.role === 'admin';
+                            return isAuthor || isAdmin;
+                          }
+                          return true;
+                        });
                         return (
                           <>
                             <div className="pt-2 border-t border-white/10 flex items-center justify-between">
@@ -1857,6 +1875,17 @@ export const CommunityPage: React.FC = () => {
                                                     <Flag className="w-2.5 h-2.5" />
                                                   </button>
                                                 )}
+                                                {user && (c.authorId === user.id || user.role === 'admin') && (
+                                                  <button
+                                                    type="button"
+                                                    title="Excluir meu comentário"
+                                                    onClick={() => setCommentToDelete({ postId: post.id, commentId: c.id, authorName: c.authorName, content: c.content })}
+                                                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] font-bold text-slate-500 border border-transparent hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer"
+                                                  >
+                                                    <Trash2 className="w-2.5 h-2.5" />
+                                                    <span>Excluir</span>
+                                                  </button>
+                                                )}
                                               </div>
                                             </div>
                                             <p className="text-slate-300 leading-relaxed">{c.content}</p>
@@ -1909,9 +1938,14 @@ export const CommunityPage: React.FC = () => {
                                       />
                                       <button
                                         type="submit"
-                                        className="bg-[#FF7F5B] hover:bg-[#e06847] text-white p-3 rounded-xl transition-all shadow-md shrink-0"
+                                        disabled={isSubmittingCommentMap[post.id]}
+                                        className="bg-[#FF7F5B] hover:bg-[#e06847] text-white p-3 rounded-xl transition-all shadow-md shrink-0 disabled:opacity-50 cursor-pointer"
                                       >
-                                        <Send className="w-4 h-4" />
+                                        {isSubmittingCommentMap[post.id] ? (
+                                          <RefreshCw className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                          <Send className="w-4 h-4" />
+                                        )}
                                       </button>
                                     </div>
 
@@ -2129,6 +2163,75 @@ export const CommunityPage: React.FC = () => {
                 className="w-full bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isDeletingPost ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Excluindo...</span>
+                  </>
+                ) : (
+                  <span>Sim, Excluir</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 🗑️ Modal de Confirmação de Exclusão de Comentário */}
+      {commentToDelete && createPortal(
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
+          <div className="bg-[#101B1E] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-red-500/30 text-white space-y-5 animate-scale-up text-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center mx-auto shadow-lg">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                Excluir comentário?
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Tem certeza de que deseja apagar este comentário? Esta ação removerá sua resposta da discussão.
+              </p>
+            </div>
+
+            <div className="bg-[#070D0F] p-3.5 rounded-2xl border border-white/10 text-left space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
+                💬 Comentário
+              </span>
+              <p className="text-xs font-bold text-white line-clamp-2">
+                "{commentToDelete.content}"
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setCommentToDelete(null)}
+                disabled={isDeletingComment}
+                className="w-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!commentToDelete) return;
+                  setIsDeletingComment(true);
+                  try {
+                    await deleteComment(commentToDelete.postId, commentToDelete.commentId);
+                    showToast('info', 'Comentário removido com sucesso.');
+                    setCommentToDelete(null);
+                  } catch (err) {
+                    showToast('error', 'Não foi possível excluir o comentário no momento.');
+                  } finally {
+                    setIsDeletingComment(false);
+                  }
+                }}
+                disabled={isDeletingComment}
+                className="w-full bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingComment ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     <span>Excluindo...</span>

@@ -59,6 +59,8 @@ interface SOSTicket {
 
 interface ModerationItem {
   id: string;
+  type?: 'post' | 'comment';
+  postId?: string;
   authorName: string;
   authorAvatar: string;
   roomName: string;
@@ -159,7 +161,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   };
 
   // 🗳️ Enquetes State
-  const { polls, createPoll, togglePollStatus, deletePost, refreshPosts, posts } = useCommunity();
+  const { polls, createPoll, togglePollStatus, deletePost, deleteComment, refreshPosts, posts } = useCommunity();
   const [newPollTitle, setNewPollTitle] = useState('');
   const [newPollDesc, setNewPollDesc] = useState('');
   const [newPollOptions, setNewPollOptions] = useState<string[]>(['', '']);
@@ -281,11 +283,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         return;
       }
 
-      // 2. Carregar denúncias de usuários agrupadas por post
+      // 2. Carregar denúncias de usuários
       const { data: reportsData } = await supabase
         .from('community_reports')
-        .select('content_id, reason')
-        .eq('content_type', 'post');
+        .select('content_id, reason, content_type');
 
       // Mapear content_id → { count, reasons }
       const reportMap: Record<string, { count: number; reasons: string[] }> = {};
@@ -299,6 +300,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         }
       }
 
+      // 3. Carregar comentários de usuários reais ou sob moderação
+      const { data: commentsData } = await supabase
+        .from('community_comments')
+        .select('*')
+        .not('author_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
       // Filtrar estritamente apenas posts criados por usuários com IDs válidos (ignora dummies 'u-1', etc.)
       const validPosts = (data || []).filter(p => 
         p.author_id && 
@@ -307,49 +316,99 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         p.status !== 'removido_usuario'
       );
 
-      if (validPosts.length > 0) {
-        const items: ModerationItem[] = validPosts.map(p => {
-          const isPersistedApproved = p.category === 'aprovado' || approvedIds.has(p.id);
-          const sensitivityCheck = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
-          const isExplicitlyFlagged = p.status === 'sob_moderacao' || p.category === 'sob_moderacao';
-          const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
-          const postReports = reportMap[p.id];
+      const postItems: ModerationItem[] = validPosts.map(p => {
+        const isPersistedApproved = p.category === 'aprovado' || approvedIds.has(p.id);
+        const sensitivityCheck = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
+        const isExplicitlyFlagged = p.status === 'sob_moderacao' || p.category === 'sob_moderacao';
+        const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
+        const postReports = reportMap[p.id];
 
-          let flagReason = 'Conteúdo livre';
-          if (postReports && postReports.count > 0) {
-            flagReason = `🚩 ${postReports.count} denúncia${postReports.count > 1 ? 's' : ''} de usuários: ${postReports.reasons.join(', ')}`;
-          } else if (sensitivityCheck.isFlagged) {
-            flagReason = sensitivityCheck.flagReason || `Termo sensível: "${sensitivityCheck.matchedWord}"`;
-          } else if (isExplicitlyFlagged) {
-            flagReason = 'Retido para moderação preventiva';
-          }
+        let flagReason = 'Conteúdo livre';
+        if (postReports && postReports.count > 0) {
+          flagReason = `🚩 ${postReports.count} denúncia${postReports.count > 1 ? 's' : ''} de usuários: ${postReports.reasons.join(', ')}`;
+        } else if (sensitivityCheck.isFlagged) {
+          flagReason = sensitivityCheck.flagReason || `Termo sensível: "${sensitivityCheck.matchedWord}"`;
+        } else if (isExplicitlyFlagged) {
+          flagReason = 'Retido para moderação preventiva';
+        }
 
-          let status: 'pendente' | 'aprovado' | 'rejeitado' = 'aprovado';
-          if (isPersistedApproved) {
-            status = 'aprovado';
-          } else if (isSensitive || (postReports && postReports.count >= 3)) {
-            status = 'pendente';
-          } else {
-            status = 'aprovado';
-          }
+        let status: 'pendente' | 'aprovado' | 'rejeitado' = 'aprovado';
+        if (isPersistedApproved) {
+          status = 'aprovado';
+        } else if (isSensitive || (postReports && postReports.count >= 3)) {
+          status = 'pendente';
+        } else {
+          status = 'aprovado';
+        }
 
-          return {
-            id: p.id,
-            authorName: p.author_name || 'Anônimo',
-            authorAvatar: p.author_avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-            roomName: p.transversal_room_id || p.journey_id || 'Comunidade Geral',
-            content: p.title ? `[${p.title}] ${p.content}` : p.content,
-            flagReason,
-            createdAt: new Date(p.created_at).toLocaleString('pt-BR'),
-            status,
-            reportCount: postReports?.count || p.report_count || 0
-          };
-        });
+        return {
+          id: p.id,
+          type: 'post',
+          authorName: p.author_name || 'Anônimo',
+          authorAvatar: p.author_avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+          roomName: p.transversal_room_id || p.journey_id || 'Comunidade Geral',
+          content: p.title ? `[${p.title}] ${p.content}` : p.content,
+          flagReason,
+          createdAt: new Date(p.created_at).toLocaleString('pt-BR'),
+          status,
+          reportCount: postReports?.count || p.report_count || 0
+        };
+      });
 
-        setModItems(items);
-      } else {
-        setModItems([]);
-      }
+      const validComments = (commentsData || []).filter(c => 
+        c.author_id && 
+        c.author_id.length > 20 && 
+        !c.author_id.startsWith('u-') && 
+        c.status !== 'removido_usuario'
+      );
+
+      const commentItems: ModerationItem[] = validComments.map(c => {
+        const isPersistedApproved = c.status === 'aprovado' || approvedIds.has(c.id);
+        const sensitivityCheck = checkContentSensitivity(c.content || '');
+        const isExplicitlyFlagged = c.status === 'sob_moderacao';
+        const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
+        const commentReports = reportMap[c.id];
+
+        let flagReason = 'Conteúdo livre';
+        if (commentReports && commentReports.count > 0) {
+          flagReason = `🚩 ${commentReports.count} denúncia${commentReports.count > 1 ? 's' : ''} de usuários: ${commentReports.reasons.join(', ')}`;
+        } else if (sensitivityCheck.isFlagged) {
+          flagReason = sensitivityCheck.flagReason || `Termo sensível: "${sensitivityCheck.matchedWord}"`;
+        } else if (isExplicitlyFlagged) {
+          flagReason = 'Retido para moderação preventiva';
+        }
+
+        let status: 'pendente' | 'aprovado' | 'rejeitado' = 'aprovado';
+        if (isPersistedApproved) {
+          status = 'aprovado';
+        } else if (isSensitive || (commentReports && commentReports.count >= 3)) {
+          status = 'pendente';
+        } else {
+          status = 'aprovado';
+        }
+
+        return {
+          id: c.id,
+          type: 'comment',
+          postId: c.post_id,
+          authorName: c.author_name || 'Anônimo',
+          authorAvatar: c.author_avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+          roomName: 'Comentário em resposta',
+          content: c.content || '',
+          flagReason,
+          createdAt: new Date(c.created_at).toLocaleString('pt-BR'),
+          status,
+          reportCount: commentReports?.count || c.report_count || 0
+        };
+      });
+
+      const allItems = [...postItems, ...commentItems].sort((a, b) => {
+        if (a.status === 'pendente' && b.status !== 'pendente') return -1;
+        if (b.status === 'pendente' && a.status !== 'pendente') return 1;
+        return 0;
+      });
+
+      setModItems(allItems);
     } catch (err) {
       console.warn('Falha ao processar fila de moderação:', err);
     }
@@ -677,21 +736,28 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // Moderation Handlers
   const handleModerateItem = async (id: string, newStatus: 'aprovado' | 'rejeitado') => {
+    const targetItem = modItems.find(item => item.id === id);
     if (newStatus === 'aprovado') {
       setModItems(prev => prev.map(item => item.id === id ? { ...item, status: 'aprovado' } : item));
       saveApprovedPostId(id);
       try {
-        await supabase
-          .from('community_posts')
-          .update({ category: 'aprovado', status: 'aprovado' })
-          .eq('id', id);
+        if (targetItem?.type === 'comment') {
+          await supabase
+            .from('community_comments')
+            .update({ status: 'aprovado' })
+            .eq('id', id);
+        } else {
+          await supabase
+            .from('community_posts')
+            .update({ category: 'aprovado', status: 'aprovado' })
+            .eq('id', id);
+        }
         await refreshPosts();
       } catch (err) {
         console.warn('Erro ao salvar aprovação no Supabase:', err);
       }
-      showToast('success', 'Publicação aprovada e mantida na comunidade!');
+      showToast('success', targetItem?.type === 'comment' ? 'Comentário aprovado na comunidade!' : 'Publicação aprovada e mantida na comunidade!');
     } else if (newStatus === 'rejeitado') {
-      const targetItem = modItems.find(item => item.id === id);
       if (targetItem) {
         setRejectModalItem(targetItem);
         const cleanReason = targetItem.flagReason.replace(/^🚩 \d+ denúncias? de usuários: /, '');
@@ -717,15 +783,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             text: item.content,
             category: rejectCategory,
             reason: rejectReason.trim() || 'Conteúdo rejeitado na moderação',
-            adminNotes: `Post de ${item.authorName} na sala ${item.roomName}`
+            adminNotes: `${item.type === 'comment' ? 'Comentário' : 'Post'} de ${item.authorName} na sala ${item.roomName}`
           }
         });
       }
 
-      // Remover post de community_posts
       removeApprovedPostId(item.id);
-      deletePost(item.id);
-      await supabase.from('community_posts').delete().eq('id', item.id);
+
+      if (item.type === 'comment') {
+        if (item.postId) {
+          await deleteComment(item.postId, item.id);
+        } else {
+          await supabase.from('community_comments').delete().eq('id', item.id);
+        }
+      } else {
+        deletePost(item.id);
+        await supabase.from('community_posts').delete().eq('id', item.id);
+      }
+
       await refreshPosts();
 
       // Atualizar estado local
@@ -733,13 +808,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       await loadLearnedExamples();
 
       showToast('success', trainFilterActive 
-        ? 'Publicação removida e padrão ensinado ao filtro com sucesso!'
-        : 'Publicação removida com sucesso.');
+        ? `${item.type === 'comment' ? 'Comentário removido' : 'Publicação removida'} e padrão ensinado ao filtro com sucesso!`
+        : `${item.type === 'comment' ? 'Comentário removido' : 'Publicação removida'} com sucesso.`);
       
       setRejectModalItem(null);
     } catch (err) {
       console.warn('Erro ao processar rejeição:', err);
-      showToast('error', 'Erro ao remover publicação. Tente novamente.');
+      showToast('error', `Erro ao remover ${item.type === 'comment' ? 'comentário' : 'publicação'}. Tente novamente.`);
     } finally {
       setIsSubmittingRejection(false);
     }
@@ -1767,7 +1842,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         <img src={item.authorAvatar} alt={item.authorName} className="w-9 h-9 rounded-full object-cover" />
                         <div>
                           <h4 className="text-xs font-bold text-white">{item.authorName}</h4>
-                          <span className="text-[10px] text-[#FF7F5B] font-bold">Sala: {item.roomName} • {item.createdAt}</span>
+                          <span className="text-[10px] text-[#FF7F5B] font-bold">
+                            {item.type === 'comment' ? '💬 Comentário' : `Sala: ${item.roomName}`} • {item.createdAt}
+                          </span>
                         </div>
                         {(item.reportCount ?? 0) > 0 && (
                           <span className="ml-1 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/15 text-rose-300 border border-rose-500/30">
@@ -1813,7 +1890,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                           className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                         >
                           <XCircle className="w-3.5 h-3.5" />
-                          <span>Remover Post</span>
+                          <span>{item.type === 'comment' ? 'Remover Comentário' : 'Remover Post'}</span>
                         </button>
 
                         <button
@@ -1822,7 +1899,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                           className="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Aprovar Publicação</span>
+                          <span>{item.type === 'comment' ? 'Aprovar Comentário' : 'Aprovar Publicação'}</span>
                         </button>
                       </div>
                     ) : (

@@ -167,7 +167,19 @@ export const OFFENSIVE_PATTERNS = [
   { pattern: /\b(?:forcar|obrigar)\b.*?\b(?:a\s+)?(?:transar|fazer\s+sexo|abrir\s+as\s+pernas)\b/i, reason: 'Coerção sexual física / Estupro' },
   { pattern: /\bsem\s+(?:o\s+)?(?:consentimento|ela\s+querer|ele\s+querer|ela\s+saber|ele\s+saber|permissao)\b.*?\b(?:sexo|transar|penetracao|tocar)\b/i, reason: 'Ato sexual sem consentimento' },
   { pattern: /\b(?:sexo|transar)\b.*?\bsem\s+(?:o\s+)?(?:consentimento|ela\s+querer|ele\s+querer|ela\s+saber|ele\s+saber|permissao)\b/i, reason: 'Ato sexual sem consentimento' },
-  { pattern: /\b(?:pornografia|conteudo\s+adulto|prostituicao|venda\s+de\s+nudez)\b/i, reason: 'Conteúdo adulto / explícito proibido' }
+  { pattern: /\b(?:pornografia|conteudo\s+adulto|prostituicao|venda\s+de\s+nudez)\b/i, reason: 'Conteúdo adulto / explícito proibido' },
+
+  // Assédio Sexual, Cantadas Invasivas, Importunação e Objetificação Corporal
+  { pattern: /\b(?:voce\s+(?:e\s+|ta\s+|eh\s+))?(?:muito\s+|tao\s+|t[aã]o\s+)?gostos[ao]s?\b/i, reason: 'Assédio sexual / Objetificação corporal indevida' },
+  { pattern: /\b(?:quero|vou|vem\s+que\s+eu|deixa\s+eu)\s+(?:te\s+)?(?:pegar|comer|fuder|foder|chupar|tracar|traçar)\b/i, reason: 'Assédio sexual / Investida de teor sexual explícito' },
+  { pattern: /\b(?:te\s+pegar|te\s+pego|vou\s+te\s+pegar|quero\s+te\s+pegar|vou\s+te\s+comer|quero\s+te\s+comer)\b/i, reason: 'Assédio sexual / Investida de teor sexual explícito' },
+  { pattern: /\b(?:vem\s+ca|vem\s+c[aá])\s+(?:me\s+dar\s+um\s+beijo|minha\s+gostosa|minha\s+delicia)\b/i, reason: 'Assédio / Cantada invasiva imprópria' },
+  { pattern: /\b(?:delicia|del[ií]cia)\b.*?\b(?:gostosa|pegar|corpo|safada|beijo)\b/i, reason: 'Assédio sexual / Objetificação' },
+  { pattern: /\b(?:que\s+)?(?:mulher|mae|m[aã]e)\s+(?:gostosa|deliciosa|tesuda)\b/i, reason: 'Assédio sexual / Objetificação' },
+  { pattern: /\b(?:manda\s+(?:nudes|foto\s+pelada|foto\s+nua)|quer\s+ver\s+(?:meu\s+pau|minha\s+rola|sua\s+buceta))\b/i, reason: 'Assédio sexual / Solicitação ou envio de conteúdo íntimo' },
+  { pattern: /\b(?:que\s+corpo|que\s+raba|que\s+bunda|que\s+peit[ao]s?)\b/i, reason: 'Objetificação corporal e assédio' },
+  { pattern: /\b(?:chupa\s+meu|chupar\s+sua)\b/i, reason: 'Linguagem sexual explícita / Invasiva' },
+  { pattern: /\b(?:safad[ao]s?|tesuda|tarad[ao]|siririca|punheta)\b/i, reason: 'Vocabulário sexual ofensivo ou assediador' }
 ];
 
 // Expressões legadas de antijulgamento para verificação direta
@@ -176,7 +188,8 @@ export const SHAMING_KEYWORDS = [
   'pessima mae', 'péssima mãe', 'pessimo pai', 'péssimo pai', 'mae ruim', 'mãe ruim',
   'culpa sua', 'deveria ter vergonha', 'sem nocao', 'sem noção', 'coitado do bebe',
   'coitado do bebê', 'absurdo fazer isso', 'mae louca', 'mãe louca', 'negligente',
-  'egoista', 'egoísta', 'burra', 'idiota', 'mimimi', 'frescura'
+  'egoista', 'egoísta', 'burra', 'idiota', 'mimimi', 'frescura',
+  'gostosa', 'gostoso', 'muito gostosa', 'quero te pegar', 'vou te pegar', 'delicia', 'delícia', 'safada', 'safado'
 ];
 
 export type SensitivityFlagType = 'vulnerabilidade' | 'antijulgamento';
@@ -359,6 +372,7 @@ interface CommunityContextType {
   addComment: (postId: string, content: string, isAnonymous?: boolean, customSensitivity?: ContentSensitivityResult) => { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType };
   refreshPosts: () => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
+  deleteComment: (postId: string, commentId: string) => Promise<void>;
   fetchUserPosts: (userId: string) => Promise<CommunityPost[]>;
   reportContent: (contentType: 'post' | 'comment', contentId: string, postId: string | null, reason: string) => Promise<{ success: boolean; alreadyReported?: boolean }>;
   polls: CommunityPoll[];
@@ -596,7 +610,14 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       : (Array.isArray(item.comments) ? item.comments : []);
 
     const mappedComments: CommunityComment[] = rawComments.map((c: any) => {
-      if (c.authorRole && c.status) return c;
+      const commentSensitivity = checkContentSensitivity(c.content || '');
+      const commentStatus = c.status === 'sob_moderacao' || commentSensitivity.isFlagged ? 'sob_moderacao' : (c.status || 'aprovado');
+      if (c.authorRole && c.status) {
+        return {
+          ...c,
+          status: commentStatus as const
+        };
+      }
       return {
         id: c.id,
         authorId: c.author_id || c.authorId || 'unknown',
@@ -608,7 +629,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           ? new Date(c.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })
           : (c.createdAt || 'Agora'),
         isAnonymous: !!c.is_anonymous || !!c.isAnonymous,
-        status: 'aprovado' as const,
+        status: commentStatus as const,
         reactions: c.reactions && typeof c.reactions === 'object' ? c.reactions : {},
         userReactions: c.userReactions && typeof c.userReactions === 'object' ? c.userReactions : {}
       };
@@ -1387,23 +1408,38 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return post;
     }));
 
-    if (!isFlagged) {
-      // Persist comment asynchronously into Supabase
-      supabase
-        .from('community_comments')
-        .insert([{
-          post_id: (postId.includes('-') && postId.length > 20) ? postId : null,
-          author_id: user?.id || null,
-          author_name: authorName,
-          author_avatar: authorAvatar,
-          content: content,
-          is_anonymous: isAnon
-        }])
-        .then(({ error }) => {
-          if (error) console.warn('Supabase comment notice:', error.message);
-          else console.log('✅ Comentário salvo com sucesso no Supabase!');
-        });
+    // Persist comment asynchronously into Supabase with appropriate status
+    supabase
+      .from('community_comments')
+      .insert([{
+        post_id: (postId.includes('-') && postId.length > 20) ? postId : null,
+        author_id: user?.id || null,
+        author_name: authorName,
+        author_avatar: authorAvatar,
+        content: content,
+        is_anonymous: isAnon,
+        status: commentStatus
+      }])
+      .select('id')
+      .single()
+      .then(({ data, error }) => {
+        if (error) {
+          console.warn('Supabase comment notice:', error.message);
+        } else if (data?.id) {
+          console.log('✅ Comentário salvo com sucesso no Supabase com ID:', data.id);
+          setPosts(prev => prev.map(p => {
+            if (p.id === postId && p.comments) {
+              return {
+                ...p,
+                comments: p.comments.map(c => c.id === newComment.id ? { ...c, id: data.id } : c)
+              };
+            }
+            return p;
+          }));
+        }
+      });
 
+    if (!isFlagged) {
       // 🏆 Conquistas de Comentários / Rede de Apoio:
       awardBadge('b36'); // Primeiro Acolhimento
 
@@ -1614,6 +1650,44 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const deleteComment = async (postId: string, commentId: string): Promise<void> => {
+    // 1. Otimista: remove do post local imediatamente
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId && p.comments) {
+        return {
+          ...p,
+          comments: p.comments.filter(c => c.id !== commentId)
+        };
+      }
+      return p;
+    }));
+
+    // 2. Limpar reações armazenadas desse comentário se houver
+    try {
+      const store = getStoredReactionsData();
+      if (store.comments && store.comments[commentId]) {
+        delete store.comments[commentId];
+        saveStoredReactionsData(store);
+      }
+    } catch {}
+
+    // 3. Excluir no Supabase
+    try {
+      if (commentId && commentId.length > 20) {
+        const { error } = await supabase
+          .from('community_comments')
+          .delete()
+          .eq('id', commentId);
+
+        if (error) {
+          console.warn('Erro ao excluir comentário no Supabase:', error.message);
+        }
+      }
+    } catch (err) {
+      console.warn('Exceção ao excluir comentário no Supabase:', err);
+    }
+  };
+
   const fetchUserPosts = async (userId: string): Promise<CommunityPost[]> => {
     if (!userId) return [];
     try {
@@ -1752,6 +1826,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       addComment,
       refreshPosts,
       deletePost,
+      deleteComment,
       fetchUserPosts,
       reportContent,
       polls,
