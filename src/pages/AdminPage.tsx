@@ -3,7 +3,6 @@ import {
   ShieldCheck,
   ShieldAlert,
   Lock,
-  LifeBuoy,
   Upload,
   Video,
   FileText,
@@ -1498,20 +1497,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             <section className="bg-[#101B1E] p-5 sm:p-7 rounded-3xl border border-white/10 shadow-xl space-y-6">
 
               {/* Header com Título e Botão de Atualizar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
                 <div>
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
-                    <LifeBuoy className="w-5 h-5 text-[#FF7F5B]" />
+                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                     Atendimento SOS
                   </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Acolha com empatia e carinho os chamados da comunidade em momentos de exaustão.
-                  </p>
                 </div>
 
                 <button
                   onClick={() => loadTickets()}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-[#070D0F] hover:bg-white/10 text-slate-300 hover:text-white rounded-2xl border border-white/10 text-xs font-bold transition-all cursor-pointer self-start sm:self-auto shrink-0 shadow-sm"
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-[#070D0F] hover:bg-white/10 text-slate-300 hover:text-white rounded-2xl border border-white/10 text-xs font-bold transition-all cursor-pointer shrink-0 shadow-sm"
                   title="Atualizar chamados"
                 >
                   <RefreshCw className="w-3.5 h-3.5 text-[#FF7F5B]" />
