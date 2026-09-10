@@ -116,6 +116,7 @@ export const BadgeGallery: React.FC<BadgeGalleryProps> = ({
 }) => {
   // Selected badge for interactive detail modal
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   // Set of unlocked IDs for fast lookup
   const unlockedSet = new Set<string>([
@@ -206,7 +207,7 @@ export const BadgeGallery: React.FC<BadgeGalleryProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-black text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
-                Galeria de Conquistas da Elana 🏆
+                Galeria de Conquistas da Elana
               </h2>
               <p className="text-xs text-slate-300">
                 Toque ou passe o mouse em qualquer conquista para ver detalhes e como desbloquear.
@@ -224,9 +225,43 @@ export const BadgeGallery: React.FC<BadgeGalleryProps> = ({
         </div>
       )}
 
+      {/* Category Filter Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+        <button
+          type="button"
+          onClick={() => setSelectedCategory('all')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+            selectedCategory === 'all'
+              ? 'bg-[#FF7F5B] text-slate-950 shadow-md font-black'
+              : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+          }`}
+        >
+          Todas ({ALL_BADGES.length})
+        </button>
+        {categories.map(cat => {
+          const catBadges = ALL_BADGES.filter(b => b.category === cat);
+          const catUnlocked = catBadges.filter(isBadgeUnlocked).length;
+          const isSelected = selectedCategory === cat;
+          return (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                isSelected
+                  ? 'bg-[#FF7F5B] text-slate-950 shadow-md font-black'
+                  : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              {cat} ({catUnlocked}/{catBadges.length})
+            </button>
+          );
+        })}
+      </div>
+
       {/* Badges Categorized Containers */}
       <div className="space-y-6">
-        {categories.map(category => {
+        {(selectedCategory === 'all' ? categories : [selectedCategory]).map(category => {
           const categoryBadges = ALL_BADGES.filter(b => b.category === category);
           const categoryUnlockedCount = categoryBadges.filter(isBadgeUnlocked).length;
 
