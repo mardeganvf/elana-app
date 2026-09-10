@@ -611,11 +611,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     const mappedComments: CommunityComment[] = rawComments.map((c: any) => {
       const commentSensitivity = checkContentSensitivity(c.content || '');
-      const commentStatus = c.status === 'sob_moderacao' || commentSensitivity.isFlagged ? 'sob_moderacao' : (c.status || 'aprovado');
+      const commentStatus: 'aprovado' | 'sob_moderacao' = (c.status === 'sob_moderacao' || commentSensitivity.isFlagged) ? 'sob_moderacao' : 'aprovado';
       if (c.authorRole && c.status) {
         return {
           ...c,
-          status: commentStatus as const
+          status: commentStatus
         };
       }
       return {
@@ -629,7 +629,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           ? new Date(c.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })
           : (c.createdAt || 'Agora'),
         isAnonymous: !!c.is_anonymous || !!c.isAnonymous,
-        status: commentStatus as const,
+        status: commentStatus,
         reactions: c.reactions && typeof c.reactions === 'object' ? c.reactions : {},
         userReactions: c.userReactions && typeof c.userReactions === 'object' ? c.userReactions : {}
       };
