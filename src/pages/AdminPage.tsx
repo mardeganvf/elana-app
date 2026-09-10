@@ -393,7 +393,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       });
       const totalComments = commentIds.size;
 
-      // b) Contabilizar reações (Supabase + Contexto local)
+      // b) Contabilizar reações (Supabase + Contexto local + Armazenamento persistente)
       let remoteReactionsCount = 0;
       try {
         const { data: reactionsData } = await supabase
@@ -410,6 +410,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           });
         }
       });
+
+      try {
+        const rawStore = localStorage.getItem('elana_community_reactions_v2');
+        if (rawStore) {
+          const parsedStore = JSON.parse(rawStore);
+          let storeCount = 0;
+          if (parsedStore.posts) {
+            Object.values(parsedStore.posts).forEach((pReactions: any) => {
+              if (pReactions && typeof pReactions === 'object') {
+                Object.values(pReactions).forEach((c: any) => {
+                  if (typeof c === 'number') storeCount += c;
+                });
+              }
+            });
+          }
+          localReactionsCount = Math.max(localReactionsCount, storeCount);
+        }
+      } catch {}
 
       const totalReactions = Math.max(remoteReactionsCount, localReactionsCount);
       const totalAcolhimentos = totalComments + totalReactions;

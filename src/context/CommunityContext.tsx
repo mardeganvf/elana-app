@@ -413,6 +413,94 @@ const INITIAL_POLLS: CommunityPoll[] = [
   }
 ];
 
+// 🌟 Armazenamento persistente e isolado de reações comunitárias (à prova de recarregamento e offline)
+const REACTIONS_STORAGE_KEY = 'elana_community_reactions_v2';
+
+interface StoredReactionsData {
+  posts: Record<string, Record<string, number>>;
+  userReactions: Record<string, Record<string, Record<string, boolean>>>;
+  comments: Record<string, Record<string, number>>;
+  userCommentReactions: Record<string, Record<string, Record<string, boolean>>>;
+}
+
+const getStoredReactionsData = (): StoredReactionsData => {
+  try {
+    const raw = localStorage.getItem(REACTIONS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        posts: parsed.posts || {},
+        userReactions: parsed.userReactions || {},
+        comments: parsed.comments || {},
+        userCommentReactions: parsed.userCommentReactions || {}
+      };
+    }
+    // Migração de cache anterior se houver
+    const oldCache = localStorage.getItem('elana_community_posts_cache');
+    if (oldCache) {
+      const parsedPosts = JSON.parse(oldCache);
+      if (Array.isArray(parsedPosts)) {
+        const initialStore: StoredReactionsData = {
+          posts: {},
+          userReactions: {},
+          comments: {},
+          userCommentReactions: {}
+        };
+        parsedPosts.forEach((p: any) => {
+          if (p && p.id && p.reactions && Object.keys(p.reactions).length > 0) {
+            initialStore.posts[p.id] = p.reactions;
+          }
+          if (p && p.id && p.userReactions && Object.keys(p.userReactions).length > 0) {
+            initialStore.userReactions['anon'] = initialStore.userReactions['anon'] || {};
+            initialStore.userReactions['anon'][p.id] = p.userReactions;
+          }
+        });
+        localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(initialStore));
+        return initialStore;
+      }
+    }
+  } catch {}
+  return { posts: {}, userReactions: {}, comments: {}, userCommentReactions: {} };
+};
+
+const saveStoredReactionsData = (data: StoredReactionsData) => {
+  try {
+    localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(data));
+  } catch {}
+};
+
+const persistPostReaction = (
+  postId: string,
+  reactionKey: string,
+  isActive: boolean,
+  userKey: string,
+  updatedReactions: Record<string, number>
+) => {
+  const store = getStoredReactionsData();
+  store.posts[postId] = updatedReactions;
+  if (!store.userReactions[userKey]) {
+    store.userReactions[userKey] = {};
+  }
+  store.userReactions[userKey][postId] = isActive ? { [reactionKey]: true } : {};
+  saveStoredReactionsData(store);
+};
+
+const persistCommentReaction = (
+  commentId: string,
+  reactionKey: string,
+  isActive: boolean,
+  userKey: string,
+  updatedReactions: Record<string, number>
+) => {
+  const store = getStoredReactionsData();
+  store.comments[commentId] = updatedReactions;
+  if (!store.userCommentReactions[userKey]) {
+    store.userCommentReactions[userKey] = {};
+  }
+  store.userCommentReactions[userKey][commentId] = isActive ? { [reactionKey]: true } : {};
+  saveStoredReactionsData(store);
+};
+
 const PAGE_SIZE = 15;
 
 export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -420,13 +508,30 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [posts, setPosts] = useState<CommunityPost[]>(() => {
     try {
       const saved = localStorage.getItem('elana_community_posts_cache') || localStorage.getItem('elana_community_posts');
+      const reactionsStore = getStoredReactionsData();
+      const userKey = user?.id || 'anon';
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           // Filtrar estritamente apenas posts criados por usuários registrados (com authorId válido e sem mock 'u-')
           const validPosts = parsed
             .filter(p => p && p.authorId && p.authorId.length > 20 && !p.authorId.startsWith('u-') && p.status !== 'removido_usuario')
-            .map(sanitizePost);
+            .map(p => {
+              const sanitized = sanitizePost(p);
+              const postReactions = reactionsStore.posts[sanitized.id] || sanitized.reactions || {};
+              const userReactions = reactionsStore.userReactions[userKey]?.[sanitized.id] || sanitized.userReactions || {};
+              const comments = (sanitized.comments || []).map(c => ({
+                ...c,
+                reactions: reactionsStore.comments[c.id] || c.reactions || {},
+                userReactions: reactionsStore.userCommentReactions[userKey]?.[c.id] || c.userReactions || {}
+              }));
+              return {
+                ...sanitized,
+                reactions: postReactions,
+                userReactions: userReactions,
+                comments: comments
+              };
+            });
           if (validPosts.length !== parsed.length) {
             localStorage.setItem('elana_community_posts_cache', JSON.stringify(validPosts));
           }
@@ -536,6 +641,37 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const fetchSupabasePosts = async (showLoading = false) => {
     if (showLoading) setIsLoading(true);
     try {
+      // 1. Tentar buscar reações do Supabase se a tabela existir
+      const remoteReactionsByPost: Record<string, Record<string, number>> = {};
+      const remoteUserReactionsByPost: Record<string, Record<string, boolean>> = {};
+
+      try {
+        const { data: reactionsData, error: reactError } = await supabase
+          .from('community_reactions')
+          .select('post_id, user_id, reaction_key');
+
+        if (reactionsData && !reactError) {
+          reactionsData.forEach((r: any) => {
+            if (!r.post_id || !r.reaction_key) return;
+            if (!remoteReactionsByPost[r.post_id]) {
+              remoteReactionsByPost[r.post_id] = {};
+            }
+            remoteReactionsByPost[r.post_id][r.reaction_key] = 
+              (remoteReactionsByPost[r.post_id][r.reaction_key] || 0) + 1;
+
+            if (user?.id && r.user_id === user.id) {
+              if (!remoteUserReactionsByPost[r.post_id]) {
+                remoteUserReactionsByPost[r.post_id] = {};
+              }
+              remoteUserReactionsByPost[r.post_id][r.reaction_key] = true;
+            }
+          });
+        }
+      } catch {
+        // Silencioso se a tabela ainda não foi criada no Supabase
+      }
+
+      // 2. Buscar posts e comentários
       const { data, error } = await supabase
         .from('community_posts')
         .select('*, community_comments(*)')
@@ -554,6 +690,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           .map(mapPostFromDb)
           .filter(p => p.status !== 'removido_usuario');
 
+        const stored = getStoredReactionsData();
+        const userKey = user?.id || 'anon';
+
         setPosts(prev => {
           const remoteIds = new Set(remotePosts.map(p => p.id));
           // Preserva APENAS posts locais do usuário registrado atual que ainda não sincronizaram (descarta qualquer post dummy anterior)
@@ -564,22 +703,56 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             p.status !== 'removido_usuario'
           );
 
-          // Mescla comentários de posts locais com comentários remotos
+          // Mescla comentários de posts locais com comentários remotos e PRESERVA reações
           const mergedRemote = remotePosts.map(rPost => {
             const localPost = prev.find(p => p.id === rPost.id);
-            if (!localPost || !localPost.comments || localPost.comments.length === 0) {
-              return rPost;
+
+            // Reações: prioridade Supabase > localPost em memória > stored persistente > rPost
+            const mergedReactions: Record<string, number> = {
+              ...(stored.posts[rPost.id] || {}),
+              ...(localPost?.reactions || {}),
+              ...(rPost.reactions || {})
+            };
+            if (remoteReactionsByPost[rPost.id]) {
+              Object.assign(mergedReactions, remoteReactionsByPost[rPost.id]);
             }
+
+            const mergedUserReactions: Record<string, boolean> = {
+              ...(stored.userReactions[userKey]?.[rPost.id] || {}),
+              ...(localPost?.userReactions || {}),
+              ...(remoteUserReactionsByPost[rPost.id] || {})
+            };
+
             const rComments = rPost.comments || [];
             const rCommentIds = new Set(rComments.map(c => c.id));
-            const extraLocalComments = localPost.comments.filter(c => 
+            const extraLocalComments = (localPost?.comments || []).filter(c => 
               !rCommentIds.has(c.id) && 
               c.authorId && 
               !c.authorId.startsWith('u-')
             );
+
+            const mergedComments = [...rComments, ...extraLocalComments].map(c => {
+              const localComment = localPost?.comments?.find(lc => lc.id === c.id);
+              return {
+                ...c,
+                reactions: {
+                  ...(stored.comments[c.id] || {}),
+                  ...(localComment?.reactions || {}),
+                  ...(c.reactions || {})
+                },
+                userReactions: {
+                  ...(stored.userCommentReactions[userKey]?.[c.id] || {}),
+                  ...(localComment?.userReactions || {}),
+                  ...(c.userReactions || {})
+                }
+              };
+            });
+
             return {
               ...rPost,
-              comments: [...rComments, ...extraLocalComments]
+              reactions: mergedReactions,
+              userReactions: mergedUserReactions,
+              comments: mergedComments
             };
           });
 
@@ -613,10 +786,35 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       if (data && data.length > 0) {
+        const stored = getStoredReactionsData();
+        const userKey = user?.id || 'anon';
         const newPosts: CommunityPost[] = data
           .filter(p => p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-'))
           .map(mapPostFromDb)
-          .filter(p => p.status !== 'removido_usuario');
+          .filter(p => p.status !== 'removido_usuario')
+          .map(p => ({
+            ...p,
+            reactions: {
+              ...(stored.posts[p.id] || {}),
+              ...(p.reactions || {})
+            },
+            userReactions: {
+              ...(stored.userReactions[userKey]?.[p.id] || {}),
+              ...(p.userReactions || {})
+            },
+            comments: (p.comments || []).map(c => ({
+              ...c,
+              reactions: {
+                ...(stored.comments[c.id] || {}),
+                ...(c.reactions || {})
+              },
+              userReactions: {
+                ...(stored.userCommentReactions[userKey]?.[c.id] || {}),
+                ...(c.userReactions || {})
+              }
+            }))
+          }));
+
         setPosts(prev => {
           const existingIds = new Set(prev.map(p => p.id));
           const filtered = newPosts.filter(p => !existingIds.has(p.id));
@@ -672,6 +870,23 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     fetchSupabasePosts(true);
   }, []);
+
+  // Re-hidratar reações ativas do usuário quando o perfil mudar
+  useEffect(() => {
+    const stored = getStoredReactionsData();
+    const userKey = user?.id || 'anon';
+    setPosts(prev => prev.map(p => {
+      const activeUserReactions = stored.userReactions[userKey]?.[p.id] || {};
+      return {
+        ...p,
+        userReactions: activeUserReactions,
+        comments: (p.comments || []).map(c => ({
+          ...c,
+          userReactions: stored.userCommentReactions?.[userKey]?.[c.id] || {}
+        }))
+      };
+    }));
+  }, [user?.id]);
 
   const refreshPosts = async () => {
     await fetchSupabasePosts(false);
@@ -982,6 +1197,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     let isNowActive = false;
+    let nextPostReactions: Record<string, number> = {};
+    let nextUserReactions: Record<string, boolean> = {};
 
     setPosts(prev => prev.map(post => {
       if (post.id === postId) {
@@ -1005,6 +1222,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           isNowActive = true;
         }
 
+        nextPostReactions = updatedReactions;
+        nextUserReactions = updatedUserReactions;
+
         return {
           ...post,
           reactions: updatedReactions,
@@ -1014,33 +1234,53 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return post;
     }));
 
-    // Sincronizar com o Supabase de forma assíncrona se logado e post com UUID válido
-    if (user?.id && postId.length > 20) {
-      if (isNowActive) {
-        supabase
-          .from('community_reactions')
-          .upsert({
-            post_id: postId,
-            user_id: user.id,
-            reaction_key: reactionKey
-          }, { onConflict: 'post_id,user_id' })
-          .then(({ error }) => {
-            if (error) console.warn('Supabase reaction notice:', error.message);
-          });
-      } else {
-        supabase
-          .from('community_reactions')
-          .delete()
-          .eq('post_id', postId)
-          .eq('user_id', user.id)
-          .then(({ error }) => {
-            if (error) console.warn('Supabase reaction notice:', error.message);
-          });
+    // 💾 Salvar IMEDIATAMENTE no armazenamento persistente de reações (à prova de recarregamento)
+    const userKey = user?.id || 'anon';
+    persistPostReaction(postId, reactionKey, isNowActive, userKey, nextPostReactions);
+
+    // Sincronizar com o Supabase de forma assíncrona
+    if (postId.length > 20) {
+      // 1. Atualizar o contador total de acolhimentos no post (likes_count)
+      const totalCount = Object.values(nextPostReactions).reduce((a, b) => a + b, 0);
+      supabase
+        .from('community_posts')
+        .update({ likes_count: totalCount })
+        .eq('id', postId)
+        .then(({ error }) => {
+          if (error) console.warn('Supabase post likes_count notice:', error.message);
+        });
+
+      // 2. Sincronizar na tabela individual de reações se houver usuário
+      if (user?.id) {
+        if (isNowActive) {
+          supabase
+            .from('community_reactions')
+            .upsert({
+              post_id: postId,
+              user_id: user.id,
+              reaction_key: reactionKey
+            }, { onConflict: 'post_id,user_id' })
+            .then(({ error }) => {
+              if (error) console.warn('Supabase reaction notice:', error.message);
+            });
+        } else {
+          supabase
+            .from('community_reactions')
+            .delete()
+            .eq('post_id', postId)
+            .eq('user_id', user.id)
+            .then(({ error }) => {
+              if (error) console.warn('Supabase reaction notice:', error.message);
+            });
+        }
       }
     }
   };
 
   const toggleCommentReaction = (postId: string, commentId: string, reactionKey: string) => {
+    let isNowActive = false;
+    let nextCommentReactions: Record<string, number> = {};
+
     setPosts(prev => prev.map(post => {
       if (post.id === postId && post.comments) {
         const updatedComments = post.comments.map(c => {
@@ -1062,7 +1302,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             if (!isAlreadyReacted) {
               updatedReactions[reactionKey] = (updatedReactions[reactionKey] || 0) + 1;
               updatedUserReactions[reactionKey] = true;
+              isNowActive = true;
             }
+
+            nextCommentReactions = updatedReactions;
 
             return {
               ...c,
@@ -1080,6 +1323,22 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       return post;
     }));
+
+    // 💾 Salvar IMEDIATAMENTE no armazenamento persistente de comentários
+    const userKey = user?.id || 'anon';
+    persistCommentReaction(commentId, reactionKey, isNowActive, userKey, nextCommentReactions);
+
+    // Sincronizar contador de likes no comentário no Supabase se UUID válido
+    if (commentId.length > 20) {
+      const totalCount = Object.values(nextCommentReactions).reduce((a, b) => a + b, 0);
+      supabase
+        .from('community_comments')
+        .update({ likes_count: totalCount })
+        .eq('id', commentId)
+        .then(({ error }) => {
+          if (error) console.warn('Supabase comment likes_count notice:', error.message);
+        });
+    }
   };
 
   const addComment = (

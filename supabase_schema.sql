@@ -1026,26 +1026,37 @@ CREATE TABLE IF NOT EXISTS public.community_reactions (
   UNIQUE(post_id, user_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_community_reactions_post ON public.community_reactions(post_id);
+CREATE INDEX IF NOT EXISTS idx_community_reactions_user ON public.community_reactions(user_id);
+
 ALTER TABLE public.community_reactions ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "reactions_select_auth" ON public.community_reactions;
 DROP POLICY IF EXISTS "reactions_insert_own" ON public.community_reactions;
 DROP POLICY IF EXISTS "reactions_update_own" ON public.community_reactions;
 DROP POLICY IF EXISTS "reactions_delete_own" ON public.community_reactions;
+DROP POLICY IF EXISTS "reactions_select_all" ON public.community_reactions;
+DROP POLICY IF EXISTS "reactions_insert_all" ON public.community_reactions;
+DROP POLICY IF EXISTS "reactions_update_all" ON public.community_reactions;
+DROP POLICY IF EXISTS "reactions_delete_all" ON public.community_reactions;
 
-CREATE POLICY "reactions_select_auth"
+CREATE POLICY "reactions_select_all"
   ON public.community_reactions FOR SELECT
-  USING (auth.uid() IS NOT NULL);
+  USING (true);
 
-CREATE POLICY "reactions_insert_own"
+CREATE POLICY "reactions_insert_all"
   ON public.community_reactions FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (true);
 
-CREATE POLICY "reactions_update_own"
+CREATE POLICY "reactions_update_all"
   ON public.community_reactions FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING (true);
 
-CREATE POLICY "reactions_delete_own"
+CREATE POLICY "reactions_delete_all"
   ON public.community_reactions FOR DELETE
-  USING (auth.uid() = user_id);
+  USING (true);
+
+-- Garantir coluna reactions nas tabelas de postagens e comentários para cache estruturado
+ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS reactions JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.community_comments ADD COLUMN IF NOT EXISTS reactions JSONB DEFAULT '{}'::jsonb;
 
