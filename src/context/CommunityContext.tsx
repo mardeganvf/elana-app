@@ -415,6 +415,7 @@ const INITIAL_POLLS: CommunityPoll[] = [
 
 const PAGE_SIZE = 15;
 
+export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, awardBadge } = useAuth();
   const [posts, setPosts] = useState<CommunityPost[]>(() => {
     try {
