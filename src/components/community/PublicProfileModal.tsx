@@ -47,7 +47,7 @@ export interface PublicUserProfile {
   id: string;
   name: string;
   avatar: string;
-  role?: 'membro' | 'guia' | 'curadoria';
+  role?: 'membro' | 'guia' | 'curadoria' | 'admin';
   tag?: string;
   levelName?: string;
   levelIcon?: string;

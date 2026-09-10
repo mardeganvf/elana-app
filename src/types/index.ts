@@ -102,7 +102,7 @@ export interface UserProfile {
 
 export type EmotionalIntention = 'ajuda' | 'desabafar' | 'celebrar';
 export type SensitivityLevel = 'padrao' | 'elevado' | 'critico';
-export type UserRoleType = 'membro' | 'guia' | 'curadoria';
+export type UserRoleType = 'membro' | 'guia' | 'curadoria' | 'admin';
 
 export interface BrandReaction {
   id: string;

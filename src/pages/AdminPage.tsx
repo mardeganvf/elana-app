@@ -136,7 +136,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
 
-  const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'polls' | 'destaques' | null>(null);
+  const [activeAdminTab, setActiveAdminTab] = useState<'sos' | 'moderation' | 'analytics' | 'content' | 'users' | 'permissions' | 'polls' | 'destaques' | null>(null);
 
   // Grupos expansíveis (drop-downs) do menu lateral - iniciam todos recolhidos
   const [openMenuGroups, setOpenMenuGroups] = useState<Record<string, boolean>>({
@@ -1654,6 +1654,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
               {openMenuGroups.users && (
                 <div className="space-y-1 pl-1">
+                  {/* Botão 1: Gestão de Membros */}
                   <button
                     type="button"
                     onClick={() => {
@@ -1672,6 +1673,22 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     }`}>
                       {members.length}
                     </span>
+                  </button>
+
+                  {/* Botão 2: Autorização e Acessos */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAdminTab('permissions');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                      activeAdminTab === 'permissions'
+                        ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                        : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                    }`}
+                  >
+                    <span>Autorização e Acessos</span>
                   </button>
                 </div>
               )}
@@ -2602,14 +2619,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         });
 
         return (
-          <div className="space-y-6">
-            {/* CONTÊINER 1: MEMBROS */}
-            <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                    Membros
-                  </h2>
+          <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Gestão de Membros
+                </h2>
 
                   {/* Filtro por Categoria de Membro (Usuário, Guia e Admin) */}
                   <div className="relative inline-flex items-center">
@@ -2727,14 +2742,22 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 )}
               </div>
             </section>
+        );
+      })()}
 
-            {/* CONTÊINER 2: AUTORIZAÇÕES E ACESSOS POR CATEGORIA */}
-            <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
-                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Autorizações e Acessos por Categoria
-                </h2>
-              </div>
+      {/* TAB 5.1: 🛡️ AUTORIZAÇÕES E ACESSOS POR CATEGORIA */}
+      {activeAdminTab === 'permissions' && (() => {
+        const totalUsersCount = members.filter(m => m.role === 'membro').length;
+        const totalGuiasCount = members.filter(m => m.role === 'guia').length;
+        const totalAdminsCount = members.filter(m => m.role === 'admin').length;
+
+        return (
+          <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+            <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                Autorizações e Acessos por Categoria
+              </h2>
+            </div>
 
               {/* Grid das 3 Categorias */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -2902,7 +2925,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 </div>
               </div>
             </section>
-          </div>
         );
       })()}
 

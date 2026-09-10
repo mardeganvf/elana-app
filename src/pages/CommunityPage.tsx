@@ -588,7 +588,7 @@ export const CommunityPage: React.FC = () => {
     id: string;
     name: string;
     avatar: string;
-    role?: 'membro' | 'guia' | 'curadoria';
+    role?: 'membro' | 'guia' | 'curadoria' | 'admin';
     tag?: string;
     isAnonymous?: boolean;
   }) => {
