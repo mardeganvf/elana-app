@@ -45,29 +45,36 @@ Responda ESTRITAMENTE em formato JSON com o seguinte schema:
 }`;
 
 async function getEmbedding(text: string, apiKey: string): Promise<number[] | null> {
-  try {
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${apiKey}`;
-    const res = await fetch(geminiUrl, {
-      method: 'POST',
-      signal: AbortSignal.timeout(2500),
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'models/text-embedding-004',
-        content: {
-          parts: [{ text: text.trim().slice(0, 1000) }]
-        }
-      })
-    });
-    if (!res.ok) {
-      console.warn('Falha na API de embedding Gemini:', res.status);
-      return null;
+  const models = ['gemini-embedding-001', 'text-embedding-004'];
+  for (const model of models) {
+    try {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:embedContent?key=${apiKey}`;
+      const res = await fetch(geminiUrl, {
+        method: 'POST',
+        signal: AbortSignal.timeout(2500),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: `models/${model}`,
+          content: {
+            parts: [{ text: text.trim().slice(0, 1000) }]
+          },
+          outputDimensionality: 768
+        })
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        console.warn(`Falha embedding (${model}):`, res.status, txt);
+        continue;
+      }
+      const data = await res.json();
+      if (data?.embedding?.values) {
+        return data.embedding.values;
+      }
+    } catch (err) {
+      console.warn(`Erro ao requisitar embedding (${model}):`, err);
     }
-    const data = await res.json();
-    return data?.embedding?.values || null;
-  } catch (err) {
-    console.warn('Erro ao requisitar embedding:', err);
-    return null;
   }
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -212,8 +219,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Chamar com prioridade o gemini-3.5-flash-lite (ultra-rápido: ~1.1s) e fallback para gemini-3.6-flash
-    const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash'];
+    // Chamar com prioridade o gemini-3.5-flash-lite e fallback para gemini-2.5-flash / gemini-3.7-flash
+    const models = ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-3.7-flash'];
     let lastError: any = null;
     let parsed: any = null;
     let usedModel: string = '';
