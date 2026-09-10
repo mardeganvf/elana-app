@@ -15,6 +15,7 @@ import {
   LifeBuoy,
   LogOut,
   ChevronDown,
+  ChevronRight,
   UserCheck,
   Type,
   X,
@@ -461,7 +462,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
 
                 {/* Profile Dropdown Popover */}
                 {isProfileDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-3 w-72 bg-[#101B1E] border border-white/15 rounded-3xl p-4 shadow-2xl z-[9999] text-white space-y-4 animate-scale-up text-left select-none">
+                  <div className="absolute right-0 top-full mt-2.5 w-72 bg-[#0F171A] border border-white/10 rounded-2xl p-2.5 shadow-2xl z-[9999] text-white space-y-2 animate-scale-up text-left select-none backdrop-blur-xl">
                     
                     {/* User Profile Card Header */}
                     <div 
@@ -469,86 +470,99 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                         setIsProfileDropdownOpen(false);
                         setActiveTab('dashboard');
                       }}
-                      className="flex items-center gap-3 p-2 bg-[#070D0F] hover:bg-white/5 rounded-2xl border border-white/10 transition-colors cursor-pointer group"
+                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group"
                     >
                       <img
                         src={user.avatar}
                         alt={user.name}
-                        className="w-10 h-10 rounded-full object-cover border border-[#FF7F5B]"
+                        className="w-10 h-10 rounded-full object-cover ring-2 ring-white/10 group-hover:ring-[#FF7F5B]/50 transition-all shrink-0"
                       />
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-bold text-white group-hover:text-[#FF7F5B] transition-colors truncate">
-                          {user.name}
-                        </h4>
-                        <span className="text-[11px] text-slate-400 block truncate">
-                          Ver meu perfil →
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-sm font-bold text-white group-hover:text-[#FF7F5B] transition-colors truncate">
+                            {user.name}
+                          </h4>
+                          {isStaff && (
+                            <span className="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-white/10 text-slate-300 shrink-0">
+                              {isAdmin ? 'Admin' : 'Guia'}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-400 group-hover:text-slate-300 flex items-center gap-0.5 transition-colors mt-0.5">
+                          <span>Ver meu perfil</span>
+                          <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                         </span>
                       </div>
                     </div>
 
-                    <div className="border-t border-white/10 pt-3 space-y-3">
+                    <div className="h-px bg-white/10" />
+
+                    {/* Preferências Rápidas (Modo Madrugada & Fonte) */}
+                    <div className="space-y-1">
                       
-                      {/* Modo Madrugada (Dark/Night Mode Toggle) */}
-                      <div className="flex items-center justify-between p-2 rounded-2xl hover:bg-white/5 transition-colors">
+                      {/* Modo Madrugada */}
+                      <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition-colors">
                         <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-colors ${
-                            isMamadaMode ? 'bg-[#FFD166]/20 border-[#FFD166] text-[#FFD166]' : 'bg-white/5 border-white/10 text-slate-300'
-                          }`}>
-                            <Moon className="w-4 h-4 fill-current" />
-                          </div>
-                          <div>
-                            <span className="text-xs font-bold block text-white">Modo Madrugada</span>
-                            <span className="text-[10px] text-slate-400 block">Luz suave para não despertar o bebê</span>
-                          </div>
+                          <Moon className={`w-4 h-4 transition-colors ${isMamadaMode ? 'text-[#FFD166]' : 'text-slate-400'}`} />
+                          <span className="text-xs font-medium text-slate-200">Modo Madrugada</span>
                         </div>
 
                         <button
+                          type="button"
                           onClick={toggleMamadaMode}
-                          className={`w-10 h-6 rounded-full transition-colors relative p-1 cursor-pointer ${
+                          className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer ${
                             isMamadaMode ? 'bg-[#FFD166]' : 'bg-white/20'
                           }`}
+                          title="Alternar Modo Madrugada"
+                          aria-label="Alternar Modo Madrugada"
                         >
-                          <div className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+                          <div className={`w-4 h-4 rounded-full bg-[#070D0F] transition-transform ${
                             isMamadaMode ? 'translate-x-4' : 'translate-x-0'
                           }`} />
                         </button>
                       </div>
 
-                      {/* Tamanho de Fonte (Acessibilidade) */}
-                      <div className="p-2 space-y-2 rounded-2xl bg-[#070D0F] border border-white/10">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
-                          <Type className="w-4 h-4 text-[#FF7F5B]" />
-                          <span>Tamanho do Texto (Acessibilidade)</span>
+                      {/* Tamanho de Fonte em Linha Única */}
+                      <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          <Type className="w-4 h-4 text-slate-400" />
+                          <span className="text-xs font-medium text-slate-200">Tamanho do Texto</span>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-1.5 pt-1">
+                        <div className="flex items-center bg-white/5 p-0.5 rounded-lg border border-white/10">
                           <button
+                            type="button"
                             onClick={() => setFontSize('sm')}
-                            className={`py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                            className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                               fontSize === 'sm'
-                                ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
-                                : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+                                ? 'bg-white/20 text-white shadow-sm'
+                                : 'text-slate-400 hover:text-white'
                             }`}
+                            title="Texto Pequeno"
                           >
                             A-
                           </button>
                           <button
+                            type="button"
                             onClick={() => setFontSize('md')}
-                            className={`py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                            className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                               fontSize === 'md'
-                                ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
-                                : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+                                ? 'bg-white/20 text-white shadow-sm'
+                                : 'text-slate-400 hover:text-white'
                             }`}
+                            title="Texto Normal"
                           >
-                            A Normal
+                            A
                           </button>
                           <button
+                            type="button"
                             onClick={() => setFontSize('lg')}
-                            className={`py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                            className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                               fontSize === 'lg'
-                                ? 'bg-[#FF7F5B] text-slate-950 font-black shadow-md'
-                                : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+                                ? 'bg-white/20 text-white shadow-sm'
+                                : 'text-slate-400 hover:text-white'
                             }`}
+                            title="Texto Grande"
                           >
                             A+
                           </button>
@@ -557,52 +571,54 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
 
                     </div>
 
-                    {/* Footer Actions (Ajuda & Logout) */}
-                    <div className="border-t border-white/10 pt-3 space-y-1">
+                    <div className="h-px bg-white/10" />
+
+                    {/* Ações (Tutorial, Gestão e Logout) */}
+                    <div className="space-y-0.5">
                       <button
+                        type="button"
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
                           if (onRestartTutorial) {
                             onRestartTutorial();
                           }
                         }}
-                        className="w-full text-xs font-bold text-slate-300 hover:text-white p-2 rounded-xl hover:bg-white/5 flex items-center gap-2 transition-colors text-left cursor-pointer"
+                        className="w-full text-xs font-medium text-slate-300 hover:text-white px-2.5 py-2 rounded-xl hover:bg-white/5 flex items-center gap-2.5 transition-colors text-left cursor-pointer"
                       >
                         <HelpCircle className="w-4 h-4 text-slate-400" />
-                        <span>Rever Tutorial de Boas-Vindas</span>
+                        <span>Tutorial de Boas-Vindas</span>
                       </button>
 
                       {isStaff && (
                         <button
+                          type="button"
                           onClick={() => {
                             setIsProfileDropdownOpen(false);
                             setActiveTab('admin');
                             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
                           }}
-                          className="w-full text-xs font-extrabold text-[#FF7F5B] hover:text-[#FFD166] p-2.5 rounded-xl bg-[#FF7F5B]/10 hover:bg-[#FF7F5B]/20 border border-[#FF7F5B]/30 flex items-center justify-between transition-all text-left cursor-pointer"
+                          className="w-full text-xs font-medium text-slate-200 hover:text-white px-2.5 py-2 rounded-xl hover:bg-white/5 flex items-center justify-between transition-colors text-left cursor-pointer"
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2.5">
                             <ShieldCheck className="w-4 h-4 text-[#FF7F5B]" />
                             <span>{isAdmin ? "Painel do Administrador" : "Painel do Guia"}</span>
                           </div>
                           {adminPendingCounts && adminPendingCounts.total > 0 && (
-                            <span
-                              className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center shadow-md shrink-0 pointer-events-none"
-                              title={isAdmin ? "Novas mensagens e pendências no Painel Admin" : "Novas mensagens e pendências no Painel Guia"}
-                            >
-                              <Bell className="w-2.5 h-2.5 text-white fill-white animate-bounce" />
+                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-red-500 text-white shadow-sm">
+                              {adminPendingCounts.total}
                             </span>
                           )}
                         </button>
                       )}
 
                       <button
+                        type="button"
                         onClick={() => {
                           setIsProfileDropdownOpen(false);
                           logout();
                           setActiveTab('login');
                         }}
-                        className="w-full text-xs font-bold text-rose-400 hover:text-rose-300 p-2 rounded-xl hover:bg-rose-500/10 flex items-center gap-2 transition-colors text-left cursor-pointer"
+                        className="w-full text-xs font-medium text-slate-400 hover:text-rose-400 px-2.5 py-2 rounded-xl hover:bg-rose-500/10 flex items-center gap-2.5 transition-colors text-left cursor-pointer"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>Sair da Conta</span>
