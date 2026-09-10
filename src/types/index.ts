@@ -85,6 +85,7 @@ export interface UserProfile {
   level: number;
   levelTitle: string;
   streakDays: number;
+  daysWithUs?: number;
   lastActiveDate: string;
   badges: Badge[];
   bio?: string;

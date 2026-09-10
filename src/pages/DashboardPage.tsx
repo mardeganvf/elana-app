@@ -823,7 +823,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             </div>
             <div>
               <div className="text-sm font-black text-white">
-                {user.daysWithUs || 1} {(user.daysWithUs || 1) === 1 ? 'dia conosco' : 'dias conosco'}
+                {user.streakDays || 1} {(user.streakDays || 1) === 1 ? 'dia conosco' : 'dias conosco'}
               </div>
               <span className="text-[11px] text-slate-400 font-medium">
                 {userLevelInfo.nextLevelTitle ? `Próximo marco: ${userLevelInfo.nextLevelTitle}` : 'Jornada contínua'}
