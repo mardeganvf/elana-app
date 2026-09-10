@@ -850,15 +850,24 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in text-white">
           <div className="bg-[#0D1518] rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-white/10 relative flex flex-col m-auto max-h-[88vh]">
             
-            {/* Aviso Emergencial Leve (CVV / SAMU) */}
-            <div className="bg-rose-500/10 border border-rose-500/15 rounded-xl px-3 py-2 mb-3 text-xs text-rose-200/85 flex items-center gap-2.5 shrink-0">
-              <Phone className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-              <p className="text-[10.5px] leading-snug flex-1">
-                Acolhimento humano — em caso de crises ou urgência médica, ligue gratuitamente para o{' '}
-                <a href="tel:188" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">CVV (188)</a>
-                {' '}ou{' '}
-                <a href="tel:192" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">SAMU (192)</a>.
-              </p>
+            {/* Top Bar: Texto de Apoio Especializado Centralizado + Botão Fechar (X) no Canto Superior Direito */}
+            <div className="flex items-center gap-2.5 mb-5 shrink-0">
+              <div className="flex-1 bg-rose-500/10 border border-rose-500/15 rounded-xl px-3.5 py-2 text-center text-rose-200/85 text-[10.5px] leading-snug">
+                <span>
+                  Acolhimento humano — em caso de crises ou urgência médica, ligue gratuitamente para o{' '}
+                  <a href="tel:188" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">CVV (188)</a>
+                  {' '}ou{' '}
+                  <a href="tel:192" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">SAMU (192)</a>.
+                </span>
+              </div>
+
+              <button
+                onClick={() => setIsEmergencyOpen(false)}
+                aria-label="Fechar Atendimento SOS"
+                className="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Modal Header */}
@@ -871,27 +880,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                   <h3 className="text-sm font-bold text-white tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
                     Canal SOS de Acolhimento
                   </h3>
-                  {sosResponse && sosResponse.status !== 'arquivado' ? (
+                  {sosResponse && sosResponse.status !== 'arquivado' && (
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       {sosResponse.messages && sosResponse.messages.length > 1 ? 'Em diálogo com a equipe' : 'Chamado enviado — equipe a postos'}
                     </span>
-                  ) : sosResponse?.status === 'arquivado' ? (
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                      Atendimento Concluído
-                    </span>
-                  ) : null}
+                  )}
                 </div>
               </div>
-
-              <button
-                onClick={() => setIsEmergencyOpen(false)}
-                aria-label="Fechar Atendimento SOS"
-                className="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
 
             {/* Conditional Views: Ongoing Chat / Archived / New Ticket Form */}
@@ -1067,14 +1063,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                   <div ref={sosChatEndRef} />
                 </div>
 
-                <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-2xl text-center space-y-1">
+                <div className="bg-emerald-500/10 border border-emerald-500/20 py-2.5 px-3 rounded-2xl text-center">
                   <div className="flex items-center justify-center gap-1.5 text-emerald-400 font-bold text-xs">
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Atendimento concluído com carinho pela Equipe Elana 🌸</span>
                   </div>
-                  <p className="text-[11px] text-slate-300">
-                    Esperamos ter oferecido o suporte necessário. Se precisar de apoio novamente, clique abaixo para abrir um novo chamado.
-                  </p>
                 </div>
 
                 <button
