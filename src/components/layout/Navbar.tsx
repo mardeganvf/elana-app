@@ -383,29 +383,37 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
 
           {/* Painel do Administrador Shortcut */}
           {isAdmin && (
-            <button
-              onClick={() => {
-                setActiveTab('admin');
-                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-              }}
-              className={`relative font-extrabold text-xs px-3.5 py-2 rounded-full flex items-center gap-1.5 shadow-md transition-all active:scale-95 whitespace-nowrap border cursor-pointer ${
-                activeTab === 'admin'
-                  ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] font-black'
-                  : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/15'
-              }`}
-              title="Painel do Administrador & Guardião"
-            >
-              <ShieldCheck className={`w-4 h-4 shrink-0 transition-colors ${activeTab === 'admin' ? 'text-slate-950' : 'text-[#FF7F5B]'}`} />
-              <span>Painel Admin</span>
+            <div className="inline-flex items-center">
+              <button
+                onClick={() => {
+                  setActiveTab('admin');
+                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                }}
+                className={`font-extrabold text-xs px-3.5 h-9 rounded-full flex items-center gap-1.5 shadow-md transition-all active:scale-95 whitespace-nowrap border cursor-pointer ${
+                  activeTab === 'admin'
+                    ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] font-black'
+                    : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/15'
+                }`}
+                title="Painel do Administrador & Guardião"
+              >
+                <ShieldCheck className={`w-4 h-4 shrink-0 transition-colors ${activeTab === 'admin' ? 'text-slate-950' : 'text-[#FF7F5B]'}`} />
+                <span>Painel Admin</span>
+              </button>
+
               {adminPendingCounts && adminPendingCounts.total > 0 && (
-                <span
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 border-2 border-[#070D0F] flex items-center justify-center shadow-lg pointer-events-none"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('admin');
+                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  }}
+                  className="h-9 w-9 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#070D0F] flex items-center justify-center shadow-lg -ml-2.5 z-10 cursor-pointer active:scale-95 transition-all shrink-0"
                   title="Novas mensagens e pendências no Painel Admin"
                 >
-                  <Bell className="w-2.5 h-2.5 text-white fill-white animate-bounce" />
-                </span>
+                  <Bell className="w-4 h-4 text-white fill-white animate-bounce" />
+                </button>
               )}
-            </button>
+            </div>
           )}
 
         </div>

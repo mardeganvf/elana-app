@@ -1166,25 +1166,30 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
       {/* Botão Mobile para abrir/fechar menu lateral */}
       <div className="lg:hidden">
-        <button
-          type="button"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="relative w-full py-3 px-4 bg-[#101B1E] border border-white/10 rounded-2xl flex items-center justify-between text-xs font-bold text-white shadow-md cursor-pointer active:scale-98 transition-all"
-        >
-          <span className="flex items-center gap-2">
-            <Menu className="w-4 h-4 text-[#FF7F5B]" />
-            <span>Navegação do Painel (Menu Lateral)</span>
-          </span>
-          <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-180' : ''}`} />
+        <div className="relative flex items-center">
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="w-full h-11 px-4 bg-[#101B1E] border border-white/10 rounded-2xl flex items-center justify-between text-xs font-bold text-white shadow-md cursor-pointer active:scale-98 transition-all"
+          >
+            <span className="flex items-center gap-2">
+              <Menu className="w-4 h-4 text-[#FF7F5B]" />
+              <span>Navegação do Painel (Menu Lateral)</span>
+            </span>
+            <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+
           {(pendingCount > 0 || pendingModCount > 0) && (
-            <span
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 border-2 border-[#070D0F] flex items-center justify-center shadow-lg pointer-events-none"
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="absolute -right-2 top-0 h-11 w-11 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#070D0F] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
               title="Novas mensagens e pendências no painel"
             >
-              <Bell className="w-2.5 h-2.5 text-white fill-white animate-bounce" />
-            </span>
+              <Bell className="w-4.5 h-4.5 text-white fill-white animate-bounce" />
+            </button>
           )}
-        </button>
+        </div>
       </div>
 
       {/* Grid Principal: Menu Lateral à Esquerda + Conteúdo Principal à Direita */}
@@ -1348,49 +1353,62 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
             {/* GRUPO 2: COMUNIDADE & MODERAÇÃO */}
             <div className="space-y-1 pt-2 border-t border-white/5">
-              <button
-                type="button"
-                onClick={() => toggleMenuGroup('community')}
-                className="relative w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
-              >
-                <span className="flex items-center gap-1.5">
-                  <span>Comunidade & Moderação</span>
-                </span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.community ? 'rotate-0' : '-rotate-90'}`} />
+              <div className="relative flex items-center">
+                <button
+                  type="button"
+                  onClick={() => toggleMenuGroup('community')}
+                  className="w-full h-8 px-2.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span>Comunidade & Moderação</span>
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.community ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+
                 {!openMenuGroups.community && pendingModCount > 0 && (
-                  <span
-                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 border-2 border-[#101B1E] flex items-center justify-center shadow-md pointer-events-none"
+                  <button
+                    type="button"
+                    onClick={() => toggleMenuGroup('community')}
+                    className="absolute -right-1 top-0 h-8 w-8 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
                     title="Publicações sob moderação"
                   >
-                    <Bell className="w-2.5 h-2.5 text-white fill-white animate-bounce" />
-                  </span>
+                    <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
+                  </button>
                 )}
-              </button>
+              </div>
 
               {openMenuGroups.community && (
                 <div className="space-y-1 pl-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('moderation');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`relative w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'moderation'
-                        ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                        : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
-                    }`}
-                  >
-                    <span>Moderação de Posts</span>
+                  <div className="relative flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveAdminTab('moderation');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full h-9 px-3 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                        activeAdminTab === 'moderation'
+                          ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                          : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                      }`}
+                    >
+                      <span>Moderação de Posts</span>
+                    </button>
+
                     {pendingModCount > 0 && (
-                      <span
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 border-2 border-[#101B1E] flex items-center justify-center shadow-md pointer-events-none"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveAdminTab('moderation');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="absolute -right-2 top-0 h-9 w-9 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
                         title="Publicações sob moderação"
                       >
-                        <Bell className="w-2.5 h-2.5 text-white fill-white animate-bounce" />
-                      </span>
+                        <Bell className="w-4 h-4 text-white fill-white animate-bounce" />
+                      </button>
                     )}
-                  </button>
+                  </div>
 
                   <button
                     type="button"
@@ -1417,49 +1435,62 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
             {/* GRUPO 3: ACOLHIMENTO & ATENDIMENTO */}
             <div className="space-y-1 pt-2 border-t border-white/5">
-              <button
-                type="button"
-                onClick={() => toggleMenuGroup('support')}
-                className="relative w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
-              >
-                <span className="flex items-center gap-1.5">
-                  <span>Acolhimento & SOS</span>
-                </span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.support ? 'rotate-0' : '-rotate-90'}`} />
+              <div className="relative flex items-center">
+                <button
+                  type="button"
+                  onClick={() => toggleMenuGroup('support')}
+                  className="w-full h-8 px-2.5 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[#FF7F5B] hover:text-[#ff9b7d] transition-colors cursor-pointer select-none"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span>Acolhimento & SOS</span>
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.support ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+
                 {!openMenuGroups.support && pendingCount > 0 && (
-                  <span
-                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 border-2 border-[#101B1E] flex items-center justify-center shadow-md pointer-events-none"
+                  <button
+                    type="button"
+                    onClick={() => toggleMenuGroup('support')}
+                    className="absolute -right-1 top-0 h-8 w-8 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
                     title="Chamados SOS pendentes"
                   >
-                    <Bell className="w-2.5 h-2.5 text-white fill-white animate-bounce" />
-                  </span>
+                    <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
+                  </button>
                 )}
-              </button>
+              </div>
 
               {openMenuGroups.support && (
                 <div className="space-y-1 pl-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('sos');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`relative w-full px-3 py-2 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'sos'
-                        ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
-                        : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
-                    }`}
-                  >
-                    <span>Atendimento SOS</span>
+                  <div className="relative flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveAdminTab('sos');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full h-9 px-3 text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                        activeAdminTab === 'sos'
+                          ? 'text-[#FF7F5B] font-bold bg-white/[0.06] border-l-[3px] border-[#FF7F5B] rounded-r-xl rounded-l-none pl-2.5'
+                          : 'text-white hover:text-[#FF7F5B] hover:bg-white/5 border-l-[3px] border-transparent rounded-r-xl rounded-l-none pl-2.5'
+                      }`}
+                    >
+                      <span>Atendimento SOS</span>
+                    </button>
+
                     {pendingCount > 0 && (
-                      <span
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 border-2 border-[#101B1E] flex items-center justify-center shadow-md pointer-events-none"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveAdminTab('sos');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="absolute -right-2 top-0 h-9 w-9 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
                         title="Chamados SOS pendentes"
                       >
-                        <Bell className="w-2.5 h-2.5 text-white fill-white animate-bounce" />
-                      </span>
+                        <Bell className="w-4 h-4 text-white fill-white animate-bounce" />
+                      </button>
                     )}
-                  </button>
+                  </div>
 
                   <button
                     type="button"
