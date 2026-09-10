@@ -850,13 +850,13 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in text-white">
           <div className="bg-[#0D1518] rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-white/10 relative flex flex-col m-auto max-h-[88vh]">
             
-            {/* Top Bar: Texto de Apoio Especializado Centralizado + Botão Fechar (X) no Canto Superior Direito */}
-            <div className="flex items-center gap-2.5 mb-5 shrink-0">
-              <div className="flex-1 bg-rose-500/10 border border-rose-500/15 rounded-xl px-3.5 py-2 text-center text-rose-200/85 text-[10.5px] leading-snug">
+            {/* Top Bar: Caixa do CVV Centralizada + Botão Fechar (X) no Canto Superior Direito */}
+            <div className="flex items-start sm:items-center gap-3 mb-6 sm:mb-8 shrink-0">
+              <div className="flex-1 bg-rose-500/10 border border-rose-500/20 rounded-2xl px-4 py-3 text-center text-rose-200/90 text-xs leading-relaxed">
                 <span>
-                  Acolhimento humano — em caso de crises ou urgência médica, ligue gratuitamente para o{' '}
+                  O SOS da Elana oferece acolhimento e suporte humano, mas não substitui atendimento médico especializado ou de urgência. Em caso de crises, ligue gratuitamente para o{' '}
                   <a href="tel:188" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">CVV (188)</a>
-                  {' '}ou{' '}
+                  {' '}ou para o{' '}
                   <a href="tel:192" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">SAMU (192)</a>.
                 </span>
               </div>
@@ -864,30 +864,23 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               <button
                 onClick={() => setIsEmergencyOpen(false)}
                 aria-label="Fechar Atendimento SOS"
-                className="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-colors cursor-pointer shrink-0"
+                className="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-2.5 rounded-full transition-colors cursor-pointer shrink-0 mt-0.5 sm:mt-0"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0 mb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#FF7F5B]/15 border border-[#FF7F5B]/30 text-[#FF7F5B] flex items-center justify-center">
-                  <LifeBuoy className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
-                    Canal SOS de Acolhimento
-                  </h3>
-                  {sosResponse && sosResponse.status !== 'arquivado' && (
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      {sosResponse.messages && sosResponse.messages.length > 1 ? 'Em diálogo com a equipe' : 'Chamado enviado — equipe a postos'}
-                    </span>
-                  )}
-                </div>
-              </div>
+            {/* Modal Header: Título maior e sem ícone ao lado */}
+            <div className="pb-3 border-b border-white/10 shrink-0 mb-4 text-left">
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                Canal SOS de Acolhimento
+              </h3>
+              {sosResponse && sosResponse.status !== 'arquivado' && (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 mt-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  {sosResponse.messages && sosResponse.messages.length > 1 ? 'Em diálogo com a equipe' : 'Chamado enviado — equipe a postos'}
+                </span>
+              )}
             </div>
 
             {/* Conditional Views: Ongoing Chat / Archived / New Ticket Form */}
@@ -1107,7 +1100,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                     className="w-full bg-[#FF7F5B] hover:bg-[#ff906f] disabled:opacity-50 text-slate-950 font-bold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Send className="w-4 h-4" />
-                    <span>{isSendingSos ? 'Enviando chamado...' : 'Pedir Acolhimento da Equipe'}</span>
+                    <span>{isSendingSos ? 'Enviando...' : 'Enviar Mensagem'}</span>
                   </button>
                 </div>
               </div>
