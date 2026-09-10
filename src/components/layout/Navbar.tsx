@@ -847,34 +847,37 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
 
       {/* Feature 2 Modal: Canal SOS Privado & Acolhimento Humano */}
       {isEmergencyOpen && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
-          <div className="bg-[#101B1E] rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-rose-500/30 relative flex flex-col m-auto max-h-[90vh]">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in text-white">
+          <div className="bg-[#0D1518] rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-white/10 relative flex flex-col m-auto max-h-[88vh]">
             
-            {/* Aviso Permanente de Emergência (CVV / SAMU) - Antes do Cabeçalho */}
-            <div className="bg-rose-950/40 border border-rose-500/30 rounded-2xl p-3 mb-3 text-xs text-rose-200/90 flex items-start gap-2.5 shrink-0">
-              <Phone className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-              <p className="text-[11px] leading-relaxed">
-                O SOS da Elana oferece acolhimento e suporte humano, mas não substitui atendimento médico especializado ou de urgência. Em caso de crises, ligue gratuitamente para o <strong className="text-white underline">CVV (188)</strong> ou para o <strong className="text-white underline">SAMU (192)</strong>.
+            {/* Aviso Emergencial Leve (CVV / SAMU) */}
+            <div className="bg-rose-500/10 border border-rose-500/15 rounded-xl px-3 py-2 mb-3 text-xs text-rose-200/85 flex items-center gap-2.5 shrink-0">
+              <Phone className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+              <p className="text-[10.5px] leading-snug flex-1">
+                Acolhimento humano — em caso de crises ou urgência médica, ligue gratuitamente para o{' '}
+                <a href="tel:188" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">CVV (188)</a>
+                {' '}ou{' '}
+                <a href="tel:192" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">SAMU (192)</a>.
               </p>
             </div>
 
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0 mb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-[#FF7F5B]/15 border border-[#FF7F5B]/30 text-[#FF7F5B] flex items-center justify-center">
                   <LifeBuoy className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
+                  <h3 className="text-sm font-bold text-white tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
                     Canal SOS de Acolhimento
                   </h3>
                   {sosResponse && sosResponse.status !== 'arquivado' ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300">
-                      <Clock className="w-3 h-3 text-amber-400" />
-                      {sosResponse.status === 'em_atendimento' ? 'Em atendimento com a Equipe Elana' : 'Chamado enviado — aguardando resposta'}
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      {sosResponse.messages && sosResponse.messages.length > 1 ? 'Em diálogo com a equipe' : 'Chamado enviado — equipe a postos'}
                     </span>
                   ) : sosResponse?.status === 'arquivado' ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
                       <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                       Atendimento Concluído
                     </span>
@@ -885,7 +888,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               <button
                 onClick={() => setIsEmergencyOpen(false)}
                 aria-label="Fechar Atendimento SOS"
-                className="text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
+                className="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -896,52 +899,75 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               /* --- STATE 1: ACTIVE DIALOGUE --- */
               <div className="flex flex-col flex-1 min-h-0 space-y-3">
                 {/* Scrollable messages container */}
-                <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[360px] min-h-[180px]">
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[380px] min-h-[200px]">
                   {sosResponse.messages && sosResponse.messages.length > 0 ? (
-                    sosResponse.messages.map((msg, i) => (
-                      <div
-                        key={msg.id || i}
-                        className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-                      >
-                        <span className="text-[10px] text-slate-400 mb-1 px-1">
-                          {msg.sender === 'user' ? (msg.senderName || 'Você') : '🌸 Equipe Elana'} • {msg.createdAt}
-                        </span>
+                    sosResponse.messages.map((msg, i) => {
+                      const isUser = msg.sender === 'user';
+                      return (
                         <div
-                          className={`max-w-[88%] rounded-2xl p-3.5 text-xs leading-relaxed ${
-                            msg.sender === 'user'
-                              ? 'bg-[#18393F] text-white rounded-tr-sm border border-[#2B5E66]'
-                              : 'bg-[#162327] text-slate-100 rounded-tl-sm border border-[#FF7F5B]/30 shadow-md'
-                          }`}
+                          key={msg.id || i}
+                          className={`flex items-end gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}
                         >
-                          <p className="whitespace-pre-wrap">{msg.text}</p>
+                          {!isUser && (
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#FF7F5B] to-[#FF9E80] text-slate-950 flex items-center justify-center text-[10px] shrink-0 mb-1 shadow-sm select-none" title="Equipe Elana">
+                              🌸
+                            </div>
+                          )}
+
+                          <div
+                            className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${
+                              isUser
+                                ? 'bg-[#19434B] text-white rounded-br-xs border border-[#2B6069]/40'
+                                : 'bg-white/[0.06] text-slate-100 rounded-bl-xs border border-white/10'
+                            }`}
+                          >
+                            {!isUser && (
+                              <div className="text-[10px] font-bold text-[#FF7F5B] mb-0.5">
+                                Equipe Elana
+                              </div>
+                            )}
+                            <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                            <div
+                              className={`text-[9px] mt-1 text-right select-none ${
+                                isUser ? 'text-teal-200/60' : 'text-slate-400'
+                              }`}
+                            >
+                              {msg.createdAt}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     /* Legacy single message fallback */
                     <div className="space-y-3">
-                      <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-slate-400 mb-1 px-1">Você</span>
-                        <div className="max-w-[88%] rounded-2xl p-3.5 text-xs bg-[#18393F] text-white rounded-tr-sm border border-[#2B5E66]">
+                      <div className="flex justify-end">
+                        <div className="max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs bg-[#19434B] text-white rounded-br-xs border border-[#2B6069]/40 shadow-sm">
                           <p className="whitespace-pre-wrap">{sosResponse.userMessage}</p>
                         </div>
                       </div>
                       {sosResponse.adminReply && (
-                        <div className="flex flex-col items-start">
-                          <span className="text-[10px] text-[#FF7F5B] mb-1 px-1 font-bold">🌸 Equipe Elana • {sosResponse.repliedAt || ''}</span>
-                          <div className="max-w-[88%] rounded-2xl p-3.5 text-xs bg-[#162327] text-slate-100 rounded-tl-sm border border-[#FF7F5B]/30">
+                        <div className="flex items-end gap-2 justify-start">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#FF7F5B] to-[#FF9E80] text-slate-950 flex items-center justify-center text-[10px] shrink-0 mb-1 shadow-sm">
+                            🌸
+                          </div>
+                          <div className="max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs bg-white/[0.06] text-slate-100 rounded-bl-xs border border-white/10 shadow-sm">
+                            <div className="text-[10px] font-bold text-[#FF7F5B] mb-0.5">Equipe Elana</div>
                             <p className="whitespace-pre-wrap">{sosResponse.adminReply}</p>
+                            {sosResponse.repliedAt && (
+                              <div className="text-[9px] text-slate-400 mt-1 text-right">{sosResponse.repliedAt}</div>
+                            )}
                           </div>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Feedback se acabou de mandar e aguarda equipe */}
+                  {/* Indicador discreto de entrega se acabou de enviar réplica */}
                   {sosResponse.status === 'pendente' && (
-                    <div className="bg-[#070D0F]/70 p-3 rounded-2xl border border-amber-500/20 text-center text-[11px] text-amber-200/90 flex items-center justify-center gap-2">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 animate-pulse" />
-                      <span>Mensagem recebida com carinho. Nossa equipe responderá em breve por aqui.</span>
+                    <div className="flex items-center justify-center gap-1.5 pt-1.5 pb-0.5 text-[11px] text-amber-300/80">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      <span>Mensagem recebida com carinho — a equipe responderá em breve por aqui.</span>
                     </div>
                   )}
 
@@ -949,64 +975,91 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                 </div>
 
                 {/* Follow-up input for dialogue */}
-                <div className="pt-2 border-t border-white/10 flex items-center gap-2 shrink-0">
-                  <input
-                    type="text"
-                    placeholder="Escreva uma resposta ou complemento..."
-                    value={sosFollowUpText}
-                    onChange={(e) => setSosFollowUpText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendSosFollowUp();
-                      }
-                    }}
-                    disabled={isSendingFollowUp}
-                    className="flex-1 bg-[#070D0F] border border-white/15 focus:border-[#FF7F5B] rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
-                  />
-                  <button
-                    onClick={handleSendSosFollowUp}
-                    disabled={!sosFollowUpText.trim() || isSendingFollowUp}
-                    className="bg-[#FF7F5B] hover:bg-[#e06847] disabled:opacity-40 text-slate-950 font-black p-2.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center shrink-0"
-                    title="Enviar resposta"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
+                <div className="pt-2.5 border-t border-white/10 shrink-0">
+                  <div className="flex items-center gap-2 bg-[#070D0F] border border-white/10 focus-within:border-[#FF7F5B]/50 rounded-2xl p-1.5 pl-3.5 transition-all">
+                    <input
+                      type="text"
+                      placeholder="Escreva uma resposta ou complemento..."
+                      value={sosFollowUpText}
+                      onChange={(e) => setSosFollowUpText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendSosFollowUp();
+                        }
+                      }}
+                      disabled={isSendingFollowUp}
+                      className="flex-1 bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
+                    />
+                    <button
+                      onClick={handleSendSosFollowUp}
+                      disabled={!sosFollowUpText.trim() || isSendingFollowUp}
+                      className="bg-[#FF7F5B] hover:bg-[#ff906f] disabled:opacity-30 disabled:hover:bg-[#FF7F5B] text-slate-950 font-bold p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-sm"
+                      title="Enviar resposta"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : sosResponse?.status === 'arquivado' ? (
               /* --- STATE 2: ARCHIVED / CONCLUDED TICKET --- */
               <div className="flex flex-col flex-1 min-h-0 space-y-3">
                 {/* Scrollable history of the concluded conversation */}
-                <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[300px] min-h-[150px]">
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[320px] min-h-[160px]">
                   {sosResponse.messages && sosResponse.messages.length > 0 ? (
-                    sosResponse.messages.map((msg, i) => (
-                      <div
-                        key={msg.id || i}
-                        className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-                      >
-                        <span className="text-[10px] text-slate-400 mb-1 px-1">
-                          {msg.sender === 'user' ? (msg.senderName || 'Você') : '🌸 Equipe Elana'} • {msg.createdAt}
-                        </span>
+                    sosResponse.messages.map((msg, i) => {
+                      const isUser = msg.sender === 'user';
+                      return (
                         <div
-                          className={`max-w-[88%] rounded-2xl p-3.5 text-xs leading-relaxed ${
-                            msg.sender === 'user'
-                              ? 'bg-[#18393F] text-white rounded-tr-sm border border-[#2B5E66]'
-                              : 'bg-[#162327] text-slate-100 rounded-tl-sm border border-[#FF7F5B]/30 shadow-md'
-                          }`}
+                          key={msg.id || i}
+                          className={`flex items-end gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}
                         >
-                          <p className="whitespace-pre-wrap">{msg.text}</p>
+                          {!isUser && (
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#FF7F5B] to-[#FF9E80] text-slate-950 flex items-center justify-center text-[10px] shrink-0 mb-1 shadow-sm">
+                              🌸
+                            </div>
+                          )}
+
+                          <div
+                            className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${
+                              isUser
+                                ? 'bg-[#19434B] text-white rounded-br-xs border border-[#2B6069]/40'
+                                : 'bg-white/[0.06] text-slate-100 rounded-bl-xs border border-white/10'
+                            }`}
+                          >
+                            {!isUser && (
+                              <div className="text-[10px] font-bold text-[#FF7F5B] mb-0.5">
+                                Equipe Elana
+                              </div>
+                            )}
+                            <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                            <div
+                              className={`text-[9px] mt-1 text-right select-none ${
+                                isUser ? 'text-teal-200/60' : 'text-slate-400'
+                              }`}
+                            >
+                              {msg.createdAt}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="space-y-2">
-                      <div className="bg-[#18393F] text-white rounded-2xl p-3.5 text-xs border border-[#2B5E66]">
-                        {sosResponse.userMessage}
+                      <div className="flex justify-end">
+                        <div className="max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs bg-[#19434B] text-white rounded-br-xs border border-[#2B6069]/40">
+                          {sosResponse.userMessage}
+                        </div>
                       </div>
                       {sosResponse.adminReply && (
-                        <div className="bg-[#162327] text-slate-100 rounded-2xl p-3.5 text-xs border border-[#FF7F5B]/30">
-                          {sosResponse.adminReply}
+                        <div className="flex items-end gap-2 justify-start">
+                          <div className="w-6 h-6 rounded-full bg-[#FF7F5B]/20 text-[#FF7F5B] flex items-center justify-center text-[10px] shrink-0 mb-1">
+                            🌸
+                          </div>
+                          <div className="max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs bg-white/[0.06] text-slate-100 rounded-bl-xs border border-white/10">
+                            {sosResponse.adminReply}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1014,7 +1067,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                   <div ref={sosChatEndRef} />
                 </div>
 
-                <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-2xl text-center space-y-1">
+                <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-2xl text-center space-y-1">
                   <div className="flex items-center justify-center gap-1.5 text-emerald-400 font-bold text-xs">
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Atendimento concluído com carinho pela Equipe Elana 🌸</span>
@@ -1028,7 +1081,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                   onClick={() => {
                     clearActiveSosTicket();
                   }}
-                  className="w-full bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-3 rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <HeartHandshake className="w-4 h-4" />
                   <span>Iniciar Novo Acolhimento SOS</span>
@@ -1037,8 +1090,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             ) : (
               /* --- STATE 3: NEW TICKET FORM --- */
               <div className="space-y-4 text-left">
-                <div className="space-y-1.5 text-left">
-                  <h4 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                <div className="space-y-1 text-left">
+                  <h4 className="text-base font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                     Como podemos te acolher agora?
                   </h4>
                   <p className="text-xs text-slate-300 leading-relaxed">
@@ -1051,14 +1104,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                     value={sosMessage}
                     onChange={(e) => setSosMessage(e.target.value)}
                     placeholder="Desabafe ou compartilhe o que você está sentindo... Estamos aqui para te escutar com todo o afeto."
-                    rows={5}
-                    className="w-full bg-[#070D0F] border border-white/15 focus:border-rose-400/60 rounded-2xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all resize-none"
+                    rows={4}
+                    className="w-full bg-[#070D0F] border border-white/10 focus:border-[#FF7F5B]/60 rounded-2xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all resize-none"
                   />
 
                   <button
                     onClick={handleSendSosTicket}
                     disabled={!sosMessage.trim() || isSendingSos}
-                    className="w-full bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full bg-[#FF7F5B] hover:bg-[#ff906f] disabled:opacity-50 text-slate-950 font-bold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Send className="w-4 h-4" />
                     <span>{isSendingSos ? 'Enviando chamado...' : 'Pedir Acolhimento da Equipe'}</span>
