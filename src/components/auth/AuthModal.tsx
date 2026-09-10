@@ -119,19 +119,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         setLoading(false);
         return;
       } else if (mode === 'login') {
+        const cleanEmail = email.trim().toLowerCase();
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: cleanEmail,
           password
         });
 
         if (error) throw error;
 
-        const userName = data.user?.user_metadata?.name || email.split('@')[0];
+        const userName = data.user?.user_metadata?.name || cleanEmail.split('@')[0];
         setSuccessMessage('Login realizado com sucesso!');
-        onSuccess({ email, name: userName, id: data.user?.id });
+        onSuccess({ email: cleanEmail, name: userName, id: data.user?.id });
         onClose();
       } else if (mode === 'recovery') {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const cleanEmail = email.trim().toLowerCase();
+        const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
           redirectTo: window.location.origin
         });
 
@@ -140,7 +142,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         setSuccessMessage('Enviamos um link de redefinição de senha para o seu e-mail!');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Ocorreu um erro ao processar sua solicitação.');
+      const msg = (err.message || '').toLowerCase();
+      if (msg.includes('email not confirmed')) {
+        setErrorMessage('Poxa, parece que você não confirmou seu e-mail. Verifique sua caixa de entrada.');
+      } else if (msg.includes('invalid login credentials') || msg.includes('invalid_credentials')) {
+        setErrorMessage('E-mail ou senha incorretos. Verifique os dados digitados ou use "Esqueci minha senha" para redefinir.');
+      } else if (msg.includes('user not found')) {
+        setErrorMessage('Não encontramos uma conta vinculada a este e-mail.');
+      } else {
+        setErrorMessage(err.message || 'Ocorreu um erro ao processar sua solicitação.');
+      }
     } finally {
       setLoading(false);
     }

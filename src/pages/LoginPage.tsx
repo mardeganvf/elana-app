@@ -187,19 +187,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           await login(`${cleanPhone}@elana.app`, name.trim() || 'Membro');
           onSuccess(false);
         } else {
+          const cleanEmail = inputVal.trim().toLowerCase();
           const { data, error } = await supabase.auth.signInWithPassword({
-            email: inputVal,
+            email: cleanEmail,
             password
           });
           if (error) throw error;
 
-          const userName = data.user?.user_metadata?.name || inputVal.split('@')[0];
+          const userName = data.user?.user_metadata?.name || cleanEmail.split('@')[0];
           setSuccessMessage('Login realizado com sucesso!');
-          await login(inputVal, userName, data.user?.id);
+          await login(cleanEmail, userName, data.user?.id);
           onSuccess(false);
         }
       } else if (mode === 'recovery') {
-        const { error } = await supabase.auth.resetPasswordForEmail(inputVal, {
+        const cleanEmail = inputVal.trim().toLowerCase();
+        const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
           redirectTo: window.location.origin
         });
         if (error) throw error;
@@ -208,9 +210,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     } catch (err: any) {
       const msg = (err.message || '').toLowerCase();
       if (msg.includes('email not confirmed')) {
-        setErrorMessage('Poxa, parece que você não confirmou seu e-mail.');
-      } else if (msg.includes('invalid login credentials') || msg.includes('invalid_credentials') || msg.includes('user not found')) {
-        setErrorMessage('Eita. Não encontramos esse usuário.');
+        setErrorMessage('Poxa, parece que você não confirmou seu e-mail. Verifique sua caixa de entrada.');
+      } else if (msg.includes('invalid login credentials') || msg.includes('invalid_credentials')) {
+        setErrorMessage('E-mail ou senha incorretos. Verifique os dados digitados ou use "Esqueceu a senha?" para redefinir.');
+      } else if (msg.includes('user not found')) {
+        setErrorMessage('Não encontramos uma conta vinculada a este e-mail.');
       } else {
         setErrorMessage(err.message || 'Ocorreu um erro ao processar sua solicitação.');
       }
@@ -502,7 +506,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                   {mode === 'login' && (
                     <button
                       type="button"
-                      onClick={() => { setMode('recovery'); resetFormFields(); }}
+                      onClick={() => {
+                        setMode('recovery');
+                        setPassword('');
+                        setConfirmPassword('');
+                        resetStates();
+                      }}
                       className="text-[11px] text-[#FF7F5B] hover:underline cursor-pointer"
                     >
                       Esqueceu a senha?
@@ -617,7 +626,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 <p>
                   Já possui uma conta?{' '}
                   <button
-                    onClick={() => { setMode('login'); resetFormFields(); }}
+                    onClick={() => {
+                      setMode('login');
+                      setPassword('');
+                      setConfirmPassword('');
+                      resetStates();
+                    }}
                     className="text-[#FF7F5B] font-bold hover:underline cursor-pointer"
                   >
                     Fazer Login
