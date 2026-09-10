@@ -30,6 +30,8 @@ import {
   ToggleRight,
   Power,
   RefreshCw,
+  MessageSquare,
+  AlertCircle,
   X
 } from 'lucide-react';
 import { useAuth, isAdminUser } from '../context/AuthContext';
@@ -105,6 +107,12 @@ interface EmotionalStats {
   totalXpDistributed: number;
   totalAcolhimentos: number;
   totalCheckins: number;
+  totalPosts: number;
+  averageAcolhimentosPerPost: number;
+  postsWithoutRepliesCount: number;
+  supportHealthStatus: 'ativa' | 'atencao' | 'alerta';
+  supportHealthLabel: string;
+  supportHealthMessage: string;
   breakdown: EmotionStatBreakdown[];
 }
 
@@ -407,6 +415,43 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       const totalReactions = Math.max(remoteReactionsCount, localReactionsCount);
       const totalAcolhimentos = totalComments + totalReactions;
 
+      // c) Postagens reais e saúde da rede de apoio (relação entre postagens e acolhimentos)
+      const validPosts = (currentPosts || []).filter(p => 
+        p.authorId && 
+        p.authorId.length > 20 && 
+        !p.authorId.startsWith('u-') && 
+        p.status !== 'removido_usuario'
+      );
+      const totalPosts = validPosts.length;
+      const postsWithoutRepliesCount = validPosts.filter(p => !p.comments || p.comments.length === 0).length;
+      const averageAcolhimentosPerPost = totalPosts > 0 ? Number((totalAcolhimentos / totalPosts).toFixed(1)) : 0;
+
+      let supportHealthStatus: 'ativa' | 'atencao' | 'alerta' = 'ativa';
+      let supportHealthLabel = 'Rede Viva & Ativa 💚';
+      let supportHealthMessage = 'Ninguém fica sem amparo: a comunidade está atenta e respondendo às publicações.';
+
+      if (totalPosts === 0) {
+        supportHealthStatus = 'ativa';
+        supportHealthLabel = 'Comunidade em Aberto 🌱';
+        supportHealthMessage = 'Ainda não há postagens ativas de usuários cadastrados no feed.';
+      } else if (postsWithoutRepliesCount > 0 && (postsWithoutRepliesCount / totalPosts) >= 0.5) {
+        supportHealthStatus = 'alerta';
+        supportHealthLabel = 'Alerta de Isolamento 🚨';
+        supportHealthMessage = `Atenção: ${postsWithoutRepliesCount} de ${totalPosts} postagens estão sem resposta. Mães e pais podem estar desabafando sem retorno suficiente.`;
+      } else if (averageAcolhimentosPerPost < 1.0 || postsWithoutRepliesCount > 0) {
+        supportHealthStatus = 'atencao';
+        supportHealthLabel = 'Atenção ao Amparo ⚠️';
+        supportHealthMessage = `Média de ${averageAcolhimentosPerPost} acolhimentos por post. Há ${postsWithoutRepliesCount} publicação(ões) ainda aguardando o primeiro abraço ou resposta.`;
+      } else if (averageAcolhimentosPerPost >= 3.0) {
+        supportHealthStatus = 'ativa';
+        supportHealthLabel = 'Rede Viva & Ativa 💚';
+        supportHealthMessage = `Média alta de ${averageAcolhimentosPerPost} acolhimentos por postagem. Todos os tópicos têm apoio — a rede cumpre plenamente sua missão!`;
+      } else {
+        supportHealthStatus = 'ativa';
+        supportHealthLabel = 'Rede Acolhedora 🌿';
+        supportHealthMessage = `Média de ${averageAcolhimentosPerPost} acolhimentos por postagem. Bom ritmo de interações e apoio mútuo.`;
+      }
+
       // 3. Obter check-ins emocionais de usuários registrados
       const { data: checkinsData } = await supabase
         .from('emotional_checkins')
@@ -480,6 +525,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         totalXpDistributed,
         totalAcolhimentos,
         totalCheckins,
+        totalPosts,
+        averageAcolhimentosPerPost,
+        postsWithoutRepliesCount,
+        supportHealthStatus,
+        supportHealthLabel,
+        supportHealthMessage,
         breakdown
       });
     } catch (err) {
@@ -1875,29 +1926,93 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 text-center space-y-1">
+          {/* CARDS DE VISÃO GERAL */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Usuários Cadastrados</span>
-              <span className="text-2xl font-black text-[#FF7F5B]">
+              <span className="text-xl sm:text-2xl font-black text-[#FF7F5B]">
                 {isLoadingAnalytics ? '...' : (emotionalStats?.totalActiveUsers ?? members.length).toLocaleString('pt-BR')}
               </span>
               <span className="text-[10px] text-emerald-400 block">Perfis registrados reais</span>
             </div>
 
-            <div className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 text-center space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pontos de Afeto Distribuídos</span>
-              <span className="text-2xl font-black text-[#FFD166]">
-                {isLoadingAnalytics ? '...' : (emotionalStats?.totalXpDistributed ?? 0).toLocaleString('pt-BR')}
+            <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tópicos Publicados</span>
+              <span className="text-xl sm:text-2xl font-black text-[#38BDF8]">
+                {isLoadingAnalytics ? '...' : (emotionalStats?.totalPosts ?? 0).toLocaleString('pt-BR')}
               </span>
-              <span className="text-[10px] text-slate-400 block">XP acumulado por usuários</span>
+              <span className="text-[10px] text-slate-400 block">Publicações ativas no feed</span>
             </div>
 
-            <div className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 text-center space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Acolhimentos na Comunidade</span>
-              <span className="text-2xl font-black text-[#8A9A5B]">
+            <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Acolhimentos Totais</span>
+              <span className="text-xl sm:text-2xl font-black text-[#8A9A5B]">
                 {isLoadingAnalytics ? '...' : (emotionalStats?.totalAcolhimentos ?? 0).toLocaleString('pt-BR')}
               </span>
-              <span className="text-[10px] text-emerald-400 block">Reações e comentários reais</span>
+              <span className="text-[10px] text-emerald-400 block">Reações e comentários</span>
+            </div>
+
+            <div className="bg-[#070D0F] p-4 sm:p-5 rounded-2xl border border-white/10 text-center space-y-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Média por Publicação</span>
+              <span className="text-xl sm:text-2xl font-black text-[#FFD166]">
+                {isLoadingAnalytics ? '...' : `${emotionalStats?.averageAcolhimentosPerPost ?? 0}`}
+              </span>
+              <span className="text-[10px] text-slate-400 block">Acolhimentos / post</span>
+            </div>
+          </div>
+
+          {/* 🌡️ TERMÔMETRO DE SAÚDE DA REDE & ALERTA DE ESCUTA */}
+          <div className={`p-5 sm:p-6 rounded-2xl border transition-all ${
+            emotionalStats?.supportHealthStatus === 'alerta'
+              ? 'bg-rose-950/20 border-rose-500/30'
+              : emotionalStats?.supportHealthStatus === 'atencao'
+              ? 'bg-amber-950/20 border-amber-500/30'
+              : 'bg-emerald-950/20 border-emerald-500/30'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <span className={`w-3 h-3 rounded-full shrink-0 ${
+                  emotionalStats?.supportHealthStatus === 'alerta'
+                    ? 'bg-rose-500 animate-ping'
+                    : emotionalStats?.supportHealthStatus === 'atencao'
+                    ? 'bg-amber-400 animate-pulse'
+                    : 'bg-emerald-400'
+                }`} />
+                <h3 className="text-sm font-bold text-white flex flex-wrap items-center gap-2">
+                  <span>Termômetro da Rede de Apoio:</span>
+                  <span className={
+                    emotionalStats?.supportHealthStatus === 'alerta'
+                      ? 'text-rose-400'
+                      : emotionalStats?.supportHealthStatus === 'atencao'
+                      ? 'text-amber-300'
+                      : 'text-emerald-400'
+                  }>
+                    {emotionalStats?.supportHealthLabel || 'Rede Viva & Ativa 💚'}
+                  </span>
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-3 text-xs">
+                <span className="text-slate-300">
+                  <strong className="text-white">{emotionalStats?.averageAcolhimentosPerPost ?? 0}</strong> acolhimentos/post
+                </span>
+                <span className="text-slate-600">•</span>
+                <span className={emotionalStats && emotionalStats.postsWithoutRepliesCount > 0 ? 'text-amber-300 font-bold' : 'text-slate-400'}>
+                  {emotionalStats?.postsWithoutRepliesCount ?? 0} post(s) sem resposta
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-300">
+              <p className="leading-relaxed text-slate-300">
+                {emotionalStats?.supportHealthMessage}
+              </p>
+              {emotionalStats && emotionalStats.postsWithoutRepliesCount > 0 && (
+                <span className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  Priorizar acolhimento da equipe
+                </span>
+              )}
             </div>
           </div>
 
