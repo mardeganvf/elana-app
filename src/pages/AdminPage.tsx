@@ -155,14 +155,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const { journeys } = useJourneys();
   const [selectedJourneyId, setSelectedJourneyId] = useState<string | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
-  const [openTrilhas, setOpenTrilhas] = useState<Record<string, boolean>>({});
+  const [expandedJourneyId, setExpandedJourneyId] = useState<string | null>(null);
   const [isCreateJourneyModalOpen, setIsCreateJourneyModalOpen] = useState(false);
 
   const toggleTrilha = (trilhaId: string) => {
-    setOpenTrilhas(prev => ({
-      ...prev,
-      [trilhaId]: !prev[trilhaId]
-    }));
+    setExpandedJourneyId(prev => (prev === trilhaId ? null : trilhaId));
   };
 
   // 🗳️ Enquetes State
@@ -1242,7 +1239,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                     journeys.map(journey => {
                       const isTrilhaSelected = activeAdminTab === 'content' && selectedJourneyId === journey.id;
                       const hasModules = (journey.modules?.length || 0) > 0;
-                      const isTrilhaExpanded = hasModules && (openTrilhas[journey.id] ?? isTrilhaSelected);
+                      const isTrilhaExpanded = hasModules && (expandedJourneyId === journey.id);
 
                       return (
                         <div key={journey.id} className="space-y-0.5">
@@ -1264,7 +1261,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                                 if (isAlreadySelected) {
                                   toggleTrilha(journey.id);
                                 } else {
-                                  setOpenTrilhas(prev => ({ ...prev, [journey.id]: true }));
+                                  setExpandedJourneyId(journey.id);
                                 }
                               }
                               setIsMobileMenuOpen(false);
