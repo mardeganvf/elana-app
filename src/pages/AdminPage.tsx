@@ -176,7 +176,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [pollSuccessMessage, setPollSuccessMessage] = useState(false);
   const [expandedPollIds, setExpandedPollIds] = useState<Record<string, boolean>>({});
   const [visiblePollsCount, setVisiblePollsCount] = useState(5);
-  const [isCreatePollOpen, setIsCreatePollOpen] = useState(true);
+  const [isCreatePollOpen, setIsCreatePollOpen] = useState(false);
+  const [isActivePollsOpen, setIsActivePollsOpen] = useState(false);
+  const [isFinishedPollsOpen, setIsFinishedPollsOpen] = useState(false);
 
   const toggleJourneyInPoll = (journeyTitle: string) => {
     if (selectedPollJourneys.includes(journeyTitle)) {
@@ -777,6 +779,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       loadEmotionalAnalytics();
     }
   }, [activeAdminTab, posts]);
+
+  // Sempre que abrir a seção de enquetes, começa com todas recolhidas
+  useEffect(() => {
+    if (activeAdminTab === 'polls') {
+      setIsCreatePollOpen(false);
+      setIsActivePollsOpen(false);
+      setIsFinishedPollsOpen(false);
+      setExpandedPollIds({});
+    }
+  }, [activeAdminTab]);
 
   // 🛟 SOS Ticket Handlers
   const handleSendSosReply = async () => {
@@ -2655,7 +2667,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           <div className="space-y-6 w-full">
             {/* CONTÊINER 1: NOVA ENQUETE */}
             <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div
+                onClick={() => setIsCreatePollOpen(!isCreatePollOpen)}
+                className={`flex items-center justify-between gap-4 cursor-pointer select-none transition-all ${isCreatePollOpen ? 'border-b border-white/10 pb-4' : ''}`}
+              >
                 <div>
                   <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                     Nova Enquete
@@ -2664,7 +2679,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setIsCreatePollOpen(!isCreatePollOpen)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsCreatePollOpen(!isCreatePollOpen);
+                    }}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
                   >
                     <ChevronDown className={`w-3.5 h-3.5 text-[#FF7F5B] transition-transform duration-200 ${isCreatePollOpen ? 'rotate-180' : ''}`} />
@@ -2707,6 +2725,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         setSelectedPollJourneys([]);
                         setIsPollMultiSelect(false);
                         setPollSuccessMessage(true);
+                        setIsActivePollsOpen(true);
                         setTimeout(() => {
                           setPollSuccessMessage(false);
                         }, 2500);
@@ -2893,7 +2912,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
             {/* CONTÊINER 2: ENQUETES ATIVAS */}
             <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div
+                onClick={() => setIsActivePollsOpen(!isActivePollsOpen)}
+                className={`flex items-center justify-between gap-4 cursor-pointer select-none transition-all ${isActivePollsOpen ? 'border-b border-white/10 pb-4' : ''}`}
+              >
                 <div>
                   <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                     Enquetes Ativas
@@ -2903,25 +2925,41 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   <span className="text-xs font-bold text-slate-400 px-3.5 py-2 rounded-2xl bg-[#070D0F] border border-white/10 shadow-sm shrink-0">
                     {activePolls.length} ativa{activePolls.length === 1 ? '' : 's'}
                   </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsActivePollsOpen(!isActivePollsOpen);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
+                  >
+                    <ChevronDown className={`w-3.5 h-3.5 text-[#FF7F5B] transition-transform duration-200 ${isActivePollsOpen ? 'rotate-180' : ''}`} />
+                    <span>{isActivePollsOpen ? 'Recolher' : 'Expandir'}</span>
+                  </button>
                 </div>
               </div>
 
-              {activePolls.length === 0 ? (
-                <div className="py-8 text-center space-y-2 border border-dashed border-white/10 rounded-2xl bg-[#070D0F] p-6">
-                  <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    Nenhuma enquete aberta para votação no momento. Crie uma nova enquete acima para engajar a comunidade.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {activePolls.map(poll => renderPollItem(poll))}
-                </div>
+              {isActivePollsOpen && (
+                activePolls.length === 0 ? (
+                  <div className="py-8 text-center space-y-2 border border-dashed border-white/10 rounded-2xl bg-[#070D0F] p-6 animate-fade-in">
+                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      Nenhuma enquete aberta para votação no momento. Crie uma nova enquete acima para engajar a comunidade.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 animate-fade-in">
+                    {activePolls.map(poll => renderPollItem(poll))}
+                  </div>
+                )
               )}
             </section>
 
             {/* CONTÊINER 3: ENQUETES FINALIZADAS */}
             <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div
+                onClick={() => setIsFinishedPollsOpen(!isFinishedPollsOpen)}
+                className={`flex items-center justify-between gap-4 cursor-pointer select-none transition-all ${isFinishedPollsOpen ? 'border-b border-white/10 pb-4' : ''}`}
+              >
                 <div>
                   <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                     Enquetes Finalizadas
@@ -2931,19 +2969,32 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   <span className="text-xs font-bold text-slate-400 px-3.5 py-2 rounded-2xl bg-[#070D0F] border border-white/10 shadow-sm shrink-0">
                     {finishedPolls.length} finalizada{finishedPolls.length === 1 ? '' : 's'}
                   </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsFinishedPollsOpen(!isFinishedPollsOpen);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
+                  >
+                    <ChevronDown className={`w-3.5 h-3.5 text-[#FF7F5B] transition-transform duration-200 ${isFinishedPollsOpen ? 'rotate-180' : ''}`} />
+                    <span>{isFinishedPollsOpen ? 'Recolher' : 'Expandir'}</span>
+                  </button>
                 </div>
               </div>
 
-              {finishedPolls.length === 0 ? (
-                <div className="py-8 text-center space-y-2 border border-dashed border-white/10 rounded-2xl bg-[#070D0F] p-6">
-                  <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    Nenhuma enquete finalizada até o momento.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {finishedPolls.map(poll => renderPollItem(poll))}
-                </div>
+              {isFinishedPollsOpen && (
+                finishedPolls.length === 0 ? (
+                  <div className="py-8 text-center space-y-2 border border-dashed border-white/10 rounded-2xl bg-[#070D0F] p-6 animate-fade-in">
+                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      Nenhuma enquete finalizada até o momento.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 animate-fade-in">
+                    {finishedPolls.map(poll => renderPollItem(poll))}
+                  </div>
+                )
               )}
             </section>
           </div>
