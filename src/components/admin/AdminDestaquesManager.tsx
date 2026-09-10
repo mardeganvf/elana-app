@@ -194,26 +194,33 @@ export const AdminDestaquesManager: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header Bar */}
-      <div className="bg-[#101B1E] px-6 py-4 rounded-2xl border border-white/10 shadow-md flex items-center justify-between gap-4">
-        <h3 className="text-xl font-black text-white truncate" style={{ fontFamily: 'var(--font-heading)' }}>
-          Destaques
-        </h3>
+    <div className="space-y-6 w-full">
+      {/* CONTÊINER 1: DESTAQUES */}
+      <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+        <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+              Destaques
+            </h2>
+          </div>
 
-        <button
-          type="button"
-          onClick={openNewModal}
-          className="px-4 py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4 stroke-[3]" />
-          <span>Novo Destaque</span>
-        </button>
-      </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs font-bold text-slate-400 px-3.5 py-2 rounded-2xl bg-[#070D0F] border border-white/10 shadow-sm shrink-0">
+              {activeDestaques.length} ativo{activeDestaques.length === 1 ? '' : 's'}
+            </span>
+            <button
+              type="button"
+              onClick={openNewModal}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#FF7F5B]" />
+              <span>Novo Destaque</span>
+            </button>
+          </div>
+        </div>
 
-      {/* Destaques Grid (Vertical Cards 9:16 Preview) */}
-      {/* Destaques Grid (Ativos na Página Inicial) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+        {/* Destaques Grid (Ativos na Página Inicial) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
         {activeDestaques.map((destaque, idx) => {
           // Jornadas associadas a este destaque
           const associatedJourneys = journeys.filter(j => 
@@ -361,57 +368,54 @@ export const AdminDestaquesManager: React.FC = () => {
             </div>
           );
         })}
-      </div>
+        {activeDestaques.length === 0 && (
+          <div className="text-center py-10 border border-dashed border-white/10 rounded-2xl bg-[#070D0F] p-6 space-y-3">
+            <Sparkles className="w-8 h-8 text-[#FF7F5B] mx-auto opacity-70" />
+            <h4 className="text-sm font-bold text-white">Nenhum destaque ativo na página inicial</h4>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Cadastre um novo destaque ou reative um dos vídeos armazenados abaixo.
+            </p>
+            <button
+              type="button"
+              onClick={openNewModal}
+              className="px-4 py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black rounded-2xl text-xs inline-flex items-center gap-2 cursor-pointer shadow-md transition-all active:scale-95"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>Criar Primeiro Destaque</span>
+            </button>
+          </div>
+        )}
+      </section>
 
-      {activeDestaques.length === 0 && (
-        <div className="text-center py-12 bg-[#101B1E] rounded-3xl border border-white/10 space-y-3">
-          <Sparkles className="w-9 h-9 text-slate-500 mx-auto" />
-          <h3 className="text-sm font-bold text-white">Nenhum destaque ativo na página inicial</h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Cadastre um novo destaque ou reative um dos vídeos armazenados abaixo.
-          </p>
-          <button
-            type="button"
-            onClick={openNewModal}
-            className="px-4 py-2 bg-[#FF7F5B] text-slate-950 font-black rounded-xl text-xs inline-flex items-center gap-2 cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Criar Primeiro Destaque</span>
-          </button>
-        </div>
-      )}
-
-      {/* SEÇÃO EXPANSÍVEL / RETRÁTIL DE DESTAQUES ARMAZENADOS */}
-      <div className="space-y-4 pt-4 border-t border-white/10">
-        <button
-          type="button"
+      {/* CONTÊINER 2: DESTAQUES ARMAZENADOS */}
+      <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+        <div
           onClick={() => setIsStoredOpen(!isStoredOpen)}
-          className="w-full bg-[#101B1E] hover:bg-[#142327] border border-white/10 rounded-2xl px-5 py-4 flex items-center justify-between transition-all cursor-pointer shadow-md"
+          className={`flex items-center justify-between gap-4 cursor-pointer select-none transition-all ${isStoredOpen ? 'border-b border-white/10 pb-4' : ''}`}
         >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
-              <Archive className="w-4 h-4" />
-            </div>
-            <div className="text-left">
-              <h4 className="text-sm font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
-                <span>Destaques Armazenados</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-amber-300 font-mono font-bold">
-                  {storedDestaques.length}
-                </span>
-              </h4>
-              <p className="text-[11px] text-slate-400">
-                Vídeos arquivados que não estão visíveis na página inicial
-              </p>
-            </div>
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+              Destaques Armazenados
+            </h2>
           </div>
 
-          <div className="flex items-center gap-2 text-slate-400">
-            <span className="text-xs font-bold hidden sm:inline">
-              {isStoredOpen ? 'Recolher' : 'Expandir'}
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs font-bold text-slate-400 px-3.5 py-2 rounded-2xl bg-[#070D0F] border border-white/10 shadow-sm shrink-0">
+              {storedDestaques.length} armazenado{storedDestaques.length === 1 ? '' : 's'}
             </span>
-            <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isStoredOpen ? 'rotate-180' : ''}`} />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsStoredOpen(!isStoredOpen);
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
+            >
+              <ChevronDown className={`w-3.5 h-3.5 text-[#FF7F5B] transition-transform duration-200 ${isStoredOpen ? 'rotate-180' : ''}`} />
+              <span>{isStoredOpen ? 'Recolher' : 'Expandir'}</span>
+            </button>
           </div>
-        </button>
+        </div>
 
         {isStoredOpen && (
           <div className="space-y-4 animate-fade-in">
@@ -538,7 +542,7 @@ export const AdminDestaquesManager: React.FC = () => {
             )}
           </div>
         )}
-      </div>
+      </section>
 
       {/* Modal de Cadastro / Edição */}
       {isModalOpen && (
