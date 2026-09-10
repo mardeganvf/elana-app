@@ -1351,7 +1351,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 <span className="flex items-center gap-1.5">
                   <span>Comunidade & Moderação</span>
                   {!openMenuGroups.community && pendingModCount > 0 && (
-                    <Bell className="w-3.5 h-3.5 text-amber-400 animate-bounce fill-amber-400/20" title={`${pendingModCount} post(s) sob moderação`} />
+                    <span title={`${pendingModCount} post(s) sob moderação`} className="inline-flex">
+                      <Bell className="w-3.5 h-3.5 text-amber-400 animate-bounce fill-amber-400/20" />
+                    </span>
                   )}
                 </span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.community ? 'rotate-0' : '-rotate-90'}`} />
@@ -1417,7 +1419,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 <span className="flex items-center gap-1.5">
                   <span>Acolhimento & SOS</span>
                   {!openMenuGroups.support && pendingCount > 0 && (
-                    <Bell className="w-3.5 h-3.5 text-red-400 animate-bounce fill-red-400/20" title={`${pendingCount} chamado(s) SOS pendente(s)`} />
+                    <span title={`${pendingCount} chamado(s) SOS pendente(s)`} className="inline-flex">
+                      <Bell className="w-3.5 h-3.5 text-red-400 animate-bounce fill-red-400/20" />
+                    </span>
                   )}
                 </span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openMenuGroups.support ? 'rotate-0' : '-rotate-90'}`} />
