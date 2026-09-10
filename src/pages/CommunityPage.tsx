@@ -41,7 +41,7 @@ import {
 import { ReportModal } from '../components/community/ReportModal';
 
 export type ActiveSelection = 
-  | { type: 'jornada'; journeyId: string; subOption: 'ajuda' | 'celebrar' | 'desabafar' | 'abertas' }
+  | { type: 'jornada'; journeyId: string; subOption: 'ajuda' | 'celebrar' | 'desabafar' }
   | { type: 'geral'; roomId: string }
   | { type: 'idade'; ageId: string }
   | null;
@@ -188,7 +188,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
     let subBadgeBg: string | undefined;
     let subBadgeBorder: string | undefined;
     let subBadgeText: string | undefined;
-    let subOption: 'ajuda' | 'celebrar' | 'desabafar' | 'abertas' = 'ajuda';
+    let subOption: 'ajuda' | 'celebrar' | 'desabafar' = 'ajuda';
 
     if (post.emotionalIntention === 'ajuda') {
       subTopicLabel = 'Preciso de Ajuda';
@@ -211,13 +211,6 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       subBadgeBorder = 'rgba(138, 154, 91, 0.3)';
       subBadgeText = '#8A9A5B';
       subOption = 'desabafar';
-    } else if (post.emotionalIntention === 'abertas') {
-      subTopicLabel = 'Abertas pela Comunidade';
-      subTopicEmoji = '💬';
-      subBadgeBg = 'rgba(148, 163, 184, 0.12)';
-      subBadgeBorder = 'rgba(148, 163, 184, 0.3)';
-      subBadgeText = '#CBD5E1';
-      subOption = 'abertas';
     }
 
     return {
@@ -391,7 +384,7 @@ const EMOTIONAL_CHECKINS = [
     id: 'esperanca', 
     emoji: '☀️', 
     label: 'Com Esperança', 
-    intention: 'abertas', 
+    intention: 'celebrar', 
     phrases: [
       'Um dia de esperança rende mais do que parece.',
       'Hoje o dia parece mais leve — aproveite esse gás.',
@@ -873,7 +866,7 @@ export const CommunityPage: React.FC = () => {
     // Emotional checkin filter
     if (selectedEmotionId) {
       const activeEmotion = EMOTIONAL_CHECKINS.find(e => e.id === selectedEmotionId);
-      if (activeEmotion && activeEmotion.intention !== 'abertas') {
+      if (activeEmotion && activeEmotion.intention) {
         if (post.emotionalIntention !== activeEmotion.intention) return false;
       }
     }
@@ -925,11 +918,10 @@ export const CommunityPage: React.FC = () => {
     }
     if (activeSelection.type === 'jornada') {
       const j = JOURNEYS_DATA.find(item => item.id === activeSelection.journeyId);
-      const subLabels = {
+      const subLabels: Record<string, string> = {
         ajuda: 'Preciso de Ajuda',
         celebrar: 'Vamos Celebrar',
-        desabafar: 'Preciso Desabafar',
-        abertas: 'Abertas pela Comunidade'
+        desabafar: 'Preciso Desabafar'
       };
       return {
         categoryLabel: j?.title || 'Jornada',
@@ -1243,8 +1235,7 @@ export const CommunityPage: React.FC = () => {
                 {[
                   { id: 'ajuda' as const,   label: 'Preciso de Ajuda' },
                   { id: 'celebrar' as const, label: 'Celebrar' },
-                  { id: 'desabafar' as const, label: 'Desabafar' },
-                  { id: 'abertas' as const, label: 'Abertas' },
+                  { id: 'desabafar' as const, label: 'Desabafar' }
                 ].map(sub => {
                   const isSelected = activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId && activeSelection.subOption === sub.id;
                   const journey = JOURNEYS_DATA.find(j => j.id === mobilePillJourneyId);
@@ -1454,24 +1445,6 @@ export const CommunityPage: React.FC = () => {
                             <span 
                               className={`transition-colors p-0.5 shrink-0 cursor-help ${isSelectedJourney && activeSelection.subOption === 'desabafar' ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-white'}`}
                               title="Aqui você só precisa colocar pra fora. Ninguém vai te julgar ou dar palpite sem pedir — só acolher."
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <HelpCircle className="w-3 h-3" />
-                            </span>
-                          </button>
-
-                          <button
-                            onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'abertas' })}
-                            className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all ${
-                              isSelectedJourney && activeSelection.subOption === 'abertas'
-                                ? 'bg-[#FF7F5B] text-white font-bold shadow-sm'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
-                            }`}
-                          >
-                            <span>Abertas pela Comunidade</span>
-                            <span 
-                              className={`transition-colors p-0.5 shrink-0 cursor-help ${isSelectedJourney && activeSelection.subOption === 'abertas' ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-white'}`}
-                              title="Todos os relatos, conversas e trocas livres sobre esta jornada."
                               onClick={(e) => e.stopPropagation()}
                             >
                               <HelpCircle className="w-3 h-3" />

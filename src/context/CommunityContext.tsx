@@ -817,6 +817,20 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       awardBadge('b33'); // Máscara de Oxigênio
     }
 
+    // Checar se participou dos 3 subtópicos emocionais para b34 (Explorador da Comunidade)
+    if (payload.emotionalIntention) {
+      const key = `elana_intentions_participated_${user?.id || 'anon'}`;
+      try {
+        const raw = localStorage.getItem(key);
+        const set = new Set(raw ? JSON.parse(raw) : []);
+        set.add(payload.emotionalIntention);
+        localStorage.setItem(key, JSON.stringify(Array.from(set)));
+        if (set.has('ajuda') && set.has('celebrar') && set.has('desabafar')) {
+          awardBadge('b34');
+        }
+      } catch {}
+    }
+
     // Checar se completou as 4 salas para b34 (Explorador da Comunidade)
     const currentBadges = new Set((user?.badges || []).map(b => b.id));
     if (isAnonymous || payload.transversalRoomId === 'confessionario') currentBadges.add('b30');
@@ -981,14 +995,38 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // 🏆 Conquistas de Comentários / Rede de Apoio:
       awardBadge('b36'); // Primeiro Acolhimento
 
-      // 🏆 Conquistas por sala de apoio (ao comentar no post daquela sala):
+      // 🏆 Conquistas por sala de apoio ou subtópico de acolhimento (ao comentar no post):
       const parentPost = posts.find(p => p.id === postId);
-      if (parentPost?.transversalRoomId) {
-        const room = parentPost.transversalRoomId;
-        if (room === 'confessionario') awardBadge('b30');
-        if (room === 'cantinho-mel' || room === 'cantinho-da-mel' || room === 'trocas-livres') awardBadge('b31');
-        if (room === 'espaco-dois') awardBadge('b32');
-        if (room === 'cuidando-quem-cuida' || room === 'cuidando-de-quem-cuida') awardBadge('b33');
+      if (parentPost) {
+        if (parentPost.emotionalIntention) {
+          const key = `elana_intentions_participated_${user.id}`;
+          try {
+            const raw = localStorage.getItem(key);
+            const set = new Set(raw ? JSON.parse(raw) : []);
+            set.add(parentPost.emotionalIntention);
+            localStorage.setItem(key, JSON.stringify(Array.from(set)));
+            if (set.has('ajuda') && set.has('celebrar') && set.has('desabafar')) {
+              awardBadge('b34'); // Explorador da Comunidade
+            }
+          } catch {}
+        }
+
+        if (parentPost.transversalRoomId) {
+          const room = parentPost.transversalRoomId;
+          if (room === 'confessionario') awardBadge('b30');
+          if (room === 'cantinho-mel' || room === 'cantinho-da-mel' || room === 'trocas-livres') awardBadge('b31');
+          if (room === 'espaco-dois') awardBadge('b32');
+          if (room === 'cuidando-quem-cuida' || room === 'cuidando-de-quem-cuida') awardBadge('b33');
+
+          const currentBadges = new Set((user?.badges || []).map(b => b.id));
+          if (room === 'confessionario') currentBadges.add('b30');
+          if (room === 'cantinho-mel' || room === 'cantinho-da-mel' || room === 'trocas-livres') currentBadges.add('b31');
+          if (room === 'espaco-dois') currentBadges.add('b32');
+          if (room === 'cuidando-quem-cuida' || room === 'cuidando-de-quem-cuida') currentBadges.add('b33');
+          if (currentBadges.has('b30') && currentBadges.has('b31') && currentBadges.has('b32') && currentBadges.has('b33')) {
+            awardBadge('b34');
+          }
+        }
       }
 
       supabase

@@ -44,7 +44,7 @@ export const ALL_BADGES: Badge[] = [
   { id: 'b31', title: 'Roda de Conversa', icon: '☕', category: 'Espaços de Troca', rewardXp: 15, description: 'Puxou uma cadeira pra conversar no Cantinho da Mel. Esse espaço é todinho seu!' },
   { id: 'b32', title: 'Ponte a Dois', icon: '🌉', category: 'Espaços de Troca', rewardXp: 15, description: 'Cuidou de quem divide a caminhada com você no Espaço a Dois. A parceria agradece!' },
   { id: 'b33', title: 'Máscara de Oxigênio', icon: '🛟', category: 'Espaços de Troca', rewardXp: 15, description: 'Passou no Cuidando de Quem Cuida. Lembrar de você não é capricho, é essencial!' },
-  { id: 'b34', title: 'Explorador da Comunidade', icon: '🧭', category: 'Espaços de Troca', rewardXp: 25, description: 'Andou por todas as 4 salas de apoio. Essa rede existe pra te segurar quando precisar.' },
+  { id: 'b34', title: 'Explorador da Comunidade', icon: '🧭', category: 'Espaços de Troca', rewardXp: 25, description: 'Participou de todos os 3 subtópicos de apoio (Ajuda, Celebração e Desabafo). Essa rede existe pra te segurar quando precisar.' },
   { id: 'b35', title: 'Acolhimento Pleno', icon: '🌺', category: 'Espaços de Troca', rewardXp: 15, description: 'Você já experimentou todas as nossas reações. Acolher de todo jeito faz bem!' },
 
   // 6. 🤝 Rede de Apoio (6 Conquistas)

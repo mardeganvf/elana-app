@@ -62,8 +62,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       const subLabels: Record<string, string> = {
         ajuda: 'Preciso de Ajuda',
         celebrar: 'Vamos Celebrar',
-        desabafar: 'Preciso Desabafar',
-        abertas: 'Abertas pela Comunidade'
+        desabafar: 'Preciso Desabafar'
       };
       if (subLabels[selectedIntention]) {
         return `${baseTitle} • ${subLabels[selectedIntention]}`;
@@ -231,12 +230,11 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                     Subtópico / Intenção:
                   </label>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-3 gap-1.5">
                     {[
-                      { id: 'ajuda' as const, label: 'Preciso de Ajuda', emoji: '🆘' },
-                      { id: 'celebrar' as const, label: 'Vamos Celebrar', emoji: '🎉' },
-                      { id: 'desabafar' as const, label: 'Preciso Desabafar', emoji: '💧' },
-                      { id: 'abertas' as const, label: 'Abertas', emoji: '💬' }
+                      { id: 'ajuda' as const, label: 'Ajuda', emoji: '🆘' },
+                      { id: 'celebrar' as const, label: 'Celebrar', emoji: '🎉' },
+                      { id: 'desabafar' as const, label: 'Desabafar', emoji: '💧' }
                     ].map(opt => (
                       <button
                         key={opt.id}
