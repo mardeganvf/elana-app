@@ -1085,6 +1085,12 @@ export const CommunityPage: React.FC = () => {
         onClose={() => setIsBreathingModalOpen(false)}
         onComplete={() => {
           awardBadge('b23'); // Pausa Necessária (60s de respiro)
+          const breathKey = `elana_respiro_cycles_${user?.id || 'current_user'}`;
+          const currentCount = parseInt(localStorage.getItem(breathKey) || '0', 10) + 1;
+          localStorage.setItem(breathKey, currentCount.toString());
+          if (currentCount >= 10) {
+            awardBadge('b64'); // Mestre do Respiro (10 pausas)
+          }
         }}
       />
 

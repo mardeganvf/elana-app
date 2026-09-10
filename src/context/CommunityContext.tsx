@@ -894,6 +894,12 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     awardBadge('b29'); // Voz de Coragem (1º post)
     if (isAnonymous || payload.transversalRoomId === 'confessionario') {
       awardBadge('b30'); // Confissão Liberta
+      const confKey = `elana_confession_count_${user?.id || 'anon'}`;
+      const confCount = parseInt(localStorage.getItem(confKey) || '0', 10) + 1;
+      localStorage.setItem(confKey, confCount.toString());
+      if (confCount >= 5) {
+        awardBadge('b67'); // Desabafo Necessário (5 confissões)
+      }
     }
     if (payload.transversalRoomId === 'cantinho-mel' || payload.transversalRoomId === 'cantinho-da-mel' || payload.transversalRoomId === 'trocas-livres') {
       awardBadge('b31'); // Roda de Conversa
@@ -941,6 +947,15 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (room === 'cantinho-mel' || room === 'cantinho-da-mel' || room === 'trocas-livres') awardBadge('b31');
       if (room === 'espaco-dois') awardBadge('b32');
       if (room === 'cuidando-quem-cuida' || room === 'cuidando-de-quem-cuida') awardBadge('b33');
+    }
+
+    if (targetPost?.isAnonymous || targetPost?.transversalRoomId === 'confessionario') {
+      const confReactKey = `elana_confession_reactions_${user?.id || 'anon'}`;
+      const confReactCount = parseInt(localStorage.getItem(confReactKey) || '0', 10) + 1;
+      localStorage.setItem(confReactKey, confReactCount.toString());
+      if (confReactCount >= 10) {
+        awardBadge('b68'); // Abraço Invisível (10 apoios no confessionário)
+      }
     }
 
     setPosts(prev => prev.map(post => {
@@ -1085,6 +1100,17 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // 🏆 Conquistas por sala de apoio ou subtópico de acolhimento (ao comentar no post):
       const parentPost = posts.find(p => p.id === postId);
       if (parentPost) {
+        // Checar se é o primeiro a responder neste post (0 comentários antes)
+        const isFirst = !parentPost.comments || parentPost.comments.length === 0;
+        if (isFirst) {
+          awardBadge('b65'); // Primeiro Abraço (1º a responder)
+          const firstRespKey = `elana_first_responder_count_${user.id}`;
+          const firstRespCount = parseInt(localStorage.getItem(firstRespKey) || '0', 10) + 1;
+          localStorage.setItem(firstRespKey, firstRespCount.toString());
+          if (firstRespCount >= 5) {
+            awardBadge('b66'); // Ninguém Fica Sozinho (5 posts acolhidos)
+          }
+        }
         if (parentPost.emotionalIntention) {
           const key = `elana_intentions_participated_${user.id}`;
           try {

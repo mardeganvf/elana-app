@@ -230,7 +230,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   // Sincroniza membros acompanhados em tempo real
   useEffect(() => {
     const syncFollowed = () => {
-      setFollowedMembers(getFollowedMembers(user?.id));
+      const list = getFollowedMembers(user?.id);
+      setFollowedMembers(list);
+      if (list.length >= 1) awardBadge('b54');
+      if (list.length >= 10) awardBadge('b62');
+      if (list.length >= 20) awardBadge('b63');
     };
 
     syncFollowed();
@@ -269,6 +273,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
           .order('created_at', { ascending: false });
 
         if (data && data.length > 0) {
+          const approvedCount = data.filter(t => t.status === 'approved').length;
+          if (approvedCount >= 1) awardBadge('b57'); // Afeto Recebido
+          if (approvedCount >= 5) awardBadge('b71'); // Mural Florido (5)
+          if (approvedCount >= 10) awardBadge('b72'); // Avalanche de Carinho (10)
+
           setTestimonials(data.map(t => ({
             id: t.id,
             authorName: t.author_name,
@@ -291,6 +300,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
   const handleApproveTestimonial = async (id: string) => {
     setTestimonials(prev => prev.map(t => t.id === id ? { ...t, status: 'aprovado' as const } : t));
+    awardBadge('b57'); // Afeto Recebido
+    const approvedCount = testimonials.filter(t => t.id === id || t.status === 'aprovado').length;
+    if (approvedCount >= 5) awardBadge('b71');
+    if (approvedCount >= 10) awardBadge('b72');
     try {
       await supabase
         .from('profile_testimonials')

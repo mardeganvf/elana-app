@@ -3,6 +3,7 @@ import { UserProfile, Badge } from '../types';
 import { ALL_BADGES, getLevelFromXP, USER_LEVELS } from '../data/gamificationData';
 import { JOURNEYS_DATA } from '../data/journeysData';
 import { supabase } from '../lib/supabase';
+import { getFollowedMembers } from '../lib/followService';
 import confetti from 'canvas-confetti';
 
 export interface SOSTicketResponse {
@@ -551,9 +552,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (pct >= 100) checkAndAddBadge('b7'); // Caminho Iluminado (100%)
         }
       }
-      if (Object.keys(lessonNotes).length >= 1) {
-        checkAndAddBadge('b9'); // Minhas Reflexões
-      }
+      const noteCount = Object.values(lessonNotes).filter(n => typeof n === 'string' && n.trim().length > 0).length;
+      if (noteCount >= 1) checkAndAddBadge('b9'); // Minhas Reflexões (1)
+      if (noteCount >= 5) checkAndAddBadge('b59'); // Diário de Bordo (5)
+      if (noteCount >= 10) checkAndAddBadge('b60'); // Páginas de Sabedoria (10)
+      if (noteCount >= 15) checkAndAddBadge('b61'); // Livro da Minha Vida (15)
 
       // 🌿 Cálculo Preciso de Dias de Caminhada Conosco (Streak / Dias Conosco)
       let earliestActivityTimestamp = profile.created_at ? new Date(profile.created_at).getTime() : Date.now();
@@ -599,8 +602,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (postsRes.data && postsRes.data.length > 0) {
           checkAndAddBadge('b29'); // Voz de Coragem (1º post)
           let totalReactionsReceived = 0;
+          let confessionPostsCount = 0;
           postsRes.data.forEach(p => {
-            if (p.is_anonymous || p.transversal_room_id === 'confessionario') checkAndAddBadge('b30');
+            const isConfession = p.is_anonymous || p.transversal_room_id === 'confessionario';
+            if (isConfession) {
+              checkAndAddBadge('b30');
+              confessionPostsCount++;
+            }
             if (p.transversal_room_id === 'cantinho-mel' || p.transversal_room_id === 'cantinho-da-mel' || p.transversal_room_id === 'trocas-livres') checkAndAddBadge('b31');
             if (p.transversal_room_id === 'espaco-dois') checkAndAddBadge('b32');
             if (p.transversal_room_id === 'cuidando-quem-cuida' || p.transversal_room_id === 'cuidando-de-quem-cuida') checkAndAddBadge('b33');
@@ -611,6 +619,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               });
             }
           });
+
+          // 🗝️ Desabafo Necessário (5 confissões)
+          let localConfessions = 0;
+          try {
+            localConfessions = parseInt(localStorage.getItem(`elana_confession_count_${profileId}`) || '0', 10);
+          } catch {}
+          if (confessionPostsCount >= 5 || localConfessions >= 5) {
+            checkAndAddBadge('b67');
+          }
 
           // 💖 Conquistas por Reações Recebidas (b48 a b53)
           if (totalReactionsReceived >= 1) checkAndAddBadge('b48'); // Não Estamos Sós
@@ -634,13 +651,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (commentCount >= 500) checkAndAddBadge('b41');
         }
 
-        if (sentTestimonialsRes.data && sentTestimonialsRes.data.length > 0) {
-          checkAndAddBadge('b56'); // Palavra de Carinho (enviou depoimento)
-        }
+        // 💌 Depoimentos enviados (b56, b69, b70)
+        let localSentTestimonials = 0;
+        try {
+          localSentTestimonials = parseInt(localStorage.getItem(`elana_sent_testimonials_${profileId}`) || '0', 10);
+        } catch {}
+        const sentCount = Math.max(sentTestimonialsRes.data?.length || 0, localSentTestimonials);
+        if (sentCount >= 1) checkAndAddBadge('b56'); // Palavra de Carinho (1)
+        if (sentCount >= 5) checkAndAddBadge('b69'); // Semeando Carinho (5)
+        if (sentCount >= 10) checkAndAddBadge('b70'); // Árvore de Afeto (10)
 
-        if (testimonialsRes.data && testimonialsRes.data.length > 0) {
-          checkAndAddBadge('b57'); // Afeto Recebido
-        }
+        // 🎁 Depoimentos recebidos (b57, b71, b72)
+        const receivedCount = testimonialsRes.data?.length || 0;
+        if (receivedCount >= 1) checkAndAddBadge('b57'); // Afeto Recebido (1)
+        if (receivedCount >= 5) checkAndAddBadge('b71'); // Mural Florido (5)
+        if (receivedCount >= 10) checkAndAddBadge('b72'); // Avalanche de Carinho (10)
+
+        // 🎀 Membros Acompanhados na Rede de Apoio (b54, b62, b63)
+        try {
+          const followedList = getFollowedMembers(profileId);
+          if (followedList.length >= 1) checkAndAddBadge('b54'); // Novo Laço (1)
+          if (followedList.length >= 10) checkAndAddBadge('b62'); // Tribo Reunida (10)
+          if (followedList.length >= 20) checkAndAddBadge('b63'); // Rede que Fortalece (20)
+        } catch {}
+
+        // 🌬️ Pausas de Respiro Guiado (b23, b64)
+        try {
+          const breathCycles = parseInt(localStorage.getItem(`elana_respiro_cycles_${profileId}`) || '0', 10);
+          if (breathCycles >= 1) checkAndAddBadge('b23'); // Pausa Necessária (1)
+          if (breathCycles >= 10) checkAndAddBadge('b64'); // Mestre do Respiro (10)
+        } catch {}
+
+        // 🤍 Apoios / Reações em Confissões Anônimas (b68)
+        try {
+          const confReactCount = parseInt(localStorage.getItem(`elana_confession_reactions_${profileId}`) || '0', 10);
+          if (confReactCount >= 10) checkAndAddBadge('b68'); // Abraço Invisível (10)
+        } catch {}
+
+        // 🫂 Respostas como Primeiro Apoiador em Tópicos (b65, b66)
+        try {
+          const firstRespCount = parseInt(localStorage.getItem(`elana_first_responder_count_${profileId}`) || '0', 10);
+          if (firstRespCount >= 1) checkAndAddBadge('b65'); // Primeiro Abraço (1)
+          if (firstRespCount >= 5) checkAndAddBadge('b66'); // Ninguém Fica Sozinho (5)
+        } catch {}
       } catch (err) {
         console.warn('Notice checking community badges:', err);
       }
@@ -1101,7 +1154,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     await updateUser({ lessonNotes: newNotes });
-    await awardBadge('b9'); // Minhas Reflexões
+    await awardBadge('b9'); // Minhas Reflexões (1)
+    const noteCount = Object.values(newNotes).filter(n => typeof n === 'string' && n.trim().length > 0).length;
+    if (noteCount >= 5) await awardBadge('b59'); // Diário de Bordo (5)
+    if (noteCount >= 10) await awardBadge('b60'); // Páginas de Sabedoria (10)
+    if (noteCount >= 15) await awardBadge('b61'); // Livro da Minha Vida (15)
 
     try {
       await supabase.from('user_lesson_notes').upsert({

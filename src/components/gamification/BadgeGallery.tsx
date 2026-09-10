@@ -80,7 +80,21 @@ export const getHowToUnlock = (badge: Badge): string => {
     b54: 'Acompanhe a jornada de outro membro na Comunidade.',
     b55: 'Tenha outros membros acompanhando seu perfil na comunidade.',
     b56: 'Escreva um depoimento carinhoso no perfil de outro membro.',
-    b57: 'Receba um depoimento carinhoso publicado no seu perfil.'
+    b57: 'Receba um depoimento carinhoso publicado no seu perfil.',
+    b59: 'Escreva e salve reflexões pessoais em 5 aulas diferentes.',
+    b60: 'Escreva e salve reflexões pessoais em 10 aulas diferentes.',
+    b61: 'Escreva e salve reflexões pessoais em 15 aulas diferentes.',
+    b62: 'Acompanhe a jornada de 10 membros na sua Rede de Apoio.',
+    b63: 'Acompanhe a jornada de 20 membros na sua Rede de Apoio.',
+    b64: 'Complete 10 pausas de 60 segundos no exercício de Respiro Guiado.',
+    b65: 'Seja a primeira pessoa a responder a um tópico sem comentários na Comunidade.',
+    b66: 'Responda a 5 publicações que ainda não tinham nenhum comentário na Comunidade.',
+    b67: 'Publique 5 desabafos sinceros no Confessionário Anônimo.',
+    b68: 'Reaja com carinho em 10 confissões anônimas no Confessionário.',
+    b69: 'Escreva e envie depoimentos carinhosos no perfil de 5 membros diferentes.',
+    b70: 'Escreva e envie depoimentos carinhosos no perfil de 10 membros diferentes.',
+    b71: 'Receba 5 depoimentos afetuosos publicados no seu mural de perfil.',
+    b72: 'Receba 10 depoimentos afetuosos publicados no seu mural de perfil.'
   };
 
   if (instructions[badge.id]) {

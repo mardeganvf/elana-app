@@ -1,22 +1,25 @@
 import { Badge, UserLevel } from '../types';
 
 export const ALL_BADGES: Badge[] = [
-  // 1. 🌿 Primeiros Passos (3 Conquistas)
+  // 1. 🌿 Primeiros Passos (3 Conquistas - 60 XP)
   { id: 'b1', title: 'Semente Plantada', icon: '🌱', category: 'Primeiros Passos', rewardXp: 25, description: 'Que bom que você chegou! Sua caminhada com a gente começa agora.' },
   { id: 'b2', title: 'Criando Raízes', icon: '🪵', category: 'Primeiros Passos', rewardXp: 25, description: 'Perfil pronto com a sua cara e com a realidade da sua casa.' },
   { id: 'b3', title: 'Sempre Alerta', icon: '🔔', category: 'Primeiros Passos', rewardXp: 10, description: 'Notificações ligadas pra gente te lembrar de respirar no meio da correria.' },
 
-  // 2. ▶️ Jornadas de Conhecimento (8 Conquistas)
+  // 2. 🎓 Jornadas de Conhecimento (11 Conquistas - 225 XP)
   { id: 'b4', title: 'Minha Jornada', icon: '▶️', category: 'Jornadas de Conhecimento', rewardXp: 25, description: 'Você deu o play no primeiro vídeo. Sem pressa, no seu próprio ritmo.' },
   { id: 'b5', title: 'Passos Seguros', icon: '🐾', category: 'Jornadas de Conhecimento', rewardXp: 15, targetCount: 25, unitLabel: '%', description: '25% da trilha já foi! Um passinho de cada vez e as coisas vão clareando.' },
   { id: 'b6', title: 'Chegando Lá!', icon: '🧗', category: 'Jornadas de Conhecimento', rewardXp: 15, targetCount: 50, unitLabel: '%', description: 'Metade do curso concluído. Respira fundo e olha o quanto você já aprendeu!' },
   { id: 'b58', title: 'Quase Lá!', icon: '🎯', category: 'Jornadas de Conhecimento', rewardXp: 25, targetCount: 75, unitLabel: '%', description: '75% do curso concluído! Falta muito pouco para completar toda a jornada.' },
   { id: 'b7', title: 'Caminho Iluminado', icon: '💡', category: 'Jornadas de Conhecimento', rewardXp: 50, targetCount: 100, unitLabel: '%', description: 'Jornada completa! Mais leveza e confiança pra viver a sua rotina.' },
   { id: 'b8', title: 'Pausa para Ouvir', icon: '🎧', category: 'Jornadas de Conhecimento', rewardXp: 10, description: 'Colocou o fone e aproveitou uma brecha no dia pra escutar uma aula.' },
-  { id: 'b9', title: 'Minhas Reflexões', icon: '📝', category: 'Jornadas de Conhecimento', rewardXp: 10, description: 'Aquela ideia boa que não podia se perder ficou anotada com carinho.' },
   { id: 'b10', title: 'Buscando Respostas', icon: '🔍', category: 'Jornadas de Conhecimento', rewardXp: 10, description: 'Bateu uma dúvida e você foi atrás. O conhecimento traz paz.' },
+  { id: 'b9', title: 'Minhas Reflexões', icon: '📝', category: 'Jornadas de Conhecimento', rewardXp: 10, description: 'Aquela ideia boa que não podia se perder ficou anotada com carinho.' },
+  { id: 'b59', title: 'Diário de Bordo', icon: '📖', category: 'Jornadas de Conhecimento', rewardXp: 15, targetCount: 5, unitLabel: 'aulas', description: 'Registrou 5 reflexões pessoais em aulas diferentes.' },
+  { id: 'b60', title: 'Páginas de Sabedoria', icon: '📑', category: 'Jornadas de Conhecimento', rewardXp: 20, targetCount: 10, unitLabel: 'aulas', description: 'Registrou 10 reflexões pessoais em aulas diferentes.' },
+  { id: 'b61', title: 'Livro da Minha Vida', icon: '📚', category: 'Jornadas de Conhecimento', rewardXp: 25, targetCount: 15, unitLabel: 'aulas', description: 'Registrou 15 reflexões pessoais em aulas diferentes.' },
 
-  // 3. 💗 Cuidando de Quem Cuida (13 Conquistas)
+  // 3. 💗 Cuidando de Quem Cuida (14 Conquistas - 340 XP)
   { id: 'b11', title: 'Sinal de Cuidado', icon: '💗', category: 'Cuidando de Quem Cuida', rewardXp: 10, description: 'Fez o seu primeiro check-in. É muito bom saber como você está hoje!' },
   { id: 'b12', title: 'Tudo Bem Parar', icon: '🛑', category: 'Cuidando de Quem Cuida', rewardXp: 10, description: 'Bateria no fim? Acolha o cansaço. Por aqui, ninguém precisa dar conta de tudo.' },
   { id: 'b13', title: 'Luz no Caminho', icon: '🌅', category: 'Cuidando de Quem Cuida', rewardXp: 10, description: 'Dia de esperança no peito! Que essa leveza acompanhe a sua casa hoje.' },
@@ -30,50 +33,63 @@ export const ALL_BADGES: Badge[] = [
   { id: 'b21', title: 'Olhar Para Dentro', icon: '🪞', category: 'Cuidando de Quem Cuida', rewardXp: 10, description: 'Foi espiar seu histórico de emoções. Se conhecer é um baita ato de carinho.' },
   { id: 'b22', title: 'Farol Noturno', icon: '🕯️', category: 'Cuidando de Quem Cuida', rewardXp: 10, description: 'Luz suave ligada pra te acompanhar naquele despertar das 3h da manhã.' },
   { id: 'b23', title: 'Pausa Necessária', icon: '🌬️', category: 'Cuidando de Quem Cuida', rewardXp: 10, description: 'Um minutinho de respiro guiado só pra colocar a cabeça no lugar.' },
+  { id: 'b64', title: 'Mestre do Respiro', icon: '🧘‍♀️', category: 'Cuidando de Quem Cuida', rewardXp: 20, targetCount: 10, unitLabel: 'pausas', description: 'Usou o recurso de respiração guiada da plataforma 10 vezes antes de reagir no calor do momento.' },
 
-  // 4. ⚡ Evolução Constante (5 Conquistas)
-  { id: 'b24', title: 'Passos no Seu Ritmo', icon: '🐾', category: 'Evolução Constante', rewardXp: 15, targetCount: 10, unitLabel: 'dias', description: 'Acessou a plataforma em 10 dias diferentes. Cada retorno é um passo valioso!' },
-  { id: 'b25', title: 'Caminhada Acolhedora', icon: '⚡', category: 'Evolução Constante', rewardXp: 25, targetCount: 20, unitLabel: 'dias', description: 'Acessou a plataforma em 20 dias diferentes. Estar presente com frequência constrói uma rede forte.' },
-  { id: 'b26', title: 'Presença Constante', icon: '🌳', category: 'Evolução Constante', rewardXp: 40, targetCount: 30, unitLabel: 'dias', description: 'Acessou a plataforma em 30 dias diferentes. Suas raízes familiares estão ficando cada vez mais firmes.' },
-  { id: 'b27', title: 'Trilha da Constância', icon: '🗺️', category: 'Evolução Constante', rewardXp: 60, targetCount: 60, unitLabel: 'dias', description: 'Acessou a plataforma em 60 dias diferentes. Uma caminhada sólida de aprendizado e troca.' },
-  { id: 'b28', title: 'Raízes Profundas', icon: '🌲', category: 'Evolução Constante', rewardXp: 100, targetCount: 90, unitLabel: 'dias', description: 'Acessou a plataforma em 90 dias diferentes. Sua presença ilumina toda a nossa comunidade!' },
+  // 4. ⚡ Presença & Constância (5 Conquistas - 240 XP)
+  { id: 'b24', title: 'Passos no Seu Ritmo', icon: '🐾', category: 'Presença & Constância', rewardXp: 15, targetCount: 10, unitLabel: 'dias', description: 'Acessou a plataforma em 10 dias diferentes. Cada retorno é um passo valioso!' },
+  { id: 'b25', title: 'Caminhada Acolhedora', icon: '⚡', category: 'Presença & Constância', rewardXp: 25, targetCount: 20, unitLabel: 'dias', description: 'Acessou a plataforma em 20 dias diferentes. Estar presente com frequência constrói uma rede forte.' },
+  { id: 'b26', title: 'Presença Constante', icon: '🌳', category: 'Presença & Constância', rewardXp: 40, targetCount: 30, unitLabel: 'dias', description: 'Acessou a plataforma em 30 dias diferentes. Suas raízes familiares estão ficando cada vez mais firmes.' },
+  { id: 'b27', title: 'Trilha da Constância', icon: '🗺️', category: 'Presença & Constância', rewardXp: 60, targetCount: 60, unitLabel: 'dias', description: 'Acessou a plataforma em 60 dias diferentes. Uma caminhada sólida de aprendizado e troca.' },
+  { id: 'b28', title: 'Raízes Profundas', icon: '🌲', category: 'Presença & Constância', rewardXp: 100, targetCount: 90, unitLabel: 'dias', description: 'Acessou a plataforma em 90 dias diferentes. Sua presença ilumina toda a nossa comunidade!' },
 
-  // 5. 💬 Espaços de Troca (7 Conquistas)
-  { id: 'b29', title: 'Voz de Coragem', icon: '🗣️', category: 'Espaços de Troca', rewardXp: 10, description: 'Primeiro post no ar! Dividir o que a gente vive sempre ajuda a acolher o outro.' },
-  { id: 'b30', title: 'Confissão Liberta', icon: '🕊️', category: 'Espaços de Troca', rewardXp: 10, description: 'Desabafou no confessionário anônimo. Aqui você pode tirar o peso das costas sem julgamentos.' },
-  { id: 'b31', title: 'Roda de Conversa', icon: '☕', category: 'Espaços de Troca', rewardXp: 15, description: 'Puxou uma cadeira pra conversar no Cantinho da Mel. Esse espaço é todinho seu!' },
-  { id: 'b32', title: 'Ponte a Dois', icon: '🌉', category: 'Espaços de Troca', rewardXp: 15, description: 'Cuidou de quem divide a caminhada com você no Espaço a Dois. A parceria agradece!' },
-  { id: 'b33', title: 'Máscara de Oxigênio', icon: '🛟', category: 'Espaços de Troca', rewardXp: 15, description: 'Passou no Cuidando de Quem Cuida. Lembrar de você não é capricho, é essencial!' },
-  { id: 'b34', title: 'Explorador da Comunidade', icon: '🧭', category: 'Espaços de Troca', rewardXp: 25, description: 'Participou de todos os 3 subtópicos de apoio (Ajuda, Celebração e Desabafo). Essa rede existe pra te segurar quando precisar.' },
-  { id: 'b35', title: 'Acolhimento Pleno', icon: '🌺', category: 'Espaços de Troca', rewardXp: 15, description: 'Você já experimentou todas as nossas reações. Acolher de todo jeito faz bem!' },
+  // 5. 💬 Salas & Confessionário (9 Conquistas - 140 XP)
+  { id: 'b29', title: 'Voz de Coragem', icon: '🗣️', category: 'Salas & Confessionário', rewardXp: 10, description: 'Primeiro post no ar! Dividir o que a gente vive sempre ajuda a acolher o outro.' },
+  { id: 'b31', title: 'Roda de Conversa', icon: '☕', category: 'Salas & Confessionário', rewardXp: 15, description: 'Puxou uma cadeira pra conversar no Cantinho da Mel. Esse espaço é todinho seu!' },
+  { id: 'b32', title: 'Ponte a Dois', icon: '🌉', category: 'Salas & Confessionário', rewardXp: 15, description: 'Cuidou de quem divide a caminhada com você no Espaço a Dois. A parceria agradece!' },
+  { id: 'b33', title: 'Máscara de Oxigênio', icon: '🛟', category: 'Salas & Confessionário', rewardXp: 15, description: 'Passou no Cuidando de Quem Cuida. Lembrar de você não é capricho, é essencial!' },
+  { id: 'b34', title: 'Explorador da Comunidade', icon: '🧭', category: 'Salas & Confessionário', rewardXp: 25, description: 'Participou de todos os 3 subtópicos de apoio (Ajuda, Celebração e Desabafo). Essa rede existe pra te segurar quando precisar.' },
+  { id: 'b35', title: 'Acolhimento Pleno', icon: '🌺', category: 'Salas & Confessionário', rewardXp: 15, description: 'Você já experimentou todas as nossas reações. Acolher de todo jeito faz bem!' },
+  { id: 'b30', title: 'Confissão Liberta', icon: '🕊️', category: 'Salas & Confessionário', rewardXp: 10, description: 'Desabafou no confessionário anônimo. Aqui você pode tirar o peso das costas sem julgamentos.' },
+  { id: 'b67', title: 'Desabafo Necessário', icon: '🗝️', category: 'Salas & Confessionário', rewardXp: 20, targetCount: 5, unitLabel: 'confissões', description: 'Usou o Confessionário 5 vezes para tirar o peso das costas. Guardar angústia só adoece; pôr pra fora cura.' },
+  { id: 'b68', title: 'Abraço Invisível', icon: '🤍', category: 'Salas & Confessionário', rewardXp: 15, targetCount: 10, unitLabel: 'apoios', description: 'Reagiu com carinho em 10 confissões anônimas. Mesmo sem saber quem é, você fez alguém se sentir menos só.' },
 
-  // 6. 🤝 Rede de Apoio (6 Conquistas)
-  { id: 'b36', title: 'Primeiro Acolhimento', icon: '🤲', category: 'Rede de Apoio', rewardXp: 10, description: 'Estendeu a mão pra alguém da comunidade pela primeira vez. Que gesto bonito!' },
-  { id: 'b37', title: 'Mão Estendida', icon: '🤝', category: 'Rede de Apoio', rewardXp: 10, targetCount: 5, unitLabel: 'usuários', description: 'Já são 5 usuários que ganharam um quentinho no coração com as suas respostas.' },
-  { id: 'b38', title: 'Guia de Acolhimento', icon: '⚓', category: 'Rede de Apoio', rewardXp: 25, targetCount: 25, unitLabel: 'vezes', description: '25 vezes em que uma palavra sua trouxe alívio pra quem tava aflito.' },
-  { id: 'b39', title: 'Pilar da Comunidade', icon: '🏛️', category: 'Rede de Apoio', rewardXp: 50, targetCount: 100, unitLabel: 'usuários', description: 'Apoiou 100 usuários! Você virou um porto seguro pra muita gente por aqui.' },
-  { id: 'b40', title: 'Abraço Coletivo', icon: '🤗', category: 'Rede de Apoio', rewardXp: 100, targetCount: 250, unitLabel: 'usuários', description: '250 usuários acolhidos. Seu carinho transforma este app numa comunidade de verdade.' },
-  { id: 'b41', title: 'Farol da Comunidade', icon: '🏮', category: 'Rede de Apoio', rewardXp: 200, targetCount: 500, unitLabel: 'vidas', description: '500 vidas tocadas! Sua empatia ilumina o caminho de todo mundo ao redor.' },
+  // 6. 🤝 Rede de Apoio & Solidariedade (8 Conquistas - 435 XP)
+  { id: 'b36', title: 'Primeiro Acolhimento', icon: '🤲', category: 'Rede de Apoio & Solidariedade', rewardXp: 10, description: 'Estendeu a mão pra alguém da comunidade pela primeira vez. Que gesto bonito!' },
+  { id: 'b65', title: 'Primeiro Abraço', icon: '🫂', category: 'Rede de Apoio & Solidariedade', rewardXp: 15, description: 'Foi a primeira pessoa a responder a um pedido de ajuda na Comunidade. Estender a mão logo de início acalma o peito de quem espera.' },
+  { id: 'b66', title: 'Ninguém Fica Sozinho', icon: '🛟', category: 'Rede de Apoio & Solidariedade', rewardXp: 25, targetCount: 5, unitLabel: 'posts', description: 'Respondeu a 5 publicações que ainda não tinham nenhum comentário. Você não deixa ninguém falando sozinho.' },
+  { id: 'b37', title: 'Mão Estendida', icon: '🤝', category: 'Rede de Apoio & Solidariedade', rewardXp: 10, targetCount: 5, unitLabel: 'usuários', description: 'Já são 5 usuários que ganharam um quentinho no coração com as suas respostas.' },
+  { id: 'b38', title: 'Guia de Acolhimento', icon: '⚓', category: 'Rede de Apoio & Solidariedade', rewardXp: 25, targetCount: 25, unitLabel: 'vezes', description: '25 vezes em que uma palavra sua trouxe alívio pra quem tava aflito.' },
+  { id: 'b39', title: 'Pilar da Comunidade', icon: '🏛️', category: 'Rede de Apoio & Solidariedade', rewardXp: 50, targetCount: 100, unitLabel: 'usuários', description: 'Apoiou 100 usuários! Você virou um porto seguro pra muita gente por aqui.' },
+  { id: 'b40', title: 'Abraço Coletivo', icon: '🤗', category: 'Rede de Apoio & Solidariedade', rewardXp: 100, targetCount: 250, unitLabel: 'usuários', description: '250 usuários acolhidos. Seu carinho transforma este app numa comunidade de verdade.' },
+  { id: 'b41', title: 'Farol da Comunidade', icon: '🏮', category: 'Rede de Apoio & Solidariedade', rewardXp: 200, targetCount: 500, unitLabel: 'vidas', description: '500 vidas tocadas! Sua empatia ilumina o caminho de todo mundo ao redor.' },
 
-  // 7. 🗳️ Sua Voz Importa (6 Conquistas)
+  // 7. 💌 Laços & Depoimentos (10 Conquistas - 230 XP)
+  { id: 'b54', title: 'Novo Laço', icon: '🎀', category: 'Laços & Depoimentos', rewardXp: 15, description: 'Começou a acompanhar a jornada de alguém. É assim que a gente se fortalece!' },
+  { id: 'b55', title: 'Laço Retribuído', icon: '🔁', category: 'Laços & Depoimentos', rewardXp: 15, description: 'Alguém quis acompanhar seus passos de perto. Sinal de que sua história inspira!' },
+  { id: 'b62', title: 'Tribo Reunida', icon: '🏘️', category: 'Laços & Depoimentos', rewardXp: 20, targetCount: 10, unitLabel: 'membros', description: 'Você já acompanha 10 membros na sua Rede de Apoio.' },
+  { id: 'b63', title: 'Rede que Fortalece', icon: '🧶', category: 'Laços & Depoimentos', rewardXp: 25, targetCount: 20, unitLabel: 'membros', description: 'Você já acompanha 20 membros na sua Rede de Apoio.' },
+  { id: 'b56', title: 'Palavra de Carinho', icon: '💌', category: 'Laços & Depoimentos', rewardXp: 15, description: 'Deixou um recado afetuoso no mural de alguém. Gentileza puxa leveza!' },
+  { id: 'b69', title: 'Semeando Carinho', icon: '💐', category: 'Laços & Depoimentos', rewardXp: 20, targetCount: 5, unitLabel: 'depoimentos', description: 'Deixou palavras carinhosas no perfil de 5 membros diferentes. O elogio que a gente dá volta em dobro pra gente.' },
+  { id: 'b70', title: 'Árvore de Afeto', icon: '🌳', category: 'Laços & Depoimentos', rewardXp: 30, targetCount: 10, unitLabel: 'depoimentos', description: 'Deixou palavras carinhosas no perfil de 10 membros diferentes. Sua generosidade floresce em todos os cantos.' },
+  { id: 'b57', title: 'Afeto Recebido', icon: '🎁', category: 'Laços & Depoimentos', rewardXp: 15, description: 'Ganhou um depoimento carinhoso! Que delícia saber que você é importantíssimo pra alguém.' },
+  { id: 'b71', title: 'Mural Florido', icon: '🌸', category: 'Laços & Depoimentos', rewardXp: 20, targetCount: 5, unitLabel: 'depoimentos', description: 'Seu perfil já recebeu 5 depoimentos afetuosos. Você é muito querida(o) por aqui!' },
+  { id: 'b72', title: 'Avalanche de Carinho', icon: '💖', category: 'Laços & Depoimentos', rewardXp: 30, targetCount: 10, unitLabel: 'depoimentos', description: 'Seu perfil já recebeu 10 depoimentos afetuosos. Um abraço coletivo em forma de palavras para a sua caminhada!' },
+
+  // 8. 💖 Carinho Recebido (6 Conquistas - 300 XP)
+  { id: 'b48', title: 'Não Estamos Sós', icon: '💖', category: 'Carinho Recebido', rewardXp: 10, description: 'Alguém leu o seu post e mandou um abraço em forma de reação.' },
+  { id: 'b49', title: 'Eco de Afeto', icon: '📣', category: 'Carinho Recebido', rewardXp: 5, targetCount: 50, unitLabel: 'reações', description: '50 reações recebidas. O que você compartilha toca fundo em outros pais e mães.' },
+  { id: 'b50', title: 'Vizinhança Segura', icon: '🏡', category: 'Carinho Recebido', rewardXp: 25, targetCount: 250, unitLabel: 'reações', description: '250 reações nos seus posts. A turma se sente muito compreendida por você!' },
+  { id: 'b51', title: 'Centelha Compartilhada', icon: '✨', category: 'Carinho Recebido', rewardXp: 40, targetCount: 500, unitLabel: 'carinhos', description: '500 carinhos recebidos. Suas partilhas fazem diferença de verdade no dia de alguém.' },
+  { id: 'b52', title: 'Presença Luminosa', icon: '🌟', category: 'Carinho Recebido', rewardXp: 70, targetCount: 1000, unitLabel: 'reações', description: '1.000 reações! Você espalha tanta verdade que todo mundo quer te ouvir.' },
+  { id: 'b53', title: 'Coração da Comunidade', icon: '👑', category: 'Carinho Recebido', rewardXp: 150, targetCount: 2500, unitLabel: 'reações', description: '2.500 reações! Um marco gigante de conexão, afeto e presença viva.' },
+
+  // 9. 🗳️ Sua Voz Importa (6 Conquistas - 145 XP)
   { id: 'b42', title: 'Primeiro Palpite', icon: '🗳️', category: 'Sua Voz Importa', rewardXp: 10, description: 'Deixou seu voto na primeira enquete. Sua vivência ajuda a guiar nossa conversa!' },
   { id: 'b43', title: 'Voz Ativa', icon: '📣', category: 'Sua Voz Importa', rewardXp: 10, targetCount: 5, unitLabel: 'enquetes', description: '5 enquetes respondidas. Adoramos saber o que se passa aí na sua rotina!' },
   { id: 'b44', title: 'Opinião que Conta', icon: '💭', category: 'Sua Voz Importa', rewardXp: 15, targetCount: 10, unitLabel: 'votos', description: '10 votos em enquetes. Construindo junto com a gente a sabedoria da nossa rede.' },
   { id: 'b45', title: 'Ouvinte Fiel', icon: '👂', category: 'Sua Voz Importa', rewardXp: 25, targetCount: 25, unitLabel: 'enquetes', description: '25 enquetes participadas! Você tá sempre de olho nos dilemas da nossa comunidade.' },
   { id: 'b46', title: 'Conselheiro Frequente', icon: '📜', category: 'Sua Voz Importa', rewardXp: 35, targetCount: 50, unitLabel: 'enquetes', description: '50 enquetes! Sua participação deixa os nossos debates muito mais ricos.' },
-  { id: 'b47', title: 'Sabedoria da Tribo', icon: '🦉', category: 'Sua Voz Importa', rewardXp: 50, targetCount: 100, unitLabel: 'enquetes', description: '100 enquetes! Veterano em dividir como a vida real funciona por aí.' },
-
-  // 8. 💖 Acolhimento (10 Conquistas)
-  { id: 'b48', title: 'Não Estamos Sós', icon: '💖', category: 'Acolhimento', rewardXp: 10, description: 'Alguém leu o seu post e mandou um abraço em forma de reação.' },
-  { id: 'b49', title: 'Eco de Afeto', icon: '📣', category: 'Acolhimento', rewardXp: 5, targetCount: 50, unitLabel: 'reações', description: '50 reações recebidas. O que você compartilha toca fundo em outros pais e mães.' },
-  { id: 'b50', title: 'Vizinhança Segura', icon: '🏡', category: 'Acolhimento', rewardXp: 25, targetCount: 250, unitLabel: 'reações', description: '250 reações nos seus posts. A turma se sente muito compreendida por você!' },
-  { id: 'b51', title: 'Centelha Compartilhada', icon: '✨', category: 'Acolhimento', rewardXp: 40, targetCount: 500, unitLabel: 'carinhos', description: '500 carinhos recebidos. Suas partilhas fazem diferença de verdade no dia de alguém.' },
-  { id: 'b52', title: 'Presença Luminosa', icon: '🌟', category: 'Acolhimento', rewardXp: 70, targetCount: 1000, unitLabel: 'reações', description: '1.000 reações! Você espalha tanta verdade que todo mundo quer te ouvir.' },
-  { id: 'b53', title: 'Coração da Comunidade', icon: '👑', category: 'Acolhimento', rewardXp: 150, targetCount: 2500, unitLabel: 'reações', description: '2.500 reações! Um marco gigante de conexão, afeto e presença viva.' },
-  { id: 'b54', title: 'Novo Laço', icon: '🎀', category: 'Acolhimento', rewardXp: 15, description: 'Começou a acompanhar a jornada de alguém. É assim que a gente se fortalece!' },
-  { id: 'b55', title: 'Laço Retribuído', icon: '🔁', category: 'Acolhimento', rewardXp: 15, description: 'Alguém quis acompanhar seus passos de perto. Sinal de que sua história inspira!' },
-  { id: 'b56', title: 'Palavra de Carinho', icon: '💌', category: 'Acolhimento', rewardXp: 15, description: 'Deixou um recado afetuoso no mural de alguém. Gentileza puxa leveza!' },
-  { id: 'b57', title: 'Afeto Recebido', icon: '🎁', category: 'Acolhimento', rewardXp: 15, description: 'Ganhou um depoimento carinhoso! Que delícia saber que você é importantíssimo pra alguém.' }
+  { id: 'b47', title: 'Sabedoria da Tribo', icon: '🦉', category: 'Sua Voz Importa', rewardXp: 50, targetCount: 100, unitLabel: 'enquetes', description: '100 enquetes! Veterano em dividir como a vida real funciona por aí.' }
 ];
 
 export const USER_LEVELS: UserLevel[] = [

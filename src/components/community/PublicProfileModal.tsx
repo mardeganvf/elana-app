@@ -26,7 +26,7 @@ import { UserLevelsModal } from '../gamification/UserLevelsModal';
 import { JOURNEYS_DATA } from '../../data/journeysData';
 import { getLevelFromXP } from '../../data/gamificationData';
 import { supabase } from '../../lib/supabase';
-import { isFollowingMember, toggleFollowMember, FOLLOWED_MEMBERS_CHANGED_EVENT } from '../../lib/followService';
+import { isFollowingMember, toggleFollowMember, getFollowedMembers, FOLLOWED_MEMBERS_CHANGED_EVENT } from '../../lib/followService';
 
 export interface ChildInfo {
   id: string;
@@ -102,6 +102,13 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
     if (next) {
       awardBadge('b54'); // Novo Laço (acompanhou alguém)
       awardBadge('b55'); // Laço Retribuído (conexão mútua na rede)
+      const followed = getFollowedMembers(user?.id);
+      if (followed.length >= 10) {
+        awardBadge('b62'); // Tribo Reunida (10 membros)
+      }
+      if (followed.length >= 20) {
+        awardBadge('b63'); // Rede que Fortalece (20 membros)
+      }
     }
   };
 
@@ -183,6 +190,12 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
         status: 'approved'
       }]);
       awardBadge('b56'); // Palavra de Carinho (enviou depoimento)
+      const sentCountKey = `elana_sent_testimonials_${user?.id || 'current_user'}`;
+      const prevSent = parseInt(localStorage.getItem(sentCountKey) || '0', 10);
+      const newSent = prevSent + 1;
+      localStorage.setItem(sentCountKey, newSent.toString());
+      if (newSent >= 5) awardBadge('b69'); // Semeando Carinho (5)
+      if (newSent >= 10) awardBadge('b70'); // Árvore de Afeto (10)
     } catch (err) {
       console.error('Error saving testimonial to Supabase:', err);
     }
