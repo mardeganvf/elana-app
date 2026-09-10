@@ -122,15 +122,19 @@ export function followMember(profile: PublicUserProfile, userId?: string): Publi
 
   // Sincronização segura em segundo plano com Supabase (se a tabela user_follows existir)
   if (userId && profile.id) {
-    supabase
-      .from('user_follows')
-      .upsert({
-        follower_id: userId,
-        followed_id: profile.id,
-        created_at: new Date().toISOString()
-      })
-      .then(() => {})
-      .catch(() => {});
+    (async () => {
+      try {
+        await supabase
+          .from('user_follows')
+          .upsert({
+            follower_id: userId,
+            followed_id: profile.id,
+            created_at: new Date().toISOString()
+          });
+      } catch (_) {
+        // Ignora caso a tabela ainda não tenha sido migrada
+      }
+    })();
   }
 
   return updated;
@@ -161,13 +165,17 @@ export function unfollowMember(targetIdOrName?: string, userId?: string): Public
 
   // Sincronização em segundo plano com Supabase
   if (userId && targetIdOrName) {
-    supabase
-      .from('user_follows')
-      .delete()
-      .eq('follower_id', userId)
-      .eq('followed_id', targetIdOrName)
-      .then(() => {})
-      .catch(() => {});
+    (async () => {
+      try {
+        await supabase
+          .from('user_follows')
+          .delete()
+          .eq('follower_id', userId)
+          .eq('followed_id', targetIdOrName);
+      } catch (_) {
+        // Ignora caso a tabela ainda não tenha sido migrada
+      }
+    })();
   }
 
   return updated;
