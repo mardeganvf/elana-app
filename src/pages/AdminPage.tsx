@@ -286,8 +286,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const loadModeration = async () => {
     setIsLoadingModeration(true);
     try {
-      const approvedIds = getApprovedPostIds();
-
       // 1. Carregar posts que possuem autor vinculado
       const { data, error } = await supabase
         .from('community_posts')
@@ -335,7 +333,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       );
 
       const postItems: ModerationItem[] = validPosts.map(p => {
-        const isPersistedApproved = p.category === 'aprovado' || approvedIds.has(p.id);
+        const isPersistedApproved = p.category === 'aprovado' || p.status === 'aprovado';
         const sensitivityCheck = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
         const isExplicitlyFlagged = p.status === 'sob_moderacao' || p.category === 'sob_moderacao';
         const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
@@ -381,7 +379,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       );
 
       const commentItems: ModerationItem[] = validComments.map(c => {
-        const isPersistedApproved = c.status === 'aprovado' || approvedIds.has(c.id);
+        const isPersistedApproved = c.status === 'aprovado';
         const sensitivityCheck = checkContentSensitivity(c.content || '');
         const isExplicitlyFlagged = c.status === 'sob_moderacao';
         const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
@@ -959,7 +957,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     const targetItem = modItems.find(item => item.id === id);
     if (newStatus === 'aprovado') {
       setModItems(prev => prev.map(item => item.id === id ? { ...item, status: 'aprovado' } : item));
-      saveApprovedPostId(id);
       try {
         if (targetItem?.type === 'comment') {
           await supabase
@@ -1007,8 +1004,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           }
         });
       }
-
-      removeApprovedPostId(item.id);
 
       if (item.type === 'comment') {
         if (item.postId) {

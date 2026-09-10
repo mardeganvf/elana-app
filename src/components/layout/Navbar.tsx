@@ -60,6 +60,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     refreshSosTicket,
     adminPendingCounts
   } = useAuth();
+  const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
   const isStaff = isAdmin || (user?.role || '').toLowerCase().includes('guia');
   const { fontSize, setFontSize } = useFontSize();
