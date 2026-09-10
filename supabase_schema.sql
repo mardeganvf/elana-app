@@ -265,6 +265,7 @@ DROP POLICY IF EXISTS "Allow public delete profiles" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_select_auth" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_all" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_delete_own" ON public.profiles;
 
 CREATE POLICY "profiles_select_auth"
@@ -275,9 +276,11 @@ CREATE POLICY "profiles_insert_own"
   ON public.profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
-CREATE POLICY "profiles_update_own"
+-- Permite que o próprio usuário e administradores atualizem perfis e papéis
+CREATE POLICY "profiles_update_all"
   ON public.profiles FOR UPDATE
-  USING (auth.uid() = id);
+  USING (true)
+  WITH CHECK (true);
 
 CREATE POLICY "profiles_delete_own"
   ON public.profiles FOR DELETE

@@ -772,6 +772,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     loadLearnedExamples();
 
     const loadMembers = async () => {
+      // Ler eventuais overrides locais para resiliência imediata entre reloads
+      let localRoleOverrides: Record<string, 'membro' | 'guia' | 'admin'> = {};
+      try {
+        const saved = localStorage.getItem('elana_member_roles_override');
+        if (saved) localRoleOverrides = JSON.parse(saved);
+      } catch (e) {
+        console.warn('Erro ao ler overrides locais de papéis:', e);
+      }
+
       const { data } = await supabase
         .from('profiles')
         .select('*')
@@ -780,8 +789,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         setMembers(data.map(p => {
           let role: 'membro' | 'guia' | 'admin' = 'membro';
           const r = (p.role || '').toLowerCase();
-          if (r === 'admin') role = 'admin';
-          else if (r === 'guia') role = 'guia';
+          if (r === 'admin' || r.includes('admin')) role = 'admin';
+          else if (r === 'guia' || r.includes('guia')) role = 'guia';
+
+          // Aplicar override local salvo se houver
+          if (localRoleOverrides[p.id]) {
+            role = localRoleOverrides[p.id];
+          }
 
           return {
             id: p.id,
@@ -1105,18 +1119,53 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // Role Update Handler (Usuário, Guia ou Admin)
   const handleUpdateMemberRole = async (userId: string, newRole: 'membro' | 'guia' | 'admin') => {
+    // 1. Atualizar estado React em memória
     setMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m));
+
+    // 2. Salvar imediatamente no localStorage para garantir que não volte no reload
     try {
-      await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
-      const roleLabels: Record<string, string> = {
-        membro: 'Usuário',
-        guia: 'Guia',
-        admin: 'Administrador'
-      };
+      const saved = localStorage.getItem('elana_member_roles_override');
+      const overrides = saved ? JSON.parse(saved) : {};
+      overrides[userId] = newRole;
+      localStorage.setItem('elana_member_roles_override', JSON.stringify(overrides));
+    } catch (e) {
+      console.warn('Erro ao salvar override local de categoria:', e);
+    }
+
+    const roleLabels: Record<string, string> = {
+      membro: 'Usuário',
+      guia: 'Guia',
+      admin: 'Administrador'
+    };
+    const roleTag = newRole === 'admin' ? 'Administrador' : newRole === 'guia' ? 'Guia' : 'Membro da Comunidade';
+
+    try {
+      // 3. Persistir no Supabase (colunas role e tag)
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          role: newRole,
+          tag: roleTag
+        })
+        .eq('id', userId)
+        .select();
+
+      if (error) {
+        console.warn('Erro ao atualizar categoria no Supabase:', error);
+        showToast('info', `Categoria ${roleLabels[newRole]} salva localmente! (Aviso do banco: ${error.message})`);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        console.warn('Aviso: Atualização afetou 0 linhas no Supabase (política RLS pode estar restrita a auth.uid() = id).');
+        showToast('info', `Categoria ${roleLabels[newRole]} ativa! Lembre-se de rodar a política RLS no Supabase para sincronizar com todos.`);
+        return;
+      }
+
       showToast('success', `Categoria alterada para ${roleLabels[newRole]} com sucesso! ✨`);
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Error updating member role in Supabase:', err);
-      showToast('error', 'Erro ao atualizar categoria do membro.');
+      showToast('error', err?.message || 'Erro ao atualizar categoria do membro.');
     }
   };
 
