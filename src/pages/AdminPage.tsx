@@ -607,6 +607,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         postsWithoutRepliesCount,
         supportHealthStatus,
         supportHealthLabel,
+        supportHealthMessage,
         breakdown
       });
     } catch (err) {
