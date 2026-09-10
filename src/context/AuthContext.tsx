@@ -54,12 +54,19 @@ export interface AdminPendingCounts {
   total: number;
 }
 
+export const SUPERADMIN_EMAILS = [
+  'vitor.mardegan@redetv.com.br',
+  'mardeganvf@gmail.com'
+];
+
 /**
- * Verificação de Administrador 100% segura e baseada no Banco de Dados (Supabase).
- * Nenhum e-mail de administrador fica fixo ou exposto no código-fonte compilado.
+ * Verificação rigorosa de Administrador:
+ * Apenas os e-mails oficiais de superadmin podem ter acesso irrestrito de administrador.
  */
 export const isAdminUser = (user: UserProfile | null): boolean => {
-  if (!user) return false;
+  if (!user || !user.email) return false;
+  const emailClean = user.email.toLowerCase().trim();
+  if (!SUPERADMIN_EMAILS.includes(emailClean)) return false;
   const roleLower = (user.role || '').toLowerCase().trim();
   return roleLower === 'admin' || roleLower === 'administrador';
 };
@@ -149,6 +156,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        if (parsed && parsed.email) {
+          const emailClean = parsed.email.toLowerCase().trim();
+          if (!SUPERADMIN_EMAILS.includes(emailClean)) {
+            const roleLower = (parsed.role || '').toLowerCase().trim();
+            if (roleLower === 'admin' || roleLower === 'administrador' || roleLower.includes('admin')) {
+              parsed.role = 'guia';
+            }
+          }
+        }
         if (parsed && Array.isArray(parsed.badges)) {
           const badgeXpSum = parsed.badges.reduce((acc: number, b: any) => acc + (b.rewardXp || 0), 0);
           parsed.xp = badgeXpSum;
@@ -937,13 +953,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .then();
       }
 
+      let effectiveRole = profile.role || (isUserAdmin ? 'Administrador' : 'Membro da Comunidade');
+      if (!SUPERADMIN_EMAILS.includes(emailClean)) {
+        const roleLower = (effectiveRole || '').toLowerCase().trim();
+        if (roleLower === 'admin' || roleLower === 'administrador' || roleLower.includes('admin')) {
+          effectiveRole = 'guia';
+        }
+      }
+
       const hydratedUser: UserProfile = {
         id: profileId,
         email: profile.email || emailClean,
         name: profile.name || fallbackName || emailClean.split('@')[0],
         phone: finalPhone,
         avatar: profile.avatar || GENERIC_DEFAULT_AVATAR,
-        role: profile.role || (isUserAdmin ? 'Administrador' : 'Membro da Comunidade'),
+        role: effectiveRole,
         familyTag: profile.family_tag || profile.tag || 'Mãe / Pai de 1ª viagem',
         bio: finalBio,
         notificationsEnabled: !!profile.notifications_enabled,

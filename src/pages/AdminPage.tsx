@@ -171,7 +171,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const currentUserRole = (() => {
     if (isAdmin) return 'admin';
     const r = (user?.role || '').toLowerCase();
-    if (r.includes('admin')) return 'admin';
     if (r.includes('guia')) return 'guia';
     return 'membro';
   })();
@@ -1428,10 +1427,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   return (
     <div className="space-y-8 pb-20 animate-fade-in max-w-6xl mx-auto text-white -mt-4">
 
-      {/* Admin Header */}
+      {/* Admin / Guia Header */}
       <section className="bg-[#101B1E] px-6 py-5 sm:px-8 sm:py-6 rounded-3xl border border-white/10 shadow-xl">
         <h1 className="text-2xl sm:text-3xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-          Painel Administrativo
+          {currentUserRole === 'guia' ? 'Espaço do Guia & Mentoria' : 'Painel Administrativo'}
         </h1>
       </section>
 
@@ -1884,15 +1883,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           {/* ESTADO INICIAL: NENHUM ITEM SELECIONADO NO MENU LATERAL */}
           {!activeAdminTab && (
             <section className="bg-[#101B1E] p-8 sm:p-12 rounded-3xl border border-white/10 shadow-xl text-center space-y-4 max-w-xl mx-auto my-8 animate-fade-in">
-              <div className="w-16 h-16 rounded-2xl bg-[#FF7F5B]/15 border border-[#FF7F5B]/30 text-[#FF7F5B] flex items-center justify-center mx-auto text-2xl shadow-lg">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-lg border ${
+                currentUserRole === 'guia' 
+                  ? 'bg-[#8A9A5B]/20 border-[#8A9A5B]/40 text-[#8A9A5B]' 
+                  : 'bg-[#FF7F5B]/15 border-[#FF7F5B]/30 text-[#FF7F5B]'
+              }`}>
                 <ShieldCheck className="w-8 h-8" />
               </div>
               <div className="space-y-2">
                 <h2 className="text-xl sm:text-2xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Painel Administrativo
+                  {currentUserRole === 'guia' ? 'Espaço do Guia & Mentoria' : 'Painel Administrativo'}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                  Selecione uma categoria no menu lateral para gerenciar as Jornadas de Conhecimento, Moderação de Posts, Atendimento SOS, Membros ou Enquetes.
+                  {currentUserRole === 'guia'
+                    ? 'Bem-vindo(a) ao seu painel de mentoria e apoio comunitário! Utilize o menu lateral para acessar o Atendimento SOS e a Moderação de Publicações.'
+                    : 'Selecione uma categoria no menu lateral para gerenciar as Jornadas de Conhecimento, Moderação de Posts, Atendimento SOS, Membros ou Enquetes.'}
                 </p>
               </div>
             </section>
@@ -2597,7 +2602,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       })()}
 
       {/* TAB 3: 📊 TERMÔMETRO EMOCIONAL DA COMUNIDADE (DIVIDIDO EM DOIS CONTÊINERES) */}
-      {activeAdminTab === 'analytics' && (
+      {activeAdminTab === 'analytics' && canAccess('admin_analytics') && (
         <div className="space-y-6 w-full">
           {/* CONTÊINER 1: TERMÔMETRO EMOCIONAL DA COMUNIDADE */}
           <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
@@ -2762,7 +2767,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       )}
 
       {/* TAB 4: 🎬 GESTÃO DE CONTEÚDOS & JORNADAS */}
-      {activeAdminTab === 'content' && (
+      {activeAdminTab === 'content' && canAccess('admin_content_mgmt') && (
         <AdminContentManager
           showToast={showToast}
           selectedJourneyId={selectedJourneyId || undefined}
@@ -2775,12 +2780,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       )}
 
       {/* TAB: 🌟 GESTÃO DE DESTAQUES */}
-      {activeAdminTab === 'destaques' && (
+      {activeAdminTab === 'destaques' && canAccess('admin_destaques_mgmt') && (
         <AdminDestaquesManager />
       )}
 
       {/* TAB 5: 👥 GESTÃO DE MEMBROS */}
-      {activeAdminTab === 'users' && (() => {
+      {activeAdminTab === 'users' && canAccess('admin_members_mgmt') && (() => {
         const totalUsersCount = members.filter(m => m.role === 'membro').length;
         const totalGuiasCount = members.filter(m => m.role === 'guia').length;
         const totalAdminsCount = members.filter(m => m.role === 'admin').length;
@@ -2927,7 +2932,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       })()}
 
       {/* TAB 5.1: 🛡️ AUTORIZAÇÕES E ACESSOS POR CATEGORIA */}
-      {activeAdminTab === 'permissions' && (() => {
+      {activeAdminTab === 'permissions' && canAccess('admin_permissions_mgmt') && (() => {
         const totalUsersCount = members.filter(m => m.role === 'membro').length;
         const totalGuiasCount = members.filter(m => m.role === 'guia').length;
         const totalAdminsCount = members.filter(m => m.role === 'admin').length;
@@ -3207,7 +3212,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       })()}
 
       {/* TAB 6: 🗳️ GESTÃO DE ENQUETES (SUA VOZ IMPORTA) */}
-      {activeAdminTab === 'polls' && (() => {
+      {activeAdminTab === 'polls' && canAccess('admin_polls_mgmt') && (() => {
         const activePolls = polls.filter(p => p.status === 'open');
         const finishedPolls = polls.filter(p => p.status !== 'open');
 
