@@ -34,7 +34,7 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
       ]
     },
     {
-      targetSelector: '[data-tour="profile-avatar"], [data-tour="profile-nav"]',
+      targetSelector: '[data-tour="profile-avatar"]',
       badge: 'Seu Perfil',
       titleLines: ['Um cantinho todinho sobre você!'],
       messageLines: [
@@ -64,7 +64,7 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
       tipCenter: true
     },
     {
-      targetSelector: '[data-tour="profile-nav"]',
+      targetSelector: '[data-tour="gamification-stats"], [data-tour="profile-avatar"]',
       badge: 'Suas Conquistas',
       titleLines: ['Cada gesto de cuidado faz sua árvore crescer.'],
       messageLines: [

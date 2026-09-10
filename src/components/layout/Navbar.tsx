@@ -333,7 +333,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             <>
               {/* Gamification Stats Pill */}
               <div 
-                data-tour="profile-nav"
+                data-tour="gamification-stats"
                 className="hidden sm:flex items-center gap-3 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/15 text-xs font-bold whitespace-nowrap shrink-0"
               >
                 <div className="flex items-center gap-1.5 text-[#FF7F5B]" title="Dias de caminhada conosco">
@@ -630,7 +630,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               onOpenAuthModal();
             }
           }}
-          data-tour="profile-nav"
+          data-tour="profile-avatar"
           className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
         >
           <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
