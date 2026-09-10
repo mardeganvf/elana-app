@@ -837,6 +837,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
           <div className="bg-[#101B1E] rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-rose-500/30 relative flex flex-col m-auto max-h-[90vh]">
             
+            {/* Aviso Permanente de Emergência (CVV / SAMU) - Antes do Cabeçalho */}
+            <div className="bg-rose-950/40 border border-rose-500/30 rounded-2xl p-3 mb-3 text-xs text-rose-200/90 flex items-start gap-2.5 shrink-0">
+              <Phone className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <p className="text-[11px] leading-relaxed">
+                O SOS da Elana oferece acolhimento e suporte humano, mas não substitui atendimento médico especializado ou de urgência. Em caso de crises, ligue gratuitamente para o <strong className="text-white underline">CVV (188)</strong> ou para o <strong className="text-white underline">SAMU (192)</strong>.
+              </p>
+            </div>
+
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
               <div className="flex items-center gap-2.5">
@@ -857,12 +865,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                       <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                       Atendimento Concluído
                     </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-300">
-                      <Lock className="w-3 h-3" />
-                      100% Privado e Sigiloso
-                    </span>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
@@ -873,15 +876,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               >
                 <X className="w-4 h-4" />
               </button>
-            </div>
-
-            {/* Aviso Permanente de Emergência (CVV / SAMU) */}
-            <div className="bg-rose-950/40 border border-rose-500/30 rounded-2xl p-3 my-3 text-xs text-rose-200/90 flex items-start gap-2.5 shrink-0">
-              <Phone className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-              <div className="text-[11px] leading-relaxed">
-                <strong className="text-rose-300 font-bold block">Em caso de emergência ou crise aguda:</strong>
-                Ligue gratuitamente para o <strong className="text-white underline">CVV (188)</strong> — apoio emocional 24h, ou para o <strong className="text-white underline">SAMU (192)</strong>. O SOS da Elana oferece acolhimento e suporte humano, mas não substitui socorro médico de urgência.
-              </div>
             </div>
 
             {/* Conditional Views: Ongoing Chat / Archived / New Ticket Form */}
@@ -1030,11 +1024,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             ) : (
               /* --- STATE 3: NEW TICKET FORM --- */
               <div className="space-y-4 text-left">
-                <div className="space-y-1.5 text-center">
+                <div className="space-y-1.5 text-left">
                   <h4 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
                     Como podemos te acolher agora?
                   </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
+                  <p className="text-xs text-slate-300 leading-relaxed">
                     Sua mensagem <strong>não será visível na comunidade</strong>. Ela é enviada de forma 100% privada e confidencial para nossa equipe de acolhimento.
                   </p>
                 </div>
