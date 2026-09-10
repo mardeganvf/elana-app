@@ -14,9 +14,13 @@ import {
   Baby,
   Quote,
   Smile,
-  BookOpen
+  BookOpen,
+  ChevronDown,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useCommunity } from '../../context/CommunityContext';
+import { CommunityPost } from '../../types';
 import { BadgeGallery } from '../gamification/BadgeGallery';
 import { UserLevelsModal } from '../gamification/UserLevelsModal';
 import { JOURNEYS_DATA } from '../../data/journeysData';
@@ -186,10 +190,77 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
     setTimeout(() => setTestimonialSuccess(false), 3500);
   };
 
+  const { posts: allCommunityPosts, fetchUserPosts } = useCommunity();
+  const [userPosts, setUserPosts] = useState<CommunityPost[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [visiblePostsCount, setVisiblePostsCount] = useState(3);
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
+
+  // Carrega publicações públicas deste membro
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingPosts(true);
+
+    const loadPosts = async () => {
+      try {
+        let fetched: CommunityPost[] = [];
+
+        // 1. Se tiver ID cadastrado (UUID)
+        if (profile.id && profile.id.length > 20) {
+          fetched = await fetchUserPosts(profile.id);
+        }
+
+        // 2. Se for autor mock ou não retornou nenhum pelo ID, busca em allCommunityPosts por ID ou Nome
+        if (fetched.length === 0) {
+          const targetName = profile.name.trim().toLowerCase();
+          fetched = allCommunityPosts.filter(p => 
+            !p.isAnonymous && 
+            p.status !== 'removido_usuario' &&
+            (
+              (profile.id && p.authorId === profile.id) ||
+              (p.authorName && p.authorName.trim().toLowerCase() === targetName)
+            )
+          );
+        }
+
+        // Filtra para garantir que apenas posts públicos e ativos sejam exibidos
+        const publicPosts = fetched.filter(p => !p.isAnonymous && p.status !== 'removido_usuario');
+
+        if (isMounted) {
+          setUserPosts(publicPosts);
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar posts do perfil:', err);
+        if (isMounted) {
+          const targetName = profile.name.trim().toLowerCase();
+          const fallback = allCommunityPosts.filter(p =>
+            !p.isAnonymous &&
+            p.status !== 'removido_usuario' &&
+            (
+              (profile.id && p.authorId === profile.id) ||
+              (p.authorName && p.authorName.trim().toLowerCase() === targetName)
+            )
+          );
+          setUserPosts(fallback);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingPosts(false);
+        }
+      }
+    };
+
+    loadPosts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [profile.id, profile.name, allCommunityPosts, fetchUserPosts]);
+
   const xp = profile.xp || 650;
   const levelInfo = getLevelFromXP(xp);
   const streakDays = profile.streakDays || 5;
-  const postsCount = profile.postsCount ?? 12;
+  const postsCount = userPosts.length > 0 ? userPosts.length : (profile.postsCount ?? 0);
   const commentsCount = profile.commentsCount ?? 34;
   const reactionsReceived = profile.reactionsReceivedCount ?? 89;
 
@@ -441,6 +512,135 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* 💬 Publicações do Membro */}
+          <div className="space-y-3 pt-4 border-t border-white/10">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h4 className="text-xs font-extrabold text-[#8A9A5B] uppercase tracking-wider flex items-center gap-1.5">
+                <MessageSquare className="w-4 h-4 text-[#8A9A5B]" />
+                <span>Publicações de {isOwnProfile ? 'Minha Autoria' : profile.name.split(' ')[0]}</span>
+              </h4>
+              <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-white/10 text-slate-300 border border-white/10">
+                {userPosts.length} {userPosts.length === 1 ? 'publicação' : 'publicações'}
+              </span>
+            </div>
+
+            {isLoadingPosts ? (
+              <div className="py-6 text-center bg-[#070D0F] rounded-2xl border border-white/5 space-y-2">
+                <RefreshCw className="w-5 h-5 animate-spin text-[#8A9A5B] mx-auto" />
+                <p className="text-xs text-slate-400 font-medium">Carregando publicações...</p>
+              </div>
+            ) : userPosts.length === 0 ? (
+              <div className="text-center py-6 px-4 text-slate-400 text-xs bg-[#070D0F] rounded-2xl border border-white/5 space-y-1">
+                <MessageSquare className="w-6 h-6 text-slate-500 mx-auto mb-1" />
+                <p className="font-semibold text-slate-300">Nenhuma publicação aberta ainda.</p>
+                <p className="text-[11px] text-slate-500">
+                  {isOwnProfile 
+                    ? 'Você ainda não compartilhou publicações abertas na comunidade.'
+                    : `${profile.name} ainda não compartilhou publicações abertas na rede.`}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {userPosts.slice(0, visiblePostsCount).map(post => {
+                  const reactionsCount = Object.values(post.reactions || {}).reduce((a, b) => a + b, 0);
+                  const commentsCount = post.comments?.length || 0;
+                  const isExpanded = expandedPostId === post.id;
+
+                  return (
+                    <div 
+                      key={post.id}
+                      className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 hover:border-white/20 transition-all space-y-2.5 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-white/5 text-slate-300 border border-white/10 truncate max-w-[200px]">
+                          {post.moduleTopic || post.transversalRoomId || 'Comunidade'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 shrink-0">
+                          {post.createdAt}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <h5 className="text-xs sm:text-sm font-bold text-white leading-snug">
+                          {post.title}
+                        </h5>
+                        <p className={`text-xs text-slate-300 leading-relaxed whitespace-pre-line ${isExpanded ? '' : 'line-clamp-2'}`}>
+                          {post.content}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-white/5 text-xs text-slate-400">
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center gap-1 text-[11px] text-rose-400">
+                            <Heart className="w-3.5 h-3.5 fill-current" />
+                            <span>{reactionsCount}</span>
+                          </span>
+                          <span className="flex items-center gap-1 text-[11px] text-[#FF7F5B]">
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>{commentsCount} {commentsCount === 1 ? 'resposta' : 'respostas'}</span>
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setExpandedPostId(prev => prev === post.id ? null : post.id)}
+                          className="text-[11px] font-bold text-[#FF7F5B] hover:text-[#e06847] transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>{isExpanded ? 'Recolher' : 'Ler mais e respostas'}</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        </button>
+                      </div>
+
+                      {/* Respostas inline */}
+                      {isExpanded && (
+                        <div className="mt-3 pt-3 border-t border-white/10 space-y-2.5 animate-fade-in">
+                          <h6 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                            Respostas ({commentsCount})
+                          </h6>
+                          {(!post.comments || post.comments.length === 0) ? (
+                            <p className="text-[11px] text-slate-500 italic">Ainda não há respostas para esta publicação.</p>
+                          ) : (
+                            <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                              {post.comments.map(c => (
+                                <div key={c.id} className="bg-[#101B1E] p-2.5 rounded-xl border border-white/5 space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <img
+                                        src={c.authorAvatar}
+                                        alt={c.authorName}
+                                        className="w-5 h-5 rounded-full object-cover border border-white/10"
+                                      />
+                                      <span className="text-[11px] font-bold text-white">{c.authorName}</span>
+                                    </div>
+                                    <span className="text-[9px] text-slate-400">{c.createdAt}</span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-300 leading-relaxed pl-7">
+                                    {c.content}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {userPosts.length > visiblePostsCount && (
+                  <button
+                    type="button"
+                    onClick={() => setVisiblePostsCount(prev => prev + 3)}
+                    className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                  >
+                    <span>Ver mais publicações ({userPosts.length - visiblePostsCount} restantes)</span>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* 7. Meus Depoimentos */}
           <div className="space-y-4 pt-4 border-t border-white/10">
