@@ -55,23 +55,17 @@ export interface AdminPendingCounts {
 }
 
 export const ADMIN_EMAILS = [
-  'admin@elana.com.br',
-  'mariana@elana.com.br',
-  'vitor@elana.com.br',
-  'helena@elana.com.br',
-  'mardeganvf@gmail.com',
-  'vitormardegan@gmail.com',
   'vitor.mardegan@redetv.com.br',
-  'vitormardegan@redetv.com.br'
+  'mardeganvf@gmail.com'
 ];
 
 export const isAdminUser = (user: UserProfile | null): boolean => {
   if (!user) return false;
+  const emailClean = (user.email || '').trim().toLowerCase();
+  if (ADMIN_EMAILS.includes(emailClean)) return true;
   const roleLower = (user.role || '').toLowerCase();
-  if (roleLower.includes('admin') || roleLower.includes('guia')) return true;
-  if (!user.email) return false;
-  const emailLower = user.email.toLowerCase();
-  return ADMIN_EMAILS.includes(emailLower) || emailLower.includes('admin') || emailLower.includes('mardegan');
+  if (roleLower === 'admin' || roleLower === 'administrador') return true;
+  return false;
 };
 
 export const triggerSosPushNotification = (title: string, body: string) => {

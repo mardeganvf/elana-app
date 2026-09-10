@@ -60,8 +60,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     refreshSosTicket,
     adminPendingCounts
   } = useAuth();
-  const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
+  const isStaff = isAdmin || (user?.role || '').toLowerCase().includes('guia');
   const { fontSize, setFontSize } = useFontSize();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMamadaMode, setIsMamadaMode] = useState(false);
@@ -381,8 +381,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             )}
           </button>
 
-          {/* Painel do Administrador Shortcut */}
-          {isAdmin && (
+          {/* Painel do Administrador / Guia Shortcut */}
+          {isStaff && (
             <div className="inline-flex items-center">
               <button
                 onClick={() => {
@@ -394,10 +394,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                     ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] font-black'
                     : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/15'
                 }`}
-                title="Painel do Administrador & Guardião"
+                title={isAdmin ? "Painel do Administrador & Guardião" : "Painel do Guia"}
               >
                 <ShieldCheck className={`w-4 h-4 shrink-0 transition-colors ${activeTab === 'admin' ? 'text-slate-950' : 'text-[#FF7F5B]'}`} />
-                <span>Painel Admin</span>
+                <span>{isAdmin ? "Painel Admin" : "Painel Guia"}</span>
               </button>
 
               {adminPendingCounts && adminPendingCounts.total > 0 && (
@@ -570,7 +570,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                         <span>Rever Tutorial de Boas-Vindas</span>
                       </button>
 
-                      {isAdmin && (
+                      {isStaff && (
                         <button
                           onClick={() => {
                             setIsProfileDropdownOpen(false);
@@ -581,7 +581,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                         >
                           <div className="flex items-center gap-2">
                             <ShieldCheck className="w-4 h-4 text-[#FF7F5B]" />
-                            <span>Painel do Administrador</span>
+                            <span>{isAdmin ? "Painel do Administrador" : "Painel do Guia"}</span>
                           </div>
                           {adminPendingCounts && adminPendingCounts.total > 0 && (
                             <span
