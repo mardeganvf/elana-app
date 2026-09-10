@@ -847,42 +847,46 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
 
       {/* Feature 2 Modal: Canal SOS Privado & Acolhimento Humano */}
       {isEmergencyOpen && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in text-white">
-          <div className="bg-[#0D1518] rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-white/10 relative flex flex-col m-auto max-h-[92vh] overflow-y-auto">
-            
-            {/* Top Bar: Botão Fechar (X) Acima e à Direita */}
-            <div className="flex justify-end mb-2 shrink-0">
-              <button
-                onClick={() => setIsEmergencyOpen(false)}
-                aria-label="Fechar Atendimento SOS"
-                className="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 pt-14 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in text-white">
+          {/* Backdrop click to close */}
+          <div className="absolute inset-0" onClick={() => setIsEmergencyOpen(false)} />
 
-            {/* Caixa do CVV / SAMU: 100% da Largura do Contêiner com Texto Alinhado à Esquerda */}
-            <div className="w-full bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 text-left text-rose-200/90 text-xs leading-relaxed mb-6 sm:mb-7 shrink-0">
-              <span>
-                O SOS da Elana oferece acolhimento e suporte humano, mas não substitui atendimento médico especializado ou de urgência. Em caso de crises, ligue gratuitamente para o{' '}
-                <a href="tel:188" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">CVV (188)</a>
-                {' '}ou para o{' '}
-                <a href="tel:192" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">SAMU (192)</a>.
-              </span>
-            </div>
+          {/* Modal Container Wrapper com Botão Fechar Flutuando Fora do Box */}
+          <div className="relative w-full max-w-lg m-auto z-10">
+            {/* Botão Fechar (X) Flutuando Fora do Box no Canto Superior Direito */}
+            <button
+              onClick={() => setIsEmergencyOpen(false)}
+              aria-label="Fechar Atendimento SOS"
+              className="absolute -top-12 right-0 sm:-right-3 text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition-all cursor-pointer z-20 shadow-xl backdrop-blur-md border border-white/15 hover:scale-105 active:scale-95"
+              title="Fechar"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-            {/* Modal Header: "Como podemos te acolher agora?" com Fonte Maior em Destaque */}
-            <div className="pb-3 border-b border-white/10 shrink-0 mb-4 text-left">
-              <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                Como podemos te acolher agora?
-              </h3>
-              {sosResponse && sosResponse.status !== 'arquivado' && (
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 mt-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  {sosResponse.messages && sosResponse.messages.length > 1 ? 'Em diálogo com a equipe' : 'Chamado enviado — equipe a postos'}
+            {/* Modal Box */}
+            <div className="bg-[#0D1518] rounded-3xl w-full p-5 sm:p-6 shadow-2xl border border-white/10 flex flex-col max-h-[88vh] overflow-y-auto">
+              {/* Caixa do CVV / SAMU: 100% da Largura do Contêiner com Texto Alinhado à Esquerda */}
+              <div className="w-full bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 text-left text-rose-200/90 text-xs leading-relaxed mb-6 sm:mb-7 shrink-0">
+                <span>
+                  O SOS da Elana oferece acolhimento e suporte humano, mas não substitui atendimento médico especializado ou de urgência. Em caso de crises, ligue gratuitamente para o{' '}
+                  <a href="tel:188" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">CVV (188)</a>
+                  {' '}ou para o{' '}
+                  <a href="tel:192" className="font-bold text-white underline decoration-rose-400 hover:text-rose-200 transition-colors">SAMU (192)</a>.
                 </span>
-              )}
-            </div>
+              </div>
+
+              {/* Modal Header: "Como podemos te acolher agora?" com Fonte Maior em Destaque */}
+              <div className="pb-3 border-b border-white/10 shrink-0 mb-4 text-left">
+                <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Como podemos te acolher agora?
+                </h3>
+                {sosResponse && sosResponse.status !== 'arquivado' && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 mt-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    {sosResponse.messages && sosResponse.messages.length > 1 ? 'Em diálogo com a equipe' : 'Chamado enviado — equipe a postos'}
+                  </span>
+                )}
+              </div>
 
             {/* Conditional Views: Ongoing Chat / Archived / New Ticket Form */}
             {sosResponse && sosResponse.status !== 'arquivado' ? (
@@ -1102,6 +1106,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
               </div>
             )}
 
+            </div>
           </div>
         </div>,
         document.body
