@@ -408,7 +408,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
                   }}
                   className="h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#070D0F] flex items-center justify-center shadow-lg -ml-2 z-10 cursor-pointer active:scale-95 transition-all shrink-0"
-                  title="Novas mensagens e pendências no Painel Admin"
+                  title={isAdmin ? "Novas mensagens e pendências no Painel Admin" : "Novas mensagens e pendências no Painel Guia"}
                 >
                   <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
                 </button>
@@ -586,7 +586,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                           {adminPendingCounts && adminPendingCounts.total > 0 && (
                             <span
                               className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center shadow-md shrink-0 pointer-events-none"
-                              title="Novas mensagens e pendências no Painel Admin"
+                              title={isAdmin ? "Novas mensagens e pendências no Painel Admin" : "Novas mensagens e pendências no Painel Guia"}
                             >
                               <Bell className="w-2.5 h-2.5 text-white fill-white animate-bounce" />
                             </span>

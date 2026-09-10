@@ -1,12 +1,15 @@
 import React from 'react';
 import { Heart, ShieldCheck } from 'lucide-react';
 import logoElana from '../../assets/logo-elana.png';
+import { useAuth, isAdminUser } from '../../context/AuthContext';
 
 interface FooterProps {
   onNavigateToAdmin?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
+  const { user } = useAuth();
+  const isAdmin = isAdminUser(user);
   return (
     <footer className="bg-[#050A0C] text-white pt-16 pb-12 mt-20 relative overflow-hidden border-t border-white/10">
       {/* Top Gradient Accent Line */}
@@ -50,7 +53,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
                     className="text-slate-400 hover:text-[#FF7F5B] transition-colors flex items-center gap-1.5 pt-1 font-bold"
                   >
                     <ShieldCheck className="w-3.5 h-3.5 text-[#FF7F5B]" />
-                    <span>Painel do Administrador</span>
+                    <span>{isAdmin ? "Painel do Administrador" : "Painel do Guia"}</span>
                   </button>
                 </li>
               )}
