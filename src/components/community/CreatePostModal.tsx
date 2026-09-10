@@ -5,7 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import { JOURNEYS_DATA } from '../../data/journeysData';
 import { TRANSVERSAL_ROOMS, AGE_BRACKET_ROOMS } from '../../data/communityData';
 import { EmotionalIntention } from '../../types';
-import { X, Send, Lock, EyeOff } from 'lucide-react';
+import { X, Send, Lock, EyeOff, MessageSquarePlus } from 'lucide-react';
 
 export type ActiveSelection = 
   | { type: 'jornada'; journeyId: string; subOption: EmotionalIntention }
@@ -71,7 +71,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     }
     if (postType === 'transversal') {
       const r = TRANSVERSAL_ROOMS.find(item => item.id === selectedTransversalId);
-      return r ? `${r.emoji} ${r.name}` : 'Sala Geral';
+      return r ? r.name : 'Sala Geral';
     }
     if (postType === 'idade') {
       const a = AGE_BRACKET_ROOMS.find(item => item.id === selectedAgeId);
@@ -134,8 +134,8 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
         {/* Clean Header with Subtitle Text Below Title */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] text-white flex items-center justify-center text-xl shadow-md shrink-0">
-              💬
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] text-white flex items-center justify-center shadow-md shrink-0">
+              <MessageSquarePlus className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="font-extrabold text-xl text-white" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -184,7 +184,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   postType === 'jornada' ? 'bg-[#FF7F5B] text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                🌿 Jornadas
+                Jornadas
               </button>
               <button
                 type="button"
@@ -193,7 +193,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   postType === 'transversal' ? 'bg-[#8A9A5B] text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                💬 Geral
+                Geral
               </button>
               <button
                 type="button"
@@ -202,7 +202,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   postType === 'idade' ? 'bg-[#E66795] text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                👶 Idades
+                Idades
               </button>
             </div>
 
@@ -232,21 +232,20 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   </label>
                   <div className="grid grid-cols-3 gap-1.5">
                     {[
-                      { id: 'ajuda' as const, label: 'Ajuda', emoji: '🆘' },
-                      { id: 'celebrar' as const, label: 'Celebrar', emoji: '🎉' },
-                      { id: 'desabafar' as const, label: 'Desabafar', emoji: '💧' }
+                      { id: 'ajuda' as const, label: 'Ajuda' },
+                      { id: 'celebrar' as const, label: 'Celebrar' },
+                      { id: 'desabafar' as const, label: 'Desabafar' }
                     ].map(opt => (
                       <button
                         key={opt.id}
                         type="button"
                         onClick={() => setSelectedIntention(opt.id)}
-                        className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
+                        className={`flex items-center justify-center py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
                           selectedIntention === opt.id
                             ? 'bg-[#FF7F5B]/20 text-[#FF7F5B] border-[#FF7F5B]/50 shadow-sm'
                             : 'bg-[#101B1E] text-slate-400 border-white/10 hover:text-white'
                         }`}
                       >
-                        <span>{opt.emoji}</span>
                         <span className="truncate">{opt.label}</span>
                       </button>
                     ))}
@@ -267,13 +266,12 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                       key={r.id}
                       type="button"
                       onClick={() => setSelectedTransversalId(r.id)}
-                      className={`flex items-center gap-2 p-2 rounded-xl text-xs font-bold border transition-all text-left ${
+                      className={`flex items-center p-2.5 rounded-xl text-xs font-bold border transition-all text-left ${
                         selectedTransversalId === r.id
                           ? 'bg-[#8A9A5B]/20 text-white border-[#8A9A5B]/60 shadow-sm'
                           : 'bg-[#101B1E] text-slate-300 border-white/10 hover:text-white'
                       }`}
                     >
-                      <span>{r.emoji}</span>
                       <span className="truncate">{r.name}</span>
                     </button>
                   ))}
