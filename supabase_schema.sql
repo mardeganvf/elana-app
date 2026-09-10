@@ -1161,4 +1161,31 @@ CREATE POLICY "role_permissions_delete_all"
   ON public.role_permissions FOR DELETE
   USING (true);
 
+-- ========================================================
+-- 20. TABELA DE HISTÓRICO DE PRESENÇA / DIAS ÚNICOS DE ACESSO (PUBLIC.USER_DAILY_VISITS)
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.user_daily_visits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  visit_date DATE NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(profile_id, visit_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_daily_visits_profile ON public.user_daily_visits(profile_id);
+CREATE INDEX IF NOT EXISTS idx_user_daily_visits_date ON public.user_daily_visits(visit_date DESC);
+
+ALTER TABLE public.user_daily_visits ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "visits_select_all" ON public.user_daily_visits;
+DROP POLICY IF EXISTS "visits_insert_all" ON public.user_daily_visits;
+DROP POLICY IF EXISTS "visits_update_all" ON public.user_daily_visits;
+DROP POLICY IF EXISTS "visits_delete_all" ON public.user_daily_visits;
+
+CREATE POLICY "visits_select_all" ON public.user_daily_visits FOR SELECT USING (true);
+CREATE POLICY "visits_insert_all" ON public.user_daily_visits FOR INSERT WITH CHECK (true);
+CREATE POLICY "visits_update_all" ON public.user_daily_visits FOR UPDATE USING (true);
+CREATE POLICY "visits_delete_all" ON public.user_daily_visits FOR DELETE USING (true);
+
+
 

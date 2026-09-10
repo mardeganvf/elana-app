@@ -783,30 +783,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (noteCount >= 10) checkAndAddBadge('b60'); // Páginas de Sabedoria (10)
       if (noteCount >= 15) checkAndAddBadge('b61'); // Livro da Minha Vida (15)
 
-      // 🌿 Cálculo Preciso de Dias de Caminhada Conosco (Streak / Dias Conosco)
-      let earliestActivityTimestamp = profile.created_at ? new Date(profile.created_at).getTime() : Date.now();
+      // 🌿 Registro de Presença e Dias de Caminhada Conosco (Dias Únicos de Acesso Ativo)
+      const now = new Date();
+      const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       
-      if (userBadgesData && userBadgesData.length > 0) {
-        userBadgesData.forEach((b: any) => {
-          if (b.unlocked_at) {
-            const t = new Date(b.unlocked_at).getTime();
-            if (t > 0 && t < earliestActivityTimestamp) earliestActivityTimestamp = t;
-          }
-        });
+      let visitDaysCount = 1;
+      try {
+        // Grava a presença do dia de hoje (UNIQUE garante no máximo 1 registro por dia civil)
+        await supabase.from('user_daily_visits').upsert({
+          profile_id: profileId,
+          visit_date: todayDateStr
+        }, { onConflict: 'profile_id, visit_date' });
+
+        // Consulta a contagem total de dias distintos de acesso registrados
+        const { count: visitsCount } = await supabase
+          .from('user_daily_visits')
+          .select('id', { count: 'exact', head: true })
+          .eq('profile_id', profileId);
+
+        if (visitsCount && visitsCount > 0) {
+          visitDaysCount = visitsCount;
+        }
+      } catch (err) {
+        console.warn('Notice recording daily visit in Supabase:', err);
       }
 
-      if (rawCheckinsData && rawCheckinsData.length > 0) {
-        rawCheckinsData.forEach((c: any) => {
-          const dateVal = c.created_at || c.checkin_date;
-          if (dateVal) {
-            const t = new Date(dateVal).getTime();
-            if (t > 0 && t < earliestActivityTimestamp) earliestActivityTimestamp = t;
-          }
-        });
-      }
-
-      const diffCalendarDays = Math.max(1, Math.floor((Date.now() - earliestActivityTimestamp) / (1000 * 60 * 60 * 24)) + 1);
-      const calculatedStreak = Math.max(profile.streak_days || 1, diffCalendarDays);
+      // Transição suave: preserva o maior valor entre o histórico acumulado (profile.streak_days) e a contagem real de visitas
+      const calculatedStreak = Math.max(profile.streak_days || 1, visitDaysCount);
 
       // ⚡ 4. Evolução Constante (b24, b25, b26, b27, b28)
       if (calculatedStreak >= 10) checkAndAddBadge('b24');
@@ -936,7 +939,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const finalChildren = children.length > 0 ? children : adminRecoveredChildren;
 
       // Auto-heal Supabase se profiles.xp estiver desalinhado da soma das badges, ou level/bio/streak desatualizados
-      if ((xp !== (profile.xp || 0) || levelInfo.level !== (profile.level_number || 1) || calculatedStreak > (profile.streak_days || 1) || (isUserAdmin && adminRecoveredBio && !profile.bio)) && profileId) {
+      if ((xp !== (profile.xp || 0) || levelInfo.level !== (profile.level_number || 1) || calculatedStreak !== (profile.streak_days || 1) || (isUserAdmin && adminRecoveredBio && !profile.bio)) && profileId) {
         supabase
           .from('profiles')
           .update({
@@ -945,6 +948,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             level_name: levelInfo.title,
             level_icon: levelInfo.icon,
             streak_days: calculatedStreak,
+            last_active_date: new Date().toISOString(),
             bio: profile.bio || adminRecoveredBio || null,
             phone: profile.phone || adminRecoveredPhone || null,
             updated_at: new Date().toISOString()
