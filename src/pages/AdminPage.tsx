@@ -225,6 +225,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // 🛡️ Moderation Items State
   const [modItems, setModItems] = useState<ModerationItem[]>([]);
+  const [isLoadingModeration, setIsLoadingModeration] = useState(false);
   const [moderationFilter, setModerationFilter] = useState<'pendentes' | 'aprovados' | 'todos' | 'aprendizado'>('pendentes');
 
   // 🧠 Base de Auto-Aprendizado da IA (Human-in-the-Loop)
@@ -274,6 +275,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // 🛡️ Moderation Loader - estritamente posts de usuários reais registrados
   const loadModeration = async () => {
+    setIsLoadingModeration(true);
     try {
       const approvedIds = getApprovedPostIds();
 
@@ -418,6 +420,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       setModItems(allItems);
     } catch (err) {
       console.warn('Falha ao processar fila de moderação:', err);
+    } finally {
+      setIsLoadingModeration(false);
     }
   };
 
@@ -2008,83 +2012,53 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
         return (
           <section className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-              <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
-                  <ShieldCheck className="w-5 h-5 text-[#8A9A5B]" />
-                  Fila de Moderação Antijulgamento
+            <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Moderação da Comunidade
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Avalie os alertas da IA Antijulgamento para manter a comunidade livre de julgamentos e cobranças.
-                </p>
+
+                {/* Filtro como Caixa de Seleção ao lado do título */}
+                <div className="relative inline-flex items-center">
+                  <select
+                    value={moderationFilter}
+                    onChange={(e) => {
+                      const val = e.target.value as 'pendentes' | 'aprovados' | 'todos' | 'aprendizado';
+                      setModerationFilter(val);
+                      if (val === 'aprendizado') {
+                        loadLearnedExamples();
+                      }
+                    }}
+                    className="appearance-none bg-[#070D0F] text-xs font-bold text-slate-200 hover:text-white pl-3.5 pr-8 py-2 rounded-2xl border border-white/10 hover:border-white/20 focus:outline-none focus:border-[#FF7F5B] cursor-pointer transition-all shadow-sm"
+                    title="Filtrar publicações da moderação"
+                  >
+                    <option value="pendentes" className="bg-[#101B1E] text-white">
+                      Pendentes ({pendingCount})
+                    </option>
+                    <option value="aprovados" className="bg-[#101B1E] text-white">
+                      Aprovados ({approvedCount})
+                    </option>
+                    <option value="todos" className="bg-[#101B1E] text-white">
+                      Todos ({modItems.length})
+                    </option>
+                    <option value="aprendizado" className="bg-[#101B1E] text-white">
+                      Base IA ({learnedExamples.length})
+                    </option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                </div>
               </div>
 
-              {/* Filtros da Moderação */}
-              <div className="flex items-center gap-1.5 bg-[#070D0F] p-1 rounded-xl border border-white/10 shrink-0 self-start sm:self-auto">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setModerationFilter('pendentes')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                    moderationFilter === 'pendentes'
-                      ? 'bg-[#FF7F5B] text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
+                  onClick={loadModeration}
+                  disabled={isLoadingModeration}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-50 shadow-sm shrink-0"
+                  title="Atualizar lista de moderação"
                 >
-                  <span>Pendentes</span>
-                  {pendingCount > 0 && (
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
-                      moderationFilter === 'pendentes' ? 'bg-black/20 text-white' : 'bg-white/10 text-slate-300'
-                    }`}>
-                      {pendingCount}
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setModerationFilter('aprovados')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                    moderationFilter === 'aprovados'
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <span>Aprovados</span>
-                  {approvedCount > 0 && (
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
-                      moderationFilter === 'aprovados' ? 'bg-black/20 text-white' : 'bg-white/10 text-slate-300'
-                    }`}>
-                      {approvedCount}
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setModerationFilter('todos')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    moderationFilter === 'todos'
-                      ? 'bg-white/20 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <span>Todos ({modItems.length})</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModerationFilter('aprendizado');
-                    loadLearnedExamples();
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                    moderationFilter === 'aprendizado'
-                      ? 'bg-purple-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Brain className="w-3.5 h-3.5 text-purple-300" />
-                  <span>Base IA ({learnedExamples.length})</span>
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#FF7F5B] ${isLoadingModeration ? 'animate-spin' : ''}`} />
+                  <span>Atualizar</span>
                 </button>
               </div>
             </div>
