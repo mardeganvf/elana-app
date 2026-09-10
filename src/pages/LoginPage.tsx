@@ -11,6 +11,10 @@ interface LoginPageProps {
   onBackToHome?: () => void;
 }
 
+// 📱 Flag para controle de login via Celular (SMS)
+// Definido como false para ocultar a opção até que a validação de número de celular esteja configurada
+export const ENABLE_PHONE_LOGIN = false;
+
 export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
   const { login } = useAuth();
   const [mode, setMode] = useState<'login' | 'register' | 'verify_email' | 'recovery'>('login');
@@ -65,7 +69,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
 
   const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawVal = e.target.value;
-    if (loginMethod === 'phone') {
+    if (ENABLE_PHONE_LOGIN && loginMethod === 'phone') {
       setIdentifier(formatPhoneMask(rawVal));
     } else {
       setIdentifier(rawVal);
@@ -372,8 +376,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           </div>
         )}
 
-        {/* TOGGLE AUTH METHOD: EMAIL VS PHONE */}
-        {mode !== 'recovery' && mode !== 'verify_email' && (
+        {/* TOGGLE AUTH METHOD: EMAIL VS PHONE (Oculto temporariamente até validar celular via SMS) */}
+        {ENABLE_PHONE_LOGIN && mode !== 'recovery' && mode !== 'verify_email' && (
           <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
             <button
               type="button"
@@ -461,16 +465,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             {/* IDENTIFIER FIELD */}
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                {loginMethod === 'email' ? 'E-mail' : 'Celular (com DDD)'}
+                {ENABLE_PHONE_LOGIN && loginMethod === 'phone' ? 'Celular (com DDD)' : 'E-mail'}
               </label>
               <input
-                type={loginMethod === 'email' ? 'email' : 'tel'}
+                type={ENABLE_PHONE_LOGIN && loginMethod === 'phone' ? 'tel' : 'email'}
                 required
                 autoComplete="off"
                 value={identifier}
                 onChange={handleIdentifierChange}
-                placeholder={loginMethod === 'email' ? 'seu@email.com' : '(00) 00000-0000'}
-                maxLength={loginMethod === 'phone' ? 15 : 100}
+                placeholder={ENABLE_PHONE_LOGIN && loginMethod === 'phone' ? '(00) 00000-0000' : 'seu@email.com'}
+                maxLength={ENABLE_PHONE_LOGIN && loginMethod === 'phone' ? 15 : 100}
                 className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
               />
             </div>
