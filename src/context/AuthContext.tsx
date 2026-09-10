@@ -350,33 +350,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      // 1. Chamados SOS com mensagens pendentes ou em atendimento
+      // 1. Chamados SOS com mensagens pendentes ou aguardando réplica do admin
       const { data: sosData } = await supabase
         .from('sos_tickets')
-        .select('id, status')
+        .select('id, status, messages')
         .in('status', ['pendente', 'em_atendimento']);
 
-      const sosCount = sosData ? sosData.length : 0;
+      let sosCount = 0;
+      if (sosData) {
+        sosCount = sosData.filter(t => {
+          if (t.status === 'pendente') return true;
+          if (t.status === 'em_atendimento' && Array.isArray(t.messages) && t.messages.length > 0) {
+            const lastMsg = t.messages[t.messages.length - 1];
+            return lastMsg?.sender === 'user';
+          }
+          return false;
+        }).length;
+      }
 
-      // 2. Moderação de posts e comentários sob moderação ou denunciados
+      // 2. Moderação de posts e comentários sob moderação
       let modCount = 0;
 
       const { data: modPosts } = await supabase
         .from('community_posts')
-        .select('id, status, category')
-        .or('status.eq.sob_moderacao,category.eq.sob_moderacao');
+        .select('id')
+        .eq('status', 'sob_moderacao');
 
       if (modPosts) modCount += modPosts.length;
 
-      const { data: reports } = await supabase
-        .from('community_reports')
-        .select('id');
-
-      if (reports) modCount += reports.length;
-
       const { data: modComments } = await supabase
         .from('community_comments')
-        .select('id, status')
+        .select('id')
         .eq('status', 'sob_moderacao');
 
       if (modComments) modCount += modComments.length;

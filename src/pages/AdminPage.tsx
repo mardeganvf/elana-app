@@ -1068,7 +1068,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     return urgencyOrder[a.urgency] - urgencyOrder[b.urgency];
   });
 
-  const pendingCount = sosTickets.filter(t => t.status === 'pendente' || t.status === 'em_atendimento').length;
+  const pendingCount = sosTickets.filter(t => {
+    if (t.status === 'pendente') return true;
+    if (t.status === 'em_atendimento' && Array.isArray(t.messages) && t.messages.length > 0) {
+      const lastMsg = t.messages[t.messages.length - 1];
+      return lastMsg?.sender === 'user';
+    }
+    return false;
+  }).length;
   const pendingModCount = modItems.filter(m => m.status === 'pendente').length;
   const completedCount = sosTickets.filter(t => t.status === 'atendido' || t.status === 'arquivado').length;
   const trashCount = sosTickets.filter(t => t.status === 'deletado').length;
@@ -1183,10 +1190,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="absolute -right-2 top-0 h-11 w-11 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#070D0F] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+              className="absolute -right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#070D0F] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
               title="Novas mensagens e pendências no painel"
             >
-              <Bell className="w-4.5 h-4.5 text-white fill-white animate-bounce" />
+              <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
             </button>
           )}
         </div>
@@ -1369,10 +1376,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   <button
                     type="button"
                     onClick={() => toggleMenuGroup('community')}
-                    className="absolute -right-1 top-0 h-8 w-8 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+                    className="absolute -right-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
                     title="Publicações sob moderação"
                   >
-                    <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
+                    <Bell className="w-3 h-3 text-white fill-white animate-bounce" />
                   </button>
                 )}
               </div>
@@ -1402,10 +1409,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                           setActiveAdminTab('moderation');
                           setIsMobileMenuOpen(false);
                         }}
-                        className="absolute -right-2 top-0 h-9 w-9 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+                        className="absolute -right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
                         title="Publicações sob moderação"
                       >
-                        <Bell className="w-4 h-4 text-white fill-white animate-bounce" />
+                        <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
                       </button>
                     )}
                   </div>
@@ -1451,10 +1458,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   <button
                     type="button"
                     onClick={() => toggleMenuGroup('support')}
-                    className="absolute -right-1 top-0 h-8 w-8 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+                    className="absolute -right-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-md cursor-pointer active:scale-95 transition-all shrink-0 z-10"
                     title="Chamados SOS pendentes"
                   >
-                    <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
+                    <Bell className="w-3 h-3 text-white fill-white animate-bounce" />
                   </button>
                 )}
               </div>
@@ -1484,10 +1491,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                           setActiveAdminTab('sos');
                           setIsMobileMenuOpen(false);
                         }}
-                        className="absolute -right-2 top-0 h-9 w-9 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
+                        className="absolute -right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#101B1E] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition-all shrink-0 z-10"
                         title="Chamados SOS pendentes"
                       >
-                        <Bell className="w-4 h-4 text-white fill-white animate-bounce" />
+                        <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
                       </button>
                     )}
                   </div>

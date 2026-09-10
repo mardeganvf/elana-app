@@ -407,10 +407,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                     setActiveTab('admin');
                     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
                   }}
-                  className="h-9 w-9 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#070D0F] flex items-center justify-center shadow-lg -ml-2.5 z-10 cursor-pointer active:scale-95 transition-all shrink-0"
+                  className="h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 border-2 border-[#070D0F] flex items-center justify-center shadow-lg -ml-2 z-10 cursor-pointer active:scale-95 transition-all shrink-0"
                   title="Novas mensagens e pendências no Painel Admin"
                 >
-                  <Bell className="w-4 h-4 text-white fill-white animate-bounce" />
+                  <Bell className="w-3.5 h-3.5 text-white fill-white animate-bounce" />
                 </button>
               )}
             </div>
