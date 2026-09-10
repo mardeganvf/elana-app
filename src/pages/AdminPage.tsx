@@ -55,6 +55,8 @@ interface SOSTicket {
   subject: string;
   message: string;
   createdAt: string;
+  createdAtDate?: string;
+  createdAtTime?: string;
   status: 'pendente' | 'em_atendimento' | 'atendido' | 'arquivado' | 'deletado';
   adminReply?: string;
   repliedAt?: string;
@@ -219,8 +221,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   const [selectedSosTicket, setSelectedSosTicket] = useState<SOSTicket | null>(null);
   const [sosReplyText, setSosReplyText] = useState('');
-  const [isSosModalExpanded, setIsSosModalExpanded] = useState(false);
-  const [isSosModalMinimized, setIsSosModalMinimized] = useState(false);
 
   // 🛡️ Moderation Items State
   const [modItems, setModItems] = useState<ModerationItem[]>([]);
@@ -648,6 +648,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       }
     }
 
+    const createdDateObj = t.created_at ? new Date(t.created_at) : new Date();
+    const isValidDate = !isNaN(createdDateObj.getTime());
+    const createdAtDate = isValidDate ? createdDateObj.toLocaleDateString('pt-BR') : '';
+    const createdAtTime = isValidDate ? createdDateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+
     return {
       id: t.id,
       userName: t.user_name || 'Anônimo',
@@ -656,7 +661,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       urgency: t.urgency || 'media',
       subject: t.subject || ((t.user_message || t.message || '').slice(0, 40) || 'Pedido de Acolhimento SOS'),
       message: t.user_message || t.message || '',
-      createdAt: new Date(t.created_at).toLocaleString('pt-BR'),
+      createdAt: isValidDate ? createdDateObj.toLocaleString('pt-BR') : '',
+      createdAtDate,
+      createdAtTime,
       status: t.status || 'pendente',
       adminReply: t.admin_reply,
       repliedAt: t.replied_at ? new Date(t.replied_at).toLocaleString('pt-BR') : undefined,
@@ -687,7 +694,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   const handleSelectSosTicket = async (ticket: SOSTicket) => {
     setSelectedSosTicket(ticket);
-    setIsSosModalMinimized(false);
     try {
       const { data } = await supabase
         .from('sos_tickets')
@@ -1474,12 +1480,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             </section>
           )}
 
-          {/* TAB 1: 🛟 ATENDIMENTO SOS (CAIXA DE ENTRADA INTELIGENTE & MODAL EXPANSÍVEL/RETRÁTIL) */}
+          {/* TAB 1: 🛟 ATENDIMENTO SOS */}
           {activeAdminTab === 'sos' && (
             <section className="bg-[#101B1E] p-5 sm:p-7 rounded-3xl border border-white/10 shadow-xl space-y-6">
 
               {/* Header com Título e Botão de Atualizar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
                 <div>
                   <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
                     <LifeBuoy className="w-5 h-5 text-[#FF7F5B]" />
@@ -1500,25 +1506,28 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 </button>
               </div>
 
-              {/* Toolbar Integrada: Pastas (Caixa de Entrada, Finalizados, Lixeira) + Busca + Filtros de Urgência */}
-              <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-[#070D0F] p-2.5 rounded-2xl border border-white/10">
-                {/* Abas de Pastas */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+              {/* Estrutura Principal: Menu na Lateral Esquerda + Área ao Lado */}
+              <div className="flex flex-col md:flex-row gap-5 items-start">
+
+                {/* 1. Menu na Lateral Esquerda: Caixa de Entrada e Finalizados */}
+                <div className="w-full md:w-56 shrink-0 space-y-1.5 bg-[#070D0F] p-3 rounded-2xl border border-white/10">
                   <button
                     onClick={() => {
                       setSosFolder('inbox');
                       setSelectedSosTicket(null);
                     }}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                    className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs transition-all text-left cursor-pointer ${
                       sosFolder === 'inbox'
                         ? 'bg-[#FF7F5B] text-slate-950 shadow-md font-black'
                         : 'text-slate-300 hover:bg-white/5 hover:text-white'
                     }`}
                   >
-                    <Inbox className="w-3.5 h-3.5" />
-                    <span>Caixa de Entrada</span>
+                    <div className="flex items-center gap-2.5">
+                      <Inbox className="w-4 h-4" />
+                      <span>Caixa de Entrada</span>
+                    </div>
                     {pendingCount > 0 && (
-                      <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${
+                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
                         sosFolder === 'inbox' ? 'bg-slate-950 text-white' : 'bg-red-500/20 text-red-300 border border-red-500/30 animate-pulse'
                       }`}>
                         {pendingCount}
@@ -1531,15 +1540,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       setSosFolder('completed');
                       setSelectedSosTicket(null);
                     }}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                    className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs transition-all text-left cursor-pointer ${
                       sosFolder === 'completed'
                         ? 'bg-emerald-500 text-slate-950 shadow-md font-black'
                         : 'text-slate-300 hover:bg-white/5 hover:text-white'
                     }`}
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Finalizados</span>
-                    <span className="text-[10px] font-bold text-slate-400 bg-white/5 px-1.5 py-0.2 rounded-full">
+                    <div className="flex items-center gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span>Finalizados</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded-full">
                       {completedCount}
                     </span>
                   </button>
@@ -1549,442 +1560,330 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       setSosFolder('trash');
                       setSelectedSosTicket(null);
                     }}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                    className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs transition-all text-left cursor-pointer ${
                       sosFolder === 'trash'
                         ? 'bg-rose-500 text-white shadow-md font-black'
                         : 'text-slate-300 hover:bg-white/5 hover:text-white'
                     }`}
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Lixeira</span>
-                    <span className="text-[10px] font-bold text-slate-400 bg-white/5 px-1.5 py-0.2 rounded-full">
+                    <div className="flex items-center gap-2.5">
+                      <Trash2 className="w-4 h-4 text-slate-400" />
+                      <span>Lixeira</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded-full">
                       {trashCount}
                     </span>
                   </button>
                 </div>
 
-                {/* Direita: Campo de Busca e Filtro de Urgência */}
-                <div className="flex flex-col sm:flex-row items-center gap-2.5">
-                  {/* Busca */}
-                  <div className="relative w-full sm:w-60">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                    <input
-                      type="text"
-                      placeholder="Buscar mensagens..."
-                      value={sosSearchQuery}
-                      onChange={(e) => setSosSearchQuery(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#FF7F5B]"
-                    />
-                  </div>
+                {/* 2. Área ao Lado da Lateral Esquerda (Busca e Filtros no topo + Lista de Mensagens) */}
+                <div className="flex-1 min-w-0 w-full space-y-4">
 
-                  {/* Filtro de Urgência */}
-                  <div className="flex items-center gap-1 bg-[#101B1E] p-1 rounded-xl border border-white/10 shrink-0 self-start sm:self-auto">
-                    <button
-                      onClick={() => setSosUrgencyFilter('todos')}
-                      className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-all cursor-pointer ${
-                        sosUrgencyFilter === 'todos' ? 'bg-[#FF7F5B] text-slate-950 font-extrabold' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Todas
-                    </button>
-                    <button
-                      onClick={() => setSosUrgencyFilter('alta')}
-                      className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-all cursor-pointer ${
-                        sosUrgencyFilter === 'alta' ? 'bg-red-500 text-white' : 'text-red-400 hover:bg-red-500/10'
-                      }`}
-                      title="Filtrar Urgência Alta"
-                    >
-                      🔴 Alta
-                    </button>
-                    <button
-                      onClick={() => setSosUrgencyFilter('media')}
-                      className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-all cursor-pointer ${
-                        sosUrgencyFilter === 'media' ? 'bg-amber-500 text-slate-950' : 'text-amber-400 hover:bg-amber-500/10'
-                      }`}
-                      title="Filtrar Urgência Média"
-                    >
-                      🟡 Média
-                    </button>
-                    <button
-                      onClick={() => setSosUrgencyFilter('baixa')}
-                      className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-all cursor-pointer ${
-                        sosUrgencyFilter === 'baixa' ? 'bg-emerald-500 text-slate-950' : 'text-emerald-400 hover:bg-emerald-500/10'
-                      }`}
-                      title="Filtrar Urgência Baixa"
-                    >
-                      🟢 Baixa
-                    </button>
-                  </div>
-                </div>
-              </div>
+                  {/* Em Cima: Caixa de Busca e Filtros por Cor */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#070D0F] p-3 rounded-2xl border border-white/10">
+                    {/* Caixa de Busca */}
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                      <input
+                        type="text"
+                        placeholder="Buscar mensagens..."
+                        value={sosSearchQuery}
+                        onChange={(e) => setSosSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#FF7F5B] transition-all"
+                      />
+                    </div>
 
-              {/* Lista Principal de Chamados SOS (Largura Total - Sem 3 Colunas) */}
-              <div className="space-y-2">
-                {filteredSosTickets.length === 0 ? (
-                  <div className="bg-[#070D0F] p-12 rounded-3xl border border-white/5 text-center space-y-3 text-slate-400">
-                    <Inbox className="w-10 h-10 text-slate-600 mx-auto" />
-                    <p className="text-sm font-semibold text-slate-300">Nenhum chamado encontrado nesta pasta.</p>
-                    <p className="text-xs text-slate-500">Quando membros enviarem pedidos de acolhimento, eles aparecerão aqui em tempo real.</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-white/5 bg-[#070D0F] rounded-2xl border border-white/10 overflow-hidden shadow-inner">
-                    {filteredSosTickets.map(ticket => (
-                      <div
-                        key={ticket.id}
-                        onClick={() => handleSelectSosTicket(ticket)}
-                        className={`p-4 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left group hover:bg-[#122024] ${
-                          selectedSosTicket?.id === ticket.id ? 'bg-[#16252a] border-l-4 border-[#FF7F5B]' : ''
+                    {/* Filtros por Cor */}
+                    <div className="flex items-center gap-1.5 bg-[#101B1E] p-1.5 rounded-xl border border-white/10 shrink-0 self-start sm:self-auto">
+                      <button
+                        onClick={() => setSosUrgencyFilter('todos')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                          sosUrgencyFilter === 'todos' ? 'bg-[#FF7F5B] text-slate-950 font-extrabold shadow-sm' : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        {/* Esquerda: Indicador de Urgência + Foto + Nome + Email */}
-                        <div className="flex items-center gap-3.5 min-w-0 sm:w-64 shrink-0">
-                          <span
-                            className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                              ticket.urgency === 'alta'
-                                ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse'
-                                : ticket.urgency === 'media'
-                                ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]'
-                                : 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]'
-                            }`}
-                            title={ticket.urgency === 'alta' ? 'Urgência Alta' : ticket.urgency === 'media' ? 'Urgência Média' : 'Urgência Baixa'}
-                          />
-                          <img
-                            src={ticket.userAvatar}
-                            alt={ticket.userName}
-                            className="w-9 h-9 rounded-full object-cover shrink-0 border border-white/10 shadow-sm"
-                          />
-                          <div className="min-w-0">
-                            <h4 className="text-xs font-bold text-white truncate group-hover:text-[#FF7F5B] transition-colors">{ticket.userName}</h4>
-                            <span className="text-[11px] text-slate-400 truncate block">{ticket.userEmail}</span>
-                          </div>
-                        </div>
-
-                        {/* Centro: Assunto e Prévia da Mensagem */}
-                        <div className="flex-1 min-w-0 pr-2">
-                          <div className="flex items-center gap-2">
-                            <h5 className="text-xs font-semibold text-slate-200 truncate">{ticket.subject}</h5>
-                            {ticket.messages && ticket.messages.length > 1 && (
-                              <span className="text-[9px] bg-white/10 text-slate-300 font-bold px-1.5 py-0.2 rounded-full shrink-0">
-                                {ticket.messages.length} msgs
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                            {ticket.messages && ticket.messages.length > 0
-                              ? ticket.messages[ticket.messages.length - 1].text
-                              : ticket.message}
-                          </p>
-                        </div>
-
-                        {/* Direita: Horário / Status / Botão Abrir */}
-                        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
-                          <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">
-                            {ticket.createdAt}
-                          </span>
-
-                          <div className="flex items-center gap-2">
-                            {ticket.status === 'em_atendimento' && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                                Em Atendimento
-                              </span>
-                            )}
-                            {ticket.status === 'pendente' && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                Pendente
-                              </span>
-                            )}
-                            {(ticket.status === 'arquivado' || ticket.status === 'atendido') && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                Finalizado
-                              </span>
-                            )}
-                            {ticket.status === 'deletado' && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                                Lixeira
-                              </span>
-                            )}
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSelectSosTicket(ticket);
-                              }}
-                              className="px-3 py-1 bg-white/5 hover:bg-[#FF7F5B] hover:text-slate-950 text-slate-300 rounded-lg text-xs font-bold transition-all cursor-pointer opacity-80 group-hover:opacity-100"
-                            >
-                              Abrir
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                        Todas
+                      </button>
+                      <button
+                        onClick={() => setSosUrgencyFilter('alta')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                          sosUrgencyFilter === 'alta' ? 'bg-red-500 text-white shadow-sm font-extrabold' : 'text-red-400 hover:bg-red-500/10'
+                        }`}
+                        title="Filtrar Urgência Alta"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                        <span>Alta</span>
+                      </button>
+                      <button
+                        onClick={() => setSosUrgencyFilter('media')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                          sosUrgencyFilter === 'media' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-amber-400 hover:bg-amber-500/10'
+                        }`}
+                        title="Filtrar Urgência Média"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span>Média</span>
+                      </button>
+                      <button
+                        onClick={() => setSosUrgencyFilter('baixa')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                          sosUrgencyFilter === 'baixa' ? 'bg-emerald-500 text-slate-950 shadow-sm font-extrabold' : 'text-emerald-400 hover:bg-emerald-500/10'
+                        }`}
+                        title="Filtrar Urgência Baixa"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                        <span>Baixa</span>
+                      </button>
+                    </div>
                   </div>
-                )}
+
+                  {/* Lista com o formato: Avatar + Nome do Usuario + Duas linhas da mensagem (sem repetir) + Data e hora (em duas linhas) + Sinalizador de cor */}
+                  <div className="space-y-3">
+                    {filteredSosTickets.length === 0 ? (
+                      <div className="bg-[#070D0F] p-12 rounded-3xl border border-white/5 text-center space-y-3 text-slate-400">
+                        <Inbox className="w-10 h-10 text-slate-600 mx-auto" />
+                        <p className="text-sm font-semibold text-slate-300">Nenhum chamado encontrado nesta pasta.</p>
+                        <p className="text-xs text-slate-500">Quando membros enviarem pedidos de acolhimento, eles aparecerão aqui em tempo real.</p>
+                      </div>
+                    ) : (
+                      filteredSosTickets.map(ticket => {
+                        const isExpanded = selectedSosTicket?.id === ticket.id;
+
+                        // Mensagem limpa a exibir (sem repetir assunto)
+                        const rawMessage = ticket.messages && ticket.messages.length > 0
+                          ? ticket.messages[ticket.messages.length - 1].text
+                          : ticket.message;
+
+                        // Extrair data e hora em duas linhas
+                        const dateParts = ticket.createdAt ? ticket.createdAt.split(',') : ['', ''];
+                        const dateStr = dateParts[0]?.trim() || ticket.createdAt;
+                        const timeStr = dateParts[1]?.trim().slice(0, 5) || '';
+
+                        return (
+                          <div
+                            key={ticket.id}
+                            className={`bg-[#070D0F] rounded-2xl border transition-all text-left overflow-hidden ${
+                              isExpanded
+                                ? 'border-[#FF7F5B]/70 shadow-2xl bg-[#0b1316]'
+                                : 'border-white/10 hover:border-white/20 hover:bg-[#0a1215] cursor-pointer'
+                            }`}
+                          >
+                            {/* Linha do Chamado: Avatar + Nome do Usuario + Duas linhas da mensagem (sem repetir) + Data e hora (em duas linhas) + Sinalizador de cor */}
+                            <div
+                              onClick={() => {
+                                if (isExpanded) {
+                                  setSelectedSosTicket(null);
+                                } else {
+                                  handleSelectSosTicket(ticket);
+                                }
+                              }}
+                              className="p-4 sm:p-4.5 flex items-center gap-3.5 sm:gap-4 transition-colors"
+                            >
+                              {/* 1. Avatar */}
+                              <img
+                                src={ticket.userAvatar}
+                                alt={ticket.userName}
+                                className="w-10 h-10 rounded-full object-cover shrink-0 border border-white/10 shadow-sm"
+                              />
+
+                              {/* 2. Nome do Usuário + Duas linhas da mensagem (sem repetir) */}
+                              <div className="flex-1 min-w-0 pr-2">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="text-xs sm:text-sm font-bold text-white truncate">{ticket.userName}</h4>
+                                  {ticket.status === 'em_atendimento' && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 shrink-0">
+                                      Em Atendimento
+                                    </span>
+                                  )}
+                                  {ticket.status === 'pendente' && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 shrink-0 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                      Pendente
+                                    </span>
+                                  )}
+                                  {(ticket.status === 'arquivado' || ticket.status === 'atendido') && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 shrink-0">
+                                      Finalizado
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mt-0.5">
+                                  {rawMessage}
+                                </p>
+                              </div>
+
+                              {/* 3. Data e hora (em duas linhas) */}
+                              <div className="text-right shrink-0 text-[11px] font-medium leading-tight select-none">
+                                <div className="text-slate-300 font-semibold">{ticket.createdAtDate || dateStr}</div>
+                                {(ticket.createdAtTime || timeStr) && (
+                                  <div className="text-slate-500 text-[10px] mt-0.5">{ticket.createdAtTime || timeStr}</div>
+                                )}
+                              </div>
+
+                              {/* 4. Sinalizador de cor */}
+                              <div className="shrink-0 flex items-center gap-2 pl-1">
+                                <span
+                                  className={`w-3 h-3 rounded-full shrink-0 shadow-sm ${
+                                    ticket.urgency === 'alta'
+                                      ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse'
+                                      : ticket.urgency === 'media'
+                                      ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]'
+                                      : 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]'
+                                  }`}
+                                  title={ticket.urgency === 'alta' ? 'Urgência Alta (Crise)' : ticket.urgency === 'media' ? 'Urgência Média' : 'Urgência Baixa'}
+                                />
+                                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-[#FF7F5B]' : ''}`} />
+                              </div>
+                            </div>
+
+                            {/* 5. Caixa Expandida para Interagir (Sem Sangrar nas Dimensões da Tela) */}
+                            {isExpanded && (
+                              <div className="border-t border-white/10 p-4 sm:p-5 bg-[#091114] space-y-4 animate-fade-in">
+
+                                {/* Barra Superior da Interação */}
+                                <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/5 text-xs text-slate-400">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-slate-200 font-semibold">{ticket.userEmail}</span>
+                                    <span>•</span>
+                                    <span>{ticket.messages ? `${ticket.messages.length} mensagens na conversa` : '1 mensagem'}</span>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    {ticket.status === 'deletado' ? (
+                                      <button
+                                        onClick={() => handleRestoreTicket(ticket.id)}
+                                        className="px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                                      >
+                                        <RotateCcw className="w-3.5 h-3.5" />
+                                        <span>Restaurar</span>
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleMoveToTrash(ticket.id)}
+                                        className="p-1.5 text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer"
+                                        title="Mover para Lixeira"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+
+                                    <button
+                                      onClick={() => setSelectedSosTicket(null)}
+                                      className="px-2.5 py-1 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                                      title="Recolher chamado"
+                                    >
+                                      <span>Recolher</span>
+                                      <ChevronDown className="w-3.5 h-3.5 rotate-180" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Thread da Conversa */}
+                                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                                  {ticket.messages && ticket.messages.length > 0 ? (
+                                    ticket.messages.map((m, idx) => (
+                                      <div
+                                        key={m.id || idx}
+                                        className={`p-3.5 rounded-2xl border text-xs leading-relaxed space-y-1.5 max-w-[88%] ${
+                                          m.sender === 'admin'
+                                            ? 'bg-[#16252a] border-[#FF7F5B]/30 ml-auto'
+                                            : 'bg-[#101B1E] border-white/10 mr-auto'
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between gap-3 text-[10px]">
+                                          <span className={`font-bold flex items-center gap-1.5 ${
+                                            m.sender === 'admin' ? 'text-[#FF7F5B]' : 'text-slate-300'
+                                          }`}>
+                                            {m.sender === 'admin' ? '🌸 Equipe Elana' : (m.senderName || ticket.userName)}
+                                          </span>
+                                          <span className="text-slate-500">{m.createdAt}</span>
+                                        </div>
+                                        <p className="text-slate-100 whitespace-pre-wrap">{m.text}</p>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="bg-[#101B1E] p-4 rounded-2xl border border-white/10 space-y-2">
+                                      <p className="text-xs text-slate-100 italic leading-relaxed">
+                                        "{ticket.message}"
+                                      </p>
+                                      {ticket.adminReply && (
+                                        <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl space-y-1 text-xs text-emerald-200 mt-2">
+                                          <span className="font-bold text-[10px] text-emerald-400 block">Resposta Anterior:</span>
+                                          <p className="italic">"{ticket.adminReply}"</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Formulário de Resposta e Conclusão */}
+                                {ticket.status !== 'deletado' && (
+                                  <div className="space-y-3 pt-2 border-t border-white/5">
+                                    {(ticket.status === 'arquivado' || ticket.status === 'atendido') ? (
+                                      <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2 text-xs text-emerald-300 font-bold">
+                                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                                          <span>Atendimento concluído e arquivado.</span>
+                                        </div>
+                                        <button
+                                          onClick={() => handleRestoreTicket(ticket.id)}
+                                          className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0"
+                                        >
+                                          Reabrir Chamado
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <textarea
+                                          value={sosReplyText}
+                                          onChange={(e) => setSosReplyText(e.target.value)}
+                                          placeholder="Escreva uma resposta acolhedora para o membro da comunidade..."
+                                          rows={3}
+                                          className="w-full p-3.5 bg-[#101B1E] border border-white/10 focus:border-[#FF7F5B] rounded-2xl text-xs text-white placeholder-slate-500 focus:outline-none resize-none transition-all"
+                                        />
+
+                                        <div className="flex items-center justify-end gap-2.5">
+                                          <button
+                                            onClick={handleSendSosReply}
+                                            disabled={!sosReplyText.trim()}
+                                            className="py-2.5 px-4 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                                            title="Envia a resposta e mantém o atendimento aberto para continuar conversando"
+                                          >
+                                            <Send className="w-3.5 h-3.5" />
+                                            <span>Enviar Resposta</span>
+                                          </button>
+
+                                          <button
+                                            onClick={async () => {
+                                              if (sosReplyText.trim()) {
+                                                await handleSendSosReply();
+                                              }
+                                              await handleArchiveTicket(ticket.id);
+                                            }}
+                                            className="py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                            title="Conclui o atendimento e arquiva o chamado"
+                                          >
+                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                            <span>Concluir & Arquivar</span>
+                                          </button>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                </div>
+
               </div>
 
             </section>
-          )}
-
-          {/* MODAL EXPANSÍVEL / RETRÁTIL DE ATENDIMENTO SOS (ESTILO CAIXA DE E-MAIL) */}
-          {selectedSosTicket && !isSosModalMinimized && (
-            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-fade-in text-white">
-              {/* Backdrop click para retrair ou fechar */}
-              <div className="absolute inset-0" onClick={() => setIsSosModalMinimized(true)} />
-
-              {/* Modal Box com suporte a Expandido/Tela Cheia ou Normal */}
-              <div className={`relative z-10 bg-[#0D1518] rounded-3xl shadow-2xl border border-white/15 flex flex-col transition-all duration-300 overflow-hidden ${
-                isSosModalExpanded
-                  ? 'w-[96vw] max-w-5xl h-[92vh]'
-                  : 'w-full max-w-3xl h-[84vh]'
-              }`}>
-
-                {/* Top Toolbar: Info do Membro + Controles (Minimizar / Expandir / Fechar) */}
-                <div className="bg-[#070D0F] px-5 py-4 border-b border-white/10 flex items-center justify-between gap-3 shrink-0">
-                  {/* Info do Membro */}
-                  <div className="flex items-center gap-3 min-w-0">
-                    <img
-                      src={selectedSosTicket.userAvatar}
-                      alt={selectedSosTicket.userName}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-[#FF7F5B] shrink-0 shadow-md"
-                    />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-bold text-white truncate">{selectedSosTicket.userName}</h3>
-                        <span
-                          className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                            selectedSosTicket.urgency === 'alta'
-                              ? 'bg-red-500/20 text-red-300 border border-red-500/30'
-                              : selectedSosTicket.urgency === 'media'
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          }`}
-                        >
-                          Urgência {selectedSosTicket.urgency.toUpperCase()}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-slate-400 truncate block">{selectedSosTicket.userEmail}</span>
-                    </div>
-                  </div>
-
-                  {/* Botões de Ação na Toolbar: Gerenciar ticket + Minimizar + Expandir + Fechar */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {selectedSosTicket.status === 'deletado' ? (
-                      <>
-                        <button
-                          onClick={() => handleRestoreTicket(selectedSosTicket.id)}
-                          className="px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                          title="Restaurar para Caixa de Entrada"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Restaurar</span>
-                        </button>
-                        <button
-                          onClick={() => handlePermanentDelete(selectedSosTicket.id)}
-                          className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                          title="Excluir Definitivamente"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => handleMoveToTrash(selectedSosTicket.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-all cursor-pointer"
-                        title="Mover para Lixeira"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-
-                    <div className="w-[1px] h-5 bg-white/10 mx-1" />
-
-                    {/* Minimizar / Retrair (estilo Gmail) */}
-                    <button
-                      onClick={() => setIsSosModalMinimized(true)}
-                      className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer"
-                      title="Minimizar para a barra inferior"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-
-                    {/* Expandir / Reduzir tela */}
-                    <button
-                      onClick={() => setIsSosModalExpanded(!isSosModalExpanded)}
-                      className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer"
-                      title={isSosModalExpanded ? "Reduzir tamanho" : "Expandir em tela cheia"}
-                    >
-                      {isSosModalExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                    </button>
-
-                    {/* Fechar Modal */}
-                    <button
-                      onClick={() => {
-                        setSelectedSosTicket(null);
-                        setIsSosModalMinimized(false);
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer"
-                      title="Fechar"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Sub-header: Assunto + Status */}
-                <div className="bg-[#101B1E] px-5 py-3 border-b border-white/10 flex items-center justify-between gap-3 shrink-0">
-                  <div className="min-w-0">
-                    <h4 className="text-xs sm:text-sm font-bold text-white truncate">{selectedSosTicket.subject}</h4>
-                    <span className="text-[10px] text-slate-400">Aberto em {selectedSosTicket.createdAt}</span>
-                  </div>
-
-                  <div className="shrink-0">
-                    {selectedSosTicket.status === 'em_atendimento' ? (
-                      <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                        Em Atendimento
-                      </span>
-                    ) : selectedSosTicket.status === 'pendente' ? (
-                      <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                        Pendente
-                      </span>
-                    ) : (selectedSosTicket.status === 'arquivado' || selectedSosTicket.status === 'atendido') ? (
-                      <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        Concluído
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                        Lixeira
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Histórico da Conversa / Thread */}
-                <div className="flex-1 overflow-y-auto p-5 space-y-3">
-                  {selectedSosTicket.messages && selectedSosTicket.messages.length > 0 ? (
-                    selectedSosTicket.messages.map((m, idx) => (
-                      <div
-                        key={m.id || idx}
-                        className={`p-4 rounded-2xl border text-xs leading-relaxed space-y-1.5 max-w-[85%] ${
-                          m.sender === 'admin'
-                            ? 'bg-[#16252a] border-[#FF7F5B]/30 ml-auto'
-                            : 'bg-[#101B1E] border-white/10 mr-auto'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-3 text-[10px]">
-                          <span className={`font-bold flex items-center gap-1.5 ${
-                            m.sender === 'admin' ? 'text-[#FF7F5B]' : 'text-slate-300'
-                          }`}>
-                            {m.sender === 'admin' ? '🌸 Equipe Elana' : (m.senderName || selectedSosTicket.userName)}
-                          </span>
-                          <span className="text-slate-500">{m.createdAt}</span>
-                        </div>
-                        <p className="text-slate-100 whitespace-pre-wrap">{m.text}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="bg-[#101B1E] p-4 rounded-2xl border border-white/10 space-y-2">
-                      <p className="text-xs text-slate-100 italic leading-relaxed">
-                        "{selectedSosTicket.message}"
-                      </p>
-                      {selectedSosTicket.adminReply && (
-                        <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl space-y-1 text-xs text-emerald-200 mt-2">
-                          <span className="font-bold text-[10px] text-emerald-400 block">Resposta Anterior:</span>
-                          <p className="italic">"{selectedSosTicket.adminReply}"</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Formulário de Resposta e Conclusão */}
-                {selectedSosTicket.status !== 'deletado' && (
-                  <div className="p-4 bg-[#070D0F] border-t border-white/10 shrink-0 space-y-3">
-                    {(selectedSosTicket.status === 'arquivado' || selectedSosTicket.status === 'atendido') ? (
-                      <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-2xl flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 text-xs text-emerald-300 font-bold">
-                          <CheckCircle2 className="w-4 h-4 shrink-0" />
-                          <span>Atendimento concluído e arquivado.</span>
-                        </div>
-                        <button
-                          onClick={() => handleRestoreTicket(selectedSosTicket.id)}
-                          className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
-                        >
-                          Reabrir Chamado
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <textarea
-                          value={sosReplyText}
-                          onChange={(e) => setSosReplyText(e.target.value)}
-                          placeholder="Escreva uma resposta acolhedora para o membro da comunidade..."
-                          rows={3}
-                          className="w-full p-3.5 bg-[#101B1E] border border-white/10 focus:border-[#FF7F5B] rounded-2xl text-xs text-white placeholder-slate-500 focus:outline-none resize-none transition-all"
-                        />
-
-                        <div className="flex items-center justify-end gap-2.5">
-                          <button
-                            onClick={handleSendSosReply}
-                            disabled={!sosReplyText.trim()}
-                            className="py-2.5 px-4 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                            title="Envia a resposta e mantém o atendimento aberto para continuar conversando"
-                          >
-                            <Send className="w-3.5 h-3.5" />
-                            <span>Enviar Resposta</span>
-                          </button>
-
-                          <button
-                            onClick={async () => {
-                              if (sosReplyText.trim()) {
-                                await handleSendSosReply();
-                              }
-                              await handleArchiveTicket(selectedSosTicket.id);
-                            }}
-                            className="py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                            title="Conclui o atendimento e arquiva o chamado"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Concluir & Arquivar</span>
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-              </div>
-            </div>
-          )}
-
-          {/* DOCK FLUTUANTE RETRÁTIL (QUANDO O MODAL DE SOS ESTÁ MINIMIZADO) */}
-          {selectedSosTicket && isSosModalMinimized && (
-            <div
-              onClick={() => setIsSosModalMinimized(false)}
-              className="fixed bottom-5 right-5 z-[99999] bg-[#0D1518] border border-[#FF7F5B]/50 hover:border-[#FF7F5B] rounded-2xl p-3 px-4 shadow-2xl flex items-center gap-3 cursor-pointer transition-all hover:scale-105 active:scale-95 animate-slide-up"
-              title="Clique para restaurar o chamado"
-            >
-              <img
-                src={selectedSosTicket.userAvatar}
-                alt={selectedSosTicket.userName}
-                className="w-8 h-8 rounded-full object-cover border border-[#FF7F5B] shrink-0"
-              />
-              <div className="text-left">
-                <span className="text-xs font-bold text-white block">{selectedSosTicket.userName}</span>
-                <span className="text-[10px] text-[#FF7F5B] font-semibold">Atendimento minimizado (clique para abrir)</span>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedSosTicket(null);
-                  setIsSosModalMinimized(false);
-                }}
-                className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors ml-1"
-                title="Fechar chamado"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
           )}
 
       {/* TAB 2: 🛡️ MODERAÇÃO ANTIJULGAMENTO */}
