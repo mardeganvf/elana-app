@@ -220,155 +220,157 @@ export const AdminDestaquesManager: React.FC = () => {
         </div>
 
         {/* Destaques Grid (Ativos na Página Inicial) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-        {activeDestaques.map((destaque, idx) => {
-          // Jornadas associadas a este destaque
-          const associatedJourneys = journeys.filter(j => 
-            destaque.journeyIds?.includes(j.id) || destaque.category === j.title
-          );
+        {activeDestaques.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {activeDestaques.map((destaque, idx) => {
+              // Jornadas associadas a este destaque
+              const associatedJourneys = journeys.filter(j => 
+                destaque.journeyIds?.includes(j.id) || destaque.category === j.title
+              );
 
-          return (
-            <div
-              key={destaque.id}
-              className="group bg-[#101B1E] rounded-2xl border border-white/10 overflow-hidden shadow-md hover:border-[#FF7F5B]/50 transition-all flex flex-col justify-between"
-            >
-              {/* Top: 9:16 Aspect Thumbnail Container */}
-              <div className="relative aspect-[9/16] bg-slate-950 overflow-hidden">
-                <img
-                  src={destaque.posterUrl}
-                  alt={destaque.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#101B1E] via-transparent to-black/40 pointer-events-none" />
-
-                {/* Author Avatar & Handle + Order Badge */}
-                <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
-                  <div className="flex items-center gap-2 min-w-0">
+              return (
+                <div
+                  key={destaque.id}
+                  className="group bg-[#101B1E] rounded-2xl border border-white/10 overflow-hidden shadow-md hover:border-[#FF7F5B]/50 transition-all flex flex-col justify-between"
+                >
+                  {/* Top: 9:16 Aspect Thumbnail Container */}
+                  <div className="relative aspect-[9/16] bg-slate-950 overflow-hidden">
                     <img
-                      src={destaque.authorAvatar}
-                      alt={destaque.authorName}
-                      className="w-7 h-7 rounded-full object-cover border border-white/30 shrink-0"
+                      src={destaque.posterUrl}
+                      alt={destaque.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="min-w-0">
-                      <span className="text-[11px] font-bold text-white block truncate leading-tight">
-                        {destaque.authorName}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#101B1E] via-transparent to-black/40 pointer-events-none" />
+
+                    {/* Author Avatar & Handle + Order Badge */}
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <img
+                          src={destaque.authorAvatar}
+                          alt={destaque.authorName}
+                          className="w-7 h-7 rounded-full object-cover border border-white/30 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <span className="text-[11px] font-bold text-white block truncate leading-tight">
+                            {destaque.authorName}
+                          </span>
+                          <span className="text-[9px] text-slate-300 block truncate">
+                            {destaque.authorHandle}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Número da Ordem */}
+                      <span 
+                        className="text-[10px] font-black bg-[#FF7F5B] text-slate-950 px-2 py-0.5 rounded-md shadow-md shrink-0"
+                        title={`Posição ${idx + 1} na ordem de exibição`}
+                      >
+                        #{idx + 1}
                       </span>
-                      <span className="text-[9px] text-slate-300 block truncate">
-                        {destaque.authorHandle}
-                      </span>
+                    </div>
+
+                    {/* Play Icon Preview */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                      <div className="w-10 h-10 rounded-full bg-[#FF7F5B] text-slate-950 flex items-center justify-center shadow-xl">
+                        <Play className="w-4 h-4 fill-current translate-x-0.5" />
+                      </div>
+                    </div>
+
+                    {/* Bottom of Image: Title */}
+                    <div className="absolute bottom-3 left-3 right-3 z-10">
+                      <h4 
+                        className="text-xs font-bold text-white leading-snug line-clamp-2"
+                        style={{ fontFamily: 'var(--font-heading)' }}
+                        title={destaque.title}
+                      >
+                        {destaque.title}
+                      </h4>
                     </div>
                   </div>
 
-                  {/* Número da Ordem */}
-                  <span 
-                    className="text-[10px] font-black bg-[#FF7F5B] text-slate-950 px-2 py-0.5 rounded-md shadow-md shrink-0"
-                    title={`Posição ${idx + 1} na ordem de exibição`}
-                  >
-                    #{idx + 1}
-                  </span>
-                </div>
-
-                {/* Play Icon Preview */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                  <div className="w-10 h-10 rounded-full bg-[#FF7F5B] text-slate-950 flex items-center justify-center shadow-xl">
-                    <Play className="w-4 h-4 fill-current translate-x-0.5" />
-                  </div>
-                </div>
-
-                {/* Bottom of Image: Title */}
-                <div className="absolute bottom-3 left-3 right-3 z-10">
-                  <h4 
-                    className="text-xs font-bold text-white leading-snug line-clamp-2"
-                    style={{ fontFamily: 'var(--font-heading)' }}
-                    title={destaque.title}
-                  >
-                    {destaque.title}
-                  </h4>
-                </div>
-              </div>
-
-              {/* Bottom: Journey Badges & Actions */}
-              <div className="p-3.5 space-y-3 bg-[#0c1517]">
-                {/* Associated Journeys Chips */}
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                    Jornadas Conectadas:
-                  </span>
-                  <div className="flex flex-wrap gap-1">
-                    {associatedJourneys.length > 0 ? (
-                      associatedJourneys.map(j => (
-                        <span
-                          key={j.id}
-                          className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-200 truncate max-w-full"
-                          title={j.title}
-                        >
-                          {j.title}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-[10px] text-slate-500 italic">
-                        Nenhuma jornada vinculada
+                  {/* Bottom: Journey Badges & Actions */}
+                  <div className="p-3.5 space-y-3 bg-[#0c1517]">
+                    {/* Associated Journeys Chips */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Jornadas Conectadas:
                       </span>
-                    )}
+                      <div className="flex flex-wrap gap-1">
+                        {associatedJourneys.length > 0 ? (
+                          associatedJourneys.map(j => (
+                            <span
+                              key={j.id}
+                              className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-200 truncate max-w-full"
+                              title={j.title}
+                            >
+                              {j.title}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[10px] text-slate-500 italic">
+                            Nenhuma jornada vinculada
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions: Reorder, Edit, Archive & Delete */}
+                    <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-1.5">
+                      {/* Botões de Mover Ordem */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => handleMove(idx, 'prev')}
+                          className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
+                          title="Mover para a esquerda (anterior)"
+                        >
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === activeDestaques.length - 1}
+                          onClick={() => handleMove(idx, 'next')}
+                          className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
+                          title="Mover para a direita (próximo)"
+                        >
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(destaque)}
+                        className="flex-1 px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Editar</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleArchive(destaque.id, true)}
+                        className="px-2 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl text-xs font-bold flex items-center justify-center transition-colors cursor-pointer"
+                        title="Armazenar destaque (não exibir na tela inicial)"
+                      >
+                        <Archive className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmId(destaque.id)}
+                        className="px-2 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center transition-colors cursor-pointer"
+                        title="Excluir este destaque"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                {/* Actions: Reorder, Edit, Archive & Delete */}
-                <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-1.5">
-                  {/* Botões de Mover Ordem */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      disabled={idx === 0}
-                      onClick={() => handleMove(idx, 'prev')}
-                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
-                      title="Mover para a esquerda (anterior)"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={idx === activeDestaques.length - 1}
-                      onClick={() => handleMove(idx, 'next')}
-                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
-                      title="Mover para a direita (próximo)"
-                    >
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => openEditModal(destaque)}
-                    className="flex-1 px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>Editar</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleToggleArchive(destaque.id, true)}
-                    className="px-2 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl text-xs font-bold flex items-center justify-center transition-colors cursor-pointer"
-                    title="Armazenar destaque (não exibir na tela inicial)"
-                  >
-                    <Archive className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setDeleteConfirmId(destaque.id)}
-                    className="px-2 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center transition-colors cursor-pointer"
-                    title="Excluir este destaque"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        {activeDestaques.length === 0 && (
+              );
+            })}
+          </div>
+        ) : (
           <div className="text-center py-10 border border-dashed border-white/10 rounded-2xl bg-[#070D0F] p-6 space-y-3">
             <Sparkles className="w-8 h-8 text-[#FF7F5B] mx-auto opacity-70" />
             <h4 className="text-sm font-bold text-white">Nenhum destaque ativo na página inicial</h4>
