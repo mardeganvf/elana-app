@@ -8,6 +8,7 @@ import { EmotionalIntention } from '../../types';
 import { X, Send, Lock, EyeOff, MessageSquarePlus, BookOpen, Leaf, Sun, Flame } from 'lucide-react';
 import { renderRoomIcon } from './CommunityIcons';
 
+export type ActiveSelection = 
   | { type: 'jornada'; journeyId: string; subOption: EmotionalIntention }
   | { type: 'geral'; roomId: string }
   | { type: 'idade'; ageId: string }
