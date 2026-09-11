@@ -445,7 +445,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   /**
    * HIDRATAÇÃO COMPLETA: Busca todos os dados do usuário no Supabase
    */
-  const fetchFullUserProfile = async (userId: string, email: string, fallbackName?: string): Promise<UserProfile> => {
+  const fetchFullUserProfile = async (userId: string, email: string, fallbackName?: string): Promise<UserProfile | null> => {
     try {
       const emailClean = email.toLowerCase().trim();
 
@@ -991,24 +991,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return hydratedUser;
     } catch (err) {
-      console.error('Error hydrating profile from Supabase, falling back to local defaults:', err);
-      return {
-        id: userId,
-        email,
-        name: fallbackName || email.split('@')[0],
-        avatar: GENERIC_DEFAULT_AVATAR,
-        role: 'Membro da Comunidade',
-        familyTag: 'Mãe / Pai de 1ª viagem',
-        purchasedJourneyIds: [],
-        completedLessonIds: [],
-        lessonNotes: {},
-        xp: 0,
-        level: 1,
-        levelTitle: 'Semente',
-        streakDays: 1,
-        lastActiveDate: new Date().toISOString(),
-        badges: []
-      };
+      console.warn('Network error hydrating profile from Supabase. Keeping existing session intact.', err);
+      return null;
     }
   };
 
@@ -1049,7 +1033,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const hydrated = await fetchFullUserProfile(profileId, emailClean, name);
-    
+
+    // Se a hidratação falhar por rede, não sobrescrever a sessão existente
+    if (!hydrated) {
+      console.warn('Could not hydrate profile from Supabase during login. Keeping cached session.');
+      return;
+    }
+
     setUser(hydrated);
     try {
       localStorage.setItem('elana_user_session', JSON.stringify(hydrated));
@@ -1061,7 +1051,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshUserFromBackend = async () => {
     if (!user || !user.email) return;
     const refreshed = await fetchFullUserProfile(user.id, user.email, user.name);
-    setUser(refreshed);
+    if (refreshed) setUser(refreshed);
   };
 
   const updateUser = async (updates: Partial<UserProfile>) => {
