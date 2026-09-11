@@ -927,23 +927,23 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
 
       {/* Feature 1 Modal: Diário de Emoções (Resumo de 4 Semanas e Calendário - Opção A) */}
       {isEmotionalHistoryOpen && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 pr-14 sm:p-6 sm:pr-16 bg-black/85 backdrop-blur-md animate-fade-in text-white">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in text-white">
           {/* Backdrop click to close */}
           <div className="absolute inset-0" onClick={() => setIsEmotionalHistoryOpen(false)} />
 
-          {/* Modal Container Wrapper com Botão Fechar Flutuando ao Lado do Canto Superior Direito */}
+          {/* Modal Container */}
           <div className="relative w-full max-w-lg m-auto z-10">
-            {/* Botão Fechar (X) Flutuando Fora do Box ao Lado do Canto Superior Direito (não acima) */}
-            <button
-              onClick={() => setIsEmotionalHistoryOpen(false)}
-              aria-label="Fechar Diário de Emoções"
-              className="absolute top-0 left-full ml-2.5 sm:ml-3 text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition-all cursor-pointer z-20 shadow-xl backdrop-blur-md border border-white/15 hover:scale-105 active:scale-95 flex items-center justify-center"
-              title="Fechar Diário de Emoções"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
             <div className="bg-[#0D1518] rounded-3xl w-full p-6 sm:p-7 shadow-2xl border border-white/10 relative space-y-6 max-h-[90vh] overflow-y-auto">
+              {/* Botão Fechar (X) dentro do card */}
+              <button
+                onClick={() => setIsEmotionalHistoryOpen(false)}
+                aria-label="Fechar Diário de Emoções"
+                className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all cursor-pointer z-20 border border-white/10 hover:scale-105 active:scale-95 flex items-center justify-center"
+                title="Fechar Diário de Emoções"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
               {/* Cabeçalho Acolhedor sem Emojis */}
               <div className="text-center space-y-2 pt-1">
                 <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
