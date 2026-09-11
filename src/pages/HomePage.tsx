@@ -7,7 +7,7 @@ import { StoryViewerModal } from '../components/stories/StoryViewerModal';
 import { useAuth } from '../context/AuthContext';
 import { useJourneys } from '../context/JourneysContext';
 import { useDestaques } from '../context/DestaquesContext';
-import { Play, Flame, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Lock, Sparkles, Instagram, Bell, Check } from 'lucide-react';
+import { Play, Flame, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Lock, Sparkles, Bell, Check } from 'lucide-react';
 import { useJourneyNotifications } from '../hooks/useJourneyNotifications';
 
 interface HomePageProps {
@@ -204,6 +204,45 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
   const purchasedJourneys = JOURNEYS_DATA.filter(j => user?.purchasedJourneyIds.includes(j.id));
 
+  // Resumo inteligente da próxima aula pendente do usuário (Próxima Aula Para Você)
+  const nextLessonData = React.useMemo(() => {
+    if (!user || purchasedJourneys.length === 0) return null;
+    for (const journey of purchasedJourneys) {
+      for (const mod of journey.modules || []) {
+        for (const lesson of mod.lessons || []) {
+          if (!user.completedLessonIds?.includes(lesson.id)) {
+            const allJourneyLessons = (journey.modules || []).flatMap(m => m.lessons || []);
+            const completedCount = allJourneyLessons.filter(l => user.completedLessonIds?.includes(l.id)).length;
+            const progressPct = allJourneyLessons.length > 0 ? Math.round((completedCount / allJourneyLessons.length) * 100) : 0;
+            return {
+              journey,
+              module: mod,
+              lesson,
+              progressPct,
+              completedCount,
+              totalCount: allJourneyLessons.length
+            };
+          }
+        }
+      }
+    }
+    // Se todas foram concluídas, sugere a primeira para revisão
+    const firstJourney = purchasedJourneys[0];
+    const firstMod = firstJourney?.modules?.[0];
+    const firstLesson = firstMod?.lessons?.[0];
+    if (firstJourney && firstMod && firstLesson) {
+      return {
+        journey: firstJourney,
+        module: firstMod,
+        lesson: firstLesson,
+        progressPct: 100,
+        completedCount: 1,
+        totalCount: 1
+      };
+    }
+    return null;
+  }, [user, purchasedJourneys]);
+
   // Helper for Sentence Case formatting (Capitalize first letter only)
   const toSentenceCase = (str: string, addPeriod = false) => {
     if (!str) return '';
@@ -272,8 +311,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                   className="absolute inset-0 w-full h-full object-cover object-center"
                 />
                 
-                {/* Subtle Gradient Vignette for Readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#070D0F] via-[#070D0F]/30 to-transparent z-10 pointer-events-none"></div>
+                {/* Double Cinematic Vignette (Bottom + Left) for Readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#070D0F] via-[#070D0F]/60 to-transparent z-10 pointer-events-none"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-[#070D0F]/85 via-[#070D0F]/45 to-transparent z-10 pointer-events-none max-w-3xl"></div>
 
                 {/* Content Box */}
                 <div className="relative z-20 max-w-2xl space-y-3 sm:space-y-4 pb-8 sm:pb-2">
@@ -281,7 +321,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                   {/* Badge EM BREVE se for jornada futura */}
                   {journey.isComingSoon && (
                     <div>
-                      <span className="inline-block text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-md shadow-md bg-amber-500 text-slate-950">
+                      <span className="inline-block text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-md bg-amber-400/20 text-amber-300 border border-amber-400/35 backdrop-blur-md">
                         EM BREVE
                       </span>
                     </div>
@@ -393,13 +433,96 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
       </section>
 
-      {/* Row: Continuar Assistindo (If user has purchased journeys) */}
-      {purchasedJourneys.length > 0 && (
+      {/* Card de Retomada Imediata: Próxima Aula Para Você */}
+      {nextLessonData && (
+        <section className="animate-fade-in -mt-4 sm:-mt-2">
+          <div 
+            onClick={() => onStartLearning(nextLessonData.journey, nextLessonData.lesson.id)}
+            className="group relative bg-[#0E171A]/90 hover:bg-[#132025] rounded-3xl p-4 sm:p-5 border border-white/10 hover:border-[#FF7F5B]/50 transition-all duration-300 shadow-xl cursor-pointer flex flex-col md:flex-row items-start md:items-center gap-4 sm:gap-6 backdrop-blur-md"
+          >
+            {/* Thumbnail 16:9 com overlay de Play */}
+            <div className="relative w-full md:w-64 aspect-[16/9] rounded-2xl overflow-hidden shrink-0 bg-slate-950 border border-white/10">
+              <img
+                src={
+                  nextLessonData.lesson.thumbnailUrl ||
+                  getPandaThumbnail(nextLessonData.lesson.videoUrl) ||
+                  LESSON_THUMBS[nextLessonData.lesson.id] ||
+                  SLIDE_POSTERS[nextLessonData.journey.id] ||
+                  'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&auto=format&fit=crop&q=80'
+                }
+                alt={nextLessonData.lesson.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-black/35 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-[#FF7F5B] text-white flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                  <Play className="w-5 h-5 fill-current translate-x-0.5" />
+                </div>
+              </div>
+              <span className="absolute bottom-2 right-2 text-[10px] font-bold bg-black/75 backdrop-blur-md px-2 py-0.5 rounded text-white border border-white/10">
+                {nextLessonData.lesson.duration}
+              </span>
+            </div>
+
+            {/* Conteúdo textual da aula pendente */}
+            <div className="flex-1 min-w-0 space-y-2 w-full">
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-0.5 rounded-full border border-[#FF7F5B]/25">
+                  <Sparkles className="w-3 h-3" />
+                  Próxima Aula Para Você
+                </span>
+                <span className="text-[11px] font-bold text-slate-400">
+                  Progresso na Jornada: <strong className="text-white">{nextLessonData.progressPct}%</strong>
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[10px] sm:text-xs font-bold text-slate-400 block truncate">
+                  {nextLessonData.journey.title} • {nextLessonData.module.title}
+                </span>
+                <h3 
+                  className="text-base sm:text-lg font-bold text-white group-hover:text-[#FF7F5B] transition-colors line-clamp-1"
+                  style={{ fontFamily: 'var(--font-heading)' }}
+                >
+                  {formatLessonText(nextLessonData.module, nextLessonData.lesson).videoName}
+                </h3>
+              </div>
+
+              <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                {nextLessonData.lesson.description}
+              </p>
+
+              {/* Barra de Progresso com Brilho Coral */}
+              <div className="pt-1">
+                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-[#FF7F5B] to-[#FF9070] rounded-full transition-all duration-500 shadow-sm shadow-[#FF7F5B]/50"
+                    style={{ width: `${Math.max(nextLessonData.progressPct, 4)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Botão CTA Desktop à Direita */}
+            <div className="hidden lg:flex items-center pr-2 shrink-0">
+              <button 
+                type="button"
+                className="px-5 py-3 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition-all shadow-xl group-hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer"
+              >
+                <Play className="w-4 h-4 fill-current text-slate-950" />
+                <span>Continuar</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Row: Minhas Outras Jornadas Adquiridas (se houver mais de 1) */}
+      {purchasedJourneys.length > 1 && (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2" style={{ fontFamily: 'var(--font-heading)' }}>
               <Flame className="w-5 h-5 text-[#FF7F5B] fill-current" />
-              Continuar Assistindo ({purchasedJourneys.length})
+              Minhas Jornadas ({purchasedJourneys.length})
             </h2>
           </div>
 
@@ -416,15 +539,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
         </section>
       )}
 
-      {/* NEW SECTION: Stories em Vídeo Vertical (Posicionado entre Continuar Assistindo e PRN) */}
+      {/* SEÇÃO: Destaques (Stories Verticais 9:16) */}
       <section className="space-y-4 pt-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 
             className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none flex items-center gap-2.5"
             style={{ fontFamily: 'var(--font-heading)' }}
           >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] p-[2px] flex items-center justify-center shadow-lg">
-              <Instagram className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#FF7F5B]/30 to-[#FFD166]/20 border border-[#FF7F5B]/40 flex items-center justify-center shadow-md">
+              <Sparkles className="w-4 h-4 text-[#FF7F5B]" />
             </div>
             <span>Destaques</span>
           </h2>
@@ -487,9 +610,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                 {/* Vignette Overlay for Avatar */}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/30 pointer-events-none"></div>
 
-                {/* Top Author Avatar with Instagram Ring */}
+                {/* Top Author Avatar with Elana Coral Ring */}
                 <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-[#E66795] via-[#FF7F5B] to-[#FFD166] shadow-md group-hover:scale-110 transition-transform">
+                  <div className="w-8 h-8 rounded-full p-[2px] bg-[#FF7F5B] shadow-md group-hover:scale-110 transition-transform">
                     <img
                       src={story.authorAvatar}
                       alt={story.authorName}
@@ -562,7 +685,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
                   {/* Badge EM BREVE se for jornada futura */}
                   {journey.isComingSoon && (
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md shadow-md bg-amber-500 text-slate-950 ml-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md bg-amber-400/20 text-amber-300 border border-amber-400/30 backdrop-blur-md ml-1">
                       EM BREVE
                     </span>
                   )}
@@ -589,25 +712,34 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                 "{journey.tagline}"
               </p>
 
-              {/* Line 3: Seletor do Módulo Embaixo (Apenas se tiver mais de 1 módulo: PRN e PON) */}
+              {/* Line 3: Seletor de Módulos em Pílulas Táteis (Tabs Modernas) */}
               {hasMultipleModules && (
-                <div className="pl-6 pt-1">
-                  <div className="relative inline-flex items-center max-w-full">
-                    <select
-                      value={selectedModuleIdx}
-                      onChange={(e) => {
-                        const newIdx = Number(e.target.value);
-                        setSelectedModuleMap(prev => ({ ...prev, [journey.id]: newIdx }));
-                      }}
-                      className="module-select-compact appearance-none bg-[#101B1E] hover:bg-[#162327] text-slate-200 font-extrabold text-[11px] sm:text-xs px-3 py-1.5 pr-7 rounded-lg sm:rounded-xl border border-white/15 focus:outline-none focus:border-[#FF7F5B] cursor-pointer shadow-sm transition-colors max-w-full truncate"
-                    >
-                      {journey.modules.map((mod, idx) => (
-                        <option key={mod.id} value={idx} className="bg-[#101B1E] text-white py-1 text-xs">
-                          Módulo 0{mod.number}: {mod.title} ({mod.lessons.length} conteúdos)
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 pointer-events-none" />
+                <div className="pl-6 pt-2">
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-hide max-w-full">
+                    {journey.modules.map((mod, idx) => {
+                      const isSelected = selectedModuleIdx === idx;
+                      return (
+                        <button
+                          key={mod.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedModuleMap(prev => ({ ...prev, [journey.id]: idx }));
+                          }}
+                          className={`shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer border ${
+                            isSelected
+                              ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md shadow-[#FF7F5B]/20'
+                              : 'bg-[#101B1E] text-slate-300 hover:text-white border-white/10 hover:border-white/20'
+                          }`}
+                        >
+                          <span>Módulo 0{mod.number}: {mod.title}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                            isSelected ? 'bg-white/20 text-white' : 'bg-white/5 text-slate-400'
+                          }`}>
+                            {mod.lessons.length} aulas
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -642,12 +774,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                         onSelectJourney(journey);
                       }
                     }}
-                    className={`group flex-none w-64 sm:w-72 bg-[#101B1E] rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer flex flex-col justify-between hover:-translate-y-1 ${
+                    className={`group flex-none w-64 sm:w-72 bg-[#101B1E] rounded-3xl overflow-hidden border transition-all duration-300 cursor-pointer flex flex-col justify-between hover:-translate-y-1.5 shadow-lg ${
                       journey.isComingSoon
-                        ? 'opacity-70 hover:opacity-85 border-white/5 bg-[#0e1618] hover:border-amber-500/30 shadow-none hover:shadow-lg'
+                        ? 'border-white/10 bg-[#0e171a] hover:border-amber-400/40 hover:shadow-xl'
                         : isCompleted 
-                        ? 'border-[#8A9A5B]/40 bg-[#101B1E]/90' 
-                        : 'border-white/10 hover:border-white/20'
+                        ? 'border-[#8A9A5B]/40 bg-[#101B1E]' 
+                        : 'border-white/10 hover:border-white/25 hover:shadow-2xl'
                     }`}
                   >
                     {/* Video Thumbnail */}
@@ -657,7 +789,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                         alt={lesson.title}
                         className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
                           journey.isComingSoon 
-                            ? 'grayscale opacity-60 group-hover:opacity-80' 
+                            ? 'grayscale opacity-70 group-hover:opacity-85' 
                             : !isUnlocked 
                             ? 'opacity-50 grayscale-[30%]' 
                             : isCompleted 
@@ -669,7 +801,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
                       {/* Top-Left 'EM BREVE' Badge for coming soon journeys */}
                       {journey.isComingSoon && (
-                        <div className="absolute top-2 left-2 z-10 bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-md shadow uppercase tracking-wider">
+                        <div className="absolute top-2.5 left-2.5 z-10 bg-amber-400/25 text-amber-300 border border-amber-400/40 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md uppercase tracking-wider backdrop-blur-md">
                           EM BREVE
                         </div>
                       )}
@@ -799,10 +931,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                         </h4>
                       </div>
 
-                      {/* Descrição curta do vídeo: Sem título, sem negrito, máx 2 linhas (...) e tooltip no hover */}
+                      {/* Descrição curta do vídeo / Sinopse: máx 2 linhas (...) e tooltip no hover */}
                       <p 
                         className={`text-xs font-normal leading-relaxed line-clamp-2 cursor-pointer transition-colors pt-2 border-t border-white/5 ${
-                          journey.isComingSoon ? 'text-slate-500 group-hover:text-slate-300' : 'text-slate-400 hover:text-slate-200'
+                          journey.isComingSoon ? 'text-slate-400 group-hover:text-slate-200' : 'text-slate-300 hover:text-slate-100'
                         }`}
                         title={lesson.description}
                       >
