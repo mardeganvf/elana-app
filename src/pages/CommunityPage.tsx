@@ -753,6 +753,7 @@ export const CommunityPage: React.FC = () => {
     }
 
     let isCancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
     // Se usuário autenticado, consulta a fonte da verdade no Supabase (cross-device)
     if (user?.id) {
@@ -772,27 +773,27 @@ export const CommunityPage: React.FC = () => {
             return;
           }
           // Ainda não realizou hoje: abre o modal de acolhimento diário
-          const timer = setTimeout(() => {
+          // timer hoistado para o escopo do useEffect — clearTimeout funciona no cleanup
+          timer = setTimeout(() => {
             if (!isCancelled) {
               setIsDailyCheckinModalOpen(true);
               window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             }
           }, 400);
-          return () => clearTimeout(timer);
         });
     } else {
       // Visitante puro sem conta
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         if (!isCancelled) {
           setIsDailyCheckinModalOpen(true);
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         }
       }, 500);
-      return () => clearTimeout(timer);
     }
 
     return () => {
       isCancelled = true;
+      clearTimeout(timer); // limpa o timer em ambos os caminhos (autenticado e visitante)
     };
   }, [user?.id]);
 
