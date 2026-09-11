@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useCommunity, checkContentSensitivityAI } from '../context/CommunityContext';
 import { useAuth } from '../context/AuthContext';
@@ -908,8 +908,10 @@ export const CommunityPage: React.FC = () => {
   };
 
   // Filter Posts based on active selection, search query & emotional check-in
-  const safePosts = Array.isArray(posts) ? posts : [];
-  const filteredPosts = safePosts.filter(post => {
+  // useMemo evita recalcular em cada render (hover, reações, expansão de comentários, etc.)
+  const safePosts = useMemo(() => Array.isArray(posts) ? posts : [], [posts]);
+
+  const filteredPosts = useMemo(() => safePosts.filter(post => {
     if (!post) return false;
     if (post.status === 'removido_usuario') return false;
 
@@ -954,10 +956,10 @@ export const CommunityPage: React.FC = () => {
     }
 
     return true;
-  });
+  }), [safePosts, activeSelection, selectedEmotionId, searchQuery, user?.id, user?.role]);
 
   // Paginating visible posts (15 per page)
-  const visiblePosts = filteredPosts.slice(0, visibleCount);
+  const visiblePosts = useMemo(() => filteredPosts.slice(0, visibleCount), [filteredPosts, visibleCount]);
 
   const toggleCommentsExpansion = (postId: string) => {
     setExpandedCommentsMap(prev => ({ ...prev, [postId]: !prev[postId] }));
