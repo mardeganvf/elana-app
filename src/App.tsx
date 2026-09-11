@@ -6,14 +6,14 @@ import { JourneysProvider, useJourneys } from './context/JourneysContext';
 import { DestaquesProvider } from './context/DestaquesContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
-import { HomePage } from './pages/HomePage';
 import { PwaInstallBanner } from './components/pwa/PwaInstallBanner';
 import { ToastProvider } from './context/ToastContext';
 import { Journey } from './types';
 import { supabase } from './lib/supabase';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
-// ⚡ Code Splitting: Lazy loading de rotas e modais secundários
+// ⚡ Code Splitting: Lazy loading de todas as rotas e modais secundários
+const HomePage = React.lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
 const ClassroomPage = React.lazy(() => import('./pages/ClassroomPage').then(m => ({ default: m.ClassroomPage })));
 const CommunityPage = React.lazy(() => import('./pages/CommunityPage').then(m => ({ default: m.CommunityPage })));
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
