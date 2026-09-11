@@ -283,7 +283,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                     >
                       <div 
                         className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: `${r.color}20`, color: r.color }}
+                        style={{ backgroundColor: `${r.color || '#8A9A5B'}20`, color: r.color || '#8A9A5B' }}
                       >
                         {renderRoomIcon(r.iconName, "w-3.5 h-3.5")}
                       </div>

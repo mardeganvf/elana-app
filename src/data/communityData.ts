@@ -5,6 +5,7 @@ export interface TransversalRoomDef {
   name: string;
   emoji?: string;
   iconName: string;
+  color?: string;
   description: string;
   isAnonymous: boolean;
   sensitivityLevel: 'padrao' | 'elevado' | 'critico';
@@ -43,30 +44,30 @@ export const BRAND_REACTIONS: BrandReaction[] = [
   {
     id: 'aqui_tambem',
     label: 'Aqui Também!',
-    useCase: 'Identificação, solidariedade — "também vivi isso"',
-    iconName: 'CircleDot',
-    color: '#F0A8C3' // Rosa Claro
-  },
-  {
-    id: 'mandou_bem',
-    label: 'Mandou Bem',
-    useCase: 'Reconhecimento, conquista, orgulho',
-    iconName: 'Star',
-    color: '#FF7F5B' // Coral Vibrante
-  },
-  {
-    id: 'ajudou_muito',
-    label: 'Ajudou Muito!',
-    useCase: 'Utilidade prática de uma resposta ou conselho',
+    useCase: 'Identificação rápida, sentimento compartilhado',
     iconName: 'Lightbulb',
-    color: '#2DD4BF' // Vibrant Teal (visible on dark background)
+    color: '#E66795' // Framboesa
   },
   {
-    id: 'alegria',
-    label: 'Fiquei Feliz',
-    useCase: 'Leveza, sorriso — sem ser humor/deboche',
+    id: 'parabens',
+    label: 'Parabéns!',
+    useCase: 'Comemoração, pequenas e grandes vitórias da família',
+    iconName: 'Sparkles',
+    color: '#FF7F5B' // Coral Elana
+  },
+  {
+    id: 'te_admiro',
+    label: 'Te Admiro',
+    useCase: 'Reconhecimento, validação materna/paterna profunda',
     iconName: 'Flower2',
-    color: '#E66795' // Rosa Acolhedor
+    color: '#F472B6' // Rosa Acolhedor
+  },
+  {
+    id: 'um_passo',
+    label: 'Um Passo de Cada Vez',
+    useCase: 'Para momentos de sobrecarga ou quando o dia foi difícil',
+    iconName: 'CircleDot',
+    color: '#2DD4BF' // Menta Suave
   }
 ];
 
@@ -102,6 +103,7 @@ export const TRANSVERSAL_ROOMS: TransversalRoomDef[] = [
     id: 'boas-vindas',
     name: 'Boas-Vindas',
     iconName: 'Sparkles',
+    color: '#2DD4BF',
     description: 'Que bom que você chegou! Aqui a gente se apresenta, lê os combinados da casa e dá o primeiro abraço em quem tá chegando.',
     isAnonymous: false,
     sensitivityLevel: 'padrao'
@@ -110,6 +112,7 @@ export const TRANSVERSAL_ROOMS: TransversalRoomDef[] = [
     id: 'confessionario',
     name: 'Confessionário',
     iconName: 'Flame',
+    color: '#D8B4FE',
     description: 'Um cantinho 100% anônimo pra desabafar aquilo que você não tem coragem de falar em voz alta. Sem julgamentos, só alívio.',
     isAnonymous: true,
     sensitivityLevel: 'critico'
@@ -118,6 +121,7 @@ export const TRANSVERSAL_ROOMS: TransversalRoomDef[] = [
     id: 'cantinho-mel',
     name: 'Cantinho da Mel',
     iconName: 'MessageCircleHeart',
+    color: '#FFD166',
     description: 'Nossa roda de conversa oficial. Aqui tem enquetes gostosas, respostas das nossas especialistas e novidades pra sua rotina.',
     isAnonymous: false,
     sensitivityLevel: 'padrao'
@@ -126,6 +130,7 @@ export const TRANSVERSAL_ROOMS: TransversalRoomDef[] = [
     id: 'espaco-dois',
     name: 'Espaço a Dois',
     iconName: 'HeartHandshake',
+    color: '#F472B6',
     description: 'Porque criar filhos a dois tem seus desafios. Um lugar leve pra falar sobre parceria, amor e vida a dois sem tabus.',
     isAnonymous: false,
     sensitivityLevel: 'elevado'
@@ -134,6 +139,7 @@ export const TRANSVERSAL_ROOMS: TransversalRoomDef[] = [
     id: 'cuidando-quem-cuida',
     name: 'Cuidando de Quem Cuida',
     iconName: 'Leaf',
+    color: '#A3B18A',
     description: 'Lembrar de você não é capricho, é essencial. Um respiro dedicado a cuidar de quem cuida da casa inteira.',
     isAnonymous: false,
     sensitivityLevel: 'padrao'

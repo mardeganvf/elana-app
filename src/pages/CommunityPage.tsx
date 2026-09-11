@@ -81,7 +81,8 @@ export interface PostRoomDetails {
   subBadgeText?: string;
   selectionTarget?: ActiveSelection;
 }
-export { renderRoomIcon } from '../components/community/CommunityIcons';
+import { renderRoomIcon } from '../components/community/CommunityIcons';
+export { renderRoomIcon };
 
 
 export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
