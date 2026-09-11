@@ -56,6 +56,8 @@ import {
   EyeOff
 } from 'lucide-react';
 import { ReportModal } from '../components/community/ReportModal';
+import { renderRoomIcon } from '../components/community/CommunityIcons';
+export { renderRoomIcon };
 
 export type ActiveSelection = 
   | { type: 'jornada'; journeyId: string; subOption: 'ajuda' | 'celebrar' | 'desabafar' }
@@ -81,8 +83,6 @@ export interface PostRoomDetails {
   subBadgeText?: string;
   selectionTarget?: ActiveSelection;
 }
-import { renderRoomIcon } from '../components/community/CommunityIcons';
-export { renderRoomIcon };
 
 
 export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
@@ -1867,108 +1867,7 @@ export const CommunityPage: React.FC = () => {
                         })()}
                       </div>
 
-                      {/* Reaction Bar 2.0 (Dynamic & Clean) */}
-                      <div className="pt-3 border-t border-white/10 flex items-center gap-2 flex-wrap relative">
-                        {BRAND_REACTIONS.map(reaction => {
-                          const postReactions = post.reactions || {};
-                          const count = postReactions[reaction.id] || 0;
-                          const isReacted = !!(post.userReactions && post.userReactions[reaction.id]);
-
-                          const totalPostReactionsCount = Object.values(postReactions).reduce((acc: number, c: any) => acc + (Number(c) || 0), 0);
-                          const isDefaultSuggestion = totalPostReactionsCount === 0 && (reaction.id === 'estou_aqui' || reaction.id === 'vai_dar_certo');
-
-                          if (count === 0 && !isReacted && !isDefaultSuggestion) {
-                            return null;
-                          }
-
-                          return (
-                            <button
-                              key={reaction.id}
-                              onClick={() => toggleReaction(post.id, reaction.id)}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                                isReacted
-                                  ? 'bg-white/15 text-white border-white/30 shadow-md scale-105'
-                                  : 'bg-[#070D0F] text-slate-300 border-white/10 hover:bg-white/5'
-                              }`}
-                              title={`${reaction.label} — ${reaction.useCase}`}
-                            >
-                              {renderReactionIcon(reaction.iconName, reaction.color)}
-                              <span className="text-xs font-extrabold" style={{ color: reaction.color }}>
-                                {count}
-                              </span>
-                            </button>
-                          );
-                        })}
-
-                        {/* Reaction Picker Trigger */}
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => setOpenReactionPickerPostId(openReactionPickerPostId === post.id ? null : post.id)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-400 border border-white/10 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-                            title="Adicionar uma reação de apoio"
-                          >
-                            <Plus className="w-3.5 h-3.5 text-[#FF7F5B]" />
-                            <span className="text-[11px]">Apoiar</span>
-                          </button>
-
-                          {/* Floating Reaction Picker Popover */}
-                          {openReactionPickerPostId === post.id && (
-                            <div className="absolute left-0 bottom-full mb-2 z-50 bg-[#101B1E] border border-white/20 p-1.5 rounded-2xl shadow-2xl flex items-center gap-1 animate-scale-up backdrop-blur-xl">
-                              {BRAND_REACTIONS.map(reaction => {
-                                const isReacted = !!(post.userReactions && post.userReactions[reaction.id]);
-                                return (
-                                  <button
-                                    key={reaction.id}
-                                    type="button"
-                                    onClick={() => {
-                                      toggleReaction(post.id, reaction.id);
-                                      setOpenReactionPickerPostId(null);
-                                    }}
-                                    className={`p-2 rounded-xl transition-all flex flex-col items-center gap-1 hover:bg-white/10 active:scale-95 cursor-pointer ${
-                                      isReacted ? 'bg-white/15 ring-1 ring-white/30' : ''
-                                    }`}
-                                    title={`${reaction.label}: ${reaction.useCase}`}
-                                  >
-                                    {renderReactionIcon(reaction.iconName, reaction.color)}
-                                    <span className="text-[9px] font-bold text-slate-300 whitespace-nowrap hidden sm:inline">
-                                      {reaction.label}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Botão Denunciar — só aparece para posts de outros usuários */}
-                        {user && post.authorId !== user.id && (
-                          <button
-                            type="button"
-                            title="Denunciar publicação"
-                            onClick={() => setReportTarget({ contentType: 'post', contentId: post.id, postId: null })}
-                            className="ml-auto flex items-center gap-1 px-2 py-1.5 rounded-xl text-[10px] font-bold text-slate-500 border border-transparent hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer"
-                          >
-                            <Flag className="w-3 h-3" />
-                            <span>Denunciar</span>
-                          </button>
-                        )}
-
-                        {/* Botão Excluir — só aparece para o próprio autor do post */}
-                        {user && post.authorId === user.id && (
-                          <button
-                            type="button"
-                            title="Excluir minha publicação"
-                            onClick={() => setPostToDelete(post)}
-                            className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 border border-white/10 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Excluir</span>
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Rede de Apoio com X Respostas Button (Inline Expand Toggle) */}
+                      {/* Unified Post Action Bar: Reaction Counter Pills + Apoiar Trigger + Rede de Apoio + Excluir */}
                       {(() => {
                         const postComments = (Array.isArray(post.comments) ? post.comments : []).filter(c => {
                           if (c.status === 'sob_moderacao') {
@@ -1978,25 +1877,128 @@ export const CommunityPage: React.FC = () => {
                           }
                           return true;
                         });
+
                         return (
                           <>
-                            <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-                              <button
-                                onClick={() => toggleCommentsExpansion(post.id)}
-                                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm border ${
-                                  isInlineExpanded
-                                    ? 'bg-[#FF7F5B] text-white border-[#FF7F5B]'
-                                    : 'bg-[#070D0F] text-slate-300 border-white/10 hover:bg-white/10 hover:text-white'
-                                }`}
-                              >
-                                <MessageSquare className="w-4 h-4 text-[#8A9A5B]" />
-                                <span>Rede de Apoio ({postComments.length})</span>
-                                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isInlineExpanded ? 'rotate-180' : ''}`} />
-                              </button>
+                            <div className="pt-3 border-t border-white/10 flex items-center justify-between flex-wrap gap-2 relative">
+                              {/* Left: Reaction Counter Pills + Apoiar Picker */}
+                              <div className="flex items-center gap-1.5 flex-wrap relative">
+                                {BRAND_REACTIONS.map(reaction => {
+                                  const postReactions = post.reactions || {};
+                                  const count = postReactions[reaction.id] || 0;
+                                  const isReacted = !!(post.userReactions && post.userReactions[reaction.id]);
 
-                              <span className="text-[11px] text-slate-400">
-                                {postComments.length === 0 ? 'Seja o primeiro a acolher' : `${postComments.length} respostas empáticas`}
-                              </span>
+                                  const totalPostReactionsCount = Object.values(postReactions).reduce((acc: number, c: any) => acc + (Number(c) || 0), 0);
+                                  const isDefaultSuggestion = totalPostReactionsCount === 0 && (reaction.id === 'estou_aqui' || reaction.id === 'vai_dar_certo');
+
+                                  if (count === 0 && !isReacted && !isDefaultSuggestion) {
+                                    return null;
+                                  }
+
+                                  return (
+                                    <button
+                                      key={reaction.id}
+                                      onClick={() => toggleReaction(post.id, reaction.id)}
+                                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                                        isReacted
+                                          ? 'bg-white/15 text-white border-white/30 shadow-md scale-105'
+                                          : 'bg-[#070D0F] text-slate-300 border-white/10 hover:bg-white/5'
+                                      }`}
+                                      title={`${reaction.label} — ${reaction.useCase}`}
+                                    >
+                                      {renderReactionIcon(reaction.iconName, reaction.color)}
+                                      <span className="text-xs font-extrabold" style={{ color: reaction.color }}>
+                                        {count}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+
+                                {/* Reaction Picker Trigger */}
+                                <div className="relative">
+                                  <button
+                                    type="button"
+                                    onClick={() => setOpenReactionPickerPostId(openReactionPickerPostId === post.id ? null : post.id)}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-400 border border-white/10 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                                    title="Adicionar uma reação de apoio"
+                                  >
+                                    <Plus className="w-3.5 h-3.5 text-[#FF7F5B]" />
+                                    <span className="text-[11px]">Apoiar</span>
+                                  </button>
+
+                                  {/* Floating Reaction Picker Popover */}
+                                  {openReactionPickerPostId === post.id && (
+                                    <div className="absolute left-0 bottom-full mb-2 z-50 bg-[#101B1E] border border-white/20 p-1.5 rounded-2xl shadow-2xl flex items-center gap-1 animate-scale-up backdrop-blur-xl">
+                                      {BRAND_REACTIONS.map(reaction => {
+                                        const isReacted = !!(post.userReactions && post.userReactions[reaction.id]);
+                                        return (
+                                          <button
+                                            key={reaction.id}
+                                            type="button"
+                                            onClick={() => {
+                                              toggleReaction(post.id, reaction.id);
+                                              setOpenReactionPickerPostId(null);
+                                            }}
+                                            className={`p-2 rounded-xl transition-all flex flex-col items-center gap-1 hover:bg-white/10 active:scale-95 cursor-pointer ${
+                                              isReacted ? 'bg-white/15 ring-1 ring-white/30' : ''
+                                            }`}
+                                            title={`${reaction.label}: ${reaction.useCase}`}
+                                          >
+                                            {renderReactionIcon(reaction.iconName, reaction.color)}
+                                            <span className="text-[9px] font-bold text-slate-300 whitespace-nowrap hidden sm:inline">
+                                              {reaction.label}
+                                            </span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Right: Rede de Apoio Toggle Button + Denunciar / Excluir */}
+                              <div className="flex items-center gap-2 ml-auto">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCommentsExpansion(post.id)}
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm border cursor-pointer ${
+                                    isInlineExpanded
+                                      ? 'bg-[#FF7F5B] text-white border-[#FF7F5B]'
+                                      : 'bg-[#070D0F] text-slate-300 border-white/10 hover:bg-white/10 hover:text-white'
+                                  }`}
+                                  title="Expandir respostas da Rede de Apoio"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5 text-[#8A9A5B]" />
+                                  <span>Rede de Apoio ({postComments.length})</span>
+                                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isInlineExpanded ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {/* Botão Denunciar — só aparece para posts de outros usuários */}
+                                {user && post.authorId !== user.id && (
+                                  <button
+                                    type="button"
+                                    title="Denunciar publicação"
+                                    onClick={() => setReportTarget({ contentType: 'post', contentId: post.id, postId: null })}
+                                    className="flex items-center gap-1 px-2 py-1.5 rounded-xl text-[10px] font-bold text-slate-500 border border-transparent hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer"
+                                  >
+                                    <Flag className="w-3 h-3" />
+                                    <span>Denunciar</span>
+                                  </button>
+                                )}
+
+                                {/* Botão Excluir — só aparece para o próprio autor do post */}
+                                {user && post.authorId === user.id && (
+                                  <button
+                                    type="button"
+                                    title="Excluir minha publicação"
+                                    onClick={() => setPostToDelete(post)}
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 border border-white/10 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>Excluir</span>
+                                  </button>
+                                )}
+                              </div>
                             </div>
 
                             {/* Inline Expanded Comments Thread */}

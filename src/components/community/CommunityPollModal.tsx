@@ -164,7 +164,7 @@ export const CommunityPollModal: React.FC<CommunityPollModalProps> = ({
           {hasVoted ? (
             <div className="flex items-center gap-2 text-emerald-400 font-bold">
               <CheckCircle2 className="w-4 h-4" />
-              <span>Voto registrado com sucesso! ✨</span>
+              <span>Voto registrado com sucesso!</span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 text-slate-400">

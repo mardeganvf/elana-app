@@ -16,7 +16,8 @@ import {
   Smile,
   BookOpen,
   ChevronDown,
-  RefreshCw
+  RefreshCw,
+  Award
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCommunity } from '../../context/CommunityContext';
@@ -318,10 +319,10 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
               />
               <span 
                 onClick={() => setIsLevelsModalOpen(true)}
-                className="absolute bottom-0 right-0 bg-[#FF7F5B] text-white p-1.5 rounded-full border-2 border-[#101B1E] text-xs cursor-pointer hover:scale-110 transition-transform" 
+                className="absolute bottom-0 right-0 bg-[#FF7F5B] text-white p-1.5 rounded-full border-2 border-[#101B1E] cursor-pointer hover:scale-110 transition-transform flex items-center justify-center" 
                 title={`Clique para ver os 15 Níveis de Evolução (${levelInfo.title})`}
               >
-                {levelInfo.icon}
+                <Award className="w-3.5 h-3.5 text-white" />
               </span>
             </div>
 
@@ -348,7 +349,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
                   {supportSent ? (
                     <>
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
-                      <span>Carinho Enviado! 💖</span>
+                      <span>Carinho Enviado!</span>
                     </>
                   ) : (
                     <>
@@ -373,7 +374,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
                 className="bg-[#FF7F5B]/20 hover:bg-[#FF7F5B]/30 text-[#FF7F5B] text-xs font-bold px-2.5 py-0.5 rounded-md border border-[#FF7F5B]/30 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
                 title="Clique para ver os Níveis de Desenvolvimento"
               >
-                <span>{levelInfo.icon}</span>
+                <Award className="w-3.5 h-3.5 text-[#FF7F5B]" />
                 <span>{levelInfo.title}</span>
               </button>
 
@@ -397,7 +398,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
             <div className="bg-[#070D0F] p-4 rounded-2xl border border-white/5 flex flex-col justify-between">
               <div>
                 <h4 className="text-xs font-extrabold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <span>✨</span> Um pouquinho sobre mim...
+                  <Sparkles className="w-3.5 h-3.5 text-[#FFD166]" /> Um pouquinho sobre mim...
                 </h4>
                 <p className="text-xs sm:text-sm text-slate-200 leading-relaxed italic font-medium">
                   "{profile.bio || (profile.isAnonymous ? 'Espaço de confidencialidade e desabafo sem julgamentos.' : 'Vivendo um dia de cada vez, aprendendo sobre paciência, amor e criando memórias afetuosas com meus filhos.')}"
@@ -417,8 +418,8 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
               <div className="grid grid-cols-1 gap-2.5">
                 {childrenList.map((child, idx) => (
                   <div key={child.id || idx} className="bg-[#101B1E] border border-white/10 p-2.5 rounded-xl flex items-center gap-3 shadow-sm">
-                    <div className="text-2xl shrink-0 p-1.5 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center">
-                      👶
+                    <div className="shrink-0 p-2 bg-[#FF7F5B]/10 border border-[#FF7F5B]/20 rounded-xl flex items-center justify-center text-[#FF7F5B]">
+                      <Baby className="w-4 h-4" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <h4 className="text-xs font-bold text-white truncate">{child.name || 'Filho(a)'}</h4>
@@ -434,7 +435,9 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
           <div className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2.5">
-                <span className="text-2xl p-1.5 bg-white/5 rounded-xl">{levelInfo.icon}</span>
+                <div className="p-2 bg-[#FF7F5B]/10 border border-[#FF7F5B]/20 rounded-xl text-[#FF7F5B] flex items-center justify-center">
+                  <Award className="w-5 h-5" />
+                </div>
                 <div>
                   <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Minha Evolução</span>
                   <span className="text-sm font-extrabold text-white">{levelInfo.title}</span>
@@ -530,7 +533,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
             </div>
           )}
 
-          {/* 💬 Publicações do Membro */}
+          {/* Publicações do Membro */}
           <div className="space-y-3 pt-4 border-t border-white/10">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h4 className="text-xs font-extrabold text-[#8A9A5B] uppercase tracking-wider flex items-center gap-1.5">
@@ -697,7 +700,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
             {testimonialSuccess && (
               <div className="bg-emerald-500/15 border border-emerald-500/30 p-3 rounded-2xl text-emerald-300 text-xs text-center font-bold animate-fade-in flex items-center justify-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Depoimento público publicado no perfil com sucesso! 💖</span>
+                <span>Depoimento público publicado no perfil com sucesso!</span>
               </div>
             )}
 
@@ -706,7 +709,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
               {testimonials.length === 0 ? (
                 <div className="text-center py-6 px-4 text-slate-400 text-xs bg-[#070D0F] rounded-2xl border border-white/5 space-y-1">
                   <p className="font-semibold text-slate-300">Nenhum depoimento ainda.</p>
-                  <p className="text-[11px] text-slate-500">Que tal deixar a primeira mensagem de carinho e acolhimento? ✨</p>
+                  <p className="text-[11px] text-slate-500">Que tal deixar a primeira mensagem de carinho e acolhimento?</p>
                 </div>
               ) : (
                 testimonials.map(t => (
@@ -746,7 +749,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
           {supportSent && (
             <div className="bg-emerald-500/15 border border-emerald-500/30 p-3 rounded-2xl text-emerald-300 text-xs text-center font-bold animate-fade-in flex items-center justify-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Seu carinho foi enviado em caráter privado para {profile.name}! 💖</span>
+              <span>Seu carinho foi enviado em caráter privado para {profile.name}!</span>
             </div>
           )}
 

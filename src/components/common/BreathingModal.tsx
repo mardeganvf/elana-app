@@ -120,9 +120,9 @@ export const BreathingModal: React.FC<BreathingModalProps> = ({
             >
               <div className="flex flex-col items-center justify-center text-center px-3">
                 <span className="text-base sm:text-lg font-black uppercase text-white tracking-wider">
-                  {phase === 'inspire' && '🌊 Inspire...'}
-                  {phase === 'segure' && '🧘 Segure...'}
-                  {phase === 'expire' && '🍃 Expire...'}
+                  {phase === 'inspire' && 'Inspire...'}
+                  {phase === 'segure' && 'Segure...'}
+                  {phase === 'expire' && 'Expire...'}
                 </span>
                 <span className="text-[11px] font-medium text-white/80 mt-1">
                   {phase === 'inspire' && 'Puxe o ar suavemente'}

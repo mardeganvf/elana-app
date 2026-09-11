@@ -162,7 +162,7 @@ export const CommunityPollBanner: React.FC<CommunityPollBannerProps> = ({ poll: 
             <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
               <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Obrigado pela sua resposta! ✨</span>
+                <span>Obrigado pela sua resposta!</span>
               </div>
               <span className="text-[10px] text-slate-500">Sua voz fortalece a nossa comunidade</span>
             </div>

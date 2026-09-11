@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { X, Flag, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const REPORT_REASONS = [
-  { id: 'ofensivo', label: '🚫 Conteúdo ofensivo ou agressivo' },
-  { id: 'assedio', label: '⚠️ Assédio ou constrangimento' },
-  { id: 'sexual', label: '🔞 Conteúdo sexual explícito inadequado' },
-  { id: 'informacao_falsa', label: '💊 Informação médica perigosa ou falsa' },
-  { id: 'spam', label: '🗑️ Spam ou propaganda' },
-  { id: 'outro', label: '📝 Outro motivo' },
+  { id: 'ofensivo', label: 'Conteúdo ofensivo ou agressivo' },
+  { id: 'assedio', label: 'Assédio ou constrangimento' },
+  { id: 'sexual', label: 'Conteúdo sexual explícito inadequado' },
+  { id: 'informacao_falsa', label: 'Informação médica perigosa ou falsa' },
+  { id: 'spam', label: 'Spam ou propaganda' },
+  { id: 'outro', label: 'Outro motivo' },
 ];
 
 interface ReportModalProps {
@@ -131,7 +131,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
             <CheckCircle className="w-10 h-10 text-[#8A9A5B]" />
             <p className="text-sm font-bold text-white">Denúncia recebida!</p>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Nossa equipe vai analisar este conteúdo com cuidado. Obrigada por ajudar a manter a comunidade segura. 💚
+              Nossa equipe vai analisar este conteúdo com cuidado. Obrigada por ajudar a manter a comunidade segura.
             </p>
           </div>
         )}
