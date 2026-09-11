@@ -321,6 +321,7 @@ export const JOURNEYS_DATA: Journey[] = [
     iconName: 'Sparkles',
     price: 197,
     isComingSoon: true,
+    isEnabled: false,
         modules: [
       {
         id: 'dds-mod-1',

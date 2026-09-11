@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useCommunity, checkContentSensitivityAI } from '../context/CommunityContext';
 import { useAuth } from '../context/AuthContext';
 import { JOURNEYS_DATA } from '../data/journeysData';
+import { useJourneys } from '../context/JourneysContext';
 import { supabase } from '../lib/supabase';
 import { 
   BRAND_REACTIONS, 
@@ -172,7 +173,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
   }
 
   // 3. Salas de Jornadas
-  if (post.journeyId) {
+  if (post.journeyId && post.journeyId !== 'depois-do-silencio') {
     const journey = JOURNEYS_DATA.find(j => j.id === post.journeyId);
     const jName = journey ? journey.title : (post.journeyId === 'pais-recem-nascidos' ? 'Pais Recém-Nascidos' : post.journeyId);
     
@@ -302,15 +303,15 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
   }
   if (fullText.includes('luto') || fullText.includes('anjo') || fullText.includes('saudade') || fullText.includes('perda')) {
     return {
-      categoryType: 'jornada',
-      categoryLabel: 'Jornada',
-      roomName: 'Depois do Silêncio',
+      categoryType: 'geral',
+      categoryLabel: 'Geral',
+      roomName: 'Confessionário',
       subTopicLabel: 'Preciso Desabafar',
-      emoji: '🕊️',
-      badgeBg: 'rgba(167, 139, 250, 0.12)',
-      badgeBorder: 'rgba(167, 139, 250, 0.35)',
-      badgeText: '#C4B5FD',
-      selectionTarget: { type: 'jornada', journeyId: 'depois-do-silencio', subOption: 'desabafar' }
+      emoji: '🕯️',
+      badgeBg: 'rgba(168, 85, 247, 0.12)',
+      badgeBorder: 'rgba(168, 85, 247, 0.35)',
+      badgeText: '#D8B4FE',
+      selectionTarget: { type: 'geral', roomId: 'confessionario' }
     };
   }
   if (fullText.includes('ninho vazio') || fullText.includes('faculdade') || fullText.includes('sairam de casa')) {
@@ -481,6 +482,9 @@ export const CommunityPage: React.FC = () => {
   } = useCommunity();
   const { user, isAuthenticated, awardBadge, updateUser } = useAuth();
   const { showToast } = useToast();
+  const { journeys: dynamicJourneys } = useJourneys();
+  const rawJourneys = dynamicJourneys && dynamicJourneys.length > 0 ? dynamicJourneys : JOURNEYS_DATA;
+  const availableJourneys = rawJourneys.filter(j => j.isEnabled !== false && j.id !== 'depois-do-silencio');
 
   // Forçar atualização dos posts sempre que abrir a aba/página da Comunidade
   useEffect(() => {
@@ -1271,7 +1275,7 @@ export const CommunityPage: React.FC = () => {
           <div className="space-y-2 animate-fade-in">
             {/* Journey pills */}
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
-              {JOURNEYS_DATA.map(j => {
+              {availableJourneys.map(j => {
                 const isSelected = mobilePillJourneyId === j.id;
                 return (
                   <button
@@ -1454,7 +1458,7 @@ export const CommunityPage: React.FC = () => {
               </span>
 
               <div className="space-y-1.5">
-                {JOURNEYS_DATA.map(j => {
+                {availableJourneys.map(j => {
                   const isExpanded = expandedJourneyId === j.id;
                   const isSelectedJourney = activeSelection && activeSelection.type === 'jornada' && activeSelection.journeyId === j.id;
 

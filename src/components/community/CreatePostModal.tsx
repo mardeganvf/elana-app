@@ -25,13 +25,17 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const { createPost } = useCommunity();
   const { showToast } = useToast();
 
+  const availableJourneys = JOURNEYS_DATA.filter(j => j.isEnabled !== false && j.id !== 'depois-do-silencio');
+
   // Resolve current active room context as dynamic state
   const [postType, setPostType] = useState<'jornada' | 'transversal' | 'idade'>(
     activeSelection?.type === 'geral' ? 'transversal' : activeSelection?.type === 'idade' ? 'idade' : 'jornada'
   );
 
   const [selectedJourneyId, setSelectedJourneyId] = useState<string>(
-    activeSelection?.type === 'jornada' ? activeSelection.journeyId : 'pais-recem-nascidos'
+    activeSelection?.type === 'jornada' && activeSelection.journeyId !== 'depois-do-silencio'
+      ? activeSelection.journeyId
+      : (availableJourneys[0]?.id || 'pais-recem-nascidos')
   );
   const [selectedTransversalId, setSelectedTransversalId] = useState<string>(
     activeSelection?.type === 'geral' ? activeSelection.roomId : 'cantinho-mel'
@@ -218,7 +222,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                     onChange={(e) => setSelectedJourneyId(e.target.value)}
                     className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#FF7F5B]"
                   >
-                    {JOURNEYS_DATA.map(j => (
+                    {availableJourneys.map(j => (
                       <option key={j.id} value={j.id} className="bg-[#101B1E] text-white">
                         {j.title}
                       </option>
