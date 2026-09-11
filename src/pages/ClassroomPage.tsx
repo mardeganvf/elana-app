@@ -16,7 +16,9 @@ import {
   Film,
   RotateCcw,
   Check,
-  Pause
+  Pause,
+  Lock,
+  ShoppingCart
 } from 'lucide-react';
 import { NotebookModal } from '../components/gamification/NotebookModal';
 
@@ -419,9 +421,16 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   const completedCount = allLessons.filter(l => user?.completedLessonIds.includes(l.id)).length;
   const progressPercent = Math.round((completedCount / allLessons.length) * 100);
 
+  // ── ACCESS GATE ────────────────────────────────────────────────────────────
+  // A 1ª aula do 1º módulo é sempre a degustação gratuita.
+  // Todas as outras requerem que a jornada tenha sido adquirida.
+  const isPurchased = user?.purchasedJourneyIds?.includes(currentJourney.id) ?? false;
+  const freePreviewLessonId = currentJourney.modules[0]?.lessons[0]?.id;
+  const isCurrentLessonLocked = !isPurchased && activeLesson.id !== freePreviewLessonId;
+
   return (
     <div className="space-y-6 lg:space-y-8 pb-20 animate-fade-in max-w-7xl mx-auto text-white -mt-4">
-      
+
       {/* Top Header Navigation */}
       <div className="flex items-center justify-between">
         <button
@@ -541,8 +550,37 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
 
           {/* Media Player Box (Unified Video and Audio Player) */}
           <div className="bg-black rounded-3xl overflow-hidden shadow-2xl relative border border-white/10 aspect-video w-full">
+
+            {/* ── PAYWALL GATE ── */}
+            {isCurrentLessonLocked ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-gradient-to-b from-[#070D0F] to-[#101B1E] p-8 text-center z-10">
+                <div className="w-16 h-16 rounded-full bg-[#FF7F5B]/15 border border-[#FF7F5B]/40 flex items-center justify-center">
+                  <Lock className="w-7 h-7 text-[#FF7F5B]" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-black text-white">Conteúdo exclusivo</h3>
+                  <p className="text-sm text-slate-400 max-w-xs leading-relaxed">
+                    Esta aula faz parte da jornada <span className="text-[#FF7F5B] font-bold">{currentJourney.title}</span>. Adquira para ter acesso completo.
+                  </p>
+                </div>
+                <button
+                  onClick={handleBack}
+                  className="flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider px-6 py-3 rounded-xl shadow-lg transition-all active:scale-95 cursor-pointer"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>Adquirir esta Jornada</span>
+                </button>
+                <button
+                  onClick={() => handleLessonChange(allLessons[0])}
+                  className="text-xs text-slate-400 hover:text-white underline underline-offset-2 transition-colors cursor-pointer"
+                >
+                  Voltar à aula gratuita
+                </button>
+              </div>
+            ) : null}
+
             {/* Player Container: Iframe do Panda Video ou HTML5 Video */}
-            <div className={`w-full h-full ${mediaMode === 'audio' ? 'opacity-0 pointer-events-none absolute inset-0 -z-10' : 'relative group'}`}>
+            <div className={`w-full h-full ${isCurrentLessonLocked ? 'invisible' : ''} ${mediaMode === 'audio' ? 'opacity-0 pointer-events-none absolute inset-0 -z-10' : 'relative group'}`}>
               {getEmbedUrl(activeLesson.videoUrl) ? (
                 <iframe
                   id="panda-player"
@@ -942,47 +980,57 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                           const isCurrent = lesson.id === activeLesson.id;
                           const isDone = user?.completedLessonIds.includes(lesson.id);
 
-                          return (
-                            <button
-                              key={lesson.id}
-                              onClick={() => handleLessonChange(lesson)}
-                              className={`w-full text-left p-2.5 rounded-xl flex items-center justify-between gap-2.5 transition-all cursor-pointer active:scale-95 ${
-                                isCurrent
-                                  ? 'bg-[#FF7F5B] text-white font-bold shadow-md'
-                                  : 'hover:bg-white/5 text-slate-300'
-                              }`}
-                            >
-                              <div className="flex items-start gap-2.5 min-w-0">
-                                <div className="mt-0.5 shrink-0">
-                                  {isDone ? (
-                                    <CheckCircle2 className={`w-4 h-4 ${isCurrent ? 'text-white' : 'text-emerald-400'}`} />
-                                  ) : (
-                                    <Play className={`w-4 h-4 ${isCurrent ? 'text-white' : 'text-slate-500'}`} />
-                                  )}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-xs leading-snug truncate">
-                                    {lesson.title}
-                                  </p>
-                                  <span className={`text-[10px] block mt-0.5 ${isCurrent ? 'text-white/80' : 'text-slate-400'}`}>
-                                    {lesson.duration}
-                                  </span>
-                                </div>
-                              </div>
+                          return (() => {
+                            const isLessonLocked = !isPurchased && lesson.id !== freePreviewLessonId;
 
-                              {/* Sinalização / Container 100% Assistido */}
-                              {isDone && (
-                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-md shrink-0 uppercase tracking-wider flex items-center gap-1 border ${
+                            return (
+                              <button
+                                key={lesson.id}
+                                onClick={() => !isLessonLocked && handleLessonChange(lesson)}
+                                className={`w-full text-left p-2.5 rounded-xl flex items-center justify-between gap-2.5 transition-all active:scale-95 ${
+                                  isLessonLocked
+                                    ? 'cursor-not-allowed opacity-50'
+                                    : 'cursor-pointer'
+                                } ${
                                   isCurrent
-                                    ? 'bg-white/25 text-white border-white/40'
-                                    : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                                }`}>
-                                  <Check className="w-2.5 h-2.5 stroke-[3]" />
-                                  100%
-                                </span>
-                              )}
-                            </button>
-                          );
+                                    ? 'bg-[#FF7F5B] text-white font-bold shadow-md'
+                                    : 'hover:bg-white/5 text-slate-300'
+                                }`}
+                              >
+                                <div className="flex items-start gap-2.5 min-w-0">
+                                  <div className="mt-0.5 shrink-0">
+                                    {isLessonLocked ? (
+                                      <Lock className={`w-4 h-4 text-slate-500`} />
+                                    ) : isDone ? (
+                                      <CheckCircle2 className={`w-4 h-4 ${isCurrent ? 'text-white' : 'text-emerald-400'}`} />
+                                    ) : (
+                                      <Play className={`w-4 h-4 ${isCurrent ? 'text-white' : 'text-slate-500'}`} />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs leading-snug truncate">
+                                      {lesson.title}
+                                    </p>
+                                    <span className={`text-[10px] block mt-0.5 ${isCurrent ? 'text-white/80' : 'text-slate-400'}`}>
+                                      {isLessonLocked ? 'Conteúdo exclusivo' : lesson.duration}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Sinalização / Container 100% Assistido */}
+                                {isDone && !isLessonLocked && (
+                                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-md shrink-0 uppercase tracking-wider flex items-center gap-1 border ${
+                                    isCurrent
+                                      ? 'bg-white/25 text-white border-white/40'
+                                      : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                  }`}>
+                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                    100%
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })();
                         })}
                       </div>
                     )}
