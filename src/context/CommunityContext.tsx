@@ -1172,7 +1172,6 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         author_id: user?.id || null,
         title: payload.title,
         content: payload.content,
-        category: payload.category || '',
         status: postStatus,
         author_name: authorName,
         author_avatar: authorAvatar,
