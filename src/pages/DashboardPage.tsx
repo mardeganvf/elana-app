@@ -877,7 +877,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             </div>
             <div>
               <div className="text-sm font-black text-white group-hover:text-[#8A9A5B] transition-colors">
-                {getUnlockedBadgesCount(user.badges)} de {ALL_BADGES.length} conquistadas
+                Total: {ALL_BADGES.length} Conquistas | Conquistadas: {getUnlockedBadgesCount(user.badges)}
               </div>
               <span className="text-[11px] text-slate-400 font-medium">
                 {Math.round((getUnlockedBadgesCount(user.badges) / ALL_BADGES.length) * 100)}% concluído
