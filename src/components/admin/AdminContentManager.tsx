@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   FolderPlus, 
   Plus, 
@@ -1840,9 +1841,9 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       {/* ==================================================== */}
       {/* MODAL 4: CONFIRMAÇÃO DE EXCLUSÃO */}
       {/* ==================================================== */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-sm p-4 sm:p-6 flex justify-center items-start animate-fade-in">
-          <div className="bg-[#101B1E] border border-rose-500/30 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl text-center my-6 sm:my-16 animate-scale-in">
+      {deleteConfirm && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[999999] overflow-y-auto bg-black/85 backdrop-blur-sm p-4 sm:p-6 flex justify-center items-center">
+          <div className="bg-[#101B1E] border border-rose-500/30 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl text-center my-auto animate-scale-in">
             <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
               <AlertCircle className="w-6 h-6" />
             </div>
@@ -1854,7 +1855,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
               </p>
               {deleteConfirm.type === 'journey' && (
                 <p className="text-[11px] text-amber-300/90 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20 mt-2.5 text-left leading-relaxed">
-                  ⚠️ <strong>Atenção:</strong> Esta ação é irreversível. Todos os subtemas, vídeos, materiais de apoio e dados vinculados a esta jornada serão removidos definitivamente.
+                  Atenção: Esta ação é irreversível. Todos os subtemas, vídeos, materiais de apoio e dados vinculados a esta jornada serão removidos definitivamente.
                 </p>
               )}
             </div>
@@ -1876,7 +1877,8 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL: LISTA DE INTERESSADOS NO LANÇAMENTO (SUPABASE) */}

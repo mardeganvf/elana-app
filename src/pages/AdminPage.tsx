@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -269,6 +270,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [rejectReason, setRejectReason] = useState('');
   const [trainFilterActive, setTrainFilterActive] = useState(true);
   const [isSubmittingRejection, setIsSubmittingRejection] = useState(false);
+
+  // Travar o scroll da página enquanto o modal de confirmação estiver aberto
+  useEffect(() => {
+    if (rejectModalItem) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [rejectModalItem]);
 
   // Moderation status is persisted directly in Supabase (community_posts.status / community_comments.status)
 
@@ -1347,7 +1358,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   }
 
   return (
-    <div className="space-y-8 pb-20 animate-fade-in max-w-6xl mx-auto text-white -mt-4">
+    <div className="space-y-8 pb-20 max-w-6xl mx-auto text-white -mt-4">
 
       {/* Admin / Guia Header */}
       <section className="bg-[#101B1E] px-6 py-5 sm:px-8 sm:py-6 rounded-3xl border border-white/10 shadow-xl">
@@ -3584,17 +3595,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       </div>
 
       {/* 🚫 Modal de Remoção e Calibração da IA */}
-      {rejectModalItem && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setRejectModalItem(null)}>
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      {rejectModalItem && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto"
+          onClick={() => setRejectModalItem(null)}
+        >
           <div
-            className="relative w-full max-w-lg bg-[#0E1A1E] border border-white/10 rounded-3xl shadow-2xl p-6 flex flex-col gap-5 animate-fade-in"
+            className="relative w-full max-w-lg bg-[#0E1A1E] border border-white/10 rounded-3xl shadow-2xl p-6 flex flex-col gap-5 my-auto text-white animate-scale-up"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <Brain className="w-5 h-5 text-purple-400" />
-                <h3 className="text-sm font-black text-white">Remover & Ensinar Filtro da IA</h3>
+                <h3 className="text-sm font-black text-white">
+                  {rejectModalItem.type === 'comment' ? 'Remover Comentário & Ensinar Filtro' : 'Remover Publicação & Ensinar Filtro'}
+                </h3>
               </div>
               <button
                 onClick={() => setRejectModalItem(null)}
@@ -3607,7 +3622,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             <div className="space-y-3">
               <div className="bg-[#070D0F] p-3.5 rounded-2xl border border-white/5">
                 <span className="text-[10px] font-bold text-slate-400 block mb-1">
-                  Publicação de {rejectModalItem.authorName} ({rejectModalItem.roomName}):
+                  {rejectModalItem.type === 'comment' ? 'Comentário' : 'Publicação'} de {rejectModalItem.authorName} ({rejectModalItem.roomName}):
                 </span>
                 <p className="text-xs text-slate-200 italic line-clamp-3">"{rejectModalItem.content}"</p>
               </div>
@@ -3621,11 +3636,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   onChange={e => setRejectCategory(e.target.value as any)}
                   className="w-full px-3.5 py-2.5 bg-[#070D0F] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500/50"
                 >
-                  <option value="antijulgamento">🛡️ Antijulgamento / Agressão / Mom-shaming</option>
-                  <option value="antijulgamento">🚫 Violação de consentimento / Abuso sexual / Coerção</option>
-                  <option value="antijulgamento">🔞 Conteúdo sexualmente explícito / Pornográfico</option>
-                  <option value="vulnerabilidade">💔 Risco à vida / Sofrimento extremo / Ideação</option>
-                  <option value="outro">🗑️ Outro / Spam / Desrespeito às regras</option>
+                  <option value="antijulgamento">Antijulgamento / Agressão / Mom-shaming</option>
+                  <option value="antijulgamento">Violação de consentimento / Abuso sexual / Coerção</option>
+                  <option value="antijulgamento">Conteúdo sexualmente explícito / Pornográfico</option>
+                  <option value="vulnerabilidade">Risco à vida / Sofrimento extremo / Ideação</option>
+                  <option value="outro">Outro / Spam / Desrespeito às regras</option>
                 </select>
               </div>
 
@@ -3680,13 +3695,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 ) : (
                   <>
                     <XCircle className="w-4 h-4" />
-                    <span>Confirmar Remoção</span>
+                    <span>{rejectModalItem.type === 'comment' ? 'Confirmar Exclusão' : 'Confirmar Remoção'}</span>
                   </>
                 )}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal de Perfil Completo do Usuário */}
