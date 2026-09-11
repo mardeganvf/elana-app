@@ -359,11 +359,19 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
             <input
               type="text"
               required
+              maxLength={100}
               placeholder="Ex: Meu bebê falou a primeira palavra hoje."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full p-3.5 rounded-2xl border border-white/15 text-base sm:text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B] transition-all"
             />
+            <p className={`text-right text-[10px] font-semibold tabular-nums ${
+              title.length >= 100 ? 'text-rose-400' :
+              title.length >= 80  ? 'text-amber-400' :
+              'text-slate-500'
+            }`}>
+              {title.length} / 100
+            </p>
           </div>
 
           {/* Content Textarea */}
@@ -374,11 +382,23 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
             <textarea
               required
               rows={4}
+              maxLength={500}
               placeholder="Escreva com o coração. Este é um espaço de acolhimento mútuo."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full p-3.5 rounded-2xl border border-white/15 text-base sm:text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B] transition-all resize-none"
+              className={`w-full p-3.5 rounded-2xl border text-base sm:text-xs text-white bg-[#070D0F] focus:outline-none transition-all resize-none ${
+                content.length >= 500 ? 'border-rose-500/60 focus:border-rose-500' :
+                content.length >= 400 ? 'border-amber-500/40 focus:border-amber-400' :
+                'border-white/15 focus:border-[#FF7F5B]'
+              }`}
             />
+            <p className={`text-right text-[10px] font-semibold tabular-nums ${
+              content.length >= 500 ? 'text-rose-400' :
+              content.length >= 400 ? 'text-amber-400' :
+              'text-slate-500'
+            }`}>
+              {content.length} / 500
+            </p>
           </div>
 
           {/* Clean Footer Actions */}
