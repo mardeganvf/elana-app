@@ -3,7 +3,7 @@ import { useAuth, GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { validateStrongPassword } from '../utils/validators';
 import { ResetPasswordModal } from '../components/auth/ResetPasswordModal';
-import { RefreshCw, CheckCircle2, AlertCircle, Mail, Phone, KeyRound, ArrowLeft } from 'lucide-react';
+import { RefreshCw, CheckCircle2, AlertCircle, Mail, Phone, KeyRound, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import logoElana from '../assets/logo-elana.png';
 
 interface LoginPageProps {
@@ -26,6 +26,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
   const [confirmEmail, setConfirmEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // 6-Digit Email Verification Code State
   const [inputCode, setInputCode] = useState('');
@@ -514,15 +516,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                     </button>
                   )}
                 </div>
-                <input
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 pr-11 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(p => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer p-1"
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -530,15 +543,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             {mode === 'register' && loginMethod === 'email' && (
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">Confirmar Senha</label>
-                <input
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Redigite sua senha para confirmação"
-                  className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    required
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Redigite sua senha para confirmação"
+                    className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 pr-11 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(p => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer p-1"
+                    tabIndex={-1}
+                    aria-label={showConfirmPassword ? 'Ocultar confirmação de senha' : 'Mostrar confirmação de senha'}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             )}
 
