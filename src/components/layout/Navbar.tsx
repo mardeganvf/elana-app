@@ -900,29 +900,32 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
 
       {/* Feature 1 Modal: Diário de Emoções (Resumo de 4 Semanas e Calendário - Opção A) */}
       {isEmotionalHistoryOpen && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in text-white">
-          <div className="bg-[#0D1518] rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-white/10 relative space-y-6 m-auto max-h-[90vh] overflow-y-auto">
-            
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 pr-14 sm:p-6 sm:pr-16 bg-black/85 backdrop-blur-md animate-fade-in text-white">
+          {/* Backdrop click to close */}
+          <div className="absolute inset-0" onClick={() => setIsEmotionalHistoryOpen(false)} />
+
+          {/* Modal Container Wrapper com Botão Fechar Flutuando ao Lado do Canto Superior Direito */}
+          <div className="relative w-full max-w-lg m-auto z-10">
+            {/* Botão Fechar (X) Flutuando Fora do Box ao Lado do Canto Superior Direito (não acima) */}
             <button
               onClick={() => setIsEmotionalHistoryOpen(false)}
               aria-label="Fechar Diário de Emoções"
-              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
+              className="absolute top-0 left-full ml-2.5 sm:ml-3 text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition-all cursor-pointer z-20 shadow-xl backdrop-blur-md border border-white/15 hover:scale-105 active:scale-95 flex items-center justify-center"
+              title="Fechar Diário de Emoções"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
 
-            {/* Cabeçalho Acolhedor sem Emojis */}
-            <div className="text-center space-y-2 pt-1">
-              <div className="w-12 h-12 rounded-full bg-[#FF7F5B]/15 border border-[#FF7F5B]/30 text-[#FF7F5B] flex items-center justify-center mx-auto shadow-inner">
-                <HeartHandshake className="w-6 h-6" />
+            <div className="bg-[#0D1518] rounded-3xl w-full p-6 sm:p-7 shadow-2xl border border-white/10 relative space-y-6 max-h-[90vh] overflow-y-auto">
+              {/* Cabeçalho Acolhedor sem Emojis */}
+              <div className="text-center space-y-2 pt-1">
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Seu Diário de Emoções
+                </h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                  Acompanhe como você tem se sentido nos últimos dias e respeite cada fase, com carinho e sem culpa.
+                </p>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                Seu Diário de Emoções
-              </h3>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
-                Acompanhe como você tem se sentido nos últimos dias e respeite cada fase, com carinho e sem culpa.
-              </p>
-            </div>
 
             {/* 1. Barra de Equilíbrio Emocional (Resumo das Últimas 4 Semanas) */}
             <div className="space-y-3 text-left">
@@ -1091,7 +1094,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             </div>
 
           </div>
-        </div>,
+        </div>
+      </div>,
         document.body
       )}
 
