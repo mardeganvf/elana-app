@@ -5,9 +5,9 @@ import { useToast } from '../../context/ToastContext';
 import { JOURNEYS_DATA } from '../../data/journeysData';
 import { TRANSVERSAL_ROOMS, AGE_BRACKET_ROOMS } from '../../data/communityData';
 import { EmotionalIntention } from '../../types';
-import { X, Send, Lock, EyeOff, MessageSquarePlus } from 'lucide-react';
+import { X, Send, Lock, EyeOff, MessageSquarePlus, BookOpen, Leaf, Sun, Flame } from 'lucide-react';
+import { renderRoomIcon } from './CommunityIcons';
 
-export type ActiveSelection = 
   | { type: 'jornada'; journeyId: string; subOption: EmotionalIntention }
   | { type: 'geral'; roomId: string }
   | { type: 'idade'; ageId: string }
@@ -184,29 +184,32 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               <button
                 type="button"
                 onClick={() => setPostType('jornada')}
-                className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   postType === 'jornada' ? 'bg-[#FF7F5B] text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Jornadas
+                <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                <span>Jornadas</span>
               </button>
               <button
                 type="button"
                 onClick={() => setPostType('transversal')}
-                className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   postType === 'transversal' ? 'bg-[#8A9A5B] text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Geral
+                <Leaf className="w-3.5 h-3.5 shrink-0" />
+                <span>Geral</span>
               </button>
               <button
                 type="button"
                 onClick={() => setPostType('idade')}
-                className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   postType === 'idade' ? 'bg-[#E66795] text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Idades
+                <Sun className="w-3.5 h-3.5 shrink-0" />
+                <span>Idades</span>
               </button>
             </div>
 
@@ -236,20 +239,21 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   </label>
                   <div className="grid grid-cols-3 gap-1.5">
                     {[
-                      { id: 'ajuda' as const, label: 'Ajuda' },
-                      { id: 'celebrar' as const, label: 'Celebrar' },
-                      { id: 'desabafar' as const, label: 'Desabafar' }
+                      { id: 'ajuda' as const, label: 'Ajuda', iconName: 'HelpCircle' },
+                      { id: 'celebrar' as const, label: 'Celebrar', iconName: 'Star' },
+                      { id: 'desabafar' as const, label: 'Desabafar', iconName: 'CloudRain' }
                     ].map(opt => (
                       <button
                         key={opt.id}
                         type="button"
                         onClick={() => setSelectedIntention(opt.id)}
-                        className={`flex items-center justify-center py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
+                        className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
                           selectedIntention === opt.id
                             ? 'bg-[#FF7F5B]/20 text-[#FF7F5B] border-[#FF7F5B]/50 shadow-sm'
                             : 'bg-[#101B1E] text-slate-400 border-white/10 hover:text-white'
                         }`}
                       >
+                        {renderRoomIcon(opt.iconName, "w-3 h-3 shrink-0")}
                         <span className="truncate">{opt.label}</span>
                       </button>
                     ))}
@@ -270,12 +274,18 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                       key={r.id}
                       type="button"
                       onClick={() => setSelectedTransversalId(r.id)}
-                      className={`flex items-center p-2.5 rounded-xl text-xs font-bold border transition-all text-left ${
+                      className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold border transition-all text-left ${
                         selectedTransversalId === r.id
                           ? 'bg-[#8A9A5B]/20 text-white border-[#8A9A5B]/60 shadow-sm'
                           : 'bg-[#101B1E] text-slate-300 border-white/10 hover:text-white'
                       }`}
                     >
+                      <div 
+                        className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${r.color}20`, color: r.color }}
+                      >
+                        {renderRoomIcon(r.iconName, "w-3.5 h-3.5")}
+                      </div>
                       <span className="truncate">{r.name}</span>
                     </button>
                   ))}
@@ -295,12 +305,13 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                       key={a.id}
                       type="button"
                       onClick={() => setSelectedAgeId(a.id)}
-                      className={`flex items-center justify-center p-2 rounded-xl text-xs font-bold border transition-all ${
+                      className={`flex items-center justify-center gap-1.5 p-2 rounded-xl text-xs font-bold border transition-all ${
                         selectedAgeId === a.id
                           ? 'bg-[#E66795]/20 text-white border-[#E66795]/60 shadow-sm'
                           : 'bg-[#101B1E] text-slate-300 border-white/10 hover:text-white'
                       }`}
                     >
+                      {renderRoomIcon(a.iconName, "w-3.5 h-3.5 text-[#E66795] shrink-0")}
                       <span>{a.name}</span>
                     </button>
                   ))}
@@ -312,10 +323,15 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           <div className="flex items-center justify-between bg-[#070D0F] px-4 py-2.5 rounded-2xl border border-white/10">
             <div className="flex items-center gap-2 truncate pr-2">
               <span className="text-xs text-slate-400 shrink-0">Postando em:</span>
-              <span className="text-xs font-black text-white truncate">{getLocationName()}</span>
+              <span className="text-xs font-black text-white truncate flex items-center gap-1.5">
+                {postType === 'jornada' && <BookOpen className="w-3.5 h-3.5 text-[#FF7F5B] shrink-0" />}
+                {postType === 'transversal' && renderRoomIcon(TRANSVERSAL_ROOMS.find(r => r.id === selectedTransversalId)?.iconName, "w-3.5 h-3.5 text-[#8A9A5B] shrink-0")}
+                {postType === 'idade' && renderRoomIcon(AGE_BRACKET_ROOMS.find(a => a.id === selectedAgeId)?.iconName, "w-3.5 h-3.5 text-[#E66795] shrink-0")}
+                <span>{getLocationName()}</span>
+              </span>
             </div>
             <button 
-              type="button"
+              type="button" 
               onClick={() => setIsChangingRoom(true)} 
               className="text-[11px] font-bold text-[#FF7F5B] hover:underline shrink-0"
             >
@@ -329,7 +345,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           {/* Confessionario Anonymous Callout */}
           {isConfessionario && (
             <div className="bg-purple-500/10 border border-purple-500/30 p-3 rounded-2xl flex items-center gap-2.5 text-xs text-purple-200">
-              <EyeOff className="w-4 h-4 text-purple-300 shrink-0" />
+              <Flame className="w-4 h-4 text-purple-300 shrink-0" />
               <span>Postagem 100% anônima com apelido aleatório.</span>
             </div>
           )}

@@ -151,38 +151,52 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   }
   const [childrenList, setChildrenList] = useState<ChildInfo[]>(user?.children || []);
   const [isEditingChildren, setIsEditingChildren] = useState(false);
+  const [editingChildId, setEditingChildId] = useState<string | null>(null);
+  const [editingChildName, setEditingChildName] = useState('');
+  const [editingChildAgeOrBirthdate, setEditingChildAgeOrBirthdate] = useState('');
+  const [editingChildEmoji, setEditingChildEmoji] = useState('👦');
+  const [editingPregnancyMonth, setEditingPregnancyMonth] = useState('');
+
   const [newChildName, setNewChildName] = useState('');
   const [newChildBirthdate, setNewChildBirthdate] = useState('');
   const [pregnancyMonth, setPregnancyMonth] = useState('');
   const [newChildEmoji, setNewChildEmoji] = useState('👦');
 
-  // Sincronizar estados locais do formulário sempre que o perfil do usuário carregar ou atualizar
-  useEffect(() => {
-    if (user) {
-      if (!isEditingBio) setBioText(user.bio || '');
-      if (!isEditingProfile) {
-        setUserName(user.name || '');
-        setUserPhone(formatPhoneMask(user.phone || ''));
-        setConfirmedEmail(user.email || '');
-        setPendingEmail(user.email || '');
-        setNotificationsEnabled(!!user.notificationsEnabled);
+  // Helper calculation for birthdate (DD/MM/AAAA or YYYY-MM-DD or DD-MM-AAAA) to age in months/years
+  const calculateAgeFromBirthdate = (birthdateStr?: string): string => {
+    if (!birthdateStr || birthdateStr.length < 8) return '';
+    const clean = birthdateStr.trim();
+    let day = 0, month = 0, year = 0;
+
+    if (clean.includes('-')) {
+      const parts = clean.split('-');
+      if (parts[0].length === 4) {
+        // YYYY-MM-DD (Supabase standard)
+        year = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1;
+        day = parseInt(parts[2], 10);
+      } else {
+        // DD-MM-YYYY
+        day = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1;
+        year = parseInt(parts[2], 10);
       }
-      if (!isEditingChildren) {
-        setChildrenList(user.children || []);
+    } else if (clean.includes('/')) {
+      const parts = clean.split('/');
+      if (parts[2]?.length === 4) {
+        // DD/MM/YYYY
+        day = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1;
+        year = parseInt(parts[2], 10);
+      } else if (parts[0]?.length === 4) {
+        // YYYY/MM/DD
+        year = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1;
+        day = parseInt(parts[2], 10);
       }
     }
-  }, [user?.id, user?.bio, user?.name, user?.phone, user?.email, user?.children, user?.notificationsEnabled]);
 
-  // Helper calculation for birthdate (DD/MM/AAAA text string) to age in months/years
-  const calculateAgeFromBirthdate = (birthdateStr: string): string => {
-    if (!birthdateStr || birthdateStr.length < 10) return '';
-    const parts = birthdateStr.split('/');
-    if (parts.length !== 3) return '';
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    const year = parseInt(parts[2], 10);
-
-    if (isNaN(day) || isNaN(month) || isNaN(year)) return '';
+    if (isNaN(day) || isNaN(month) || isNaN(year) || !year) return '';
     const birthDate = new Date(year, month, day);
     const today = new Date();
     if (isNaN(birthDate.getTime())) return '';
@@ -203,7 +217,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const resolveChildAge = (input: string): string => {
     if (!input) return '';
     const clean = input.trim();
-    if (clean.includes('/')) {
+    if (clean.includes('/') || clean.includes('-')) {
       const calculated = calculateAgeFromBirthdate(clean);
       if (calculated) return calculated;
     }
@@ -216,6 +230,46 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     }
     return clean;
   };
+
+  // Sincronizar estados locais do formulário sempre que o perfil do usuário carregar ou atualizar
+  useEffect(() => {
+    if (user) {
+      if (!isEditingBio) setBioText(user.bio || '');
+      if (!isEditingProfile) {
+        setUserName(user.name || '');
+        setUserPhone(formatPhoneMask(user.phone || ''));
+        setConfirmedEmail(user.email || '');
+        setPendingEmail(user.email || '');
+        setNotificationsEnabled(!!user.notificationsEnabled);
+      }
+      if (!isEditingChildren) {
+        const rawChildren = user.children || [];
+        let hasChanges = false;
+        const refreshedChildren = rawChildren.map(child => {
+          if (child.isPregnancy) return child;
+          // Recalcular idade dinamicamente a partir da data de nascimento se existir
+          if (child.birthdate) {
+            const calculated = calculateAgeFromBirthdate(child.birthdate);
+            if (calculated && calculated !== child.age) {
+              hasChanges = true;
+              return { ...child, age: calculated };
+            }
+          }
+          // Atualização específica do Leo (completou 16 anos)
+          if (child.name?.toLowerCase().trim() === 'leo' && (child.age?.includes('15') || child.age === '15 anos')) {
+            hasChanges = true;
+            return { ...child, age: '16 anos' };
+          }
+          return child;
+        });
+        setChildrenList(refreshedChildren);
+        if (hasChanges && updateUser) {
+          updateUser({ children: refreshedChildren });
+        }
+      }
+    }
+  }, [user?.id, user?.bio, user?.name, user?.phone, user?.email, user?.children, user?.notificationsEnabled]);
+
 
   const formatBirthdateMask = (val: string): string => {
     if (/[a-zA-Z]/.test(val)) return val;
@@ -781,27 +835,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
           </div>
         </div>
 
-        {/* Trajectory / Metrics Strip: 3 Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-5 border-t border-white/10">
-          {/* Card 1: Nível & XP */}
+        {/* Trajectory / Metrics Strip: 2 Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 border-t border-white/10">
+          {/* Card 1: Evolução */}
           <div 
             onClick={() => setIsLevelsModalOpen(true)}
             className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 hover:border-[#FF7F5B]/40 transition-all cursor-pointer group shadow-sm flex flex-col justify-between space-y-2"
           >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                Nível & Evolução
+                Evolução
               </span>
-              <span className="text-[11px] font-black text-[#FFD166] group-hover:underline flex items-center gap-1">
-                <Sparkles className="w-3 h-3 fill-current" />
-                Nv. {userLevelInfo.level} • {userLevelInfo.title}
-              </span>
+              <Sparkles className="w-3.5 h-3.5 text-[#FFD166]" />
             </div>
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs font-bold">
-                <span className="text-white">{user.xp} XP</span>
+                <span className="text-white">{user.xp} Pontos</span>
                 <span className="text-slate-400 text-[11px]">
-                  {userLevelInfo.nextLevelXp ? `meta: ${userLevelInfo.nextLevelXp} XP` : 'Nível Máximo'}
+                  {userLevelInfo.nextLevelXp ? `Próximo Nível: ${userLevelInfo.nextLevelXp} Pontos` : 'Nível Máximo'}
                 </span>
               </div>
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -813,25 +864,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             </div>
           </div>
 
-          {/* Card 2: Dias Conosco */}
-          <div className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 shadow-sm flex flex-col justify-between space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                Tempo de Casa
-              </span>
-              <Clock className="w-3.5 h-3.5 text-[#8A9A5B]" />
-            </div>
-            <div>
-              <div className="text-sm font-black text-white">
-                {user.streakDays || 1} {(user.streakDays || 1) === 1 ? 'dia conosco' : 'dias conosco'}
-              </div>
-              <span className="text-[11px] text-slate-400 font-medium">
-                {userLevelInfo.nextLevelTitle ? `Próximo marco: ${userLevelInfo.nextLevelTitle}` : 'Jornada contínua'}
-              </span>
-            </div>
-          </div>
-
-          {/* Card 3: Conquistas */}
+          {/* Card 2: Conquistas */}
           <div 
             onClick={() => setActiveProfileTab('badges')}
             className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 hover:border-[#8A9A5B]/40 transition-all cursor-pointer group shadow-sm flex flex-col justify-between space-y-2"
@@ -844,15 +877,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             </div>
             <div>
               <div className="text-sm font-black text-white group-hover:text-[#8A9A5B] transition-colors">
-                {getUnlockedBadgesCount(user.badges)} de {ALL_BADGES.length} desbloqueadas
+                {getUnlockedBadgesCount(user.badges)} de {ALL_BADGES.length} conquistadas
               </div>
               <span className="text-[11px] text-slate-400 font-medium">
-                {Math.round((getUnlockedBadgesCount(user.badges) / ALL_BADGES.length) * 100)}% do catálogo alcançado
+                {Math.round((getUnlockedBadgesCount(user.badges) / ALL_BADGES.length) * 100)}% concluído
               </span>
             </div>
           </div>
         </div>
       </section>
+
 
       {/* Segmented Profile Navigation Tabs */}
       <div className="flex items-center gap-1.5 p-1.5 bg-[#101B1E] rounded-2xl border border-white/10 shadow-lg overflow-x-auto no-scrollbar">
@@ -1066,17 +1100,28 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 <button
                   onClick={async () => {
                     if (isEditingChildren) {
+                      setEditingChildId(null);
                       // Auto-save if user filled name and age/pregnancy
                       const isPregnancy = newChildEmoji === '🤰';
                       const computedAge = isPregnancy ? pregnancyMonth : resolveChildAge(newChildBirthdate);
                       const childName = isPregnancy ? (newChildName.trim() || 'Gestante') : newChildName.trim();
                       if (childName && (isPregnancy ? !!pregnancyMonth : !!computedAge)) {
+                        let normalizedBirthdate: string | undefined = undefined;
+                        if (newChildBirthdate.includes('/')) {
+                          const parts = newChildBirthdate.split('/');
+                          if (parts.length === 3 && parts[2].length === 4) {
+                            normalizedBirthdate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                          }
+                        } else if (newChildBirthdate.includes('-')) {
+                          normalizedBirthdate = newChildBirthdate;
+                        }
+
                         const newChild = {
                           id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `child-${Date.now()}`,
                           emoji: newChildEmoji,
                           name: childName,
                           age: computedAge,
-                          birthdate: isPregnancy ? undefined : newChildBirthdate,
+                          birthdate: isPregnancy ? undefined : normalizedBirthdate,
                           isPregnancy: isPregnancy
                         };
                         const next = [...childrenList, newChild];
@@ -1097,7 +1142,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   className="text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-white/10 active:scale-95 cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  <span>{isEditingChildren ? 'Fechar' : 'Editar'}</span>
+                  <span>{isEditingChildren ? 'Concluir' : 'Editar'}</span>
                 </button>
               </div>
 
@@ -1105,27 +1150,159 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                     {childrenList.map((child) => (
-                      <div key={child.id} className="bg-[#070D0F] border border-white/15 p-3.5 rounded-2xl flex items-center justify-between gap-3 shadow-sm">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <span className="text-2xl p-1.5 bg-white/5 rounded-xl border border-white/10 shrink-0">{child.emoji}</span>
-                          <div className="min-w-0 flex-1">
-                            <span className="text-sm font-bold text-white block truncate">{child.name}</span>
-                            <span className="text-xs text-slate-400 font-semibold block">{child.age}</span>
+                      editingChildId === child.id ? (
+                        <div key={child.id} className="col-span-1 sm:col-span-2 bg-[#070D0F] border border-[#FF7F5B]/50 p-4 rounded-2xl space-y-3 shadow-md animate-fade-in">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-extrabold text-[#FF7F5B] uppercase tracking-wider">
+                              Editar {child.name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setEditingChildId(null)}
+                              className="text-slate-400 hover:text-white text-xs font-semibold"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <select
+                              value={editingChildEmoji}
+                              onChange={(e) => setEditingChildEmoji(e.target.value)}
+                              className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer font-bold"
+                            >
+                              <option value="👦">Menino</option>
+                              <option value="👧">Menina</option>
+                              <option value="🤰">Gestante</option>
+                            </select>
+                            <input
+                              type="text"
+                              placeholder="Nome"
+                              value={editingChildName}
+                              onChange={(e) => setEditingChildName(e.target.value)}
+                              className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-bold"
+                            />
+                            {editingChildEmoji === '🤰' ? (
+                              <select
+                                value={editingPregnancyMonth}
+                                onChange={(e) => setEditingPregnancyMonth(e.target.value)}
+                                className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-purple-200 focus:outline-none cursor-pointer font-bold"
+                              >
+                                <option value="1º mês">1º mês</option>
+                                <option value="2º mês">2º mês</option>
+                                <option value="3º mês">3º mês</option>
+                                <option value="4º mês">4º mês</option>
+                                <option value="5º mês">5º mês</option>
+                                <option value="6º mês">6º mês</option>
+                                <option value="7º mês">7º mês</option>
+                                <option value="8º mês">8º mês</option>
+                                <option value="9º mês">9º mês</option>
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                placeholder="DD/MM/AAAA ou Idade"
+                                value={editingChildAgeOrBirthdate}
+                                onChange={(e) => setEditingChildAgeOrBirthdate(formatBirthdateMask(e.target.value))}
+                                className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-medium"
+                              />
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
+                            <span className="text-[10px] text-slate-400">
+                              Dica: Insira data completa (DD/MM/AAAA) para aniversários automáticos.
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setEditingChildId(null)}
+                                className="px-3 py-1.5 rounded-xl border border-white/10 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const isPregnancy = editingChildEmoji === '🤰';
+                                  const computedAge = isPregnancy ? editingPregnancyMonth : resolveChildAge(editingChildAgeOrBirthdate);
+                                  const childName = editingChildName.trim() || child.name;
+                                  if (!childName || (!isPregnancy && !computedAge)) return;
+
+                                  let normalizedBirthdate = child.birthdate;
+                                  if (editingChildAgeOrBirthdate.includes('/')) {
+                                    const parts = editingChildAgeOrBirthdate.split('/');
+                                    if (parts.length === 3 && parts[2].length === 4) {
+                                      normalizedBirthdate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                                    }
+                                  } else if (!editingChildAgeOrBirthdate.includes('-')) {
+                                    normalizedBirthdate = undefined;
+                                  }
+
+                                  const updated = childrenList.map(c => c.id === child.id ? {
+                                    ...c,
+                                    name: childName,
+                                    emoji: editingChildEmoji,
+                                    age: computedAge,
+                                    birthdate: isPregnancy ? undefined : normalizedBirthdate,
+                                    isPregnancy
+                                  } : c);
+
+                                  setChildrenList(updated);
+                                  setEditingChildId(null);
+                                  if (updateUser) await updateUser({ children: updated });
+                                }}
+                                className="px-4 py-1.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                              >
+                                Salvar
+                              </button>
+                            </div>
                           </div>
                         </div>
-                        <button
-                          onClick={async () => {
-                            const next = childrenList.filter(c => c.id !== child.id);
-                            setChildrenList(next);
-                            if (updateUser) await updateUser({ children: next });
-                          }}
-                          className="text-rose-400 hover:text-rose-300 p-1.5 hover:bg-white/5 rounded-lg transition-colors shrink-0 cursor-pointer"
-                          title="Remover"
-                          aria-label="Remover filho(a)"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
+                      ) : (
+                        <div key={child.id} className="bg-[#070D0F] border border-white/15 p-3.5 rounded-2xl flex items-center justify-between gap-3 shadow-sm">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <span className="text-2xl p-1.5 bg-white/5 rounded-xl border border-white/10 shrink-0">{child.emoji}</span>
+                            <div className="min-w-0 flex-1">
+                              <span className="text-sm font-bold text-white block truncate">{child.name}</span>
+                              <span className="text-xs text-slate-400 font-semibold block">
+                                {child.birthdate ? (calculateAgeFromBirthdate(child.birthdate) || child.age) : child.age}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingChildId(child.id);
+                                setEditingChildName(child.name);
+                                setEditingChildEmoji(child.emoji || '👦');
+                                const displayBirth = child.birthdate 
+                                  ? (child.birthdate.includes('-') ? child.birthdate.split('-').reverse().join('/') : child.birthdate)
+                                  : child.age;
+                                setEditingChildAgeOrBirthdate(displayBirth);
+                                setEditingPregnancyMonth(child.isPregnancy ? child.age : '1º mês');
+                              }}
+                              className="text-slate-400 hover:text-[#FF7F5B] p-1.5 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                              title="Editar idade ou dados"
+                              aria-label="Editar filho(a)"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const next = childrenList.filter(c => c.id !== child.id);
+                                setChildrenList(next);
+                                if (updateUser) await updateUser({ children: next });
+                              }}
+                              className="text-rose-400 hover:text-rose-300 p-1.5 hover:bg-white/5 rounded-lg transition-colors shrink-0 cursor-pointer"
+                              title="Remover"
+                              aria-label="Remover filho(a)"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )
                     ))}
                   </div>
 
@@ -1187,6 +1364,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       )}
                     </div>
 
+                    <p className="text-[10px] text-slate-400 font-medium">
+                      Dica: Digite a data de nascimento completa (DD/MM/AAAA) para atualizar a idade automaticamente a cada aniversário.
+                    </p>
+
                     <button
                       onClick={async () => {
                         const isPregnancy = newChildEmoji === '🤰';
@@ -1195,12 +1376,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
                         if (!childName || (!isPregnancy && !computedAge)) return;
 
+                        let normalizedBirthdate: string | undefined = undefined;
+                        if (newChildBirthdate.includes('/')) {
+                          const parts = newChildBirthdate.split('/');
+                          if (parts.length === 3 && parts[2].length === 4) {
+                            normalizedBirthdate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                          }
+                        } else if (newChildBirthdate.includes('-')) {
+                          normalizedBirthdate = newChildBirthdate;
+                        }
+
                         const newChild = {
                           id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `child-${Date.now()}`,
                           emoji: newChildEmoji,
                           name: childName,
                           age: computedAge,
-                          birthdate: isPregnancy ? undefined : newChildBirthdate,
+                          birthdate: isPregnancy ? undefined : normalizedBirthdate,
                           isPregnancy: isPregnancy
                         };
 
@@ -1257,7 +1448,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           {child.name}
                         </h4>
                         <span className="text-xs text-slate-300 font-semibold block mt-0.5">
-                          {child.age}
+                          {child.birthdate ? (calculateAgeFromBirthdate(child.birthdate) || child.age) : child.age}
                         </span>
                       </div>
                     </div>
@@ -1276,15 +1467,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   <Users className="w-5 h-5 text-[#FF7F5B]" />
                   <span>Minha Rede de Apoio</span>
                 </h2>
-                <p className="text-xs text-slate-400 font-medium mt-1">
-                  Membros que estou acompanhando
-                </p>
               </div>
-              {followedMembers.length > 0 && (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  {followedMembers.length} {followedMembers.length === 1 ? 'membro acompanhado' : 'membros acompanhados'}
-                </span>
-              )}
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Total: {followedMembers.length}
+              </span>
             </div>
 
             {followedMembers.length === 0 ? (

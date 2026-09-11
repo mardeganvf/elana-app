@@ -31,6 +31,7 @@ import {
   Lightbulb, 
   Flower2,
   ChevronDown,
+  ChevronUp,
   Search,
   HelpCircle,
   Wind,
@@ -39,7 +40,20 @@ import {
   RefreshCw,
   Flag,
   Trash2,
-  User
+  User,
+  Flame,
+  MessageCircleHeart,
+  HeartHandshake,
+  Leaf,
+  Moon,
+  BookOpen,
+  Compass,
+  Mountain,
+  Trees,
+  CloudRain,
+  BatteryLow,
+  Sunrise,
+  EyeOff
 } from 'lucide-react';
 import { ReportModal } from '../components/community/ReportModal';
 
@@ -54,17 +68,21 @@ export interface PostRoomDetails {
   categoryType: 'jornada' | 'geral' | 'idade';
   categoryLabel: string;
   roomName: string;
-  emoji: string;
+  iconName: string;
+  emoji?: string;
   badgeBg: string;
   badgeBorder: string;
   badgeText: string;
   subTopicLabel?: string;
   subTopicEmoji?: string;
+  subTopicIconName?: string;
   subBadgeBg?: string;
   subBadgeBorder?: string;
   subBadgeText?: string;
   selectionTarget?: ActiveSelection;
 }
+export { renderRoomIcon } from '../components/community/CommunityIcons';
+
 
 export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
   // 1. Salas Transversais / Geral
@@ -75,7 +93,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
         categoryType: 'geral',
         categoryLabel: 'Geral',
         roomName: 'Confessionário',
-        emoji: '🕯️',
+        iconName: 'Flame',
         badgeBg: 'rgba(168, 85, 247, 0.12)',
         badgeBorder: 'rgba(168, 85, 247, 0.35)',
         badgeText: '#D8B4FE',
@@ -87,7 +105,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
         categoryType: 'geral',
         categoryLabel: 'Geral',
         roomName: 'Cantinho da Mel',
-        emoji: '🍯',
+        iconName: 'MessageCircleHeart',
         badgeBg: 'rgba(255, 209, 102, 0.12)',
         badgeBorder: 'rgba(255, 209, 102, 0.35)',
         badgeText: '#FDE047',
@@ -99,7 +117,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
         categoryType: 'geral',
         categoryLabel: 'Geral',
         roomName: 'Espaço a Dois',
-        emoji: '💖',
+        iconName: 'HeartHandshake',
         badgeBg: 'rgba(244, 114, 182, 0.12)',
         badgeBorder: 'rgba(244, 114, 182, 0.35)',
         badgeText: '#F472B6',
@@ -111,7 +129,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
         categoryType: 'geral',
         categoryLabel: 'Geral',
         roomName: 'Cuidando de Quem Cuida',
-        emoji: '🌱',
+        iconName: 'Leaf',
         badgeBg: 'rgba(138, 154, 91, 0.12)',
         badgeBorder: 'rgba(138, 154, 91, 0.35)',
         badgeText: '#A3B18A',
@@ -123,7 +141,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
         categoryType: 'geral',
         categoryLabel: 'Geral',
         roomName: 'Boas-Vindas',
-        emoji: '👋',
+        iconName: 'Sparkles',
         badgeBg: 'rgba(45, 212, 191, 0.12)',
         badgeBorder: 'rgba(45, 212, 191, 0.35)',
         badgeText: '#2DD4BF',
@@ -136,7 +154,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
         categoryType: 'geral',
         categoryLabel: 'Geral',
         roomName: r.name,
-        emoji: r.emoji || '💬',
+        iconName: r.iconName || 'Sparkles',
         badgeBg: 'rgba(14, 165, 233, 0.12)',
         badgeBorder: 'rgba(14, 165, 233, 0.35)',
         badgeText: '#38BDF8',
@@ -148,23 +166,23 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
   // 2. Salas por Faixa Etária (Idades)
   if (post.ageBracketId) {
     const raw = post.ageBracketId.toLowerCase();
-    const ageNames: Record<string, { name: string; emoji: string }> = {
-      '0-2': { name: '0–2 anos (Bebês)', emoji: '👶' },
-      '3-6': { name: '3–6 anos (1ª Infância)', emoji: '🧒' },
-      '7-10': { name: '7–10 anos (Fase Escolar)', emoji: '🎒' },
-      '11-14': { name: '11–14 anos (Pré-Adolescência)', emoji: '🎧' },
-      '14-19': { name: '14–19 anos (Adolescência)', emoji: '🛹' },
-      '15-18': { name: '14–19 anos (Adolescência)', emoji: '🛹' },
-      '20-plus': { name: '20+ anos (Jovens Adultos)', emoji: '🌲' },
-      '18-plus': { name: '20+ anos (Jovens Adultos)', emoji: '🌲' }
+    const ageNames: Record<string, { name: string; iconName: string }> = {
+      '0-2': { name: '0–2 anos (Bebês)', iconName: 'Moon' },
+      '3-6': { name: '3–6 anos (1ª Infância)', iconName: 'Sun' },
+      '7-10': { name: '7–10 anos (Fase Escolar)', iconName: 'BookOpen' },
+      '11-14': { name: '11–14 anos (Pré-Adolescência)', iconName: 'Compass' },
+      '14-19': { name: '14–19 anos (Adolescência)', iconName: 'Mountain' },
+      '15-18': { name: '14–19 anos (Adolescência)', iconName: 'Mountain' },
+      '20-plus': { name: '20+ anos (Jovens Adultos)', iconName: 'Trees' },
+      '18-plus': { name: '20+ anos (Jovens Adultos)', iconName: 'Trees' }
     };
-    const info = ageNames[raw] || { name: `${raw} anos`, emoji: '👶' };
+    const info = ageNames[raw] || { name: `${raw} anos`, iconName: 'Moon' };
     const ageId = raw === '15-18' ? '14-19' : (raw === '18-plus' ? '20-plus' : raw);
     return {
       categoryType: 'idade',
       categoryLabel: 'Idades',
       roomName: info.name,
-      emoji: info.emoji,
+      iconName: info.iconName,
       badgeBg: 'rgba(230, 103, 149, 0.12)',
       badgeBorder: 'rgba(230, 103, 149, 0.35)',
       badgeText: '#F472B6',
@@ -177,18 +195,18 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
     const journey = JOURNEYS_DATA.find(j => j.id === post.journeyId);
     const jName = journey ? journey.title : (post.journeyId === 'pais-recem-nascidos' ? 'Pais Recém-Nascidos' : post.journeyId);
     
-    const journeyMeta: Record<string, { emoji: string; color: string; bg: string; border: string }> = {
-      'pais-recem-nascidos': { emoji: '🌅', color: '#FF7F5B', bg: 'rgba(255, 127, 91, 0.12)', border: 'rgba(255, 127, 91, 0.35)' },
-      'construindo-pontes': { emoji: '🌉', color: '#2DD4BF', bg: 'rgba(45, 212, 191, 0.12)', border: 'rgba(45, 212, 191, 0.35)' },
-      'singular': { emoji: '✨', color: '#FFD166', bg: 'rgba(255, 209, 102, 0.12)', border: 'rgba(255, 209, 102, 0.35)' },
-      'amor-escolhido': { emoji: '💖', color: '#E66795', bg: 'rgba(230, 103, 149, 0.12)', border: 'rgba(230, 103, 149, 0.35)' },
-      'depois-do-silencio': { emoji: '🕊️', color: '#C4B5FD', bg: 'rgba(167, 139, 250, 0.12)', border: 'rgba(167, 139, 250, 0.35)' },
-      'novos-caminhos': { emoji: '🌿', color: '#A3B18A', bg: 'rgba(138, 154, 91, 0.12)', border: 'rgba(138, 154, 91, 0.35)' }
+    const journeyMeta: Record<string, { iconName: string; color: string; bg: string; border: string }> = {
+      'pais-recem-nascidos': { iconName: 'Sunrise', color: '#FF7F5B', bg: 'rgba(255, 127, 91, 0.12)', border: 'rgba(255, 127, 91, 0.35)' },
+      'construindo-pontes': { iconName: 'Compass', color: '#2DD4BF', bg: 'rgba(45, 212, 191, 0.12)', border: 'rgba(45, 212, 191, 0.35)' },
+      'singular': { iconName: 'Sparkles', color: '#FFD166', bg: 'rgba(255, 209, 102, 0.12)', border: 'rgba(255, 209, 102, 0.35)' },
+      'amor-escolhido': { iconName: 'Heart', color: '#E66795', bg: 'rgba(230, 103, 149, 0.12)', border: 'rgba(230, 103, 149, 0.35)' },
+      'depois-do-silencio': { iconName: 'Sparkles', color: '#C4B5FD', bg: 'rgba(167, 139, 250, 0.12)', border: 'rgba(167, 139, 250, 0.35)' },
+      'novos-caminhos': { iconName: 'Leaf', color: '#A3B18A', bg: 'rgba(138, 154, 91, 0.12)', border: 'rgba(138, 154, 91, 0.35)' }
     };
-    const meta = journeyMeta[post.journeyId] || { emoji: '📚', color: '#FF7F5B', bg: 'rgba(255, 127, 91, 0.12)', border: 'rgba(255, 127, 91, 0.35)' };
+    const meta = journeyMeta[post.journeyId] || { iconName: 'Compass', color: '#FF7F5B', bg: 'rgba(255, 127, 91, 0.12)', border: 'rgba(255, 127, 91, 0.35)' };
 
     let subTopicLabel: string | undefined;
-    let subTopicEmoji: string | undefined;
+    let subTopicIconName: string | undefined;
     let subBadgeBg: string | undefined;
     let subBadgeBorder: string | undefined;
     let subBadgeText: string | undefined;
@@ -196,21 +214,21 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
 
     if (post.emotionalIntention === 'ajuda') {
       subTopicLabel = 'Preciso de Ajuda';
-      subTopicEmoji = '🆘';
+      subTopicIconName = 'HelpCircle';
       subBadgeBg = 'rgba(255, 127, 91, 0.12)';
       subBadgeBorder = 'rgba(255, 127, 91, 0.3)';
       subBadgeText = '#FF7F5B';
       subOption = 'ajuda';
     } else if (post.emotionalIntention === 'celebrar') {
       subTopicLabel = 'Vamos Celebrar';
-      subTopicEmoji = '🎉';
+      subTopicIconName = 'Star';
       subBadgeBg = 'rgba(255, 209, 102, 0.12)';
       subBadgeBorder = 'rgba(255, 209, 102, 0.3)';
       subBadgeText = '#FFD166';
       subOption = 'celebrar';
     } else if (post.emotionalIntention === 'desabafar') {
       subTopicLabel = 'Preciso Desabafar';
-      subTopicEmoji = '💧';
+      subTopicIconName = 'CloudRain';
       subBadgeBg = 'rgba(138, 154, 91, 0.12)';
       subBadgeBorder = 'rgba(138, 154, 91, 0.3)';
       subBadgeText = '#8A9A5B';
@@ -221,12 +239,12 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'jornada',
       categoryLabel: 'Jornada',
       roomName: jName,
-      emoji: meta.emoji,
+      iconName: meta.iconName,
       badgeBg: meta.bg,
       badgeBorder: meta.border,
       badgeText: meta.color,
       subTopicLabel,
-      subTopicEmoji,
+      subTopicIconName,
       subBadgeBg,
       subBadgeBorder,
       subBadgeText,
@@ -240,7 +258,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'geral',
       categoryLabel: 'Geral',
       roomName: 'Confessionário',
-      emoji: '🕯️',
+      iconName: 'Flame',
       badgeBg: 'rgba(168, 85, 247, 0.12)',
       badgeBorder: 'rgba(168, 85, 247, 0.35)',
       badgeText: '#D8B4FE',
@@ -255,7 +273,8 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryLabel: 'Jornada',
       roomName: 'Pais Recém-Nascidos',
       subTopicLabel: 'Preciso de Ajuda',
-      emoji: '🌅',
+      subTopicIconName: 'HelpCircle',
+      iconName: 'Sunrise',
       badgeBg: 'rgba(255, 127, 91, 0.12)',
       badgeBorder: 'rgba(255, 127, 91, 0.35)',
       badgeText: '#FF7F5B',
@@ -268,7 +287,8 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryLabel: 'Jornada',
       roomName: 'Construindo Pontes',
       subTopicLabel: 'Preciso de Ajuda',
-      emoji: '🌉',
+      subTopicIconName: 'HelpCircle',
+      iconName: 'Compass',
       badgeBg: 'rgba(45, 212, 191, 0.12)',
       badgeBorder: 'rgba(45, 212, 191, 0.35)',
       badgeText: '#2DD4BF',
@@ -281,7 +301,8 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryLabel: 'Jornada',
       roomName: 'Singular',
       subTopicLabel: 'Preciso de Ajuda',
-      emoji: '✨',
+      subTopicIconName: 'HelpCircle',
+      iconName: 'Sparkles',
       badgeBg: 'rgba(255, 209, 102, 0.12)',
       badgeBorder: 'rgba(255, 209, 102, 0.35)',
       badgeText: '#FFD166',
@@ -294,7 +315,8 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryLabel: 'Jornada',
       roomName: 'Amor Escolhido',
       subTopicLabel: 'Preciso de Ajuda',
-      emoji: '💖',
+      subTopicIconName: 'HelpCircle',
+      iconName: 'Heart',
       badgeBg: 'rgba(230, 103, 149, 0.12)',
       badgeBorder: 'rgba(230, 103, 149, 0.35)',
       badgeText: '#E66795',
@@ -307,7 +329,8 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryLabel: 'Geral',
       roomName: 'Confessionário',
       subTopicLabel: 'Preciso Desabafar',
-      emoji: '🕯️',
+      subTopicIconName: 'CloudRain',
+      iconName: 'Flame',
       badgeBg: 'rgba(168, 85, 247, 0.12)',
       badgeBorder: 'rgba(168, 85, 247, 0.35)',
       badgeText: '#D8B4FE',
@@ -320,7 +343,8 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryLabel: 'Jornada',
       roomName: 'Novos Caminhos',
       subTopicLabel: 'Preciso Desabafar',
-      emoji: '🌿',
+      subTopicIconName: 'CloudRain',
+      iconName: 'Leaf',
       badgeBg: 'rgba(138, 154, 91, 0.12)',
       badgeBorder: 'rgba(138, 154, 91, 0.35)',
       badgeText: '#A3B18A',
@@ -332,7 +356,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'geral',
       categoryLabel: 'Geral',
       roomName: 'Espaço a Dois',
-      emoji: '💖',
+      iconName: 'HeartHandshake',
       badgeBg: 'rgba(244, 114, 182, 0.12)',
       badgeBorder: 'rgba(244, 114, 182, 0.35)',
       badgeText: '#F472B6',
@@ -344,7 +368,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'geral',
       categoryLabel: 'Geral',
       roomName: 'Cuidando de Quem Cuida',
-      emoji: '🌱',
+      iconName: 'Leaf',
       badgeBg: 'rgba(138, 154, 91, 0.12)',
       badgeBorder: 'rgba(138, 154, 91, 0.35)',
       badgeText: '#A3B18A',
@@ -357,7 +381,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
     categoryType: 'geral',
     categoryLabel: 'Geral',
     roomName: 'Cantinho da Mel',
-    emoji: '🍯',
+    iconName: 'MessageCircleHeart',
     badgeBg: 'rgba(255, 209, 102, 0.12)',
     badgeBorder: 'rgba(255, 209, 102, 0.35)',
     badgeText: '#FDE047',
@@ -368,7 +392,8 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
 const EMOTIONAL_CHECKINS = [
   { 
     id: 'exausto', 
-    emoji: '🪫', 
+    iconName: 'BatteryLow',
+    color: '#8A9A5B',
     label: 'Sem Energia', 
     intention: 'desabafar', 
     phrases: [
@@ -386,7 +411,8 @@ const EMOTIONAL_CHECKINS = [
   },
   { 
     id: 'esperanca', 
-    emoji: '☀️', 
+    iconName: 'Sunrise',
+    color: '#FFD166',
     label: 'Com Esperança', 
     intention: 'celebrar', 
     phrases: [
@@ -404,7 +430,8 @@ const EMOTIONAL_CHECKINS = [
   },
   { 
     id: 'celebrando', 
-    emoji: '🎉', 
+    iconName: 'Sparkles',
+    color: '#FF7F5B',
     label: 'Celebrando', 
     intention: 'celebrar', 
     phrases: [
@@ -422,7 +449,8 @@ const EMOTIONAL_CHECKINS = [
   },
   { 
     id: 'preciso_luz', 
-    emoji: '🆘', 
+    iconName: 'HeartHandshake',
+    color: '#FF7F5B',
     label: 'Precisando de Luz', 
     intention: 'ajuda', 
     phrases: [
@@ -528,7 +556,7 @@ export const CommunityPage: React.FC = () => {
       setPullDistance(50);
       try {
         await refreshPosts();
-        showToast('success', 'Comunidade atualizada! ✨');
+        showToast('success', 'Comunidade atualizada!');
       } catch (err) {
         console.warn('Refresh error:', err);
       } finally {
@@ -560,6 +588,15 @@ export const CommunityPage: React.FC = () => {
 
   // Respiro 60s Breathing Modal State
   const [isBreathingModalOpen, setIsBreathingModalOpen] = useState(false);
+
+  // Post Text Truncation State
+  const [expandedPostTextMap, setExpandedPostTextMap] = useState<Record<string, boolean>>({});
+  const togglePostTextExpansion = (postId: string) => {
+    setExpandedPostTextMap(prev => ({ ...prev, [postId]: !prev[postId] }));
+  };
+
+  // Reactions Picker Popover State
+  const [openReactionPickerPostId, setOpenReactionPickerPostId] = useState<string | null>(null);
 
   // Modals & Inline Comments State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -617,7 +654,7 @@ export const CommunityPage: React.FC = () => {
             id: f.id,
             name: f.name || 'Filho(a)',
             age: f.age,
-            emoji: f.emoji || '👶',
+            emoji: f.emoji || '',
             birthdate: f.birthdate,
             isPregnancy: f.is_pregnancy
           }));
@@ -671,7 +708,7 @@ export const CommunityPage: React.FC = () => {
     setVisibleCount(15);
   }, [activeSelection, selectedEmotionId, searchQuery]);
 
-  // 🏆 Conquista: Buscando Respostas (b10) ao pesquisar na comunidade
+  // Conquista: Buscando Respostas (b10) ao pesquisar na comunidade
   useEffect(() => {
     if (searchQuery.trim().length >= 3) {
       awardBadge('b10');
@@ -808,12 +845,12 @@ export const CommunityPage: React.FC = () => {
         }
 
         if (!error) {
-          console.log('✅ Check-in emocional salvo com sucesso no Supabase!');
+          console.log('Check-in emocional salvo com sucesso no Supabase!');
           
-          // 🏆 1. Conquista Geral: Sinal de Cuidado (1º check-in realizado) -> b11
+          // 1. Conquista Geral: Sinal de Cuidado (1º check-in realizado) -> b11
           await awardBadge('b11');
 
-          // 🏆 2. Conquistas Específicas por Sentimento:
+          // 2. Conquistas Específicas por Sentimento:
           if (item.id === 'sem_energia' || item.id === 'exausto') {
             await awardBadge('b12'); // Tudo Bem Parar
           } else if (item.id === 'esperanca') {
@@ -824,7 +861,7 @@ export const CommunityPage: React.FC = () => {
             await awardBadge('b15'); // Pedido de Colo
           }
 
-          // 🏆 3. Conquistas Quantitativas Acumuladas
+          // 3. Conquistas Quantitativas Acumuladas
           const { count } = await supabase
             .from('emotional_checkins')
             .select('*', { count: 'exact', head: true })
@@ -1047,9 +1084,9 @@ export const CommunityPage: React.FC = () => {
                     <button
                       key={item.id}
                       onClick={() => handleSelectDailyEmotion(item)}
-                      className="flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-white active:scale-95"
+                      className="flex items-center justify-center gap-2.5 p-3.5 rounded-2xl bg-[#070D0F] hover:bg-white/10 border border-white/10 text-xs font-bold text-white active:scale-95 transition-all cursor-pointer"
                     >
-                      <span className="text-lg">{item.emoji}</span>
+                      <span className="shrink-0">{renderRoomIcon(item.iconName, 'w-4 h-4', { color: item.color })}</span>
                       <span>{item.label}</span>
                     </button>
                   ))}
@@ -1060,11 +1097,17 @@ export const CommunityPage: React.FC = () => {
               <div className="space-y-5 py-2">
                 {/* Header: Icon + Sentiment centered without container box */}
                 <div className="flex flex-col items-center justify-center text-center gap-2.5 pt-1">
-                  <div className="w-16 h-16 rounded-2xl bg-[#FF7F5B]/20 border border-[#FF7F5B]/40 text-4xl flex items-center justify-center">
-                    {submittedEmotionObj.emoji}
+                  <div 
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg border"
+                    style={{ 
+                      backgroundColor: `${submittedEmotionObj.color}15`, 
+                      borderColor: `${submittedEmotionObj.color}40` 
+                    }}
+                  >
+                    {renderRoomIcon(submittedEmotionObj.iconName, 'w-8 h-8', { color: submittedEmotionObj.color })}
                   </div>
                   <div>
-                    <span className="text-[10px] font-extrabold text-[#FF7F5B] uppercase tracking-wider block">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider block" style={{ color: submittedEmotionObj.color }}>
                       Check-in Emocional
                     </span>
                     <h3 className="text-xl font-black text-white">
@@ -1096,7 +1139,7 @@ export const CommunityPage: React.FC = () => {
 
                 <button
                   onClick={handleCloseDailyCheckin}
-                  className="w-full bg-[#FF7F5B] hover:bg-[#e06847] text-white font-bold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-lg transition-all"
+                  className="w-full bg-[#FF7F5B] hover:bg-[#e06847] text-white font-bold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-lg transition-all cursor-pointer"
                 >
                   Entrar na Comunidade
                 </button>
@@ -1141,40 +1184,56 @@ export const CommunityPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Top Banner (Centered, Coral Orange Header) */}
-      <section className="bg-[#101B1E] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl border border-white/10 relative overflow-hidden text-center">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#FF7F5B]/15 rounded-full blur-3xl pointer-events-none"></div>
+      {/* Top Banner (Centered, Coral Orange Header with Integrated Respiro 60s) */}
+      <section className="bg-[#101B1E] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl border border-white/10 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-96 bg-[#FF7F5B]/15 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="relative z-10 space-y-1 max-w-2xl mx-auto">
-          <h1 className="text-xl sm:text-3xl font-black tracking-tight text-[#FF7F5B] uppercase" style={{ fontFamily: 'var(--font-heading)' }}>
-            SUA REDE DE APOIO
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-300">
-            Nosso espaço seguro de troca e acolhimento.
-          </p>
+        <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="space-y-1 text-center sm:text-left">
+            <div className="flex items-center justify-center sm:justify-start gap-1.5 text-[#FF7F5B]">
+              <Sparkles className="w-4 h-4" />
+              <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest">Comunidade Elana</span>
+            </div>
+            <h1 className="text-xl sm:text-3xl font-black tracking-tight text-white uppercase" style={{ fontFamily: 'var(--font-heading)' }}>
+              SUA REDE DE APOIO
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
+              Nosso espaço seguro de troca, escuta e acolhimento mútuo sem julgamentos.
+            </p>
+          </div>
+
+          <button
+            onClick={() => setIsBreathingModalOpen(true)}
+            className="flex items-center gap-2 bg-[#8A9A5B]/20 hover:bg-[#8A9A5B]/30 text-[#A3B18A] hover:text-[#C5D1AF] border border-[#8A9A5B]/40 font-bold text-xs uppercase tracking-wider py-2.5 sm:py-3 px-4 rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+            title="Pausa guiada de 60 segundos"
+          >
+            <Wind className="w-4 h-4 text-[#8A9A5B] animate-spin-slow" />
+            <span>Respiro de 60s</span>
+          </button>
         </div>
       </section>
 
-      {/* 🗳️ Enquete Interativa Aberta ("Sua Voz Importa") */}
+      {/* Enquete Interativa Aberta ("Sua Voz Importa") */}
       {activePoll && activePoll.status === 'open' && (
         <CommunityPollBanner poll={activePoll} />
       )}
 
       {/* ── MOBILE ONLY: Clean Horizontal Pills Navigation ──────────────────── */}
-      <div className="lg:hidden space-y-2">
+      <div className="lg:hidden space-y-2.5">
 
-        {/* Row 1 — Category Pills (Clean text without icons) */}
+        {/* Row 1 — Category Pills with Lucide Icons */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
           {/* Pill: Todas */}
           <button
             onClick={() => { setMobilePillCategory(null); setMobilePillJourneyId(null); setActiveSelection(null); }}
-            className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
+            className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-1.5 ${
               mobilePillCategory === null && activeSelection === null
                 ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
                 : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
             }`}
           >
-            Todas
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Todas</span>
           </button>
 
           {/* Pill: Minhas Publicações */}
@@ -1204,13 +1263,14 @@ export const CommunityPage: React.FC = () => {
               setMobilePillJourneyId(null);
               if (next === null) setActiveSelection(null);
             }}
-            className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
+            className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-1.5 ${
               mobilePillCategory === 'geral'
                 ? 'bg-[#8A9A5B] text-white border-[#8A9A5B] shadow-md'
                 : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
             }`}
           >
-            Geral
+            <HeartHandshake className="w-3.5 h-3.5" />
+            <span>Geral</span>
           </button>
 
           {/* Pill: Jornadas */}
@@ -1221,13 +1281,14 @@ export const CommunityPage: React.FC = () => {
               setMobilePillJourneyId(null);
               if (next === null) setActiveSelection(null);
             }}
-            className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
+            className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-1.5 ${
               mobilePillCategory === 'jornadas'
                 ? 'bg-[#FFD166] text-slate-900 border-[#FFD166] shadow-md'
                 : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
             }`}
           >
-            Jornadas
+            <Compass className="w-3.5 h-3.5" />
+            <span>Jornadas</span>
           </button>
 
           {/* Pill: Idades */}
@@ -1238,17 +1299,18 @@ export const CommunityPage: React.FC = () => {
               setMobilePillJourneyId(null);
               if (next === null) setActiveSelection(null);
             }}
-            className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
+            className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-1.5 ${
               mobilePillCategory === 'idades'
                 ? 'bg-[#E66795] text-white border-[#E66795] shadow-md'
                 : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
             }`}
           >
-            Idades
+            <Moon className="w-3.5 h-3.5" />
+            <span>Idades</span>
           </button>
         </div>
 
-        {/* Row 2 — Sub-option Pills (Clean text without emojis) */}
+        {/* Row 2 — Sub-option Pills with Lucide Icons */}
         {mobilePillCategory === 'geral' && (
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in">
             {TRANSVERSAL_ROOMS.map(r => {
@@ -1257,14 +1319,15 @@ export const CommunityPage: React.FC = () => {
                 <button
                   key={r.id}
                   onClick={() => setActiveSelection({ type: 'geral', roomId: r.id })}
-                  className={`shrink-0 snap-start px-3 py-1 rounded-full text-[11px] font-bold transition-all border ${
+                  className={`shrink-0 snap-start px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
                     isSelected
                       ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
                       : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
                   }`}
                 >
+                  {renderRoomIcon(r.iconName, 'w-3.5 h-3.5')}
                   <span>{r.name}</span>
-                  {r.isAnonymous && <span className="text-[9px] opacity-70 ml-1">(Anônimo)</span>}
+                  {r.isAnonymous && <span className="text-[9px] opacity-70 ml-0.5">(Anônimo)</span>}
                 </button>
               );
             })}
@@ -1287,7 +1350,7 @@ export const CommunityPage: React.FC = () => {
                         setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'ajuda' });
                       }
                     }}
-                    className={`shrink-0 snap-start px-3 py-1 rounded-full text-[11px] font-bold transition-all border ${
+                    className={`shrink-0 snap-start px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
                       isSelected
                         ? 'text-white border-transparent shadow-md'
                         : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
@@ -1300,13 +1363,13 @@ export const CommunityPage: React.FC = () => {
               })}
             </div>
 
-            {/* Sub-option pills for selected journey */}
+            {/* Sub-option pills for selected journey with icons */}
             {mobilePillJourneyId && (
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in bg-white/5 p-1 rounded-xl">
                 {[
-                  { id: 'ajuda' as const,   label: 'Preciso de Ajuda' },
-                  { id: 'celebrar' as const, label: 'Celebrar' },
-                  { id: 'desabafar' as const, label: 'Desabafar' }
+                  { id: 'ajuda' as const,   label: 'Preciso de Ajuda', iconName: 'HelpCircle' },
+                  { id: 'celebrar' as const, label: 'Celebrar', iconName: 'Star' },
+                  { id: 'desabafar' as const, label: 'Desabafar', iconName: 'CloudRain' }
                 ].map(sub => {
                   const isSelected = activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId && activeSelection.subOption === sub.id;
                   const journey = JOURNEYS_DATA.find(j => j.id === mobilePillJourneyId);
@@ -1314,13 +1377,14 @@ export const CommunityPage: React.FC = () => {
                     <button
                       key={sub.id}
                       onClick={() => setActiveSelection({ type: 'jornada', journeyId: mobilePillJourneyId, subOption: sub.id })}
-                      className={`shrink-0 snap-start px-3 py-1 rounded-full text-[11px] font-bold transition-all border ${
+                      className={`shrink-0 snap-start px-3 py-1 rounded-lg text-[10px] font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
                         isSelected
                           ? 'text-white border-transparent shadow-md'
                           : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
                       }`}
                       style={isSelected && journey ? { backgroundColor: journey.themeColor, borderColor: journey.themeColor } : {}}
                     >
+                      {renderRoomIcon(sub.iconName, 'w-3 h-3')}
                       <span>{sub.label}</span>
                     </button>
                   );
@@ -1338,12 +1402,13 @@ export const CommunityPage: React.FC = () => {
                 <button
                   key={a.id}
                   onClick={() => setActiveSelection({ type: 'idade', ageId: a.id })}
-                  className={`shrink-0 snap-start px-3 py-1 rounded-full text-[11px] font-bold transition-all border ${
+                  className={`shrink-0 snap-start px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
                     isSelected
                       ? 'bg-[#E66795] text-white border-[#E66795] shadow-md'
                       : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
                   }`}
                 >
+                  {renderRoomIcon(a.iconName, 'w-3.5 h-3.5')}
                   <span>{a.name}</span>
                 </button>
               );
@@ -1420,13 +1485,14 @@ export const CommunityPage: React.FC = () => {
                     <button
                       key={r.id}
                       onClick={() => setActiveSelection({ type: 'geral', roomId: r.id })}
-                      className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all border ${
+                      className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${
                         isSelected
                           ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md font-black'
                           : 'bg-[#070D0F] text-slate-300 border-white/5 hover:bg-white/5'
                       }`}
                     >
-                      <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                      <div className="flex items-center gap-2 min-w-0 pr-1">
+                        <span className="shrink-0">{renderRoomIcon(r.iconName, 'w-3.5 h-3.5')}</span>
                         <span className="truncate">{r.name}</span>
                         <span 
                           className={`transition-colors p-0.5 shrink-0 cursor-help ${isSelected ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-white'}`}
@@ -1473,13 +1539,13 @@ export const CommunityPage: React.FC = () => {
                             setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'ajuda' });
                           }
                         }}
-                        className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all border ${
+                        className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${
                           isSelectedJourney
                             ? 'bg-white/15 text-white border-white/30 shadow-sm'
                             : 'bg-[#070D0F] text-slate-300 border-white/5 hover:bg-white/5'
                         }`}
                       >
-                        <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                        <div className="flex items-center gap-2 min-w-0 pr-1">
                           <span className="truncate">{j.title}</span>
                           <span 
                             className="text-slate-400 hover:text-[#FF7F5B] transition-colors p-0.5 shrink-0 cursor-help"
@@ -1492,18 +1558,21 @@ export const CommunityPage: React.FC = () => {
                         <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-[#FF7F5B]' : ''}`} />
                       </button>
 
-                      {/* Drill-Down Sub-options (No Icons) */}
+                      {/* Drill-Down Sub-options with Lucide Icons */}
                       {isExpanded && (
                         <div className="pl-2 space-y-1 border-l-2 border-[#FF7F5B]/30 ml-2.5 animate-fade-in pt-0.5">
                           <button
                             onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'ajuda' })}
-                            className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all ${
+                            className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
                               isSelectedJourney && activeSelection.subOption === 'ajuda'
                                 ? 'bg-[#FF7F5B] text-white font-bold shadow-sm'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                           >
-                            <span>Preciso de Ajuda</span>
+                            <div className="flex items-center gap-1.5">
+                              <HelpCircle className="w-3 h-3" />
+                              <span>Preciso de Ajuda</span>
+                            </div>
                             <span 
                               className={`transition-colors p-0.5 shrink-0 cursor-help ${isSelectedJourney && activeSelection.subOption === 'ajuda' ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-white'}`}
                               title="Bateu uma dúvida na prática? Pergunta aqui que a gente troca ideias e caminhos com carinho."
@@ -1515,13 +1584,16 @@ export const CommunityPage: React.FC = () => {
 
                           <button
                             onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'celebrar' })}
-                            className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all ${
+                            className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
                               isSelectedJourney && activeSelection.subOption === 'celebrar'
                                 ? 'bg-[#FF7F5B] text-white font-bold shadow-sm'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                           >
-                            <span>Vamos Celebrar</span>
+                            <div className="flex items-center gap-1.5">
+                              <Star className="w-3 h-3" />
+                              <span>Vamos Celebrar</span>
+                            </div>
                             <span 
                               className={`transition-colors p-0.5 shrink-0 cursor-help ${isSelectedJourney && activeSelection.subOption === 'celebrar' ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-white'}`}
                               title="Conquista pequena também é vitória gigante! Vem dividir pra gente comemorar junto com você."
@@ -1533,13 +1605,16 @@ export const CommunityPage: React.FC = () => {
 
                           <button
                             onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'desabafar' })}
-                            className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all ${
+                            className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
                               isSelectedJourney && activeSelection.subOption === 'desabafar'
                                 ? 'bg-[#FF7F5B] text-white font-bold shadow-sm'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                           >
-                            <span>Preciso Desabafar</span>
+                            <div className="flex items-center gap-1.5">
+                              <CloudRain className="w-3 h-3" />
+                              <span>Preciso Desabafar</span>
+                            </div>
                             <span 
                               className={`transition-colors p-0.5 shrink-0 cursor-help ${isSelectedJourney && activeSelection.subOption === 'desabafar' ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-white'}`}
                               title="Aqui você só precisa colocar pra fora. Ninguém vai te julgar ou dar palpite sem pedir — só acolher."
@@ -1569,13 +1644,14 @@ export const CommunityPage: React.FC = () => {
                     <button
                       key={a.id}
                       onClick={() => setActiveSelection({ type: 'idade', ageId: a.id })}
-                      className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all border ${
+                      className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${
                         isSelected
                           ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md font-black'
                           : 'bg-[#070D0F] text-slate-300 border-white/5 hover:bg-white/5'
                       }`}
                     >
-                      <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                      <div className="flex items-center gap-2 min-w-0 pr-1">
+                        <span className="shrink-0">{renderRoomIcon(a.iconName, 'w-3.5 h-3.5')}</span>
                         <span>{a.name}</span>
                         <span 
                           className={`transition-colors p-0.5 shrink-0 cursor-help ${isSelected ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-white'}`}
@@ -1658,8 +1734,8 @@ export const CommunityPage: React.FC = () => {
               </div>
             ) : filteredPosts.length === 0 ? (
               <div className="bg-[#101B1E] rounded-3xl p-12 text-center space-y-3 border border-white/10">
-                <div className="w-12 h-12 rounded-full bg-white/5 text-slate-400 mx-auto flex items-center justify-center text-xl">
-                  💬
+                <div className="w-12 h-12 rounded-2xl bg-white/5 text-slate-400 mx-auto flex items-center justify-center">
+                  <MessageSquare className="w-6 h-6 text-slate-400" />
                 </div>
                 <h3 className="text-lg font-bold text-white">Nenhum tópico encontrado</h3>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
@@ -1667,7 +1743,7 @@ export const CommunityPage: React.FC = () => {
                 </p>
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="inline-flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl mt-2 shadow-lg transition-all"
+                  className="inline-flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl mt-2 shadow-lg transition-all cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   Criar Primeiro Tópico
@@ -1709,7 +1785,7 @@ export const CommunityPage: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Canto Superior Direito: Contêiner da Sala (sem ícones, simplificado) */}
+                        {/* Canto Superior Direito: Contêiner da Sala com Ícone Lucide */}
                         <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                           <button
                             type="button"
@@ -1719,7 +1795,7 @@ export const CommunityPage: React.FC = () => {
                                 setActiveSelection(roomDetails.selectionTarget);
                               }
                             }}
-                            className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border shadow-sm hover:opacity-90 active:scale-95 cursor-pointer max-w-[200px] sm:max-w-none truncate"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all border shadow-sm hover:opacity-90 active:scale-95 cursor-pointer max-w-[220px] sm:max-w-none truncate"
                             style={{
                               backgroundColor: roomDetails.badgeBg,
                               borderColor: roomDetails.badgeBorder,
@@ -1727,6 +1803,7 @@ export const CommunityPage: React.FC = () => {
                             }}
                             title={`Filtrar posts desta sala: ${roomLabel}`}
                           >
+                            {renderRoomIcon(roomDetails.subTopicIconName || roomDetails.iconName, 'w-3.5 h-3.5 shrink-0')}
                             <span className="truncate">{roomLabel}</span>
                           </button>
                         </div>
@@ -1760,28 +1837,59 @@ export const CommunityPage: React.FC = () => {
                         <h4 className="text-lg font-black text-white leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                           {post.title}
                         </h4>
-                        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-                          {post.content}
-                        </p>
+
+                        {/* Text Content with Smart Truncation */}
+                        {(() => {
+                          const isTextExpanded = !!expandedPostTextMap[post.id];
+                          const shouldTruncate = post.content.length > 280;
+                          const displayContent = shouldTruncate && !isTextExpanded 
+                            ? `${post.content.slice(0, 280)}...` 
+                            : post.content;
+
+                          return (
+                            <div className="space-y-1.5">
+                              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                                {displayContent}
+                              </p>
+                              {shouldTruncate && (
+                                <button
+                                  type="button"
+                                  onClick={() => togglePostTextExpansion(post.id)}
+                                  className="text-xs font-bold text-[#FF7F5B] hover:text-[#e06847] hover:underline transition-colors inline-flex items-center gap-1 cursor-pointer pt-0.5"
+                                >
+                                  <span>{isTextExpanded ? 'Recolher relato' : 'Ler relato completo'}</span>
+                                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isTextExpanded ? 'rotate-180' : ''}`} />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
 
-                      {/* Reaction Bar */}
-                      <div className="pt-3 border-t border-white/10 flex items-center gap-2 flex-wrap">
+                      {/* Reaction Bar 2.0 (Dynamic & Clean) */}
+                      <div className="pt-3 border-t border-white/10 flex items-center gap-2 flex-wrap relative">
                         {BRAND_REACTIONS.map(reaction => {
                           const postReactions = post.reactions || {};
                           const count = postReactions[reaction.id] || 0;
                           const isReacted = !!(post.userReactions && post.userReactions[reaction.id]);
 
+                          const totalPostReactionsCount = Object.values(postReactions).reduce((acc: number, c: any) => acc + (Number(c) || 0), 0);
+                          const isDefaultSuggestion = totalPostReactionsCount === 0 && (reaction.id === 'estou_aqui' || reaction.id === 'vai_dar_certo');
+
+                          if (count === 0 && !isReacted && !isDefaultSuggestion) {
+                            return null;
+                          }
+
                           return (
                             <button
                               key={reaction.id}
                               onClick={() => toggleReaction(post.id, reaction.id)}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                                 isReacted
                                   ? 'bg-white/15 text-white border-white/30 shadow-md scale-105'
                                   : 'bg-[#070D0F] text-slate-300 border-white/10 hover:bg-white/5'
                               }`}
-                              title={reaction.label}
+                              title={`${reaction.label} — ${reaction.useCase}`}
                             >
                               {renderReactionIcon(reaction.iconName, reaction.color)}
                               <span className="text-xs font-extrabold" style={{ color: reaction.color }}>
@@ -1790,6 +1898,47 @@ export const CommunityPage: React.FC = () => {
                             </button>
                           );
                         })}
+
+                        {/* Reaction Picker Trigger */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setOpenReactionPickerPostId(openReactionPickerPostId === post.id ? null : post.id)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-400 border border-white/10 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                            title="Adicionar uma reação de apoio"
+                          >
+                            <Plus className="w-3.5 h-3.5 text-[#FF7F5B]" />
+                            <span className="text-[11px]">Apoiar</span>
+                          </button>
+
+                          {/* Floating Reaction Picker Popover */}
+                          {openReactionPickerPostId === post.id && (
+                            <div className="absolute left-0 bottom-full mb-2 z-50 bg-[#101B1E] border border-white/20 p-1.5 rounded-2xl shadow-2xl flex items-center gap-1 animate-scale-up backdrop-blur-xl">
+                              {BRAND_REACTIONS.map(reaction => {
+                                const isReacted = !!(post.userReactions && post.userReactions[reaction.id]);
+                                return (
+                                  <button
+                                    key={reaction.id}
+                                    type="button"
+                                    onClick={() => {
+                                      toggleReaction(post.id, reaction.id);
+                                      setOpenReactionPickerPostId(null);
+                                    }}
+                                    className={`p-2 rounded-xl transition-all flex flex-col items-center gap-1 hover:bg-white/10 active:scale-95 cursor-pointer ${
+                                      isReacted ? 'bg-white/15 ring-1 ring-white/30' : ''
+                                    }`}
+                                    title={`${reaction.label}: ${reaction.useCase}`}
+                                  >
+                                    {renderReactionIcon(reaction.iconName, reaction.color)}
+                                    <span className="text-[9px] font-bold text-slate-300 whitespace-nowrap hidden sm:inline">
+                                      {reaction.label}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
 
                         {/* Botão Denunciar — só aparece para posts de outros usuários */}
                         {user && post.authorId !== user.id && (
@@ -1858,8 +2007,9 @@ export const CommunityPage: React.FC = () => {
 
                                 <div className="space-y-3">
                                   {postComments.length === 0 ? (
-                                    <p className="text-xs text-slate-400 italic bg-[#070D0F] p-4 rounded-2xl border border-white/5 text-center">
-                                      Nenhuma resposta ainda nesta conversa. Deixe um desabafo ou palavra de acolhimento abaixo! 💬
+                                    <p className="text-xs text-slate-400 italic bg-[#070D0F] p-4 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-1.5">
+                                      <MessageSquare className="w-3.5 h-3.5 text-[#8A9A5B] shrink-0" />
+                                      <span>Nenhuma resposta ainda nesta conversa. Deixe uma palavra de acolhimento abaixo!</span>
                                     </p>
                                   ) : (
                                     postComments.map(c => {
@@ -1887,7 +2037,7 @@ export const CommunityPage: React.FC = () => {
                                                     type="button"
                                                     title="Denunciar comentário"
                                                     onClick={() => setReportTarget({ contentType: 'comment', contentId: c.id, postId: post.id })}
-                                                    className="flex items-center gap-0.5 text-[10px] text-slate-500 hover:text-rose-400 transition-colors"
+                                                    className="flex items-center gap-0.5 text-[10px] text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
                                                   >
                                                     <Flag className="w-2.5 h-2.5" />
                                                   </button>
@@ -1920,7 +2070,7 @@ export const CommunityPage: React.FC = () => {
                                               <button
                                                 type="button"
                                                 onClick={() => toggleCommentReaction(post.id, c.id, 'apoio')}
-                                                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-bold transition-all border select-none ${
+                                                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-bold transition-all border select-none cursor-pointer ${
                                                   c.userReactions?.['apoio']
                                                     ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm'
                                                     : 'bg-[#101B1E] text-slate-400 border-white/10 hover:bg-white/10 hover:text-slate-200'
@@ -2001,11 +2151,12 @@ export const CommunityPage: React.FC = () => {
                         }
                       }}
                       disabled={isLoadingMore}
-                      className="bg-[#101B1E] hover:bg-white/10 text-white border border-white/20 px-8 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mx-auto disabled:opacity-50"
+                      className="bg-[#101B1E] hover:bg-white/10 text-white border border-white/20 px-8 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mx-auto disabled:opacity-50 cursor-pointer"
                     >
                       {isLoadingMore ? (
                         <span className="flex items-center gap-2">
-                          <span className="animate-spin">🌀</span> Carregando conversas...
+                          <RefreshCw className="w-4 h-4 animate-spin text-[#FF7F5B]" />
+                          <span>Carregando conversas...</span>
                         </span>
                       ) : (
                         <>
@@ -2044,15 +2195,15 @@ export const CommunityPage: React.FC = () => {
             <button
               onClick={() => setFlaggedCommentInfo(null)}
               aria-label="Fechar Notificação de Moderação"
-              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-white/10 p-2 rounded-full transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
             {flaggedCommentInfo.flagType === 'vulnerabilidade' ? (
               <>
-                <div className="w-16 h-16 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center mx-auto text-2xl shadow-lg animate-pulse">
-                  ❤️
+                <div className="w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center mx-auto shadow-lg animate-pulse">
+                  <Heart className="w-8 h-8 text-rose-400 fill-current" />
                 </div>
 
                 <div className="space-y-2">
@@ -2063,21 +2214,21 @@ export const CommunityPage: React.FC = () => {
                     Você não está só
                   </h3>
                   <p className="text-xs text-slate-300 leading-relaxed bg-[#070D0F] p-4 rounded-2xl border border-white/10 text-center">
-                    Identificamos que você pode estar passando por um momento delicado ou de profunda sobrecarga. Recebemos seu comentário com carinho e nossa equipe está atenta para acolher você. Se precisar de apoio imediato, ligue gratuitamente para o <strong>CVV (188)</strong>. 🌸
+                    Identificamos que você pode estar passando por um momento delicado ou de profunda sobrecarga. Recebemos seu comentário com carinho e nossa equipe está atenta para acolher você. Se precisar de apoio imediato, ligue gratuitamente para o <strong>CVV (188)</strong>.
                   </p>
                 </div>
 
                 <button
                   onClick={() => setFlaggedCommentInfo(null)}
-                  className="w-full bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all"
+                  className="w-full bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer"
                 >
                   Entendi. Obrigado pelo cuidado
                 </button>
               </>
             ) : (
               <>
-                <div className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center mx-auto text-2xl shadow-lg animate-pulse">
-                  🛡️
+                <div className="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center mx-auto shadow-lg animate-pulse">
+                  <ShieldAlert className="w-8 h-8 text-amber-400" />
                 </div>
 
                 <div className="space-y-2">
@@ -2088,13 +2239,13 @@ export const CommunityPage: React.FC = () => {
                     Mensagem Encaminhada para Análise
                   </h3>
                   <p className="text-xs text-slate-300 leading-relaxed bg-[#070D0F] p-4 rounded-2xl border border-white/10 text-center">
-                    Identificamos palavras com potencial tom crítico, ofensivo ou impositivo. Na <strong>Elana Academy</strong>, cultivamos um ambiente 100% acolhedor e livre de <em>mom-shaming</em>. Sua mensagem foi encaminhada com prioridade para a nossa equipe de moderação analisar antes de ser publicada. 💖
+                    Identificamos palavras com potencial tom crítico, ofensivo ou impositivo. Na <strong>Elana Academy</strong>, cultivamos um ambiente 100% acolhedor e livre de <em>mom-shaming</em>. Sua mensagem foi encaminhada com prioridade para a nossa equipe de moderação analisar antes de ser publicada.
                   </p>
                 </div>
 
                 <button
                   onClick={() => setFlaggedCommentInfo(null)}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all"
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all cursor-pointer"
                 >
                   Entendi. Acompanhar Moderação
                 </button>
@@ -2125,7 +2276,7 @@ export const CommunityPage: React.FC = () => {
         />
       )}
 
-      {/* 🗑️ Modal de Confirmação de Exclusão de Post */}
+      {/* Modal de Confirmação de Exclusão de Post */}
       {postToDelete && createPortal(
         <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
           <div className="bg-[#101B1E] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-red-500/30 text-white space-y-5 animate-scale-up text-center">
@@ -2143,8 +2294,18 @@ export const CommunityPage: React.FC = () => {
             </div>
 
             <div className="bg-[#070D0F] p-3.5 rounded-2xl border border-white/10 text-left space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
-                {postToDelete.isAnonymous ? '🎭 Confessionário (Anônimo)' : '💬 Comunidade'}
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1.5">
+                {postToDelete.isAnonymous ? (
+                  <>
+                    <EyeOff className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                    <span>Confessionário (Anônimo)</span>
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="w-3.5 h-3.5 text-[#FF7F5B] shrink-0" />
+                    <span>Comunidade</span>
+                  </>
+                )}
               </span>
               <p className="text-xs font-bold text-white truncate">
                 "{postToDelete.title}"
@@ -2194,7 +2355,7 @@ export const CommunityPage: React.FC = () => {
         document.body
       )}
 
-      {/* 🗑️ Modal de Confirmação de Exclusão de Comentário */}
+      {/* Modal de Confirmação de Exclusão de Comentário */}
       {commentToDelete && createPortal(
         <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
           <div className="bg-[#101B1E] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-red-500/30 text-white space-y-5 animate-scale-up text-center">
@@ -2212,8 +2373,9 @@ export const CommunityPage: React.FC = () => {
             </div>
 
             <div className="bg-[#070D0F] p-3.5 rounded-2xl border border-white/10 text-left space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
-                💬 Comentário
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>Comentário</span>
               </span>
               <p className="text-xs font-bold text-white line-clamp-2">
                 "{commentToDelete.content}"
