@@ -1116,7 +1116,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       // Auto-save if user filled name and age/pregnancy
                       const isPregnancy = newChildEmoji === '🤰';
                       const computedAge = isPregnancy ? pregnancyMonth : resolveChildAge(newChildBirthdate);
-                      const childName = isPregnancy ? (newChildName.trim() || 'Gestante') : newChildName.trim();
+                      const childName = isPregnancy ? (newChildName.trim() || 'Bebê a Caminho') : newChildName.trim();
                       if (childName && (isPregnancy ? !!pregnancyMonth : !!computedAge)) {
                         let normalizedBirthdate: string | undefined = undefined;
                         if (newChildBirthdate.includes('/')) {
@@ -1184,7 +1184,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                             >
                               <option value="👦">Menino</option>
                               <option value="👧">Menina</option>
-                              <option value="🤰">Gestante</option>
+                              <option value="🤰">Bebê a Caminho</option>
                             </select>
                             <input
                               type="text"
@@ -1328,8 +1328,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           const val = e.target.value;
                           setNewChildEmoji(val);
                           if (val === '🤰') {
-                            setNewChildName('Gestante');
-                          } else if (newChildName === 'Gestante') {
+                            setNewChildName('Bebê a Caminho');
+                          } else if (newChildName === 'Bebê a Caminho') {
                             setNewChildName('');
                           }
                         }}
@@ -1337,7 +1337,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       >
                         <option value="👦">Menino</option>
                         <option value="👧">Menina</option>
-                        <option value="🤰">Gestante</option>
+                        <option value="🤰">Bebê a Caminho</option>
                       </select>
 
                       <input
@@ -1384,7 +1384,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       onClick={async () => {
                         const isPregnancy = newChildEmoji === '🤰';
                         const computedAge = isPregnancy ? pregnancyMonth : resolveChildAge(newChildBirthdate);
-                        const childName = isPregnancy ? (newChildName.trim() || 'Gestante') : newChildName.trim();
+                        const childName = isPregnancy ? (newChildName.trim() || 'Bebê a Caminho') : newChildName.trim();
 
                         if (!childName || (!isPregnancy && !computedAge)) return;
 
