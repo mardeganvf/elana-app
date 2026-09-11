@@ -1052,11 +1052,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                     <span>Um pouquinho sobre mim...</span>
                   </h3>
                   <button
-                    onClick={() => setIsEditingBio(!isEditingBio)}
+                    onClick={() => {
+                      if (isEditingBio) {
+                        // Cancelar: descartar alterações e restaurar valor original
+                        setBioText(user?.bio || '');
+                        setIsEditingBio(false);
+                      } else {
+                        setIsEditingBio(true);
+                      }
+                    }}
                     className="text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1.5 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-white/10 active:scale-95 cursor-pointer"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>{isEditingBio ? 'Salvar' : 'Editar'}</span>
+                    {isEditingBio ? (
+                      <X className="w-3.5 h-3.5" />
+                    ) : (
+                      <Edit3 className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isEditingBio ? 'Cancelar' : 'Editar'}</span>
                   </button>
                 </div>
 
