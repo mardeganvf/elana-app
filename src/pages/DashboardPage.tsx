@@ -624,7 +624,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       />
 
                       <button
-                        disabled={isVerifyingOtp || inputEmailCode.trim().length < 6}
+                        disabled={isVerifyingOtp || inputEmailCode.trim().length < 8}
                         onClick={async () => {
                           const token = inputEmailCode.trim();
                           if (!token) {
