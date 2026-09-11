@@ -1140,7 +1140,7 @@ export const CommunityPage: React.FC = () => {
 
                 <button
                   onClick={handleCloseDailyCheckin}
-                  className="w-full bg-[#FF7F5B] hover:bg-[#e06847] text-white font-bold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-lg transition-all cursor-pointer"
+                  className="w-full bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-bold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-lg transition-all cursor-pointer"
                 >
                   Entrar na Comunidade
                 </button>
@@ -1225,7 +1225,7 @@ export const CommunityPage: React.FC = () => {
             onClick={() => { setMobilePillCategory(null); setMobilePillJourneyId(null); setActiveSelection(null); }}
             className={`shrink-0 snap-start px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-1.5 ${
               mobilePillCategory === null && activeSelection === null
-                ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
+                ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-md'
                 : 'bg-[#101B1E] text-slate-300 border-white/10 hover:border-white/30'
             }`}
           >
@@ -1318,7 +1318,7 @@ export const CommunityPage: React.FC = () => {
                   onClick={() => setActiveSelection({ type: 'geral', roomId: r.id })}
                   className={`shrink-0 snap-start px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
                     isSelected
-                      ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md'
+                      ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-md'
                       : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
                   }`}
                 >
@@ -1467,7 +1467,7 @@ export const CommunityPage: React.FC = () => {
                       onClick={() => setActiveSelection({ type: 'geral', roomId: r.id })}
                       className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${
                         isSelected
-                          ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md font-black'
+                          ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-md font-black'
                           : 'bg-[#070D0F] text-slate-300 border-white/5 hover:bg-white/5'
                       }`}
                     >
@@ -1526,7 +1526,7 @@ export const CommunityPage: React.FC = () => {
                             onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'ajuda' })}
                             className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
                               isSelectedJourney && activeSelection.subOption === 'ajuda'
-                                ? 'bg-[#FF7F5B] text-white font-bold shadow-sm'
+                                ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                           >
@@ -1537,7 +1537,7 @@ export const CommunityPage: React.FC = () => {
                             onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'celebrar' })}
                             className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
                               isSelectedJourney && activeSelection.subOption === 'celebrar'
-                                ? 'bg-[#FF7F5B] text-white font-bold shadow-sm'
+                                ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                           >
@@ -1548,7 +1548,7 @@ export const CommunityPage: React.FC = () => {
                             onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'desabafar' })}
                             className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
                               isSelectedJourney && activeSelection.subOption === 'desabafar'
-                                ? 'bg-[#FF7F5B] text-white font-bold shadow-sm'
+                                ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                           >
@@ -1577,7 +1577,7 @@ export const CommunityPage: React.FC = () => {
                       onClick={() => setActiveSelection({ type: 'idade', ageId: a.id })}
                       className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${
                         isSelected
-                          ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md font-black'
+                          ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-md font-black'
                           : 'bg-[#070D0F] text-slate-300 border-white/5 hover:bg-white/5'
                       }`}
                     >
@@ -1637,7 +1637,7 @@ export const CommunityPage: React.FC = () => {
             {activeSelection && (
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="flex items-center gap-1.5 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-extrabold text-[11px] sm:text-xs uppercase tracking-wider py-2.5 sm:py-3 px-3.5 sm:px-5 rounded-xl sm:rounded-2xl shadow-lg transition-all active:scale-95 shrink-0 whitespace-nowrap cursor-pointer"
+                className="flex items-center gap-1.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-extrabold text-[11px] sm:text-xs uppercase tracking-wider py-2.5 sm:py-3 px-3.5 sm:px-5 rounded-xl sm:rounded-2xl shadow-lg transition-all active:scale-95 shrink-0 whitespace-nowrap cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Criar Tópico</span>
@@ -1664,7 +1664,7 @@ export const CommunityPage: React.FC = () => {
                 </p>
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="inline-flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl mt-2 shadow-lg transition-all cursor-pointer"
+                  className="inline-flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl mt-2 shadow-lg transition-all cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   Criar Primeiro Tópico
@@ -1912,7 +1912,7 @@ export const CommunityPage: React.FC = () => {
                                   onClick={() => toggleCommentsExpansion(post.id)}
                                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm border cursor-pointer ${
                                     isInlineExpanded
-                                      ? 'bg-[#FF7F5B] text-white border-[#FF7F5B]'
+                                      ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B]'
                                       : 'bg-[#070D0F] text-slate-300 border-white/10 hover:bg-white/10 hover:text-white'
                                   }`}
                                   title="Expandir respostas da Rede de Apoio"
@@ -2058,7 +2058,7 @@ export const CommunityPage: React.FC = () => {
                                       <button
                                         type="submit"
                                         disabled={isSubmittingCommentMap[post.id]}
-                                        className="bg-[#FF7F5B] hover:bg-[#e06847] text-white p-3 rounded-xl transition-all shadow-md shrink-0 disabled:opacity-50 cursor-pointer"
+                                        className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 p-3 rounded-xl transition-all shadow-md shrink-0 disabled:opacity-50 cursor-pointer"
                                       >
                                         {isSubmittingCommentMap[post.id] ? (
                                           <RefreshCw className="w-4 h-4 animate-spin" />
@@ -2113,7 +2113,7 @@ export const CommunityPage: React.FC = () => {
                       ) : (
                         <>
                           <span>Carregar Mais Conversas</span>
-                          <span className="bg-[#FF7F5B] text-white px-2.5 py-0.5 rounded-full text-[10px] font-extrabold">
+                          <span className="bg-[#FF7F5B] text-slate-950 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold">
                             +15
                           </span>
                         </>

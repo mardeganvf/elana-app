@@ -399,7 +399,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all ${
+                className={`flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all ${
                   isSubmitting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer transform hover:scale-105 active:scale-95'
                 }`}
               >

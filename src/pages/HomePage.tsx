@@ -559,7 +559,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
             onClick={() => setSelectedStoryFilter('all')}
             className={`px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 ${
               selectedStoryFilter === 'all'
-                ? 'bg-[#FF7F5B] text-white shadow-md'
+                ? 'bg-[#FF7F5B] text-slate-950 shadow-md'
                 : 'bg-[#162327] text-slate-300 hover:bg-[#1f3137] border border-white/10'
             }`}
           >
@@ -577,7 +577,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                 onClick={() => setSelectedStoryFilter(j.id)}
                 className={`px-3.5 py-1.5 rounded-full font-bold shrink-0 transition-all ${
                   selectedStoryFilter === j.id
-                    ? 'bg-[#FF7F5B] text-white shadow-md'
+                    ? 'bg-[#FF7F5B] text-slate-950 shadow-md'
                     : 'bg-[#162327] text-slate-300 hover:bg-[#1f3137] border border-white/10'
                 }`}
               >
@@ -727,7 +727,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                           }}
                           className={`shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer border ${
                             isSelected
-                              ? 'bg-[#FF7F5B] text-white border-[#FF7F5B] shadow-md shadow-[#FF7F5B]/20'
+                              ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-md shadow-[#FF7F5B]/20'
                               : 'bg-[#101B1E] text-slate-300 hover:text-white border-white/10 hover:border-white/20'
                           }`}
                         >

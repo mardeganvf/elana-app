@@ -429,7 +429,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             <button
               type="submit"
               disabled={loading || inputCode.length < 8}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#E66795] via-[#FF7F5B] to-[#FF7F5B] text-white font-extrabold text-xs uppercase tracking-wider shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#E66795] via-[#FF7F5B] to-[#FF7F5B] text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {loading && <RefreshCw className="w-4 h-4 animate-spin" />}
               <span>Fazer parte da Elana</span>
@@ -570,7 +570,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#E66795] via-[#FF7F5B] to-[#FF7F5B] text-white font-extrabold text-xs uppercase tracking-wider shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#E66795] via-[#FF7F5B] to-[#FF7F5B] text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer"
             >
               {loading && <RefreshCw className="w-4 h-4 animate-spin" />}
               <span>
