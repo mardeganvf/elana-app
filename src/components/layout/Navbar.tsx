@@ -276,7 +276,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
     return uniqueDailyCheckins.some(c => c.date === todayKey);
   }, [uniqueDailyCheckins]);
 
-  const renderEmotionIcon = (emotionId: string | null, className: string = "w-3.5 h-3.5") => {
+  const renderEmotionIcon = (emotionId?: string | null, className: string = "w-3.5 h-3.5") => {
     switch (emotionId) {
       case 'esperanca':
         return <Sun className={`${className} text-[#FFD166]`} />;
