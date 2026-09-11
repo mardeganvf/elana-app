@@ -468,7 +468,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-0.5 rounded-full border border-[#FF7F5B]/25">
                   <Sparkles className="w-3 h-3" />
-                  Próxima Aula Para Você
+                  Próximo Conteúdo Para Você
                 </span>
                 <span className="text-[11px] font-bold text-slate-400">
                   Progresso na Jornada: <strong className="text-white">{nextLessonData.progressPct}%</strong>
@@ -735,7 +735,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                             isSelected ? 'bg-white/20 text-white' : 'bg-white/5 text-slate-400'
                           }`}>
-                            {mod.lessons.length} aulas
+                            {mod.lessons.length} {mod.lessons.length === 1 ? 'conteúdo' : 'conteúdos'}
                           </span>
                         </button>
                       );
