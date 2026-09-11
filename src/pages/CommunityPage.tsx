@@ -1322,7 +1322,6 @@ export const CommunityPage: React.FC = () => {
                       : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
                   }`}
                 >
-                  {renderRoomIcon(r.iconName, 'w-3.5 h-3.5')}
                   <span>{r.name}</span>
                   {r.isAnonymous && <span className="text-[9px] opacity-70 ml-0.5">(Anônimo)</span>}
                 </button>
@@ -1360,13 +1359,13 @@ export const CommunityPage: React.FC = () => {
               })}
             </div>
 
-            {/* Sub-option pills for selected journey with icons */}
+            {/* Sub-option pills for selected journey */}
             {mobilePillJourneyId && (
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in bg-white/5 p-1 rounded-xl">
                 {[
-                  { id: 'ajuda' as const,   label: 'Preciso de Ajuda', iconName: 'HelpCircle' },
-                  { id: 'celebrar' as const, label: 'Celebrar', iconName: 'Star' },
-                  { id: 'desabafar' as const, label: 'Desabafar', iconName: 'CloudRain' }
+                  { id: 'ajuda' as const,   label: 'Preciso de Ajuda' },
+                  { id: 'celebrar' as const, label: 'Celebrar' },
+                  { id: 'desabafar' as const, label: 'Desabafar' }
                 ].map(sub => {
                   const isSelected = activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId && activeSelection.subOption === sub.id;
                   const journey = JOURNEYS_DATA.find(j => j.id === mobilePillJourneyId);
@@ -1381,7 +1380,6 @@ export const CommunityPage: React.FC = () => {
                       }`}
                       style={isSelected && journey ? { backgroundColor: journey.themeColor, borderColor: journey.themeColor } : {}}
                     >
-                      {renderRoomIcon(sub.iconName, 'w-3 h-3')}
                       <span>{sub.label}</span>
                     </button>
                   );
@@ -1405,7 +1403,6 @@ export const CommunityPage: React.FC = () => {
                       : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
                   }`}
                 >
-                  {renderRoomIcon(a.iconName, 'w-3.5 h-3.5')}
                   <span>{a.name}</span>
                 </button>
               );
@@ -1450,10 +1447,7 @@ export const CommunityPage: React.FC = () => {
                       : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/5'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    <span>Minhas Publicações</span>
-                  </div>
+                  <span>Minhas Publicações</span>
                 </button>
               </div>
             )}
@@ -1477,17 +1471,7 @@ export const CommunityPage: React.FC = () => {
                           : 'bg-[#070D0F] text-slate-300 border-white/5 hover:bg-white/5'
                       }`}
                     >
-                      <div className="flex items-center gap-2 min-w-0 pr-1">
-                        <span className="shrink-0">{renderRoomIcon(r.iconName, 'w-3.5 h-3.5')}</span>
-                        <span className="truncate">{r.name}</span>
-                        <span 
-                          className={`transition-colors p-0.5 shrink-0 cursor-help ${isSelected ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-white'}`}
-                          title={r.description}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <HelpCircle className="w-3.5 h-3.5" />
-                        </span>
-                      </div>
+                      <span className="truncate">{r.name}</span>
                       {r.isAnonymous && (
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ml-1 transition-colors ${
                           isSelected 
@@ -1531,20 +1515,11 @@ export const CommunityPage: React.FC = () => {
                             : 'bg-[#070D0F] text-slate-300 border-white/5 hover:bg-white/5'
                         }`}
                       >
-                        <div className="flex items-center gap-2 min-w-0 pr-1">
-                          <span className="truncate">{j.title}</span>
-                          <span 
-                            className="text-slate-400 hover:text-[#FF7F5B] transition-colors p-0.5 shrink-0 cursor-help"
-                            title={`Foco: ${j.targetAudience} — ${j.tagline}`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <HelpCircle className="w-3.5 h-3.5" />
-                          </span>
-                        </div>
+                        <span className="truncate">{j.title}</span>
                         <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-[#FF7F5B]' : ''}`} />
                       </button>
 
-                      {/* Drill-Down Sub-options with Lucide Icons */}
+                      {/* Drill-Down Sub-options */}
                       {isExpanded && (
                         <div className="pl-2 space-y-1 border-l-2 border-[#FF7F5B]/30 ml-2.5 animate-fade-in pt-0.5">
                           <button
@@ -1555,17 +1530,7 @@ export const CommunityPage: React.FC = () => {
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                           >
-                            <div className="flex items-center gap-1.5">
-                              <HelpCircle className="w-3 h-3" />
-                              <span>Preciso de Ajuda</span>
-                            </div>
-                            <span 
-                              className={`transition-colors p-0.5 shrink-0 cursor-help ${isSelectedJourney && activeSelection.subOption === 'ajuda' ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-white'}`}
-                              title="Bateu uma dúvida na prática? Pergunta aqui que a gente troca ideias e caminhos com carinho."
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <HelpCircle className="w-3 h-3" />
-                            </span>
+                            <span>Preciso de Ajuda</span>
                           </button>
 
                           <button
@@ -1576,17 +1541,7 @@ export const CommunityPage: React.FC = () => {
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                           >
-                            <div className="flex items-center gap-1.5">
-                              <Star className="w-3 h-3" />
-                              <span>Vamos Celebrar</span>
-                            </div>
-                            <span 
-                              className={`transition-colors p-0.5 shrink-0 cursor-help ${isSelectedJourney && activeSelection.subOption === 'celebrar' ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-white'}`}
-                              title="Conquista pequena também é vitória gigante! Vem dividir pra gente comemorar junto com você."
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <HelpCircle className="w-3 h-3" />
-                            </span>
+                            <span>Vamos Celebrar</span>
                           </button>
 
                           <button
@@ -1597,17 +1552,7 @@ export const CommunityPage: React.FC = () => {
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                           >
-                            <div className="flex items-center gap-1.5">
-                              <CloudRain className="w-3 h-3" />
-                              <span>Preciso Desabafar</span>
-                            </div>
-                            <span 
-                              className={`transition-colors p-0.5 shrink-0 cursor-help ${isSelectedJourney && activeSelection.subOption === 'desabafar' ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-white'}`}
-                              title="Aqui você só precisa colocar pra fora. Ninguém vai te julgar ou dar palpite sem pedir — só acolher."
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <HelpCircle className="w-3 h-3" />
-                            </span>
+                            <span>Preciso Desabafar</span>
                           </button>
                         </div>
                       )}
@@ -1636,17 +1581,7 @@ export const CommunityPage: React.FC = () => {
                           : 'bg-[#070D0F] text-slate-300 border-white/5 hover:bg-white/5'
                       }`}
                     >
-                      <div className="flex items-center gap-2 min-w-0 pr-1">
-                        <span className="shrink-0">{renderRoomIcon(a.iconName, 'w-3.5 h-3.5')}</span>
-                        <span>{a.name}</span>
-                        <span 
-                          className={`transition-colors p-0.5 shrink-0 cursor-help ${isSelected ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-white'}`}
-                          title={a.description}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <HelpCircle className="w-3.5 h-3.5" />
-                        </span>
-                      </div>
+                      <span className="truncate">{a.name}</span>
                     </button>
                   );
                 })}
