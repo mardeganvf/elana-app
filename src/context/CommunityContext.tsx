@@ -1589,9 +1589,25 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setActivePoll(updatedPollObj);
     }
 
-    if (updatedPollObj && pollId.length > 20) {
+    if (updatedPollObj && pollId.length > 20 && user?.id) {
       try {
-        // 1. Atualiza contagem de votos na enquete
+        // RPC atômica: incrementa total_votes + opção específica no JSONB + registra poll_votes
+        // Elimina race conditions — toda a operação ocorre em uma única transação no banco
+        const { error: rpcError } = await supabase.rpc('vote_on_poll', {
+          p_poll_id: pollId,
+          p_option_id: optionId,
+          p_profile_id: user.id
+        });
+
+        if (rpcError) {
+          console.warn('Supabase poll vote notice:', rpcError.message);
+        }
+      } catch (err) {
+        console.warn('Supabase poll vote notice:', err);
+      }
+    } else if (updatedPollObj && pollId.length > 20 && !user?.id) {
+      // Visitante anônimo: só atualiza a contagem (sem registrar voto pessoal)
+      try {
         await supabase
           .from('community_polls')
           .update({
@@ -1599,21 +1615,6 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             total_votes: (updatedPollObj as CommunityPoll).totalVotes
           })
           .eq('id', pollId);
-
-        // 2. Registra o voto do usuário na tabela poll_votes (persistência cross-device)
-        if (user?.id) {
-          await supabase
-            .from('poll_votes')
-            .upsert(
-              {
-                poll_id: pollId,
-                profile_id: user.id,
-                option_id: optionId,
-                voted_at: new Date().toISOString()
-              },
-              { onConflict: 'poll_id,profile_id' }
-            );
-        }
       } catch (err) {
         console.warn('Supabase poll vote notice:', err);
       }
