@@ -790,12 +790,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     loadRolePermissions();
   }, [loadTickets]);
 
-  // Polling e Realtime para aba SOS
+  // Realtime WebSocket para aba SOS — polling removido (redundante com Realtime)
   useEffect(() => {
     if (activeAdminTab !== 'sos') return;
 
     loadTickets(true);
-    const interval = setInterval(() => loadTickets(true), 4000);
 
     const channel = supabase
       .channel('admin_sos_realtime_sync')
@@ -809,7 +808,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       .subscribe();
 
     return () => {
-      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, [activeAdminTab, loadTickets]);
@@ -2038,7 +2036,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                               <img
                                 src={ticket.userAvatar}
                                 alt={ticket.userName}
-                                className="w-10 h-10 rounded-full object-cover shrink-0 border border-white/10 shadow-sm"
+                                className="w-10 h-10 rounded-full object-cover shrink-0 border border-white/10 shadow-sm" loading="lazy"
                               />
 
                               {/* 2. Nome do Usuário + Duas linhas da mensagem (sem repetir) */}
@@ -2446,7 +2444,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   <div key={item.id} className="bg-[#070D0F] p-5 rounded-2xl border border-white/10 space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
                       <div className="flex items-center gap-3">
-                        <img src={item.authorAvatar} alt={item.authorName} className="w-9 h-9 rounded-full object-cover" />
+                        <img src={item.authorAvatar} alt={item.authorName} className="w-9 h-9 rounded-full object-cover" loading="lazy" />
                         <div>
                           <h4 className="text-xs font-bold text-white">{item.authorName}</h4>
                           <span className="text-[10px] text-[#FF7F5B] font-bold">
@@ -2804,7 +2802,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         <img 
                           src={member.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120'} 
                           alt={member.name} 
-                          onClick={() => handleOpenMemberProfile(member)}
+                          onClick={() = loading="lazy"> handleOpenMemberProfile(member)}
                           className={`w-11 h-11 rounded-full object-cover border-2 shrink-0 cursor-pointer hover:opacity-85 transition-opacity ${
                             member.role === 'admin' 
                               ? 'border-purple-400' 

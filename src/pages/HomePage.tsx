@@ -308,7 +308,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                 <img
                   src={journey.coverImageUrl || SLIDE_POSTERS[journey.id] || 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1600&auto=format&fit=crop&q=80'}
                   alt={journey.title}
-                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  className="absolute inset-0 w-full h-full object-cover object-center" loading="lazy"
                 />
                 
                 {/* Double Cinematic Vignette (Bottom + Left) for Readability */}
@@ -451,7 +451,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                   'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&auto=format&fit=crop&q=80'
                 }
                 alt={nextLessonData.lesson.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy"
               />
               <div className="absolute inset-0 bg-black/35 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                 <div className="w-12 h-12 rounded-full bg-[#FF7F5B] text-white flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
@@ -604,7 +604,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                 <img
                   src={story.posterUrl}
                   alt={story.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy"
                 />
 
                 {/* Vignette Overlay for Avatar */}
@@ -616,7 +616,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                     <img
                       src={story.authorAvatar}
                       alt={story.authorName}
-                      className="w-full h-full object-cover rounded-full border border-black"
+                      className="w-full h-full object-cover rounded-full border border-black" loading="lazy"
                     />
                   </div>
                 </div>
@@ -795,7 +795,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                             : isCompleted 
                             ? 'opacity-65 group-hover:opacity-85' 
                             : 'opacity-85 group-hover:opacity-100'
-                        }`}
+                        }`} loading="lazy"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#101B1E] via-transparent to-transparent"></div>
 

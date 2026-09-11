@@ -401,7 +401,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
               <img
                 src={user.avatar}
                 alt={user.name}
-                onError={(e) => {
+                onError={(e) = loading="lazy"> {
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
                 }}
                 className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-[#FF7F5B] shadow-lg"
@@ -1515,7 +1515,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                     <img
                       src={member.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
                       alt={member.name}
-                      className="w-12 h-12 rounded-full object-cover border border-white/20 group-hover:scale-105 transition-transform shrink-0"
+                      className="w-12 h-12 rounded-full object-cover border border-white/20 group-hover:scale-105 transition-transform shrink-0" loading="lazy"
                     />
                     <div className="min-w-0 flex-1">
                       <h4 className="text-xs font-bold text-white truncate group-hover:text-[#FF7F5B] transition-colors">
@@ -1575,7 +1575,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           <img
                             src={t.authorAvatar}
                             alt={t.authorName}
-                            className="w-9 h-9 rounded-full object-cover border border-white/15"
+                            className="w-9 h-9 rounded-full object-cover border border-white/15" loading="lazy"
                           />
                           <div>
                             <h5 className="text-xs font-bold text-white">{t.authorName}</h5>
