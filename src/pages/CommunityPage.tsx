@@ -1030,7 +1030,7 @@ export const CommunityPage: React.FC = () => {
         themeColor: '#0EA5E9' // Light Blue / Sky Blue (distinct from journeys)
       };
     }
-    return { categoryLabel: 'SUA REDE DE APOIO', mainTitle: 'Comunidade Elana', themeColor: '#FF7F5B' };
+    return { categoryLabel: 'SUA REDE DE APOIO', mainTitle: 'Todas as Conversas', themeColor: '#FF7F5B' };
   };
 
   const currentHeader = getHeaderDetails();
@@ -1191,10 +1191,6 @@ export const CommunityPage: React.FC = () => {
 
         <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="space-y-1 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-1.5 text-[#FF7F5B]">
-              <Sparkles className="w-4 h-4" />
-              <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest">Comunidade Elana</span>
-            </div>
             <h1 className="text-xl sm:text-3xl font-black tracking-tight text-white uppercase" style={{ fontFamily: 'var(--font-heading)' }}>
               SUA REDE DE APOIO
             </h1>
@@ -1426,17 +1422,6 @@ export const CommunityPage: React.FC = () => {
         {/* Left Sidebar Container — hidden on mobile, visible on desktop */}
         <aside className="hidden lg:block w-full lg:w-72 shrink-0 space-y-3 sticky top-24 sm:top-28 max-h-[calc(100vh-7.5rem)] overflow-y-auto custom-scrollbar pr-1 self-start">
           
-          {/* Button Respiro de 60 Segundos Above Criar Tópico */}
-          <button
-            onClick={() => {
-              setIsBreathingModalOpen(true);
-            }}
-            className="w-full flex items-center justify-center gap-2 bg-[#8A9A5B]/20 hover:bg-[#8A9A5B]/30 text-[#8A9A5B] border border-[#8A9A5B]/40 font-bold text-xs uppercase tracking-wider py-3 px-4 rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer"
-          >
-            <Wind className="w-4 h-4 animate-spin-slow" />
-            <span>Respiro de 60 Segundos</span>
-          </button>
-
           {/* Menu de Salas Panel */}
           <div className="bg-[#101B1E] rounded-3xl p-5 border border-white/10 shadow-xl space-y-6">
             
@@ -1762,109 +1747,144 @@ export const CommunityPage: React.FC = () => {
                   return (
                     <div 
                       key={post.id}
-                      className="bg-[#101B1E] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-lg space-y-5 hover:border-white/20 transition-all relative overflow-hidden"
+                      className="bg-[#101B1E] rounded-3xl p-5 sm:p-6 border border-white/10 shadow-lg space-y-4 hover:border-white/20 transition-all relative overflow-hidden"
                     >
-                      
-                      {/* Top Author & Room Badge */}
-                      <div className="flex items-start sm:items-center justify-between gap-3">
+                      {/* Spatial 2-Column Structure: Left (Author Info) + Right (Content) */}
+                      <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+                        {/* Left Column: Foto, Nome, data e horário do usuário */}
                         <div 
                           onClick={post.isAnonymous ? undefined : () => openAuthorProfile({ id: post.authorId, name: post.authorName, avatar: post.authorAvatar, role: post.authorRole, tag: post.authorTag, isAnonymous: post.isAnonymous })}
-                          className={`flex items-center gap-3 min-w-0 ${post.isAnonymous ? '' : 'cursor-pointer group'}`}
+                          className={`w-full sm:w-44 md:w-48 shrink-0 flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-3 sm:gap-2.5 sm:pr-4 sm:border-r sm:border-white/10 ${post.isAnonymous ? '' : 'cursor-pointer group'}`}
                         >
-                          <img
-                            src={post.authorAvatar}
-                            alt={post.authorName}
-                            className={`w-10 h-10 rounded-full object-cover border border-white/20 shrink-0 ${post.isAnonymous ? '' : 'group-hover:scale-105 transition-transform'}`}
-                          />
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`font-bold text-xs text-white truncate ${post.isAnonymous ? '' : 'group-hover:text-[#FF7F5B] transition-colors'}`}>
+                          <div className="flex sm:flex-col items-center sm:items-start gap-3 sm:gap-2.5 min-w-0">
+                            <img
+                              src={post.authorAvatar}
+                              alt={post.authorName}
+                              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border border-white/20 shrink-0 ${post.isAnonymous ? '' : 'group-hover:scale-105 transition-transform'}`}
+                            />
+                            <div className="min-w-0">
+                              <span className={`font-bold text-xs sm:text-sm text-white truncate block ${post.isAnonymous ? '' : 'group-hover:text-[#FF7F5B] transition-colors'}`}>
                                 {post.authorName}
                               </span>
+                              <span className="text-[11px] text-slate-400 block mt-0.5">{post.createdAt}</span>
+                              {post.isAnonymous && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/25 px-1.5 py-0.5 rounded-md mt-1">
+                                  <EyeOff className="w-2.5 h-2.5" />
+                                  <span>Anônimo</span>
+                                </span>
+                              )}
                             </div>
-                            <span className="text-[11px] text-slate-400 block mt-0.5">{post.createdAt}</span>
+                          </div>
+
+                          {/* Mobile Only: Room Badge in Top Line */}
+                          <div className="sm:hidden shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (roomDetails.selectionTarget) {
+                                  setActiveSelection(roomDetails.selectionTarget);
+                                }
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all border shadow-sm max-w-[150px] truncate"
+                              style={{
+                                backgroundColor: roomDetails.badgeBg,
+                                borderColor: roomDetails.badgeBorder,
+                                color: roomDetails.badgeText
+                              }}
+                              title={`Filtrar posts desta sala: ${roomLabel}`}
+                            >
+                              {renderRoomIcon(roomDetails.subTopicIconName || roomDetails.iconName, 'w-3 h-3 shrink-0')}
+                              <span className="truncate">{roomLabel}</span>
+                            </button>
                           </div>
                         </div>
 
-                        {/* Canto Superior Direito: Contêiner da Sala com Ícone Lucide */}
-                        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (roomDetails.selectionTarget) {
-                                setActiveSelection(roomDetails.selectionTarget);
-                              }
-                            }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all border shadow-sm hover:opacity-90 active:scale-95 cursor-pointer max-w-[220px] sm:max-w-none truncate"
-                            style={{
-                              backgroundColor: roomDetails.badgeBg,
-                              borderColor: roomDetails.badgeBorder,
-                              color: roomDetails.badgeText
-                            }}
-                            title={`Filtrar posts desta sala: ${roomLabel}`}
-                          >
-                            {renderRoomIcon(roomDetails.subTopicIconName || roomDetails.iconName, 'w-3.5 h-3.5 shrink-0')}
-                            <span className="truncate">{roomLabel}</span>
-                          </button>
-                        </div>
-                      </div>
+                        {/* Right Column: Título, Badge da Sala (Desktop) e Texto do Relato */}
+                        <div className="flex-1 min-w-0 space-y-2.5 w-full">
+                          {/* Desktop Top Row: Título à esquerda, Badge da Sala à direita */}
+                          <div className="hidden sm:flex items-start justify-between gap-3">
+                            <h4 className="text-base sm:text-lg font-black text-white leading-snug" style={{ fontFamily: 'var(--font-heading)' }}>
+                              {post.title}
+                            </h4>
 
-                      {/* Content Section */}
-                      <div className="space-y-3">
-                        {post.status === 'sob_moderacao' && (
-                          post.flagType === 'vulnerabilidade' ? (
-                            <div className="bg-rose-500/10 border border-rose-500/30 p-3.5 rounded-2xl flex items-center gap-2.5 text-rose-200 text-xs">
-                              <Heart className="w-4 h-4 shrink-0 text-rose-400" />
-                              <div className="space-y-0.5">
-                                <p className="text-rose-100 text-xs font-semibold">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (roomDetails.selectionTarget) {
+                                  setActiveSelection(roomDetails.selectionTarget);
+                                }
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all border shadow-sm hover:opacity-90 active:scale-95 cursor-pointer max-w-[220px] truncate shrink-0 ml-auto"
+                              style={{
+                                backgroundColor: roomDetails.badgeBg,
+                                borderColor: roomDetails.badgeBorder,
+                                color: roomDetails.badgeText
+                              }}
+                              title={`Filtrar posts desta sala: ${roomLabel}`}
+                            >
+                              {renderRoomIcon(roomDetails.subTopicIconName || roomDetails.iconName, 'w-3.5 h-3.5 shrink-0')}
+                              <span className="truncate">{roomLabel}</span>
+                            </button>
+                          </div>
+
+                          {/* Mobile Title */}
+                          <h4 className="sm:hidden text-base font-black text-white leading-snug" style={{ fontFamily: 'var(--font-heading)' }}>
+                            {post.title}
+                          </h4>
+
+                          {/* Moderation Alert */}
+                          {post.status === 'sob_moderacao' && (
+                            post.flagType === 'vulnerabilidade' ? (
+                              <div className="bg-rose-500/10 border border-rose-500/30 p-3 rounded-2xl flex items-center gap-2.5 text-rose-200 text-xs">
+                                <Heart className="w-4 h-4 shrink-0 text-rose-400" />
+                                <div className="space-y-0.5">
+                                  <p className="text-rose-100 text-xs font-semibold">
+                                    Essa mensagem está passando por uma análise da nossa equipe de moderação.
+                                  </p>
+                                  <p className="text-rose-200/80 text-[11px]">
+                                    Você não está só. Se precisar de apoio imediato, ligue gratuitamente para o <strong>CVV (188)</strong>.
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-2xl flex items-center gap-2.5 text-amber-200 text-xs">
+                                <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400" />
+                                <p className="text-amber-100 text-xs leading-relaxed font-medium">
                                   Essa mensagem está passando por uma análise da nossa equipe de moderação.
                                 </p>
-                                <p className="text-rose-200/80 text-[11px]">
-                                  Você não está só. Se precisar de apoio imediato, ligue gratuitamente para o <strong>CVV (188)</strong>.
-                                </p>
                               </div>
-                            </div>
-                          ) : (
-                            <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-2xl flex items-center gap-2.5 text-amber-200 text-xs">
-                              <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400" />
-                              <p className="text-amber-100 text-xs leading-relaxed font-medium">
-                                Essa mensagem está passando por uma análise da nossa equipe de moderação.
-                              </p>
-                            </div>
-                          )
-                        )}
+                            )
+                          )}
 
-                        <h4 className="text-lg font-black text-white leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                          {post.title}
-                        </h4>
+                          {/* Text Content with Smart Truncation */}
+                          {(() => {
+                            const isTextExpanded = !!expandedPostTextMap[post.id];
+                            const shouldTruncate = post.content.length > 280;
+                            const displayContent = shouldTruncate && !isTextExpanded 
+                              ? `${post.content.slice(0, 280)}...` 
+                              : post.content;
 
-                        {/* Text Content with Smart Truncation */}
-                        {(() => {
-                          const isTextExpanded = !!expandedPostTextMap[post.id];
-                          const shouldTruncate = post.content.length > 280;
-                          const displayContent = shouldTruncate && !isTextExpanded 
-                            ? `${post.content.slice(0, 280)}...` 
-                            : post.content;
-
-                          return (
-                            <div className="space-y-1.5">
-                              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-                                {displayContent}
-                              </p>
-                              {shouldTruncate && (
-                                <button
-                                  type="button"
-                                  onClick={() => togglePostTextExpansion(post.id)}
-                                  className="text-xs font-bold text-[#FF7F5B] hover:text-[#e06847] hover:underline transition-colors inline-flex items-center gap-1 cursor-pointer pt-0.5"
-                                >
-                                  <span>{isTextExpanded ? 'Recolher relato' : 'Ler relato completo'}</span>
-                                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isTextExpanded ? 'rotate-180' : ''}`} />
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })()}
+                            return (
+                              <div className="space-y-1.5">
+                                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                                  {displayContent}
+                                </p>
+                                {shouldTruncate && (
+                                  <button
+                                    type="button"
+                                    onClick={() => togglePostTextExpansion(post.id)}
+                                    className="text-xs font-bold text-[#FF7F5B] hover:text-[#e06847] hover:underline transition-colors inline-flex items-center gap-1 cursor-pointer pt-0.5"
+                                  >
+                                    <span>{isTextExpanded ? 'Recolher relato' : 'Ler relato completo'}</span>
+                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isTextExpanded ? 'rotate-180' : ''}`} />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
 
                       {/* Unified Post Action Bar: Reaction Counter Pills + Apoiar Trigger + Rede de Apoio + Excluir */}
