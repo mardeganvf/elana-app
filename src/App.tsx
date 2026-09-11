@@ -78,9 +78,11 @@ const AppContent: React.FC = () => {
   }, []);
 
   // 🗳️ Disparo da Enquete no 1º Acesso Geral do Dia (Aba Conteúdos / Home)
+  // Não dispara enquanto o onboarding não estiver completo (1º dia de acesso)
   useEffect(() => {
     if (!user || activeTab !== 'home' || isSpotlightTourOpen || isBadgeRewardOpen || isProfileInviteOpen) return;
     if (!activePoll || activePoll.status !== 'open') return;
+    if (!user.onboardingCompleted) return; // Não mostrar enquete no 1º acesso
 
     const userKey = user.id;
     const now = new Date();
@@ -94,10 +96,10 @@ const AppContent: React.FC = () => {
       const timer = setTimeout(() => {
         setIsPollModalOpen(true);
         localStorage.setItem(pollDailySeenKey, 'true');
-      }, 1200);
+      }, 3000); // Aumentado de 1200ms para 3000ms — evita sobreposição com modais de onboarding
       return () => clearTimeout(timer);
     }
-  }, [user?.id, activeTab, activePoll?.id, userVotedPollsMap, isSpotlightTourOpen, isBadgeRewardOpen, isProfileInviteOpen]);
+  }, [user?.id, user?.onboardingCompleted, activeTab, activePoll?.id, userVotedPollsMap, isSpotlightTourOpen, isBadgeRewardOpen, isProfileInviteOpen]);
 
   useEffect(() => {
     if (user?.email) {
@@ -317,7 +319,8 @@ const AppContent: React.FC = () => {
           onComplete={() => {
             setIsSpotlightTourOpen(false);
             if (!user?.onboardingCompleted) {
-              setIsBadgeRewardOpen(true);
+              // Delay de 400ms antes de abrir o Badge — evita sobreposição abrupta
+              setTimeout(() => setIsBadgeRewardOpen(true), 400);
             }
           }}
         />
@@ -327,7 +330,8 @@ const AppContent: React.FC = () => {
           isOpen={isBadgeRewardOpen}
           onClose={() => {
             setIsBadgeRewardOpen(false);
-            setIsProfileInviteOpen(true);
+            // Delay de 400ms antes de abrir o ProfileInvite — transição suave
+            setTimeout(() => setIsProfileInviteOpen(true), 400);
           }}
         />
 
