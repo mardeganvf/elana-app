@@ -450,7 +450,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
         </div>
       </div>
 
-      {/* ── MOBILE TAB SWITCHER: Aula Atual vs Módulos & Aulas ── */}
+      {/* ── MOBILE TAB SWITCHER: Conteúdo Atual vs Módulos & Aulas ── */}
       <div className="lg:hidden flex items-center bg-[#101B1E] p-1.5 rounded-2xl border border-white/10 shadow-md">
         <button
           onClick={() => setMobileTab('content')}
@@ -461,7 +461,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
           }`}
         >
           <Film className="w-4 h-4" />
-          <span>Aula Atual</span>
+          <span>Conteúdo Atual</span>
         </button>
 
         <button
@@ -574,7 +574,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                   onClick={() => handleLessonChange(allLessons[0])}
                   className="text-xs text-slate-400 hover:text-white underline underline-offset-2 transition-colors cursor-pointer"
                 >
-                  Voltar à aula gratuita
+                  Voltar ao conteúdo gratuito
                 </button>
               </div>
             ) : null}
@@ -760,7 +760,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                 </div>
                 <div>
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-white/90 block">
-                    Autoplay Ativo • Próxima Aula
+                    Autoplay Ativo • Próximo Conteúdo
                   </span>
                   <p className="text-xs font-bold truncate max-w-xs sm:max-w-md">
                     {nextLesson.title}

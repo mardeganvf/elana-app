@@ -307,7 +307,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     setJourneyFormCoverUrl(journey.coverImageUrl || '');
 
     const existingMods = journey.modules || [];
-    const hasMultipleMods = existingMods.length > 1 || (existingMods.length === 1 && existingMods[0].title !== 'Conteúdos da Trilha' && existingMods[0].title !== 'Conteúdos da Jornada');
+    const hasMultipleMods = existingMods.length > 1 || (existingMods.length === 1 && existingMods[0].title !== 'Conteúdos da Jornada' && existingMods[0].title !== 'Conteúdos da Jornada');
     setJourneyFormHasModules(hasMultipleMods);
     setJourneyFormModulesList(
       existingMods.map(m => ({
@@ -384,7 +384,7 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     if (ok) {
       setSelectedJourneyId(journeyId);
       setIsJourneyModalOpen(false);
-      notify('success', editingJourney ? 'Trilha atualizada com sucesso! ✨' : 'Nova Trilha criada com sucesso! 🌿');
+      notify('success', editingJourney ? 'Jornada atualizada com sucesso! ✨' : 'Nova Jornada criada com sucesso! 🌿');
     } else {
       notify('error', 'Erro ao salvar trilha. Tente novamente.');
     }

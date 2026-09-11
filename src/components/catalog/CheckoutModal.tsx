@@ -43,7 +43,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
           </button>
 
           <span className="text-[10px] font-extrabold uppercase tracking-widest bg-black/40 px-3 py-1 rounded-md">
-            Aquisição Individual de Módulo
+            Adquirir esta Jornada
           </span>
           <h2 
             className="text-3xl font-bold mt-2 tracking-tight"
@@ -138,12 +138,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
               {isProcessing ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Liberando Acesso ao Módulo...</span>
+                  <span>Liberando Acesso à Jornada...</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 fill-current" />
-                  Confirmar e Desbloquear Módulo
+                  Confirmar e Desbloquear Jornada
                 </>
               )}
             </button>

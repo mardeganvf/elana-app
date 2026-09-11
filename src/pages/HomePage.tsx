@@ -204,7 +204,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
   const purchasedJourneys = JOURNEYS_DATA.filter(j => user?.purchasedJourneyIds.includes(j.id));
 
-  // Resumo inteligente da próxima aula pendente do usuário (Próxima Aula Para Você)
+  // Resumo inteligente da próxima aula pendente do usuário (Próximo Conteúdo Para Você)
   const nextLessonData = React.useMemo(() => {
     if (!user || purchasedJourneys.length === 0) return null;
     for (const journey of purchasedJourneys) {
@@ -433,7 +433,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
 
       </section>
 
-      {/* Card de Retomada Imediata: Próxima Aula Para Você */}
+      {/* Card de Retomada Imediata: Próximo Conteúdo Para Você */}
       {nextLessonData && (
         <section className="animate-fade-in -mt-4 sm:-mt-2">
           <div 
@@ -463,7 +463,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
               </span>
             </div>
 
-            {/* Conteúdo textual da aula pendente */}
+            {/* Conteúdo textual do conteúdo pendente */}
             <div className="flex-1 min-w-0 space-y-2 w-full">
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-0.5 rounded-full border border-[#FF7F5B]/25">

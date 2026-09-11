@@ -971,7 +971,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   onClick={onExploreCatalog}
                   className="mt-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-bold text-xs uppercase tracking-wider py-3 px-5 rounded-xl cursor-pointer"
                 >
-                  Ver Catálogo de Módulos
+                  Ver Catálogo de Jornadas
                 </button>
               </div>
             ) : (
