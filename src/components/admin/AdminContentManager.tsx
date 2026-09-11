@@ -1003,372 +1003,420 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       )}
 
       {/* ==================================================== */}
-      {/* MODAL 1: CRIAR / EDITAR JORNADA */}
+      {/* GAVETA LATERAL (SLIDE-OVER DRAWER): CRIAR / EDITAR JORNADA */}
       {/* ==================================================== */}
       {isJourneyModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-sm p-3 sm:p-6 flex justify-center items-start animate-fade-in">
-          <div className="bg-[#101B1E] border border-white/15 rounded-3xl w-full max-w-xl p-6 sm:p-8 space-y-5 shadow-2xl my-2 sm:my-8 animate-scale-in">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-lg font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-                {editingJourney ? 'Editar Jornada' : 'Criar Nova Jornada'}
-              </h3>
+        <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-fade-in flex justify-end">
+          {/* Backdrop click to close */}
+          <div 
+            className="absolute inset-0" 
+            onClick={() => setIsJourneyModalOpen(false)} 
+          />
+
+          {/* Drawer Container */}
+          <form 
+            onSubmit={handleSaveJourney} 
+            className="relative z-10 w-full sm:w-[560px] md:w-[600px] h-full bg-[#0D1518] border-l border-white/10 flex flex-col shadow-2xl animate-slide-left text-white"
+          >
+            {/* 1. Header Fixo */}
+            <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between shrink-0 bg-[#0D1518]/95 backdrop-blur-md">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#FF7F5B] block">
+                  Catálogo de Conteúdos
+                </span>
+                <h3 className="text-lg font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                  {editingJourney ? 'Editar Jornada' : 'Criar Nova Jornada'}
+                </h3>
+              </div>
               <button
+                type="button"
                 onClick={() => setIsJourneyModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                className="p-2 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                aria-label="Fechar painel"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveJourney} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Título:</label>
-                <input
-                  type="text"
-                  value={journeyFormTitle}
-                  onChange={(e) => setJourneyFormTitle(e.target.value)}
-                  placeholder="Ex: Pais Recém-Nascidos, Construindo Pontes"
-                  className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                  required
-                />
-              </div>
+            {/* 2. Corpo do Formulário com Rolagem Suave */}
+            <div className="flex-1 overflow-y-auto p-6 sm:p-7 space-y-6">
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Chamada:</label>
-                <input
-                  type="text"
-                  value={journeyFormTagline}
-                  onChange={(e) => setJourneyFormTagline(e.target.value)}
-                  placeholder="Ex: Gestantes e pais de bebês: leveza para o começo da caminhada."
-                  className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Descrição:</label>
-                <textarea
-                  value={journeyFormDesc}
-                  onChange={(e) => setJourneyFormDesc(e.target.value)}
-                  rows={3}
-                  placeholder="Descreva o propósito da jornada e o acolhimento oferecido aos pais..."
-                  className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B] resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 block">Público-Alvo:</label>
-                  <input
-                    type="text"
-                    value={journeyFormAudience}
-                    onChange={(e) => setJourneyFormAudience(e.target.value)}
-                    placeholder="Ex: Gestantes e pais de 0 a 3 anos"
-                    className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 block">Investimento (R$):</label>
-                  <input
-                    type="number"
-                    value={journeyFormPrice}
-                    onChange={(e) => setJourneyFormPrice(Number(e.target.value))}
-                    className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Cor Temática da Jornada:</label>
-                <div className="flex items-center gap-3">
-                  {['#FF7F5B', '#8A9A5B', '#FFD166', '#3B82F6', '#EC4899', '#A855F7'].map(c => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setJourneyFormThemeColor(c)}
-                      className={`w-7 h-7 rounded-full transition-transform cursor-pointer flex items-center justify-center ${
-                        journeyFormThemeColor === c ? 'scale-125 ring-2 ring-white' : 'opacity-70 hover:opacity-100'
-                      }`}
-                      style={{ backgroundColor: c }}
-                    >
-                      {journeyFormThemeColor === c && <Check className="w-3.5 h-3.5 text-slate-950 font-bold" />}
-                    </button>
-                  ))}
-                  <input
-                    type="color"
-                    value={journeyFormThemeColor}
-                    onChange={(e) => setJourneyFormThemeColor(e.target.value)}
-                    className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
-                    title="Escolher outra cor"
-                  />
-                </div>
-              </div>
-
-              {/* Seletor Slider: Status (Ativa, Em Breve, Desabilitada) */}
-              <div className="p-3.5 bg-[#070D0F] border border-white/10 rounded-2xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-300 block">Status:</label>
-                  <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md ${
-                    journeyFormStatus === 'active'
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                      : journeyFormStatus === 'coming_soon'
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                      : 'bg-white/10 text-slate-300 border border-white/15'
-                  }`}>
-                    {journeyFormStatus === 'active' ? 'Ativa' : journeyFormStatus === 'coming_soon' ? 'Em Breve' : 'Desabilitada'}
+              {/* SEÇÃO 1: INFORMAÇÕES BÁSICAS */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-1 border-b border-white/5">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    1. Informações Básicas
                   </span>
                 </div>
-                
-                {/* Slider de 3 posições */}
-                <div className="relative bg-[#101B1E] p-1 rounded-xl border border-white/10 flex items-center">
-                  <div 
-                    className={`absolute top-1 bottom-1 w-[calc(33.333%-4px)] rounded-lg transition-all duration-300 ease-out shadow-md ${
-                      journeyFormStatus === 'active'
-                        ? 'left-1 bg-emerald-500'
-                        : journeyFormStatus === 'coming_soon'
-                        ? 'left-[calc(33.333%+1px)] bg-amber-500'
-                        : 'left-[calc(66.666%+1px)] bg-slate-600'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setJourneyFormStatus('active')}
-                    className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
-                      journeyFormStatus === 'active' ? 'text-slate-950' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Ativa
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setJourneyFormStatus('coming_soon')}
-                    className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
-                      journeyFormStatus === 'coming_soon' ? 'text-slate-950' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Em Breve
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setJourneyFormStatus('disabled')}
-                    className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
-                      journeyFormStatus === 'disabled' ? 'text-white' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Desabilitada
-                  </button>
-                </div>
-              </div>
 
-              {/* Imagem de Fundo do Carrossel (Poster) */}
-              <div className="p-4 bg-[#070D0F] border border-white/10 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-xs font-bold text-slate-300 block">
-                      Imagem de Fundo do Carrossel Inicial:
-                    </label>
-                    <span className="text-[11px] text-slate-500 block">
-                      Exibida exclusivamente como fundo deste slide no topo da página inicial.
-                    </span>
-                  </div>
-                  {journeyFormCoverUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setJourneyFormCoverUrl('')}
-                      className="text-[11px] text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
-                    >
-                      Remover Imagem
-                    </button>
-                  )}
-                </div>
-
-                {/* Preview se houver imagem informada */}
-                {journeyFormCoverUrl && (
-                  <div className="relative aspect-[16/7] rounded-xl overflow-hidden border border-white/15 bg-black/40">
-                    <img
-                      src={journeyFormCoverUrl}
-                      alt="Capa do Carrossel"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-
-                {/* Ações: Upload do Computador ou Colar Link */}
-                <div className="flex flex-col sm:flex-row items-center gap-2">
-                  <label className="w-full sm:w-auto px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-white/10 shrink-0">
-                    <UploadCloud className="w-4 h-4 text-[#FF7F5B]" />
-                    <span>{isUploadingJourneyCover ? 'Enviando foto...' : 'Fazer Upload de Foto'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      disabled={isUploadingJourneyCover}
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        setIsUploadingJourneyCover(true);
-                        try {
-                          const url = await uploadImageToStorage(file, 'community');
-                          if (url) {
-                            setJourneyFormCoverUrl(url);
-                            notify('success', 'Foto do carrossel carregada com sucesso! 🖼️');
-                          } else {
-                            notify('error', 'Erro ao processar imagem.');
-                          }
-                        } catch (err) {
-                          notify('error', 'Falha no envio da imagem.');
-                        } finally {
-                          setIsUploadingJourneyCover(false);
-                        }
-                      }}
-                    />
-                  </label>
-
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 block">Título da Jornada:</label>
                   <input
-                    type="url"
-                    value={journeyFormCoverUrl}
-                    onChange={(e) => setJourneyFormCoverUrl(e.target.value)}
-                    placeholder="Ou cole o link direto da imagem..."
-                    className="w-full flex-1 p-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B]"
+                    type="text"
+                    value={journeyFormTitle}
+                    onChange={(e) => setJourneyFormTitle(e.target.value)}
+                    placeholder="Ex: Pais Recém-Nascidos, Construindo Pontes"
+                    className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 block">Chamada / Subtítulo:</label>
+                  <input
+                    type="text"
+                    value={journeyFormTagline}
+                    onChange={(e) => setJourneyFormTagline(e.target.value)}
+                    placeholder="Ex: Gestantes e pais de bebês: leveza para o começo da caminhada."
+                    className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 block">Descrição Acolhedora:</label>
+                  <textarea
+                    value={journeyFormDesc}
+                    onChange={(e) => setJourneyFormDesc(e.target.value)}
+                    rows={3}
+                    placeholder="Descreva o propósito da jornada e o acolhimento oferecido aos pais..."
+                    className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B] resize-none transition-colors"
                   />
                 </div>
               </div>
 
-              {/* Switch: Possui módulo? */}
-              <div className="p-4 bg-[#070D0F] border border-white/10 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-white block">Possui módulos?</span>
-                    <span className="text-[11px] text-slate-400 block">
-                      Ative se esta jornada for dividida em múltiplos módulos temáticos.
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setJourneyFormHasModules(!journeyFormHasModules)}
-                    className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
-                      journeyFormHasModules ? 'bg-[#FF7F5B]' : 'bg-white/20'
-                    }`}
-                  >
-                    <span
-                      className={`w-5 h-5 rounded-full bg-white transition-transform absolute top-0.5 left-0.5 shadow-md ${
-                        journeyFormHasModules ? 'translate-x-6' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
+              {/* SEÇÃO 2: IDENTIDADE & COMERCIAL */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2 pb-1 border-b border-white/5">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    2. Identidade Visual & Comercial
+                  </span>
                 </div>
 
-                {/* Se o switch for acionado: abre a janela para inserir o nome do módulo e salvar */}
-                {journeyFormHasModules && (
-                  <div className="pt-3 border-t border-white/10 space-y-3 animate-fade-in">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={newModuleInput}
-                        onChange={(e) => setNewModuleInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddModuleToJourney();
-                          }
-                        }}
-                        placeholder="Digite o nome do módulo (ex: Módulo 1: Boas-vindas)..."
-                        className="flex-1 p-2.5 bg-[#101B1E] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B]"
-                      />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300 block">Público-Alvo:</label>
+                    <input
+                      type="text"
+                      value={journeyFormAudience}
+                      onChange={(e) => setJourneyFormAudience(e.target.value)}
+                      placeholder="Ex: Gestantes e pais de 0 a 3 anos"
+                      className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300 block">Investimento (R$):</label>
+                    <input
+                      type="number"
+                      value={journeyFormPrice}
+                      onChange={(e) => setJourneyFormPrice(Number(e.target.value))}
+                      className="w-full p-3 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                    />
+                  </div>
+                </div>
+
+                {/* Cor Temática */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-300 block">Cor Temática da Jornada:</label>
+                  <div className="flex items-center gap-3">
+                    {['#FF7F5B', '#8A9A5B', '#FFD166', '#3B82F6', '#EC4899', '#A855F7'].map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setJourneyFormThemeColor(c)}
+                        className={`w-7 h-7 rounded-full transition-transform cursor-pointer flex items-center justify-center ${
+                          journeyFormThemeColor === c ? 'scale-125 ring-2 ring-white' : 'opacity-70 hover:opacity-100'
+                        }`}
+                        style={{ backgroundColor: c }}
+                      >
+                        {journeyFormThemeColor === c && <Check className="w-3.5 h-3.5 text-slate-950 font-bold" />}
+                      </button>
+                    ))}
+                    <input
+                      type="color"
+                      value={journeyFormThemeColor}
+                      onChange={(e) => setJourneyFormThemeColor(e.target.value)}
+                      className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
+                      title="Escolher outra cor personalizada"
+                    />
+                  </div>
+                </div>
+
+                {/* Imagem de Fundo / Capa do Carrossel */}
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block">
+                        Imagem de Fundo (Capa do Carrossel):
+                      </label>
+                      <span className="text-[11px] text-slate-400 block">
+                        Exibida como pôster de fundo do slide na página inicial.
+                      </span>
+                    </div>
+                    {journeyFormCoverUrl && (
                       <button
                         type="button"
-                        onClick={handleAddModuleToJourney}
-                        className="px-3.5 py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-bold text-xs rounded-xl transition-all shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95"
+                        onClick={() => setJourneyFormCoverUrl('')}
+                        className="text-[11px] text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
                       >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Adicionar</span>
+                        Remover Imagem
                       </button>
-                    </div>
-
-                    {/* Lista de módulos adicionados com edição inline e exclusão */}
-                    {journeyFormModulesList.length > 0 ? (
-                      <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                          Módulos da Jornada ({journeyFormModulesList.length}):
-                        </span>
-                        {journeyFormModulesList.map((m, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between gap-2 p-2.5 bg-[#101B1E] border border-white/10 rounded-xl text-xs text-white"
-                          >
-                            <span className="w-5 h-5 rounded-md bg-[#FF7F5B]/15 text-[#FF7F5B] flex items-center justify-center font-mono text-[10px] font-bold shrink-0">
-                              {idx + 1}
-                            </span>
-                            <input
-                              type="text"
-                              value={m.title}
-                              onChange={(e) => {
-                                const updated = [...journeyFormModulesList];
-                                updated[idx] = { ...updated[idx], title: e.target.value };
-                                setJourneyFormModulesList(updated);
-                              }}
-                              className="flex-1 bg-transparent border-0 text-xs font-semibold text-white focus:outline-none focus:bg-white/5 px-2 py-0.5 rounded"
-                              placeholder="Título do módulo"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveModuleFromJourney(idx)}
-                              className="p-1 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
-                              title="Excluir módulo"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-amber-300/80 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
-                        💡 Digite o nome do módulo acima e clique em "Adicionar" (você pode inserir quantos módulos quiser).
-                      </p>
                     )}
                   </div>
-                )}
-              </div>
 
-              <div className="flex items-center justify-between gap-3 pt-4 border-t border-white/10">
-                {editingJourney ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const toDelete = { ...editingJourney };
-                      setIsJourneyModalOpen(false);
-                      setDeleteConfirm({
-                        type: 'journey',
-                        journeyId: toDelete.id,
-                        title: toDelete.title
-                      });
-                    }}
-                    className="px-3.5 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 border border-rose-500/20 active:scale-95"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Excluir Jornada</span>
-                  </button>
-                ) : (
-                  <div />
-                )}
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsJourneyModalOpen(false)}
-                    className="px-4 py-2.5 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer active:scale-95"
-                  >
-                    {editingJourney ? 'Salvar Alterações' : 'Criar Jornada'}
-                  </button>
+                  {/* Preview se houver imagem informada */}
+                  {journeyFormCoverUrl && (
+                    <div className="relative aspect-[16/7] rounded-xl overflow-hidden border border-white/15 bg-black/40">
+                      <img
+                        src={journeyFormCoverUrl}
+                        alt="Capa do Carrossel"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+
+                  {/* Upload do Arquivo ou Link */}
+                  <div className="flex flex-col sm:flex-row items-center gap-2">
+                    <label className="w-full sm:w-auto px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-white/10 shrink-0">
+                      <UploadCloud className="w-4 h-4 text-[#FF7F5B]" />
+                      <span>{isUploadingJourneyCover ? 'Enviando foto...' : 'Fazer Upload de Foto'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={isUploadingJourneyCover}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setIsUploadingJourneyCover(true);
+                          try {
+                            const url = await uploadImageToStorage(file, 'community');
+                            if (url) {
+                              setJourneyFormCoverUrl(url);
+                              notify('success', 'Foto do carrossel carregada com sucesso!');
+                            } else {
+                              notify('error', 'Erro ao processar imagem.');
+                            }
+                          } catch (err) {
+                            notify('error', 'Falha no envio da imagem.');
+                          } finally {
+                            setIsUploadingJourneyCover(false);
+                          }
+                        }}
+                      />
+                    </label>
+
+                    <input
+                      type="url"
+                      value={journeyFormCoverUrl}
+                      onChange={(e) => setJourneyFormCoverUrl(e.target.value)}
+                      placeholder="Ou cole o link direto da imagem..."
+                      className="w-full flex-1 p-2.5 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B]"
+                    />
+                  </div>
                 </div>
               </div>
-            </form>
-          </div>
+
+              {/* SEÇÃO 3: PUBLICAÇÃO & MÓDULOS */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2 pb-1 border-b border-white/5">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    3. Publicação & Estrutura
+                  </span>
+                </div>
+
+                {/* Seletor Slider: Status */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-300 block">Status de Publicação:</label>
+                    <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md ${
+                      journeyFormStatus === 'active'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : journeyFormStatus === 'coming_soon'
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        : 'bg-white/10 text-slate-300 border border-white/15'
+                    }`}>
+                      {journeyFormStatus === 'active' ? 'Ativa' : journeyFormStatus === 'coming_soon' ? 'Em Breve' : 'Desabilitada'}
+                    </span>
+                  </div>
+
+                  <div className="relative bg-[#070D0F] p-1 rounded-xl border border-white/10 flex items-center">
+                    <div 
+                      className={`absolute top-1 bottom-1 w-[calc(33.333%-4px)] rounded-lg transition-all duration-300 ease-out shadow-md ${
+                        journeyFormStatus === 'active'
+                          ? 'left-1 bg-emerald-500'
+                          : journeyFormStatus === 'coming_soon'
+                          ? 'left-[calc(33.333%+1px)] bg-amber-500'
+                          : 'left-[calc(66.666%+1px)] bg-slate-600'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setJourneyFormStatus('active')}
+                      className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
+                        journeyFormStatus === 'active' ? 'text-slate-950' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Ativa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setJourneyFormStatus('coming_soon')}
+                      className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
+                        journeyFormStatus === 'coming_soon' ? 'text-slate-950' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Em Breve
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setJourneyFormStatus('disabled')}
+                      className={`relative z-10 flex-1 py-2 text-xs font-black transition-colors cursor-pointer text-center ${
+                        journeyFormStatus === 'disabled' ? 'text-white' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Desabilitada
+                    </button>
+                  </div>
+                </div>
+
+                {/* Switch: Possui módulos? */}
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-white block">Possui módulos temáticos?</span>
+                      <span className="text-[11px] text-slate-400 block">
+                        Ative se esta jornada for dividida em múltiplos módulos ou fases.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setJourneyFormHasModules(!journeyFormHasModules)}
+                      className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
+                        journeyFormHasModules ? 'bg-[#FF7F5B]' : 'bg-white/20'
+                      }`}
+                    >
+                      <span
+                        className={`w-5 h-5 rounded-full bg-white transition-transform absolute top-0.5 left-0.5 shadow-md ${
+                          journeyFormHasModules ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {journeyFormHasModules && (
+                    <div className="pt-3 border-t border-white/10 space-y-3 animate-fade-in">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={newModuleInput}
+                          onChange={(e) => setNewModuleInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddModuleToJourney();
+                            }
+                          }}
+                          placeholder="Digite o nome do módulo (ex: Módulo 1: Boas-vindas)..."
+                          className="flex-1 p-2.5 bg-[#070D0F] border border-white/15 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FF7F5B]"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddModuleToJourney}
+                          className="px-3.5 py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-bold text-xs rounded-xl transition-all shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Adicionar</span>
+                        </button>
+                      </div>
+
+                      {journeyFormModulesList.length > 0 ? (
+                        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                            Módulos Cadastrados ({journeyFormModulesList.length}):
+                          </span>
+                          {journeyFormModulesList.map((m, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between gap-2 p-2.5 bg-[#070D0F] border border-white/10 rounded-xl text-xs text-white"
+                            >
+                              <span className="w-5 h-5 rounded-md bg-[#FF7F5B]/15 text-[#FF7F5B] flex items-center justify-center font-mono text-[10px] font-bold shrink-0">
+                                {idx + 1}
+                              </span>
+                              <input
+                                type="text"
+                                value={m.title}
+                                onChange={(e) => {
+                                  const updated = [...journeyFormModulesList];
+                                  updated[idx] = { ...updated[idx], title: e.target.value };
+                                  setJourneyFormModulesList(updated);
+                                }}
+                                className="flex-1 bg-transparent border-0 text-xs font-semibold text-white focus:outline-none focus:bg-white/5 px-2 py-0.5 rounded"
+                                placeholder="Título do módulo"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveModuleFromJourney(idx)}
+                                className="p-1 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
+                                title="Excluir módulo"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200/90 text-[11px]">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                          <span>Digite o nome do módulo acima e clique em "Adicionar" para organizar o conteúdo da jornada.</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* 3. Rodapé Fixo (Sticky Footer com Botões Permanentemente Visíveis) */}
+            <div className="p-4 sm:p-5 border-t border-white/10 bg-[#090E11] flex items-center justify-between shrink-0 gap-3">
+              {editingJourney ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const toDelete = { ...editingJourney };
+                    setIsJourneyModalOpen(false);
+                    setDeleteConfirm({
+                      type: 'journey',
+                      journeyId: toDelete.id,
+                      title: toDelete.title
+                    });
+                  }}
+                  className="px-3.5 py-2.5 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 border border-rose-500/20 active:scale-95"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Excluir</span>
+                </button>
+              ) : (
+                <div />
+              )}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsJourneyModalOpen(false)}
+                  className="px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
+                >
+                  <span>{editingJourney ? 'Salvar Alterações' : 'Criar Jornada'}</span>
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
       )}
 
