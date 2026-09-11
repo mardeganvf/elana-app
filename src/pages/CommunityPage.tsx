@@ -1702,12 +1702,6 @@ export const CommunityPage: React.FC = () => {
                                 {post.authorName}
                               </span>
                               <span className="text-[11px] text-slate-400 block mt-0.5">{post.createdAt}</span>
-                              {post.isAnonymous && (
-                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/25 px-1.5 py-0.5 rounded-md mt-1">
-                                  <EyeOff className="w-2.5 h-2.5" />
-                                  <span>Anônimo</span>
-                                </span>
-                              )}
                             </div>
                           </div>
 
