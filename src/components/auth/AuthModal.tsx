@@ -227,11 +227,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       onSuccess({ email: cleanEmail, name: name.trim() });
       onClose();
     } catch (err: any) {
-      const cleanEmail = email.trim().toLowerCase();
-      localStorage.removeItem(`elana_spotlight_done_${cleanEmail}`);
-      localStorage.removeItem('elana_user_session');
-      onSuccess({ email: cleanEmail, name: name.trim() });
-      onClose();
+      console.error('OTP Verification Exception:', err);
+      setErrorMessage(err.message || 'Código inválido ou expirado. Verifique e tente novamente.');
     } finally {
       setLoading(false);
     }

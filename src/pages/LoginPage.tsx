@@ -288,12 +288,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
       await login(cleanEmail, name.trim(), supabaseUserId);
       onSuccess(true);
     } catch (err: any) {
-      console.error('Signup Exception:', err);
-      const cleanId = identifier.trim().toLowerCase();
-      localStorage.removeItem(`elana_spotlight_done_${cleanId}`);
-      localStorage.removeItem('elana_user_session');
-      await login(cleanId, name.trim());
-      onSuccess(true);
+      console.error('Signup/OTP Exception:', err);
+      setErrorMessage(err.message || 'Código inválido ou expirado. Verifique e tente novamente.');
     } finally {
       setLoading(false);
     }
