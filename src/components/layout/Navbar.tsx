@@ -71,7 +71,13 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
   const isStaff = isAdmin || (user?.role || '').toLowerCase().includes('guia');
   const { fontSize, setFontSize } = useFontSize();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isMamadaMode, setIsMamadaMode] = useState(false);
+  const [isMamadaMode, setIsMamadaMode] = useState(() => {
+    try {
+      return localStorage.getItem('elana_mamada_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [showMadrugadaTooltip, setShowMadrugadaTooltip] = useState(false);
 
@@ -359,10 +365,18 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
   };
 
 
+  // Aplica a classe no DOM ao montar se o modo já estava ativo na sessão anterior
+  useEffect(() => {
+    document.documentElement.classList.toggle('mamada-mode', isMamadaMode);
+  }, []);
+
   const toggleMamadaMode = () => {
     setIsMamadaMode(prev => {
       const next = !prev;
       document.documentElement.classList.toggle('mamada-mode', next);
+      try {
+        localStorage.setItem('elana_mamada_mode', String(next));
+      } catch {}
       if (next) {
         awardBadge('b22'); // Farol Noturno (Modo Madrugada/Noturno)
       }
@@ -759,7 +773,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
 
         </div>
 
-        {/* Right Mobile: Quick Actions (Respiro 60s & SOS) */}
+        {/* Right Mobile: Quick Actions (Respiro 60s, Modo Madrugada & SOS) */}
         <div className="md:hidden flex items-center gap-2 shrink-0">
           {/* Botão Respiro 60s */}
           <button
@@ -769,6 +783,19 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
           >
             <Wind className="w-3.5 h-3.5" />
             <span>Respiro</span>
+          </button>
+
+          {/* Botão Modo Madrugada */}
+          <button
+            onClick={toggleMamadaMode}
+            className={`flex items-center gap-1 font-bold text-[11px] uppercase tracking-wider py-1.5 px-3 rounded-full transition-all active:scale-95 border cursor-pointer shadow-sm ${
+              isMamadaMode
+                ? 'bg-[#FFD166]/20 text-[#FFD166] border-[#FFD166]/40'
+                : 'bg-white/10 hover:bg-white/15 text-slate-300 border-white/15'
+            }`}
+            title={isMamadaMode ? 'Desativar Modo Madrugada' : 'Ativar Modo Madrugada'}
+          >
+            <Moon className={`w-3.5 h-3.5 ${isMamadaMode ? 'text-[#FFD166]' : 'text-slate-400'}`} />
           </button>
 
           {/* Botão SOS */}
