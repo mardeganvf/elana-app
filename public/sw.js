@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elana-v1';
+const CACHE_NAME = 'elana-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html'
@@ -74,5 +74,63 @@ self.addEventListener('fetch', (event) => {
   // Default to network-first for other requests (like HTML)
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
+  );
+});
+
+// 🔔 Push Notification Event Listener
+self.addEventListener('push', (event) => {
+  let data = {
+    title: 'Elana Academy',
+    body: 'Você tem uma nova mensagem de acolhimento.',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    url: '/'
+  };
+
+  if (event.data) {
+    try {
+      const parsed = event.data.json();
+      data = { ...data, ...parsed };
+    } catch (e) {
+      data.body = event.data.text() || data.body;
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: data.icon || '/icon-192.png',
+    badge: data.badge || '/icon-192.png',
+    vibrate: [100, 50, 100],
+    data: {
+      url: data.url || '/'
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+// 🔔 Push Notification Click Handler
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Se já houver uma aba aberta, foca nela
+      for (const client of clientList) {
+        if (client.url && 'focus' in client) {
+          if (targetUrl && client.navigate) {
+            client.navigate(targetUrl);
+          }
+          return client.focus();
+        }
+      }
+      // Se não, abre uma nova janela
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
   );
 });

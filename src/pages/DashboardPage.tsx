@@ -16,6 +16,7 @@ import { uploadImageToStorage } from '../lib/storage';
 import { supabase } from '../lib/supabase';
 import { GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 interface DashboardPageProps {
   onStartLearning: (journey: Journey, lessonId?: string) => void;
@@ -129,7 +130,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const [emailVerificationSuccess, setEmailVerificationSuccess] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
 
+  const { 
+    isSupported: isPushSupported, 
+    isSubscribed: isPushSubscribed, 
+    isLoading: isPushLoading, 
+    subscribe: subscribePush, 
+    unsubscribe: unsubscribePush 
+  } = usePushNotifications();
+
   const [notificationsEnabled, setNotificationsEnabled] = useState(!!user?.notificationsEnabled);
+
+  useEffect(() => {
+    if (isPushSupported) {
+      setNotificationsEnabled(isPushSubscribed || !!user?.notificationsEnabled);
+    }
+  }, [isPushSubscribed, isPushSupported, user?.notificationsEnabled]);
 
   // Countdown timer para reenvio de OTP
   useEffect(() => {
@@ -810,27 +825,36 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
               </button>
             )}
 
-            {/* Notifications Toggle */}
+            {/* Notifications Toggle com suporte a Web Push Notifications */}
             <button
+              disabled={isPushLoading}
               onClick={async () => {
-                const nextVal = !notificationsEnabled;
-                setNotificationsEnabled(nextVal);
-                if (updateUser) {
-                  await updateUser({ notificationsEnabled: nextVal });
-                }
-                if (nextVal) {
-                  awardBadge('b3');
+                if (isPushSubscribed || notificationsEnabled) {
+                  await unsubscribePush();
+                  setNotificationsEnabled(false);
+                } else {
+                  const ok = await subscribePush();
+                  if (ok) {
+                    setNotificationsEnabled(true);
+                  }
                 }
               }}
               className={`text-xs font-bold flex items-center gap-2 transition-all px-3.5 py-2 rounded-xl border active:scale-95 shadow-sm cursor-pointer ${
-                notificationsEnabled 
+                isPushLoading ? 'opacity-60 cursor-wait' : ''
+              } ${
+                (isPushSubscribed || notificationsEnabled)
                   ? 'bg-amber-400/15 text-amber-300 border-amber-400/30 hover:bg-amber-400/25' 
                   : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10 hover:text-white'
               }`}
-              title={notificationsEnabled ? 'Notificações Ativas' : 'Ativar Notificações'}
+              title={(isPushSubscribed || notificationsEnabled) ? 'Notificações Ativas (toque para desativar)' : 'Ativar Notificações Push'}
             >
-              <Bell className={`w-3.5 h-3.5 ${notificationsEnabled ? 'text-amber-300 fill-current' : 'text-slate-400'}`} />
-              <span>{notificationsEnabled ? 'Notificações Ativas' : 'Ativar Notificações'}</span>
+              <Bell className={`w-3.5 h-3.5 ${(isPushSubscribed || notificationsEnabled) ? 'text-amber-300 fill-current' : 'text-slate-400'}`} />
+              <span>
+                {isPushLoading 
+                  ? 'Configurando...' 
+                  : (isPushSubscribed || notificationsEnabled) ? 'Notificações Ativas' : 'Ativar Notificações'
+                }
+              </span>
             </button>
           </div>
         </div>
