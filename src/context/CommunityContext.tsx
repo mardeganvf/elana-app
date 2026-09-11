@@ -673,37 +673,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const fetchSupabasePosts = async (showLoading = false) => {
     if (showLoading) setIsLoading(true);
     try {
-      // 1. Tentar buscar reações do Supabase se a tabela existir
-      const remoteReactionsByPost: Record<string, Record<string, number>> = {};
-      const remoteUserReactionsByPost: Record<string, Record<string, boolean>> = {};
-
-      try {
-        const { data: reactionsData, error: reactError } = await supabase
-          .from('community_reactions')
-          .select('post_id, user_id, reaction_key');
-
-        if (reactionsData && !reactError) {
-          reactionsData.forEach((r: any) => {
-            if (!r.post_id || !r.reaction_key) return;
-            if (!remoteReactionsByPost[r.post_id]) {
-              remoteReactionsByPost[r.post_id] = {};
-            }
-            remoteReactionsByPost[r.post_id][r.reaction_key] = 
-              (remoteReactionsByPost[r.post_id][r.reaction_key] || 0) + 1;
-
-            if (user?.id && r.user_id === user.id) {
-              if (!remoteUserReactionsByPost[r.post_id]) {
-                remoteUserReactionsByPost[r.post_id] = {};
-              }
-              remoteUserReactionsByPost[r.post_id][r.reaction_key] = true;
-            }
-          });
-        }
-      } catch {
-        // Silencioso se a tabela ainda não foi criada no Supabase
-      }
-
-      // 2. Buscar posts e comentários
+      // 1. Buscar posts e comentários PRIMEIRO para obter os IDs visíveis
       const { data, error } = await supabase
         .from('community_posts')
         .select('*, community_comments(*)')
@@ -714,6 +684,41 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (error) {
         console.warn('Supabase fetch notice:', error.message);
         return;
+      }
+
+      // 2. Buscar reações APENAS dos posts visíveis (.in filtra por IDs)
+      const remoteReactionsByPost: Record<string, Record<string, number>> = {};
+      const remoteUserReactionsByPost: Record<string, Record<string, boolean>> = {};
+
+      try {
+        const postIds = (data || []).map((p: any) => p.id).filter(Boolean);
+
+        if (postIds.length > 0) {
+          const { data: reactionsData, error: reactError } = await supabase
+            .from('community_reactions')
+            .select('post_id, user_id, reaction_key')
+            .in('post_id', postIds); // 🔑 Filtra apenas reações dos posts visíveis
+
+          if (reactionsData && !reactError) {
+            reactionsData.forEach((r: any) => {
+              if (!r.post_id || !r.reaction_key) return;
+              if (!remoteReactionsByPost[r.post_id]) {
+                remoteReactionsByPost[r.post_id] = {};
+              }
+              remoteReactionsByPost[r.post_id][r.reaction_key] =
+                (remoteReactionsByPost[r.post_id][r.reaction_key] || 0) + 1;
+
+              if (user?.id && r.user_id === user.id) {
+                if (!remoteUserReactionsByPost[r.post_id]) {
+                  remoteUserReactionsByPost[r.post_id] = {};
+                }
+                remoteUserReactionsByPost[r.post_id][r.reaction_key] = true;
+              }
+            });
+          }
+        }
+      } catch {
+        // Silencioso se a tabela ainda não foi criada no Supabase
       }
 
       if (data) {
