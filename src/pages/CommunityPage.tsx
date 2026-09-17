@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useCommunity, checkContentSensitivityAI } from '../context/CommunityContext';
+import { useCommunity, checkContentSensitivity, checkContentSensitivityAI } from '../context/CommunityContext';
 import { useAuth } from '../context/AuthContext';
 import { JOURNEYS_DATA } from '../data/journeysData';
 import { useJourneys } from '../context/JourneysContext';
@@ -914,7 +914,16 @@ export const CommunityPage: React.FC = () => {
 
   const filteredPosts = useMemo(() => safePosts.filter(post => {
     if (!post) return false;
-    if (post.status === 'removido_usuario') return false;
+    if (post.status === 'removido_usuario' || post.status === 'rejeitado') return false;
+
+    // Purga de segurança para posts com conteúdo sexualmente explícito que não estejam aprovados pelo admin
+    const sensitivity = checkContentSensitivity(`${post.title || ''} ${post.content || ''}`);
+    if (sensitivity.isFlagged && sensitivity.type === 'antijulgamento' && post.status !== 'aprovado') {
+      const r = (sensitivity.flagReason || '').toLowerCase();
+      if (r.includes('sexual') || r.includes('vulgar') || r.includes('explícita') || r.includes('explicita') || r.includes('obscen') || r.includes('intimo') || r.includes('íntimo')) {
+        return false;
+      }
+    }
 
     // Moderação preventiva: postagens sob moderação são visíveis apenas para o próprio autor ou moderadores/guias
     if (post.status === 'sob_moderacao') {
@@ -1822,6 +1831,7 @@ export const CommunityPage: React.FC = () => {
                       {/* Unified Post Action Bar: Reaction Counter Pills + Apoiar Trigger + Rede de Apoio + Excluir */}
                       {(() => {
                         const postComments = (Array.isArray(post.comments) ? post.comments : []).filter(c => {
+                          if (c.status === 'removido_usuario' || c.status === 'rejeitado') return false;
                           if (c.status === 'sob_moderacao') {
                             const isAuthor = user && c.authorId === user.id;
                             const isAdmin = user && user.role === 'admin';

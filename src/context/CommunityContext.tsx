@@ -110,8 +110,16 @@ export const VULNERABILITY_KEYWORDS = [
 export const OFFENSIVE_PATTERNS = [
   // Palavras de Baixo Calão / Xingamentos com limites de palavra
   { pattern: /\b(?:puta|putas|filh[ao]\s+da\s+puta|fdp|pqp|porra|caralho|merda|bosta)\b/i, reason: 'Linguagem obscena / ofensiva' },
-  { pattern: /\b(?:foder|fuder|fodi|fode|fodem|foda|fodendo|fudendo|fudeu|fodeu|fodid[ao]|fud[ao]|foda-se|fodasse)\b/i, reason: 'Linguagem vulgar / explícita' },
-  { pattern: /\b(?:buceta|piroca|caralhada|punheta|boquete|siririca|xoxota)\b/i, reason: 'Termos sexuais explícitos' },
+  { pattern: /\b(?:foder|fuder|fodi|fudi|fode|fodem|foda|fodendo|fudendo|fudeu|fodeu|fodid[ao]|fud[ao]|foda-se|fodasse)\b/i, reason: 'Linguagem vulgar / explícita' },
+  { pattern: /\b(?:trepar|trepando|trepou|trepa|trepam|trepacao|trepação)\b/i, reason: 'Linguagem sexual vulgar / explícita' },
+  { pattern: /\b(?:gozar|gozando|gozou|gozo|gozada|gozei|gozem)\b/i, reason: 'Termos sexuais explícitos / Ejaculação' },
+  { pattern: /\b(?:gemendo(?:\s+de\s+prazer|\s+alto)?|gemer|gemidos?)\b/i, reason: 'Descrição de ato íntimo / sexual' },
+  { pattern: /\b(?:transar|transando|transou|transa|transamos|transaria)\b/i, reason: 'Linguagem sexual explícita' },
+  { pattern: /\b(?:buceta|piroca|caralhada|punheta|boquete|siririca|xoxota|penis|pênis|vagina|clitoris|clitóris)\b/i, reason: 'Termos sexuais explícitos' },
+  { pattern: /\b(?:orgasmo|orgasmos|ejaculacao|ejaculação|ejacular|ejaculando)\b/i, reason: 'Termos sexuais explícitos' },
+  { pattern: /\b(?:chupar|chupando|chupou|chupa\s+meu|chupar\s+sua|fazer\s+boquete|dar\s+uma\s+mamada)\b/i, reason: 'Linguagem sexual explícita' },
+  { pattern: /\b(?:meter|metendo|meteu)\s+(?:a\s+rola|o\s+pau|com\s+forca|com\s+força|fundo)\b/i, reason: 'Linguagem sexual explícita' },
+  { pattern: /\b(?:putaria|suruba|orgia|safadeza\s+sexual)\b/i, reason: 'Conteúdo sexual explícito' },
   { pattern: /\b(?:arrombad[ao]|babaca|otari[ao]|imbecil|idiota|estupid[ao]|retardad[ao]|burr[ao]|burr[ao]s|incompetente)\b/i, reason: 'Xingamento / Ofensa direta' },
   { pattern: /\b(?:vagabund[ao]|desgracad[ao]|desgraca|escrot[ao]|cuz[ao]o|canalha|cretin[ao]|nojent[ao])\b/i, reason: 'Xingamento / Ofensa degradante' },
   { pattern: /\b(?:vai\s+se\s+foder|vai\s+tomar\s+no\s+cu|vsf|vtnc|vsfd)\b/i, reason: 'Ofensa verbal grave' },
@@ -555,6 +563,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const reactionsStore = getStoredReactionsData();
       const userKey = user?.id || 'anon';
       const deletedIds = getDeletedContentIds();
+      const now = Date.now();
 
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -567,10 +576,19 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               if (p.status === 'removido_usuario' || p.status === 'rejeitado') return false;
               if (p.authorId.length <= 20 || p.authorId.startsWith('u-')) return false;
 
-              // Purga proativa de qualquer post com linguagem sexual explícita órfã que tenha ficado no cache
+              // Purga IDs temporários antigos (post-*) que não foram sincronizados com o Supabase
+              if (p.id.startsWith('post-')) {
+                const ts = Number(p.id.replace('post-', '')) || 0;
+                if (!ts || now - ts > 30000) return false;
+              }
+
+              // Purga proativa de qualquer post com linguagem sexual explícita, vulgar ou imprópria
               const check = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
-              if (check.isFlagged && check.flagReason?.toLowerCase().includes('sexual') && p.status !== 'aprovado') {
-                return false;
+              if (check.isFlagged) {
+                const r = (check.flagReason || '').toLowerCase();
+                if (r.includes('sexual') || r.includes('vulgar') || r.includes('explícita') || r.includes('explicita') || r.includes('obscen') || r.includes('intimo') || r.includes('íntimo')) {
+                  return false;
+                }
               }
               return true;
             })
@@ -769,16 +787,18 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           const deletedIds = getDeletedContentIds();
 
           // NUNCA preservar posts com ID real que o Supabase não retornou (foram deletados na nuvem).
-          // Preserva APENAS posts temporários em trânsito recém-criados localmente (id com 'post-')
-          const localOnly = prev.filter(p => 
-            !remoteIds.has(p.id) && 
-            !deletedIds.has(p.id) &&
-            p.id.startsWith('post-') && 
-            user?.id && 
-            p.authorId === user.id && 
-            p.status !== 'removido_usuario' &&
-            p.status !== 'rejeitado'
-          );
+          // Preserva APENAS posts temporários em trânsito recém-criados localmente (id com 'post-') há menos de 30s
+          const now = Date.now();
+          const localOnly = prev.filter(p => {
+            if (remoteIds.has(p.id) || deletedIds.has(p.id)) return false;
+            if (!p.id.startsWith('post-')) return false;
+            const ts = Number(p.id.replace('post-', '')) || 0;
+            if (!ts || now - ts > 30000) return false;
+            if (p.status === 'removido_usuario' || p.status === 'rejeitado') return false;
+            const check = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
+            if (check.isFlagged) return false;
+            return user?.id && p.authorId === user.id;
+          });
 
           // Mescla comentários de posts locais com comentários remotos e PRESERVA reações
           const mergedRemote = remotePosts.map(rPost => {
@@ -1214,7 +1234,13 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       comments: []
     };
 
-    setPosts(prev => [newPost, ...prev]);
+    setPosts(prev => {
+      const updated = [newPost, ...prev];
+      try {
+        localStorage.setItem('elana_community_posts_cache', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
 
     // Persist asynchronously into Supabase database
     supabase
@@ -1240,7 +1266,13 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           console.error('Supabase community_posts insert error:', error.message, error);
         } else if (data?.id) {
           console.log('✅ Post salvo com sucesso no Supabase com ID:', data.id);
-          setPosts(prev => prev.map(p => p.id === newPost.id ? { ...p, id: data.id } : p));
+          setPosts(prev => {
+            const updated = prev.map(p => p.id === newPost.id ? { ...p, id: data.id } : p);
+            try {
+              localStorage.setItem('elana_community_posts_cache', JSON.stringify(updated));
+            } catch {}
+            return updated;
+          });
         }
       });
 
@@ -1748,7 +1780,12 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     // 1. Otimista: remove do estado local imediatamente e sincroniza o cache
     setPosts(prev => {
-      const updated = prev.filter(p => p.id !== postId);
+      const target = prev.find(p => p.id === postId);
+      const updated = prev.filter(p => {
+        if (p.id === postId) return false;
+        if (target && p.title === target.title && p.authorId === target.authorId) return false;
+        return true;
+      });
       try {
         localStorage.setItem('elana_community_posts_cache', JSON.stringify(updated));
       } catch {}
