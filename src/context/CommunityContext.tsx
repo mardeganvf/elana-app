@@ -110,7 +110,7 @@ export const VULNERABILITY_KEYWORDS = [
 export const OFFENSIVE_PATTERNS = [
   // Palavras de Baixo Calão / Xingamentos com limites de palavra
   { pattern: /\b(?:puta|putas|filh[ao]\s+da\s+puta|fdp|pqp|porra|caralho|merda|bosta)\b/i, reason: 'Linguagem obscena / ofensiva' },
-  { pattern: /\b(?:foder|fuder|fodendo|fudendo|fudeu|fodeu|foda-se|fodasse)\b/i, reason: 'Linguagem vulgar / explícita' },
+  { pattern: /\b(?:foder|fuder|fodi|fode|fodem|foda|fodendo|fudendo|fudeu|fodeu|fodid[ao]|fud[ao]|foda-se|fodasse)\b/i, reason: 'Linguagem vulgar / explícita' },
   { pattern: /\b(?:buceta|piroca|caralhada|punheta|boquete|siririca|xoxota)\b/i, reason: 'Termos sexuais explícitos' },
   { pattern: /\b(?:arrombad[ao]|babaca|otari[ao]|imbecil|idiota|estupid[ao]|retardad[ao]|burr[ao]|burr[ao]s|incompetente)\b/i, reason: 'Xingamento / Ofensa direta' },
   { pattern: /\b(?:vagabund[ao]|desgracad[ao]|desgraca|escrot[ao]|cuz[ao]o|canalha|cretin[ao]|nojent[ao])\b/i, reason: 'Xingamento / Ofensa degradante' },
@@ -186,7 +186,7 @@ export const OFFENSIVE_PATTERNS = [
   { pattern: /\b(?:manda\s+(?:nudes|foto\s+pelada|foto\s+nua)|quer\s+ver\s+(?:meu\s+pau|minha\s+rola|sua\s+buceta))\b/i, reason: 'Assédio sexual / Solicitação ou envio de conteúdo íntimo' },
   { pattern: /\b(?:que\s+corpo|que\s+raba|que\s+bunda|que\s+peit[ao]s?)\b/i, reason: 'Objetificação corporal e assédio' },
   { pattern: /\b(?:chupa\s+meu|chupar\s+sua)\b/i, reason: 'Linguagem sexual explícita / Invasiva' },
-  { pattern: /\b(?:safad[ao]s?|tesuda|tarad[ao]|siririca|punheta)\b/i, reason: 'Vocabulário sexual ofensivo ou assediador' }
+  { pattern: /\b(?:safad[ao]s?|tesud[ao]|tesao|tarad[ao]|siririca|punheta)\b/i, reason: 'Vocabulário sexual ofensivo ou assediador' }
 ];
 
 // Expressões legadas de antijulgamento para verificação direta
@@ -310,7 +310,7 @@ export const checkContentSensitivityAI = async (
   // 2. Análise contextual avançada via Supabase Edge Function com IA Gemini
   try {
     const timeoutPromise = new Promise<{ error: string }>((resolve) =>
-      setTimeout(() => resolve({ error: 'TIMEOUT' }), 4500)
+      setTimeout(() => resolve({ error: 'TIMEOUT' }), 5000)
     );
 
     const invokePromise = supabase.functions.invoke('moderate-content', {

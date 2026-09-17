@@ -46,37 +46,167 @@ Responda ESTRITAMENTE em formato JSON com o seguinte schema:
   "suggestsCrisisSupport": boolean (true se houver risco ou ideação que demande apoio prioritário/CVV)
 }`;
 
+// ── Embedding: usa apenas o modelo que funciona ──────────────────────────────
 async function getEmbedding(text: string, apiKey: string): Promise<number[] | null> {
-  const models = ['gemini-embedding-001', 'text-embedding-004'];
-  for (const model of models) {
-    try {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:embedContent?key=${apiKey}`;
-      const res = await fetch(geminiUrl, {
-        method: 'POST',
-        signal: AbortSignal.timeout(2500),
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: `models/${model}`,
-          content: {
-            parts: [{ text: text.trim().slice(0, 1000) }]
-          },
-          outputDimensionality: 768
-        })
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        console.warn(`Falha embedding (${model}):`, res.status, txt);
-        continue;
-      }
-      const data = await res.json();
-      if (data?.embedding?.values) {
-        return data.embedding.values;
-      }
-    } catch (err) {
-      console.warn(`Erro ao requisitar embedding (${model}):`, err);
+  try {
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${apiKey}`;
+    const res = await fetch(geminiUrl, {
+      method: 'POST',
+      signal: AbortSignal.timeout(2000),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'models/gemini-embedding-001',
+        content: {
+          parts: [{ text: text.trim().slice(0, 1000) }]
+        },
+        outputDimensionality: 768
+      })
+    });
+    if (!res.ok) {
+      console.warn('Falha embedding:', res.status);
+      return null;
     }
+    const data = await res.json();
+    return data?.embedding?.values || null;
+  } catch (err) {
+    console.warn('Erro embedding:', err);
+    return null;
+  }
+}
+
+// ── Caminho A: Busca vetorial (embedding + pgvector) ─────────────────────────
+async function runVectorSearch(text: string, apiKey: string): Promise<any | null> {
+  if (!supabase) return null;
+  try {
+    const queryEmbedding = await getEmbedding(text, apiKey);
+    if (!queryEmbedding) return null;
+
+    const { data: matches, error: rpcError } = await supabase.rpc('match_rejected_examples', {
+      query_embedding: queryEmbedding,
+      match_threshold: 0.82,
+      match_count: 1
+    });
+
+    if (!rpcError && matches && matches.length > 0) {
+      const topMatch = matches[0];
+      const similarityPercent = Math.round(Number(topMatch.similarity || 0) * 100);
+      return {
+        isFlagged: true,
+        category: topMatch.category || 'antijulgamento',
+        reason: `Similar a conteúdo banido pela curadoria: "${topMatch.reason}" (${similarityPercent}% similaridade)`,
+        matchedContext: topMatch.original_text.slice(0, 120),
+        suggestsCrisisSupport: topMatch.category === 'vulnerabilidade',
+        matchedByLearningBase: true
+      };
+    }
+  } catch (err) {
+    console.warn('Aviso na busca vetorial:', err);
   }
   return null;
+}
+
+// ── Caminho B: Gemini generateContent (few-shot + classificação) ─────────────
+async function runGeminiModeration(text: string, apiKey: string): Promise<any | null> {
+  const debugErrors: any[] = [];
+
+  // 1. Carregar exemplos banidos do banco para enriquecer o prompt (paralelo-friendly, ~300ms)
+  let dynamicSystemInstruction = SYSTEM_INSTRUCTION;
+  if (supabase) {
+    try {
+      const { data: recentExamples } = await supabase
+        .from('moderation_rejected_examples')
+        .select('original_text, reason, category')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(8);
+
+      if (recentExamples && recentExamples.length > 0) {
+        const examplesText = recentExamples
+          .map((ex: any, idx: number) => `${idx + 1}. "${ex.original_text.replace(/\s+/g, ' ').slice(0, 160)}" -> Motivo do banimento: ${ex.reason} [${ex.category}]`)
+          .join('\n');
+
+        dynamicSystemInstruction += `\n\n4. EXEMPLOS REAIS RECENTEMENTE BANIDOS PELA CURADORIA HUMANA DA ELANA (DIRETRIZES ATIVAS):\n${examplesText}\n\nIMPORTANTE: Se a mensagem avaliada compartilhar tom de coação, insistência, desrespeito, abuso ou intenção semelhante a qualquer um destes exemplos banidos acima, classifique OBRIGATORIAMENTE com isFlagged: true e a respectiva categoria.`;
+      }
+    } catch (fetchErr: any) {
+      debugErrors.push({ step: 'few-shot-db', error: fetchErr?.message || String(fetchErr) });
+    }
+  }
+
+  // 2. Chamar Gemini (gemini-3.1-flash-lite ultrarrápido + gemini-3.7-flash)
+  const models = ['gemini-3.1-flash-lite', 'gemini-3.7-flash'];
+
+  for (const model of models) {
+    try {
+      const thinkingConfig = model === 'gemini-3.1-flash-lite'
+        ? { thinkingLevel: 'minimal' }
+        : { thinkingLevel: 'low' };
+
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const geminiResponse = await fetch(geminiUrl, {
+        method: 'POST',
+        signal: AbortSignal.timeout(3500),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          system_instruction: {
+            parts: [{ text: dynamicSystemInstruction }]
+          },
+          contents: [
+            {
+              parts: [{ text: `Analise a seguinte mensagem postada na comunidade Elana:\n\n"${text.trim()}"` }]
+            }
+          ],
+          generationConfig: {
+            response_mime_type: 'application/json',
+            temperature: 0.1,
+            max_output_tokens: 1024,
+            thinkingConfig
+          }
+        })
+      });
+
+      if (!geminiResponse.ok) {
+        const errText = await geminiResponse.text();
+        debugErrors.push({ model, status: geminiResponse.status, message: errText.slice(0, 300) });
+        continue;
+      }
+
+      const data = await geminiResponse.json();
+      const candidate = data?.candidates?.[0];
+      const finishReason = candidate?.finishReason;
+      const blockReason = data?.promptFeedback?.blockReason;
+
+      // Se o filtro de segurança nativo da IA bloqueou
+      if (blockReason || finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT' || data?.promptFeedback?.safetyRatings?.some((r: any) => r.blocked)) {
+        return {
+          isFlagged: true,
+          category: 'antijulgamento',
+          reason: 'Conteúdo bloqueado por linguagem explícita ou termos impróprios.',
+          matchedContext: text.trim().slice(0, 100),
+          suggestsCrisisSupport: false
+        };
+      }
+
+      // Em modelos Gemini 3.x com thinking, buscar o part que NÃO é pensamento (thought)
+      const parts = candidate?.content?.parts || [];
+      const nonThoughtPart = parts.find((p: any) => !p.thought && p.text) || parts[parts.length - 1];
+      const candidateText = nonThoughtPart?.text;
+
+      if (candidateText) {
+        try {
+          return JSON.parse(candidateText.trim());
+        } catch (jsonErr: any) {
+          debugErrors.push({ model, step: 'json-parse', error: jsonErr?.message, rawText: candidateText.slice(0, 100) });
+        }
+      }
+    } catch (e: any) {
+      debugErrors.push({ model, step: 'fetch', error: e?.message || String(e), name: e?.name });
+    }
+  }
+
+  // Retornar debug info quando todos os modelos falharem
+  return { _debug: true, _errors: debugErrors, isFlagged: false };
 }
 
 Deno.serve(async (req) => {
@@ -142,7 +272,7 @@ Deno.serve(async (req) => {
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // AÇÃO 2: Moderação de Mensagem (com Busca Semântica + Few-Shot)
+    // AÇÃO 2: Moderação de Mensagem (Gemini + Busca Vetorial em PARALELO)
     // ──────────────────────────────────────────────────────────────────────────
     const text = body.text;
 
@@ -151,38 +281,6 @@ Deno.serve(async (req) => {
         JSON.stringify({ isFlagged: false, category: 'livre', reason: 'Texto vazio' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    }
-
-    // 1. CAMADA VETORIAL (pgvector): Buscar similaridade semântica com conteúdos banidos
-    if (supabase && apiKey) {
-      try {
-        const queryEmbedding = await getEmbedding(text, apiKey);
-        if (queryEmbedding) {
-          const { data: matches, error: rpcError } = await supabase.rpc('match_rejected_examples', {
-            query_embedding: queryEmbedding,
-            match_threshold: 0.82,
-            match_count: 1
-          });
-
-          if (!rpcError && matches && matches.length > 0) {
-            const topMatch = matches[0];
-            const similarityPercent = Math.round(Number(topMatch.similarity || 0) * 100);
-            return new Response(
-              JSON.stringify({
-                isFlagged: true,
-                category: topMatch.category || 'antijulgamento',
-                reason: `Similar a conteúdo banido pela curadoria: "${topMatch.reason}" (${similarityPercent}% similaridade)`,
-                matchedContext: topMatch.original_text.slice(0, 120),
-                suggestsCrisisSupport: topMatch.category === 'vulnerabilidade',
-                matchedByLearningBase: true
-              }),
-              { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          }
-        }
-      } catch (embErr) {
-        console.warn('Aviso na busca vetorial por similaridade:', embErr);
-      }
     }
 
     if (!apiKey) {
@@ -197,123 +295,43 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. CAMADA CONTEXTUAL DINÂMICA (Few-Shot Learning):
-    // Injetar os últimos exemplos banidos da moderação humana na instrução do Gemini
-    let dynamicSystemInstruction = SYSTEM_INSTRUCTION;
-    if (supabase) {
-      try {
-        const { data: recentExamples } = await supabase
-          .from('moderation_rejected_examples')
-          .select('original_text, reason, category')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(8);
+    // ── Executar ambos os caminhos em PARALELO ───────────────────────────────
+    // Caminho A (Gemini): DB query few-shot (~300ms) → generateContent (~2s) ≈ 2.3s
+    // Caminho B (Vetor):  Embedding (~1.5s) → pgvector RPC (~0.5s)           ≈ 2s
+    // Total paralelo: ~2.3s (max dos dois), em vez dos ~6-10s sequenciais
+    const [geminiResult, vectorResult] = await Promise.allSettled([
+      runGeminiModeration(text.trim(), apiKey),
+      runVectorSearch(text.trim(), apiKey)
+    ]);
 
-        if (recentExamples && recentExamples.length > 0) {
-          const examplesText = recentExamples
-            .map((ex: any, idx: number) => `${idx + 1}. "${ex.original_text.replace(/\s+/g, ' ').slice(0, 160)}" -> Motivo do banimento: ${ex.reason} [${ex.category}]`)
-            .join('\n');
-
-          dynamicSystemInstruction += `\n\n4. EXEMPLOS REAIS RECENTEMENTE BANIDOS PELA CURADORIA HUMANA DA ELANA (DIRETRIZES ATIVAS):\n${examplesText}\n\nIMPORTANTE: Se a mensagem avaliada compartilhar tom de coação, insistência, desrespeito, abuso ou intenção semelhante a qualquer um destes exemplos banidos acima, classifique OBRIGATORIAMENTE com isFlagged: true e a respectiva categoria.`;
-        }
-      } catch (fetchErr) {
-        console.warn('Aviso ao carregar exemplos dinâmicos:', fetchErr);
-      }
+    // Prioridade 1: Busca vetorial encontrou match com conteúdo banido (curadoria humana)
+    if (vectorResult.status === 'fulfilled' && vectorResult.value?.isFlagged) {
+      return new Response(
+        JSON.stringify(vectorResult.value),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Modelos oficiais Gemini recomendados pela Google API
-    const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-    const allErrors: any[] = [];
-    let lastError: any = null;
-    let parsed: any = null;
-    let usedModel: string = '';
-
-    for (const model of models) {
-      try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        const geminiResponse = await fetch(geminiUrl, {
-          method: 'POST',
-          signal: AbortSignal.timeout(3500),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            system_instruction: {
-              parts: [{ text: dynamicSystemInstruction }]
-            },
-            contents: [
-              {
-                parts: [{ text: `Analise a seguinte mensagem postada na comunidade Elana:\n\n"${text.trim()}"` }]
-              }
-            ],
-            generationConfig: {
-              response_mime_type: 'application/json',
-              temperature: 0.1,
-              max_output_tokens: 140
-            }
-          })
-        });
-
-        if (!geminiResponse.ok) {
-          const errText = await geminiResponse.text();
-          console.warn(`Aviso na API do Gemini (${model}):`, geminiResponse.status, errText);
-          allErrors.push({ model, status: geminiResponse.status, message: errText.slice(0, 200) });
-          lastError = { model, status: geminiResponse.status, message: errText };
-          continue;
-        }
-
-        const data = await geminiResponse.json();
-        const candidate = data?.candidates?.[0];
-        const finishReason = candidate?.finishReason;
-        const blockReason = data?.promptFeedback?.blockReason;
-
-        // Se o próprio filtro de segurança nativo da IA bloqueou por conteúdo explícito/sexual/violência
-        if (blockReason || finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT' || data?.promptFeedback?.safetyRatings?.some((r: any) => r.blocked)) {
-          parsed = {
-            isFlagged: true,
-            category: 'antijulgamento',
-            reason: 'Conteúdo bloqueado por linguagem explícita ou termos impróprios.',
-            matchedContext: text.trim().slice(0, 100),
-            suggestsCrisisSupport: false
-          };
-          usedModel = model;
-          break;
-        }
-
-        const candidateText = candidate?.content?.parts?.[0]?.text;
-        if (candidateText) {
-          try {
-            parsed = JSON.parse(candidateText);
-            usedModel = model;
-            break;
-          } catch (jsonErr: any) {
-            console.warn('Erro ao parsear resposta JSON do Gemini:', jsonErr);
-          }
-        }
-      } catch (e: any) {
-        lastError = { model, message: e?.message || String(e), name: e?.name };
-      }
-    }
-
-    if (!parsed) {
+    // Prioridade 2: Gemini classificou com sucesso (não é debug/fallback)
+    if (geminiResult.status === 'fulfilled' && geminiResult.value && !geminiResult.value._debug) {
+      const parsed = geminiResult.value;
       return new Response(
         JSON.stringify({
-          error: 'GEMINI_MODELS_UNAVAILABLE',
-          lastError,
-          allErrors,
-          fallbackRequired: true
+          isFlagged: !!parsed.isFlagged,
+          category: parsed.category || 'livre',
+          reason: parsed.reason || '',
+          matchedContext: parsed.matchedContext || '',
+          suggestsCrisisSupport: !!parsed.suggestsCrisisSupport
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Fallback: Nenhum caminho retornou resultado válido
     return new Response(
       JSON.stringify({
-        isFlagged: !!parsed.isFlagged,
-        category: parsed.category || 'livre',
-        reason: parsed.reason || '',
-        matchedContext: parsed.matchedContext || '',
-        suggestsCrisisSupport: !!parsed.suggestsCrisisSupport
+        error: 'GEMINI_MODELS_UNAVAILABLE',
+        fallbackRequired: true
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

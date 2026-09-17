@@ -2806,7 +2806,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                         <img 
                           src={member.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120'} 
                           alt={member.name} 
-                          onClick={() = loading="lazy"> handleOpenMemberProfile(member)}
+                          onClick={() => handleOpenMemberProfile(member)}
+                          loading="lazy"
                           className={`w-11 h-11 rounded-full object-cover border-2 shrink-0 cursor-pointer hover:opacity-85 transition-opacity ${
                             member.role === 'admin' 
                               ? 'border-purple-400' 

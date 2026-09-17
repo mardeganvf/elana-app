@@ -416,7 +416,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
               <img
                 src={user.avatar}
                 alt={user.name}
-                onError={(e) = loading="lazy"> {
+                loading="lazy"
+                onError={(e) => {
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
                 }}
                 className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-[#FF7F5B] shadow-lg"
