@@ -271,6 +271,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [trainFilterActive, setTrainFilterActive] = useState(true);
   const [isSubmittingRejection, setIsSubmittingRejection] = useState(false);
 
+  // IDs aprovados na sessão pelo admin para garantir consistência otimista imediata
+  const [approvedItemIds, setApprovedItemIds] = useState<Set<string>>(new Set());
+
   // Travar o scroll da página enquanto o modal de confirmação estiver aberto
   useEffect(() => {
     if (rejectModalItem) {
@@ -338,21 +341,28 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         if (p.status === 'removido_usuario') return false;
         // Prioridade máxima: se está retido sob moderação preventiva, SEMPRE exibir
         if (p.status === 'sob_moderacao' || p.category === 'sob_moderacao') return true;
-        // Se possui denúncia de usuário, SEMPRE exibir
-        if ((reportMap[p.id]?.count ?? 0) > 0 || (p.report_count ?? 0) > 0) return true;
+        // Se possui denúncia de usuário e não foi aprovado nesta sessão, SEMPRE exibir
+        if (!approvedItemIds.has(p.id) && ((reportMap[p.id]?.count ?? 0) > 0 || (p.report_count ?? 0) > 0)) return true;
         // Para posts normais/aprovados, ignorar dummies locais 'u-1', etc.
         return p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-');
       });
 
       const postItems: ModerationItem[] = validPosts.map(p => {
-        const isExplicitlyFlagged = p.status === 'sob_moderacao' || p.category === 'sob_moderacao';
+        const isLocallyApproved = approvedItemIds.has(p.id);
+        const isExplicitlyFlagged = !isLocallyApproved && (p.status === 'sob_moderacao' || p.category === 'sob_moderacao');
         const sensitivityCheck = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
-        const postReports = reportMap[p.id];
-        const hasReports = (postReports && postReports.count > 0) || (p.report_count && p.report_count > 0);
-        const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
+        const postReports = isLocallyApproved ? null : reportMap[p.id];
+        // Um post tem denúncias ativas apenas se NÃO foi aprovado pelo admin
+        const hasReports = !isLocallyApproved && (
+          (postReports && postReports.count > 0 && p.status !== 'aprovado') ||
+          (p.report_count && p.report_count > 0 && p.status !== 'aprovado')
+        );
+        const isSensitive = !isLocallyApproved && (sensitivityCheck.isFlagged || isExplicitlyFlagged);
 
         let flagReason = 'Conteúdo livre';
-        if (postReports && postReports.count > 0) {
+        if (isLocallyApproved || p.status === 'aprovado') {
+          flagReason = 'Aprovado pela curadoria';
+        } else if (postReports && postReports.count > 0) {
           flagReason = `🚩 ${postReports.count} denúncia${postReports.count > 1 ? 's' : ''} de usuários: ${postReports.reasons.join(', ')}`;
         } else if (sensitivityCheck.isFlagged) {
           flagReason = sensitivityCheck.flagReason || `Termo sensível: "${sensitivityCheck.matchedWord}"`;
@@ -360,11 +370,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           flagReason = 'Retido para moderação preventiva';
         }
 
-        // Determinação de status infalível:
-        // - Se está sob moderação, tem denúncia ou termo sensível não aprovado previamente -> 'pendente'
+        // Determinação de status:
+        // - Se o post está explicitamente retido sob moderação preventiva ou possui denúncias ativas não aprovadas -> 'pendente'
         // - Caso contrário -> 'aprovado'
         let status: 'pendente' | 'aprovado' | 'rejeitado' = 'aprovado';
-        if (isExplicitlyFlagged || hasReports || (isSensitive && p.status !== 'aprovado')) {
+        if (!isLocallyApproved && (isExplicitlyFlagged || hasReports || (isSensitive && p.status !== 'aprovado'))) {
           status = 'pendente';
         } else {
           status = 'aprovado';
@@ -380,26 +390,32 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           flagReason,
           createdAt: new Date(p.created_at).toLocaleString('pt-BR'),
           status,
-          reportCount: postReports?.count || p.report_count || 0
+          reportCount: isLocallyApproved ? 0 : (postReports?.count || p.report_count || 0)
         };
       });
 
       const validComments = (commentsData || []).filter(c => {
         if (c.status === 'removido_usuario') return false;
         if (c.status === 'sob_moderacao') return true;
-        if ((reportMap[c.id]?.count ?? 0) > 0 || (c.report_count ?? 0) > 0) return true;
+        if (!approvedItemIds.has(c.id) && ((reportMap[c.id]?.count ?? 0) > 0 || (c.report_count ?? 0) > 0)) return true;
         return c.author_id && c.author_id.length > 20 && !c.author_id.startsWith('u-');
       });
 
       const commentItems: ModerationItem[] = validComments.map(c => {
-        const isExplicitlyFlagged = c.status === 'sob_moderacao';
+        const isLocallyApproved = approvedItemIds.has(c.id);
+        const isExplicitlyFlagged = !isLocallyApproved && c.status === 'sob_moderacao';
         const sensitivityCheck = checkContentSensitivity(c.content || '');
-        const commentReports = reportMap[c.id];
-        const hasReports = (commentReports && commentReports.count > 0) || (c.report_count && c.report_count > 0);
-        const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
+        const commentReports = isLocallyApproved ? null : reportMap[c.id];
+        const hasReports = !isLocallyApproved && (
+          (commentReports && commentReports.count > 0 && c.status !== 'aprovado') ||
+          (c.report_count && c.report_count > 0 && c.status !== 'aprovado')
+        );
+        const isSensitive = !isLocallyApproved && (sensitivityCheck.isFlagged || isExplicitlyFlagged);
 
         let flagReason = 'Conteúdo livre';
-        if (commentReports && commentReports.count > 0) {
+        if (isLocallyApproved || c.status === 'aprovado') {
+          flagReason = 'Aprovado pela curadoria';
+        } else if (commentReports && commentReports.count > 0) {
           flagReason = `🚩 ${commentReports.count} denúncia${commentReports.count > 1 ? 's' : ''} de usuários: ${commentReports.reasons.join(', ')}`;
         } else if (sensitivityCheck.isFlagged) {
           flagReason = sensitivityCheck.flagReason || `Termo sensível: "${sensitivityCheck.matchedWord}"`;
@@ -408,7 +424,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         }
 
         let status: 'pendente' | 'aprovado' | 'rejeitado' = 'aprovado';
-        if (isExplicitlyFlagged || hasReports || (isSensitive && c.status !== 'aprovado')) {
+        if (!isLocallyApproved && (isExplicitlyFlagged || hasReports || (isSensitive && c.status !== 'aprovado'))) {
           status = 'pendente';
         } else {
           status = 'aprovado';
@@ -425,7 +441,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           flagReason,
           createdAt: new Date(c.created_at).toLocaleString('pt-BR'),
           status,
-          reportCount: commentReports?.count || c.report_count || 0
+          reportCount: isLocallyApproved ? 0 : (commentReports?.count || c.report_count || 0)
         };
       });
 
@@ -1009,19 +1025,37 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const handleModerateItem = async (id: string, newStatus: 'aprovado' | 'rejeitado') => {
     const targetItem = modItems.find(item => item.id === id);
     if (newStatus === 'aprovado') {
-      setModItems(prev => prev.map(item => item.id === id ? { ...item, status: 'aprovado' } : item));
+      // 1. Atualizar estado local otimista imediatamente
+      setApprovedItemIds(prev => new Set(prev).add(id));
+      setModItems(prev => prev.map(item => item.id === id ? { ...item, status: 'aprovado', reportCount: 0, flagReason: 'Aprovado pela curadoria' } : item));
       try {
         if (targetItem?.type === 'comment') {
           await supabase
             .from('community_comments')
-            .update({ status: 'aprovado' })
+            .update({ status: 'aprovado', report_count: 0 })
             .eq('id', id);
         } else {
           await supabase
             .from('community_posts')
-            .update({ category: 'aprovado', status: 'aprovado' })
+            .update({ category: 'aprovado', status: 'aprovado', report_count: 0 })
             .eq('id', id);
         }
+
+        // Limpar denúncias diretamente no banco (permitido pela policy reports_delete_all)
+        await supabase
+          .from('community_reports')
+          .delete()
+          .eq('content_id', id);
+
+        // Chamar Edge Function para garantir limpeza completa com service_role
+        await supabase.functions.invoke('moderate-content', {
+          body: {
+            action: 'resolve_reports',
+            contentId: id,
+            contentType: targetItem?.type || 'post'
+          }
+        });
+
         await refreshPosts();
       } catch (err) {
         console.warn('Erro ao salvar aprovação no Supabase:', err);
@@ -1079,6 +1113,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         deletePost(item.id);
         await supabase.from('community_posts').delete().eq('id', item.id);
       }
+
+      // Limpar denúncias também ao rejeitar
+      await supabase
+        .from('community_reports')
+        .delete()
+        .eq('content_id', item.id);
 
       await refreshPosts();
 

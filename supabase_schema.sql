@@ -139,6 +139,12 @@ CREATE POLICY IF NOT EXISTS "users_can_report" ON public.community_reports
 CREATE POLICY IF NOT EXISTS "admins_can_read_reports" ON public.community_reports
   FOR SELECT USING (true);
 
+-- Admins / Moderação podem excluir denúncias resolvidas
+DROP POLICY IF EXISTS "reports_delete_all" ON public.community_reports;
+CREATE POLICY "reports_delete_all" ON public.community_reports
+  FOR DELETE USING (true);
+
+
 -- 7. TABELA DE BADGES / CONQUISTAS DESBLOQUEADAS
 CREATE TABLE IF NOT EXISTS public.user_badges (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

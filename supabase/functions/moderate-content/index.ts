@@ -272,7 +272,49 @@ Deno.serve(async (req) => {
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // AÇÃO 2: Moderação de Mensagem (Gemini + Busca Vetorial em PARALELO)
+    // AÇÃO 2: Resolver denúncias e aprovar conteúdo (Admin Bypass RLS)
+    // ──────────────────────────────────────────────────────────────────────────
+    if (action === 'resolve_reports') {
+      const { contentId, contentType } = body;
+      if (!contentId) {
+        return new Response(
+          JSON.stringify({ error: 'contentId é obrigatório' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (supabase) {
+        // 1. Limpar denúncias
+        await supabase
+          .from('community_reports')
+          .delete()
+          .eq('content_id', contentId);
+
+        // 2. Atualizar status e zerar contagem
+        const table = contentType === 'comment' ? 'community_comments' : 'community_posts';
+        await supabase
+          .from(table)
+          .update({
+            report_count: 0,
+            status: 'aprovado',
+            ...(contentType !== 'comment' ? { category: 'aprovado' } : {})
+          })
+          .eq('id', contentId);
+
+        return new Response(
+          JSON.stringify({ success: true, resolvedContentId: contentId }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ error: 'SUPABASE_CLIENT_NOT_AVAILABLE' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // AÇÃO 3: Moderação de Mensagem (Gemini + Busca Vetorial em PARALELO)
     // ──────────────────────────────────────────────────────────────────────────
     const text = body.text;
 
