@@ -24,7 +24,8 @@ Categorias de classificação:
 
 2. "antijulgamento":
    - Crítica pesada, humilhação ou mom-shaming ("péssima mãe", "mãe de merda", "irresponsável", "negligente", "coitado do seu bebê", "deveria ter vergonha").
-   - Depreciação destrutiva, ataques conjugais ou desqualificação agressiva do cônjuge/parceiro(a) ("minha mulher é péssima", "meu marido é inútil", "péssima esposa", "não sabe o que faz").
+   - Depreciação destrutiva, ataques conjugais ou desqualificação agressiva do cônjuge/parceiro(a) ("minha mulher é péssima", "meu marido é inútil", "péssima esposa", "não sabe o que faz", "não sabe fritar um ovo").
+   - Preconceito, discriminação, homofobia, transfobia, capacitismo, racismo ou julgamento depreciativo sobre a orientação sexual, identidade de gênero, constituição familiar ou escolhas dos filhos/membros da família (ex: lamentar ou rejeitar a orientação de um filho, "pena que meu filho é gay", "queria tanto neto, pena que meu filho é gay", "não aceito filho assim", preconceito contra famílias homoafetivas ou diversidade).
    - Xingamentos, agressões verbais ou baixo calão hostil.
    - Tom exageradamente impositivo, autoritário ou mandatos de silenciamento ("cala a boca", "você é obrigada", "engole o choro", "não tem direito de reclamar").
    - Violação de consentimento, violência sexual, abuso ou estupro (inclusive conjugal ou de vulnerável), como manter relações sexuais ou toques íntimos com pessoa dormindo, desacordada, inconsciente, sob efeito de substâncias, sem consentimento mútuo ou contra sua vontade expressa ou tácita.
@@ -132,19 +133,15 @@ async function runGeminiModeration(text: string, apiKey: string): Promise<any | 
     }
   }
 
-  // 2. Chamar Gemini (gemini-3.1-flash-lite ultrarrápido + gemini-3.7-flash)
-  const models = ['gemini-3.1-flash-lite', 'gemini-3.7-flash'];
+  // 2. Chamar Gemini (gemini-3.5-flash-lite ultrarrápido + gemini-3.6-flash)
+  const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash'];
 
   for (const model of models) {
     try {
-      const thinkingConfig = model === 'gemini-3.1-flash-lite'
-        ? { thinkingLevel: 'minimal' }
-        : { thinkingLevel: 'low' };
-
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const geminiResponse = await fetch(geminiUrl, {
         method: 'POST',
-        signal: AbortSignal.timeout(3500),
+        signal: AbortSignal.timeout(6000),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -160,14 +157,14 @@ async function runGeminiModeration(text: string, apiKey: string): Promise<any | 
           generationConfig: {
             response_mime_type: 'application/json',
             temperature: 0.1,
-            max_output_tokens: 1024,
-            thinkingConfig
+            max_output_tokens: 1024
           }
         })
       });
 
       if (!geminiResponse.ok) {
         const errText = await geminiResponse.text();
+        console.warn(`Gemini model ${model} failed (${geminiResponse.status}):`, errText);
         debugErrors.push({ model, status: geminiResponse.status, message: errText.slice(0, 300) });
         continue;
       }
@@ -370,9 +367,14 @@ Deno.serve(async (req) => {
     }
 
     // Fallback: Nenhum caminho retornou resultado válido
+    const allErrors = [
+      ...(geminiResult.status === 'fulfilled' ? geminiResult.value?._errors || [] : [{ error: String((geminiResult as any).reason) }]),
+      ...(vectorResult.status === 'rejected' ? [{ vectorError: String((vectorResult as any).reason) }] : [])
+    ];
     return new Response(
       JSON.stringify({
         error: 'GEMINI_MODELS_UNAVAILABLE',
+        debugErrors: allErrors,
         fallbackRequired: true
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
