@@ -496,6 +496,8 @@ export const CommunityPage: React.FC = () => {
   const { 
     posts, 
     isLoading, 
+    isRoomLoading,
+    fetchPostsForRoom,
     hasMorePosts, 
     isLoadingMore, 
     loadMorePosts, 
@@ -967,6 +969,15 @@ export const CommunityPage: React.FC = () => {
 
     return true;
   }), [safePosts, activeSelection, selectedEmotionId, searchQuery, user?.id, user?.role]);
+
+  // 🚀 Busca direcionada por sala: se o usuário clicar em uma sala específica e ela tiver < 10 tópicos em memória,
+  // busca diretamente os 10 primeiros tópicos daquela sala no Supabase.
+  useEffect(() => {
+    if (!activeSelection) return;
+    if (filteredPosts.length < 10) {
+      fetchPostsForRoom(activeSelection);
+    }
+  }, [activeSelection, filteredPosts.length, user?.id]);
 
   // Paginating visible posts (15 per page)
   const visiblePosts = useMemo(() => filteredPosts.slice(0, visibleCount), [filteredPosts, visibleCount]);
@@ -1659,8 +1670,8 @@ export const CommunityPage: React.FC = () => {
 
           {/* Feed of Posts */}
           <section className="space-y-6">
-            {isLoading ? (
-              <div className="space-y-6">
+            {(isLoading || (isRoomLoading && filteredPosts.length === 0)) ? (
+              <div className="space-y-6 animate-fade-in">
                 <PostSkeleton />
                 <PostSkeleton />
                 <PostSkeleton />

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { CommunityPost, CommunityComment, EmotionalIntention, SensitivityLevel, CommunityPoll, NewPollPayload } from '../types';
 
 import { useAuth } from './AuthContext';
@@ -386,12 +386,20 @@ export const getRandomAnonymousName = () => {
   return `${animal} ${descriptor}`;
 };
 
+export type RoomSelectionTarget = 
+  | { type: 'jornada'; journeyId: string; subOption?: EmotionalIntention }
+  | { type: 'geral'; roomId: string }
+  | { type: 'idade'; ageId: string }
+  | { type: 'minhas-publicacoes' };
+
 interface CommunityContextType {
   posts: CommunityPost[];
   isLoading: boolean;
+  isRoomLoading: boolean;
   hasMorePosts: boolean;
   isLoadingMore: boolean;
   loadMorePosts: () => Promise<void>;
+  fetchPostsForRoom: (selection: RoomSelectionTarget) => Promise<void>;
   createPost: (payload: CreatePostPayload) => void;
   toggleReaction: (postId: string, reactionKey: string) => void;
   toggleCommentReaction: (postId: string, commentId: string, reactionKey: string) => void;
@@ -559,7 +567,7 @@ const persistCommentReaction = (
   saveStoredReactionsData(store);
 };
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 40;
 
 export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, awardBadge } = useAuth();
@@ -626,8 +634,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return [];
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isRoomLoading, setIsRoomLoading] = useState<boolean>(false);
   const [hasMorePosts, setHasMorePosts] = useState<boolean>(true);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const isFetchingRef = useRef<boolean>(false);
+  const fetchedRoomsSet = useRef<Set<string>>(new Set());
 
   // Sincronizar posts no cache local
   useEffect(() => {
@@ -730,6 +741,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const fetchSupabasePosts = async (showLoading = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     if (showLoading) setIsLoading(true);
     try {
       // 1. Buscar posts e comentários PRIMEIRO para obter os IDs visíveis
@@ -874,6 +887,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       console.warn('Supabase connection fallback to local state:', err);
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
@@ -940,6 +954,117 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       console.warn('Error loading more posts:', err);
     } finally {
       setIsLoadingMore(false);
+    }
+  };
+
+  // 🎯 Busca Direcionada por Sala ao Clicar (Sob Demanda)
+  // Carrega até 10 tópicos específicos da sala se ela ainda não tiver conteúdo em memória
+  const fetchPostsForRoom = async (selection: RoomSelectionTarget) => {
+    const roomKey = 
+      selection.type === 'geral' ? `geral:${selection.roomId}` :
+      selection.type === 'jornada' ? `jornada:${selection.journeyId}` :
+      selection.type === 'idade' ? `idade:${selection.ageId}` :
+      'minhas-publicacoes';
+
+    if (fetchedRoomsSet.current.has(roomKey)) return;
+    fetchedRoomsSet.current.add(roomKey);
+
+    setIsRoomLoading(true);
+    try {
+      let query = supabase
+        .from('community_posts')
+        .select('*, community_comments(*)')
+        .not('author_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (selection.type === 'geral' && selection.roomId) {
+        query = query.eq('transversal_room_id', selection.roomId);
+      } else if (selection.type === 'jornada' && selection.journeyId) {
+        query = query.eq('journey_id', selection.journeyId);
+      } else if (selection.type === 'idade' && selection.ageId) {
+        query = query.eq('age_bracket_id', selection.ageId);
+      } else if (selection.type === 'minhas-publicacoes') {
+        if (!user?.id) {
+          setIsRoomLoading(false);
+          return;
+        }
+        query = query.eq('author_id', user.id);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.warn('Supabase fetchPostsForRoom notice:', error.message);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const postIds = data.map((p: any) => p.id).filter(Boolean);
+        const remoteReactionsByPost: Record<string, Record<string, number>> = {};
+        const remoteUserReactionsByPost: Record<string, Record<string, boolean>> = {};
+
+        try {
+          if (postIds.length > 0) {
+            const { data: reactionsData, error: reactError } = await supabase
+              .from('community_reactions')
+              .select('post_id, user_id, reaction_key')
+              .in('post_id', postIds);
+
+            if (reactionsData && !reactError) {
+              reactionsData.forEach((r: any) => {
+                if (!r.post_id || !r.reaction_key) return;
+                if (!remoteReactionsByPost[r.post_id]) {
+                  remoteReactionsByPost[r.post_id] = {};
+                }
+                remoteReactionsByPost[r.post_id][r.reaction_key] =
+                  (remoteReactionsByPost[r.post_id][r.reaction_key] || 0) + 1;
+
+                if (user?.id && r.user_id === user.id) {
+                  if (!remoteUserReactionsByPost[r.post_id]) {
+                    remoteUserReactionsByPost[r.post_id] = {};
+                  }
+                  remoteUserReactionsByPost[r.post_id][r.reaction_key] = true;
+                }
+              });
+            }
+          }
+        } catch {}
+
+        const mappedPosts: CommunityPost[] = data
+          .filter(p => p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-'))
+          .map(mapPostFromDb)
+          .filter(p => p.status !== 'removido_usuario')
+          .map(p => ({
+            ...p,
+            reactions: {
+              ...(p.reactions || {}),
+              ...(remoteReactionsByPost[p.id] || {})
+            },
+            userReactions: {
+              ...(p.userReactions || {}),
+              ...(remoteUserReactionsByPost[p.id] || {})
+            }
+          }));
+
+        setPosts(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const newItems = mappedPosts.filter(p => !existingIds.has(p.id));
+          const updatedPrev = prev.map(p => {
+            const match = mappedPosts.find(mp => mp.id === p.id);
+            return match ? { ...p, ...match } : p;
+          });
+          const merged = [...updatedPrev, ...newItems].map(sanitizePost);
+          try {
+            localStorage.setItem('elana_community_posts_cache', JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar tópicos da sala:', err);
+    } finally {
+      setIsRoomLoading(false);
     }
   };
 
@@ -1981,9 +2106,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     <CommunityContext.Provider value={{
       posts,
       isLoading,
+      isRoomLoading,
       hasMorePosts,
       isLoadingMore,
       loadMorePosts,
+      fetchPostsForRoom,
       createPost,
       toggleReaction,
       toggleCommentReaction,
