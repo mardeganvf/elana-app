@@ -25,7 +25,13 @@ Categorias de classificação:
 2. "antijulgamento":
    - Crítica pesada, humilhação ou mom-shaming ("péssima mãe", "mãe de merda", "irresponsável", "negligente", "coitado do seu bebê", "deveria ter vergonha").
    - Depreciação destrutiva, ataques conjugais ou desqualificação agressiva do cônjuge/parceiro(a) ("minha mulher é péssima", "meu marido é inútil", "péssima esposa", "não sabe o que faz", "não sabe fritar um ovo").
-   - Preconceito, discriminação, homofobia, transfobia, capacitismo, racismo ou julgamento depreciativo sobre a orientação sexual, identidade de gênero, constituição familiar ou escolhas dos filhos/membros da família (ex: lamentar ou rejeitar a orientação de um filho, "pena que meu filho é gay", "queria tanto neto, pena que meu filho é gay", "não aceito filho assim", preconceito contra famílias homoafetivas ou diversidade).
+   - Qualquer forma de discriminação, preconceito, intolerância ou discurso de ódio — seja por motivos de:
+     * Raça ou etnia (racismo, injúria racial, estereótipos depreciativos).
+     * Orientação sexual ou identidade de gênero (homofobia, transfobia, bifobia, rejeição ou lamentação sobre a orientação de filhos/parentes, discriminação contra famílias homoafetivas/diversas).
+     * Nacionalidade, origem regional ou etnia (xenofobia, preconceito contra imigrantes, refugiados, estrangeiros ou preconceito regional).
+     * Religião ou crença (intolerância religiosa, hostilidade de fé).
+     * Capacitismo e neurodivergência (preconceito contra pessoas ou crianças com deficiência, autismo, TDAH, atrasos no desenvolvimento, síndromes).
+     * Condição física ou social (gordofobia, aporofobia, elitismo).
    - Xingamentos, agressões verbais ou baixo calão hostil.
    - Tom exageradamente impositivo, autoritário ou mandatos de silenciamento ("cala a boca", "você é obrigada", "engole o choro", "não tem direito de reclamar").
    - Violação de consentimento, violência sexual, abuso ou estupro (inclusive conjugal ou de vulnerável), como manter relações sexuais ou toques íntimos com pessoa dormindo, desacordada, inconsciente, sob efeito de substâncias, sem consentimento mútuo ou contra sua vontade expressa ou tácita.
