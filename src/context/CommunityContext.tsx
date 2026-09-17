@@ -125,8 +125,9 @@ export const OFFENSIVE_PATTERNS = [
   { pattern: /\b(?:vai\s+se\s+foder|vai\s+tomar\s+no\s+cu|vsf|vtnc|vsfd)\b/i, reason: 'Ofensa verbal grave' },
 
   // Crítica Pesada / Mom-Shaming / Julgamento Parental Agressivo
-  { pattern: /\b(?:pessim[ao]|ruim|horrivel|de\s+merda)\s+(?:mae|pai)\b/i, reason: 'Julgamento parental destrutivo' },
-  { pattern: /\b(?:mae|pai)\s+(?:pessim[ao]|ruim|horrivel|de\s+merda|desnaturad[ao])\b/i, reason: 'Ataque à maternidade/paternidade' },
+  { pattern: /\b(?:pessim[ao]|ruim|horrivel|horroros[ao]|terrivel|de\s+merda|inutil|lixo|fracassad[ao]|vergonhos[ao]|patetic[ao])\s+(?:mae|pai)\b/i, reason: 'Julgamento parental destrutivo' },
+  { pattern: /\b(?:mae|pai)\s+(?:pessim[ao]|ruim|horrivel|horroros[ao]|terrivel|de\s+merda|desnaturad[ao]|inutil|lixo|fracassad[ao]|vergonhos[ao]|patetic[ao])\b/i, reason: 'Ataque à maternidade/paternidade' },
+  { pattern: /\b(?:voce\s+e\s+|ela\s+e\s+|ele\s+e\s+)?(?:uma\s+|um\s+)?(?:pessim[ao]|ruim|horrivel|horroros[ao]|terrivel|de\s+merda|inutil|desnaturad[ao])\s+(?:mae|pai)\b/i, reason: 'Ataque direto à maternidade/paternidade' },
   { pattern: /\b(?:voce\s+e\s+)?(?:uma\s+)?pessima\s+mae\b/i, reason: 'Ataque direto à maternidade' },
   { pattern: /\b(?:voce\s+e\s+)?(?:um\s+)?pessimo\s+pai\b/i, reason: 'Ataque direto à paternidade' },
   { pattern: /\b(?:voce\s+)?(?:esta\s+)?fazendo\s+tudo\s+errad[ao]\b/i, reason: 'Julgamento destrutivo da capacidade parental' },
@@ -146,9 +147,10 @@ export const OFFENSIVE_PATTERNS = [
   { pattern: /\b(?:culpa\s+sua|a\s+culpa\s+e\s+toda\s+sua|voce\s+procurou|bem\s+feito)\b/i, reason: 'Culpabilização agressiva' },
 
   // Depreciação Destrutiva do Cônjuge / Parceiro(a) e Desqualificação de Capacidade
-  { pattern: /\b(?:(?:minh[ao]|meu)\s+)?(?:mulher|esposa|marido|parceir[ao]|companheir[ao])\s+(?:e\s+|ta\s+|eh\s+)?(?:uma\s+|um\s+)?(?:pessim[ao]|horrivel|ruim|incompetente|incapaz|de\s+merda)\b/i, reason: 'Depreciação destrutiva do cônjuge/parceiro(a)' },
-  { pattern: /\b(?:pessim[ao]|horrivel|ruim|incompetente|incapaz|de\s+merda)\s+(?:mulher|esposa|marido|parceir[ao]|companheir[ao])\b/i, reason: 'Depreciação destrutiva do cônjuge/parceiro(a)' },
-  { pattern: /\b(?:(?:minh[ao]|meu)\s+)?(?:mulher|esposa|marido|parceir[ao]|companheir[ao])\s+nao\s+sabe\s+(?:o\s+que\s+faz|nada|cuidar|fazer\s+nada)\b/i, reason: 'Desqualificação agressiva do parceiro(a)' },
+  { pattern: /\b(?:(?:minh[ao]|meu)\s+)?(?:mulher|esposa|marido|parceir[ao]|companheir[ao])\s+(?:e\s+|ta\s+|eh\s+)?(?:uma\s+|um\s+)?(?:mae\s+|pai\s+)?(?:pessim[ao]|horrivel|horroros[ao]|terrivel|ruim|incompetente|incapaz|inutil|de\s+merda|lixo|fracassad[ao])\b/i, reason: 'Depreciação destrutiva do cônjuge/parceiro(a)' },
+  { pattern: /\b(?:pessim[ao]|horrivel|horroros[ao]|terrivel|ruim|incompetente|incapaz|inutil|de\s+merda|lixo|fracassad[ao])\s+(?:mulher|esposa|marido|parceir[ao]|companheir[ao])\b/i, reason: 'Depreciação destrutiva do cônjuge/parceiro(a)' },
+  { pattern: /\b(?:(?:minh[ao]|meu)\s+)?(?:mulher|esposa|marido|parceir[ao]|companheir[ao]|ela|ele)\s+nao\s+sabe\s+(?:o\s+que\s+faz|nada|cuidar|fazer\s+nada|nem\s+|sequer\s+|fritar|cozinhar|limpar)\b/i, reason: 'Desqualificação agressiva do parceiro(a)' },
+  { pattern: /\bnao\s+sabe\s+(?:nem\s+|sequer\s+)?fritar\s+(?:um\s+)?ovo\b/i, reason: 'Desqualificação agressiva de capacidade' },
   { pattern: /\b(?:voce|ele|ela)\s+nao\s+sabe\s+(?:o\s+que\s+faz|nada|cuidar|fazer\s+nada)\b/i, reason: 'Desqualificação agressiva de capacidade' },
   { pattern: /\bnao\s+sabe\s+o\s+que\s+faz\b/i, reason: 'Desqualificação agressiva de conduta' },
 
@@ -201,10 +203,11 @@ export const OFFENSIVE_PATTERNS = [
 export const SHAMING_KEYWORDS = [
   'irresponsavel', 'irresponsável', 'relaxada', 'preguicosa', 'preguiçosa',
   'pessima mae', 'péssima mãe', 'pessimo pai', 'péssimo pai', 'mae ruim', 'mãe ruim',
+  'mae horrorosa', 'mãe horrorosa', 'pai horroroso', 'esposa horrorosa', 'mulher horrorosa', 'marido horroroso',
   'pessima mulher', 'péssima mulher', 'mulher pessima', 'mulher péssima',
   'pessima esposa', 'péssima esposa', 'esposa pessima', 'esposa péssima',
   'pessimo marido', 'péssimo marido', 'marido pessimo', 'marido péssimo',
-  'nao sabe o que faz', 'não sabe o que faz',
+  'nao sabe o que faz', 'não sabe o que faz', 'nao sabe fritar um ovo', 'não sabe fritar um ovo',
   'culpa sua', 'deveria ter vergonha', 'sem nocao', 'sem noção', 'coitado do bebe',
   'coitado do bebê', 'absurdo fazer isso', 'mae louca', 'mãe louca', 'negligente',
   'egoista', 'egoísta', 'burra', 'idiota', 'mimimi', 'frescura',
@@ -318,7 +321,7 @@ export const checkContentSensitivityAI = async (
   // 2. Análise contextual avançada via Supabase Edge Function com IA Gemini
   try {
     const timeoutPromise = new Promise<{ error: string }>((resolve) =>
-      setTimeout(() => resolve({ error: 'TIMEOUT' }), 5000)
+      setTimeout(() => resolve({ error: 'TIMEOUT' }), 10000)
     );
 
     const invokePromise = supabase.functions.invoke('moderate-content', {
@@ -326,6 +329,10 @@ export const checkContentSensitivityAI = async (
     });
 
     const result: any = await Promise.race([invokePromise, timeoutPromise]);
+
+    if (result?.error) {
+      console.warn('AI moderation notice:', result.error);
+    }
 
     if (result && !result.error && result.data && !result.data.fallbackRequired) {
       const data = result.data;
