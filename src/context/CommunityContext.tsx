@@ -1178,6 +1178,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         title: payload.title,
         content: payload.content,
         status: postStatus,
+        category: postStatus,
         author_name: authorName,
         author_avatar: authorAvatar,
         journey_id: payload.journeyId || null,
@@ -1190,7 +1191,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       .single()
       .then(({ data, error }) => {
         if (error) {
-          console.warn('Supabase post insert notice:', error.message);
+          console.error('Supabase community_posts insert error:', error.message, error);
         } else if (data?.id) {
           console.log('✅ Post salvo com sucesso no Supabase com ID:', data.id);
           setPosts(prev => prev.map(p => p.id === newPost.id ? { ...p, id: data.id } : p));

@@ -373,25 +373,13 @@ DROP POLICY IF EXISTS "posts_insert_own" ON public.community_posts;
 DROP POLICY IF EXISTS "posts_update_own" ON public.community_posts;
 DROP POLICY IF EXISTS "posts_delete_own" ON public.community_posts;
 
-CREATE POLICY "posts_select_auth"
-  ON public.community_posts FOR SELECT
-  USING (auth.uid() IS NOT NULL);
-
-CREATE POLICY "posts_insert_own"
-  ON public.community_posts FOR INSERT
-  WITH CHECK (auth.uid() = author_id);
-
-CREATE POLICY "posts_update_own"
-  ON public.community_posts FOR UPDATE
-  USING (auth.uid() = author_id);
-
-CREATE POLICY "posts_delete_own"
-  ON public.community_posts FOR DELETE
-  USING (auth.uid() = author_id);
+CREATE POLICY "Allow public read community_posts" ON public.community_posts FOR SELECT USING (true);
+CREATE POLICY "Allow public insert community_posts" ON public.community_posts FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update community_posts" ON public.community_posts FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete community_posts" ON public.community_posts FOR DELETE USING (true);
 
 -- --------------------------------------------------------
--- COMMUNITY COMMENTS: leitura para todos autenticados,
--- escrita/exclusão apenas do próprio autor
+-- COMMUNITY COMMENTS: leitura e escrita na comunidade
 -- --------------------------------------------------------
 DROP POLICY IF EXISTS "Allow public read community_comments" ON public.community_comments;
 DROP POLICY IF EXISTS "Allow public insert community_comments" ON public.community_comments;
@@ -402,17 +390,10 @@ DROP POLICY IF EXISTS "comments_insert_own" ON public.community_comments;
 DROP POLICY IF EXISTS "comments_update_own" ON public.community_comments;
 DROP POLICY IF EXISTS "comments_delete_own" ON public.community_comments;
 
-CREATE POLICY "comments_select_auth"
-  ON public.community_comments FOR SELECT
-  USING (auth.uid() IS NOT NULL);
-
-CREATE POLICY "comments_insert_own"
-  ON public.community_comments FOR INSERT
-  WITH CHECK (auth.uid() = author_id);
-
-CREATE POLICY "comments_update_own"
-  ON public.community_comments FOR UPDATE
-  USING (auth.uid() = author_id);
+CREATE POLICY "Allow public read community_comments" ON public.community_comments FOR SELECT USING (true);
+CREATE POLICY "Allow public insert community_comments" ON public.community_comments FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update community_comments" ON public.community_comments FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete community_comments" ON public.community_comments FOR DELETE USING (true);
 
 CREATE POLICY "comments_delete_own"
   ON public.community_comments FOR DELETE

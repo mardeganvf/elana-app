@@ -812,6 +812,42 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     };
   }, [activeAdminTab, loadTickets]);
 
+  // Realtime WebSocket para aba de Moderação
+  useEffect(() => {
+    if (activeAdminTab !== 'moderation') return;
+
+    loadModeration();
+
+    const channel = supabase
+      .channel('admin_moderation_realtime_sync')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'community_posts'
+      }, () => {
+        loadModeration();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'community_comments'
+      }, () => {
+        loadModeration();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'community_reports'
+      }, () => {
+        loadModeration();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeAdminTab]);
+
   // Recalcula métricas do termômetro sempre que a aba for selecionada ou houver novas reações/comentários
   useEffect(() => {
     if (activeAdminTab === 'analytics') {
