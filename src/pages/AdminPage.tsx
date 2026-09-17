@@ -867,7 +867,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       const nextMessages = isAlreadyAdded ? cleanLatest : [...cleanLatest, adminMsg];
 
       if (!isAlreadyAdded) {
-        await supabase
+        const { error: updateErr } = await supabase
           .from('sos_tickets')
           .update({
             status: 'em_atendimento',
@@ -877,6 +877,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             is_read: false
           })
           .eq('id', selectedSosTicket.id);
+
+        if (updateErr) {
+          throw updateErr;
+        }
       }
 
       setSosTickets(prev => prev.map(t => t.id === selectedSosTicket.id ? {

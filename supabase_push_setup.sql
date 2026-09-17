@@ -57,9 +57,6 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
-DECLARE
-  v_supabase_url TEXT;
-  v_service_key  TEXT;
 BEGIN
   -- Dispara apenas quando admin_reply foi adicionado ou alterado e não está vazio
   IF (NEW.admin_reply IS NOT NULL AND NEW.admin_reply <> '' AND 
@@ -67,17 +64,21 @@ BEGIN
      
     -- Se o ticket tem um usuário associado
     IF NEW.profile_id IS NOT NULL THEN
-      -- Chama a Edge Function via pg_net de forma assíncrona
-      PERFORM extensions.http_post(
-        url := 'https://mixedzmkjfzumeimfkfz.supabase.co/functions/v1/send-push-notification',
-        headers := '{"Content-Type": "application/json"}'::jsonb,
-        body := jsonb_build_object(
-          'profile_id', NEW.profile_id,
-          'title', 'Elana — Resposta da sua equipe',
-          'body', 'Sua mensagem de acolhimento recebeu uma resposta carinhosa. Toque para ver.',
-          'url', '/sos'
-        )
-      );
+      -- Protegido com EXCEPTION para que falha de push NUNCA aborte o salvamento da resposta do admin
+      BEGIN
+        PERFORM net.http_post(
+          url := 'https://mixedzmkjfzumeimfkfz.supabase.co/functions/v1/send-push-notification'::text,
+          body := jsonb_build_object(
+            'profile_id', NEW.profile_id,
+            'title', 'Elana — Resposta da sua equipe',
+            'body', 'Sua mensagem de acolhimento recebeu uma resposta carinhosa. Toque para ver.',
+            'url', '/sos'
+          ),
+          headers := '{"Content-Type": "application/json"}'::jsonb
+        );
+      EXCEPTION WHEN OTHERS THEN
+        RAISE WARNING 'Falha ao acionar push notification no SOS: %', SQLERRM;
+      END;
     END IF;
   END IF;
 
