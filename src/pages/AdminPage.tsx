@@ -293,15 +293,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   const [emotionalStats, setEmotionalStats] = useState<EmotionalStats | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
 
-  // 🛡️ Moderation Loader - estritamente posts de usuários reais registrados
+  // 🛡️ Moderation Loader - carrega fila completa de moderação e denúncias
   const loadModeration = async () => {
     setIsLoadingModeration(true);
     try {
-      // 1. Carregar posts que possuem autor vinculado
+      // 1. Carregar posts recentes da comunidade (incluindo anônimos e retidos)
       const { data, error } = await supabase
         .from('community_posts')
         .select('*')
-        .not('author_id', 'is', null)
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -327,28 +326,30 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         }
       }
 
-      // 3. Carregar comentários de usuários reais ou sob moderação
+      // 3. Carregar comentários recentes da comunidade
       const { data: commentsData } = await supabase
         .from('community_comments')
         .select('*')
-        .not('author_id', 'is', null)
         .order('created_at', { ascending: false })
         .limit(100);
 
-      // Filtrar estritamente apenas posts criados por usuários com IDs válidos (ignora dummies 'u-1', etc.)
-      const validPosts = (data || []).filter(p =>
-        p.author_id &&
-        p.author_id.length > 20 &&
-        !p.author_id.startsWith('u-') &&
-        p.status !== 'removido_usuario'
-      );
+      // Filtrar posts relevantes: SEMPRE incluir sob moderação e com denúncias
+      const validPosts = (data || []).filter(p => {
+        if (p.status === 'removido_usuario') return false;
+        // Prioridade máxima: se está retido sob moderação preventiva, SEMPRE exibir
+        if (p.status === 'sob_moderacao' || p.category === 'sob_moderacao') return true;
+        // Se possui denúncia de usuário, SEMPRE exibir
+        if ((reportMap[p.id]?.count ?? 0) > 0 || (p.report_count ?? 0) > 0) return true;
+        // Para posts normais/aprovados, ignorar dummies locais 'u-1', etc.
+        return p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-');
+      });
 
       const postItems: ModerationItem[] = validPosts.map(p => {
-        const isPersistedApproved = p.category === 'aprovado' || p.status === 'aprovado';
-        const sensitivityCheck = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
         const isExplicitlyFlagged = p.status === 'sob_moderacao' || p.category === 'sob_moderacao';
-        const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
+        const sensitivityCheck = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
         const postReports = reportMap[p.id];
+        const hasReports = (postReports && postReports.count > 0) || (p.report_count && p.report_count > 0);
+        const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
 
         let flagReason = 'Conteúdo livre';
         if (postReports && postReports.count > 0) {
@@ -359,10 +360,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           flagReason = 'Retido para moderação preventiva';
         }
 
+        // Determinação de status infalível:
+        // - Se está sob moderação, tem denúncia ou termo sensível não aprovado previamente -> 'pendente'
+        // - Caso contrário -> 'aprovado'
         let status: 'pendente' | 'aprovado' | 'rejeitado' = 'aprovado';
-        if (isPersistedApproved) {
-          status = 'aprovado';
-        } else if (isSensitive || (postReports && postReports.count >= 3)) {
+        if (isExplicitlyFlagged || hasReports || (isSensitive && p.status !== 'aprovado')) {
           status = 'pendente';
         } else {
           status = 'aprovado';
@@ -382,19 +384,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         };
       });
 
-      const validComments = (commentsData || []).filter(c =>
-        c.author_id &&
-        c.author_id.length > 20 &&
-        !c.author_id.startsWith('u-') &&
-        c.status !== 'removido_usuario'
-      );
+      const validComments = (commentsData || []).filter(c => {
+        if (c.status === 'removido_usuario') return false;
+        if (c.status === 'sob_moderacao') return true;
+        if ((reportMap[c.id]?.count ?? 0) > 0 || (c.report_count ?? 0) > 0) return true;
+        return c.author_id && c.author_id.length > 20 && !c.author_id.startsWith('u-');
+      });
 
       const commentItems: ModerationItem[] = validComments.map(c => {
-        const isPersistedApproved = c.status === 'aprovado';
-        const sensitivityCheck = checkContentSensitivity(c.content || '');
         const isExplicitlyFlagged = c.status === 'sob_moderacao';
-        const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
+        const sensitivityCheck = checkContentSensitivity(c.content || '');
         const commentReports = reportMap[c.id];
+        const hasReports = (commentReports && commentReports.count > 0) || (c.report_count && c.report_count > 0);
+        const isSensitive = sensitivityCheck.isFlagged || isExplicitlyFlagged;
 
         let flagReason = 'Conteúdo livre';
         if (commentReports && commentReports.count > 0) {
@@ -406,9 +408,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         }
 
         let status: 'pendente' | 'aprovado' | 'rejeitado' = 'aprovado';
-        if (isPersistedApproved) {
-          status = 'aprovado';
-        } else if (isSensitive || (commentReports && commentReports.count >= 3)) {
+        if (isExplicitlyFlagged || hasReports || (isSensitive && c.status !== 'aprovado')) {
           status = 'pendente';
         } else {
           status = 'aprovado';
@@ -812,11 +812,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     };
   }, [activeAdminTab, loadTickets]);
 
-  // Realtime WebSocket para aba de Moderação
+  // Sincronização em tempo real e polling contínuo da fila de Moderação
   useEffect(() => {
-    if (activeAdminTab !== 'moderation') return;
-
     loadModeration();
+
+    // Polling a cada 10s para garantir atualização contínua mesmo se websocket oscilar
+    const pollInterval = setInterval(() => {
+      loadModeration();
+    }, 10000);
 
     const channel = supabase
       .channel('admin_moderation_realtime_sync')
@@ -844,9 +847,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       .subscribe();
 
     return () => {
+      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
-  }, [activeAdminTab]);
+  }, []);
 
   // Recalcula métricas do termômetro sempre que a aba for selecionada ou houver novas reações/comentários
   useEffect(() => {
@@ -1323,6 +1327,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       });
     }
   }, [pendingCount, pendingModCount, setAdminPendingCounts]);
+
+  // Auto-expandir grupos de menu caso existam itens pendentes que exijam atenção
+  useEffect(() => {
+    if (pendingModCount > 0) {
+      setOpenMenuGroups(prev => prev.community ? prev : { ...prev, community: true });
+    }
+  }, [pendingModCount]);
+
+  useEffect(() => {
+    if (pendingCount > 0) {
+      setOpenMenuGroups(prev => prev.support ? prev : { ...prev, support: true });
+    }
+  }, [pendingCount]);
 
   // Security Guard 1: User is not authenticated
   if (!isAuthenticated || !user) {
@@ -1853,7 +1870,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
           {/* ESTADO INICIAL: NENHUM ITEM SELECIONADO NO MENU LATERAL */}
           {!activeAdminTab && (
-            <section className="bg-[#101B1E] p-8 sm:p-12 rounded-3xl border border-white/10 shadow-xl text-center space-y-4 max-w-xl mx-auto my-8 animate-fade-in">
+            <section className="bg-[#101B1E] p-8 sm:p-12 rounded-3xl border border-white/10 shadow-xl text-center space-y-6 max-w-2xl mx-auto my-8 animate-fade-in">
               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-lg border ${
                 currentUserRole === 'guia' 
                   ? 'bg-[#8A9A5B]/20 border-[#8A9A5B]/40 text-[#8A9A5B]' 
@@ -1868,9 +1885,56 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
                   {currentUserRole === 'guia'
                     ? 'Bem-vindo(a) ao seu painel de mentoria e apoio comunitário! Utilize o menu lateral para acessar o Atendimento SOS e a Moderação de Publicações.'
-                    : 'Selecione uma categoria no menu lateral para gerenciar as Jornadas de Conhecimento, Moderação de Posts, Atendimento SOS, Membros ou Enquetes.'}
+                    : 'Selecione uma categoria no menu lateral ou acesse diretamente as pendências prioritárias abaixo.'}
                 </p>
               </div>
+
+              {/* Destaque de Itens Pendentes de Ação */}
+              {(pendingModCount > 0 || pendingCount > 0) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left pt-2">
+                  {pendingModCount > 0 && canAccess('admin_moderation') && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveAdminTab('moderation')}
+                      className="p-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/50 flex items-center justify-between gap-3 transition-all cursor-pointer group text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                          <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-amber-200">Moderação de Posts</p>
+                          <p className="text-[11px] text-amber-300/80 font-medium">
+                            {pendingModCount} {pendingModCount === 1 ? 'publicação aguardando' : 'publicações aguardando'}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
+                    </button>
+                  )}
+
+                  {pendingCount > 0 && canAccess('admin_sos_reply') && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveAdminTab('sos')}
+                      className="p-4 rounded-2xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 flex items-center justify-between gap-3 transition-all cursor-pointer group text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+                          <ShieldAlert className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-red-200">Atendimento SOS</p>
+                          <p className="text-[11px] text-red-300/80 font-medium">
+                            {pendingCount} {pendingCount === 1 ? 'chamado aguardando' : 'chamados aguardando'}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-red-400 group-hover:translate-x-1 transition-transform shrink-0" />
+                    </button>
+                  )}
+                </div>
+              )}
             </section>
           )}
 

@@ -374,7 +374,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }).length;
       }
 
-      // 2. Moderação de posts e comentários sob moderação
+      // 2. Moderação de posts e comentários sob moderação e denúncias
       let modCount = 0;
 
       const { data: modPosts } = await supabase
@@ -390,6 +390,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('status', 'sob_moderacao');
 
       if (modComments) modCount += modComments.length;
+
+      // Incluir denúncias de usuários
+      const { data: reportedItems } = await supabase
+        .from('community_reports')
+        .select('content_id');
+
+      if (reportedItems && reportedItems.length > 0) {
+        const uniqueReportedIds = new Set(reportedItems.map(r => r.content_id));
+        const existingFlaggedIds = new Set([
+          ...(modPosts || []).map(p => p.id),
+          ...(modComments || []).map(c => c.id)
+        ]);
+        let extraReports = 0;
+        uniqueReportedIds.forEach(id => {
+          if (!existingFlaggedIds.has(id)) extraReports++;
+        });
+        modCount += extraReports;
+      }
 
       setAdminPendingCounts({
         sos: sosCount,
