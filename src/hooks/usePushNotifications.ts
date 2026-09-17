@@ -93,7 +93,7 @@ export function usePushNotifications() {
         const convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: convertedVapidKey
+          applicationServerKey: convertedVapidKey as unknown as BufferSource
         });
       }
 
@@ -130,7 +130,7 @@ export function usePushNotifications() {
       }
 
       setIsSubscribed(true);
-      showToast('success', 'Notificações ativadas com sucesso! 🔔');
+      showToast('success', 'Notificações ativadas com sucesso!');
       setIsLoading(false);
       return true;
     } catch (error: any) {
