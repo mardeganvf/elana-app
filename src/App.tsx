@@ -12,8 +12,9 @@ import { Journey } from './types';
 import { supabase } from './lib/supabase';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
-// ⚡ Code Splitting: Lazy loading de todas as rotas e modais secundários
-const HomePage = React.lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
+import { HomePage } from './pages/HomePage';
+
+// ⚡ Code Splitting: Lazy loading de rotas secundárias e modais
 const ClassroomPage = React.lazy(() => import('./pages/ClassroomPage').then(m => ({ default: m.ClassroomPage })));
 const CommunityPage = React.lazy(() => import('./pages/CommunityPage').then(m => ({ default: m.CommunityPage })));
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));

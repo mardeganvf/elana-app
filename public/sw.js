@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elana-v2';
+const CACHE_NAME = 'elana-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html'
