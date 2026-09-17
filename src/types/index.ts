@@ -126,7 +126,7 @@ export interface CommunityComment {
   isAnonymous?: boolean;
   reactions?: Record<string, number>;
   userReactions?: Record<string, boolean>;
-  status?: 'aprovado' | 'sob_moderacao';
+  status?: 'aprovado' | 'sob_moderacao' | 'removido_usuario' | 'rejeitado';
   reportCount?: number;
 }
 
@@ -144,7 +144,7 @@ export interface CommunityPost {
   authorTag?: string; // e.g. "Mãe de 2 (0-2 anos)"
   isAnonymous?: boolean;
   sensitivityLevel: SensitivityLevel;
-  status?: 'aprovado' | 'sob_moderacao' | 'removido_usuario';
+  status?: 'aprovado' | 'sob_moderacao' | 'removido_usuario' | 'rejeitado';
   flagReason?: string;
   flagType?: 'vulnerabilidade' | 'antijulgamento';
   title: string;
