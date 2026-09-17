@@ -494,6 +494,24 @@ const saveStoredReactionsData = (data: StoredReactionsData) => {
   } catch {}
 };
 
+const DELETED_CONTENT_KEY = 'elana_deleted_content_ids';
+
+export const getDeletedContentIds = (): Set<string> => {
+  try {
+    const raw = localStorage.getItem(DELETED_CONTENT_KEY);
+    if (raw) return new Set(JSON.parse(raw));
+  } catch {}
+  return new Set();
+};
+
+export const recordDeletedContentId = (id: string) => {
+  try {
+    const set = getDeletedContentIds();
+    set.add(id);
+    localStorage.setItem(DELETED_CONTENT_KEY, JSON.stringify(Array.from(set)));
+  } catch {}
+};
+
 const persistPostReaction = (
   postId: string,
   reactionKey: string,
@@ -532,24 +550,41 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const { user, awardBadge } = useAuth();
   const [posts, setPosts] = useState<CommunityPost[]>(() => {
     try {
-      const saved = localStorage.getItem('elana_community_posts_cache') || localStorage.getItem('elana_community_posts');
+      localStorage.removeItem('elana_community_posts'); // Limpar chave legada
+      const saved = localStorage.getItem('elana_community_posts_cache');
       const reactionsStore = getStoredReactionsData();
       const userKey = user?.id || 'anon';
+      const deletedIds = getDeletedContentIds();
+
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Filtrar estritamente apenas posts criados por usuários registrados (com authorId válido e sem mock 'u-')
+          // Filtrar estritamente apenas posts válidos que NÃO foram excluídos e que não violam regras críticas
           const validPosts = parsed
-            .filter(p => p && p.authorId && p.authorId.length > 20 && !p.authorId.startsWith('u-') && p.status !== 'removido_usuario')
+            .filter(p => {
+              if (!p || !p.id || !p.authorId) return false;
+              if (deletedIds.has(p.id)) return false;
+              if (p.status === 'removido_usuario' || p.status === 'rejeitado') return false;
+              if (p.authorId.length <= 20 || p.authorId.startsWith('u-')) return false;
+
+              // Purga proativa de qualquer post com linguagem sexual explícita órfã que tenha ficado no cache
+              const check = checkContentSensitivity(`${p.title || ''} ${p.content || ''}`);
+              if (check.isFlagged && check.flagReason?.toLowerCase().includes('sexual') && p.status !== 'aprovado') {
+                return false;
+              }
+              return true;
+            })
             .map(p => {
               const sanitized = sanitizePost(p);
               const postReactions = reactionsStore.posts[sanitized.id] || sanitized.reactions || {};
               const userReactions = reactionsStore.userReactions[userKey]?.[sanitized.id] || sanitized.userReactions || {};
-              const comments = (sanitized.comments || []).map(c => ({
-                ...c,
-                reactions: reactionsStore.comments[c.id] || c.reactions || {},
-                userReactions: reactionsStore.userCommentReactions[userKey]?.[c.id] || c.userReactions || {}
-              }));
+              const comments = (sanitized.comments || [])
+                .filter(c => !deletedIds.has(c.id) && c.status !== 'removido_usuario')
+                .map(c => ({
+                  ...c,
+                  reactions: reactionsStore.comments[c.id] || c.reactions || {},
+                  userReactions: reactionsStore.userCommentReactions[userKey]?.[c.id] || c.userReactions || {}
+                }));
               return {
                 ...sanitized,
                 reactions: postReactions,
@@ -557,9 +592,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 comments: comments
               };
             });
-          if (validPosts.length !== parsed.length) {
-            localStorage.setItem('elana_community_posts_cache', JSON.stringify(validPosts));
-          }
+
+          localStorage.setItem('elana_community_posts_cache', JSON.stringify(validPosts));
           return validPosts;
         }
       }
@@ -732,12 +766,18 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
         setPosts(prev => {
           const remoteIds = new Set(remotePosts.map(p => p.id));
-          // Preserva APENAS posts locais do usuário registrado atual que ainda não sincronizaram (descarta qualquer post dummy anterior)
+          const deletedIds = getDeletedContentIds();
+
+          // NUNCA preservar posts com ID real que o Supabase não retornou (foram deletados na nuvem).
+          // Preserva APENAS posts temporários em trânsito recém-criados localmente (id com 'post-')
           const localOnly = prev.filter(p => 
             !remoteIds.has(p.id) && 
+            !deletedIds.has(p.id) &&
+            p.id.startsWith('post-') && 
             user?.id && 
             p.authorId === user.id && 
-            p.status !== 'removido_usuario'
+            p.status !== 'removido_usuario' &&
+            p.status !== 'rejeitado'
           );
 
           // Mescla comentários de posts locais com comentários remotos e PRESERVA reações
@@ -760,10 +800,12 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               ...(remoteUserReactionsByPost[rPost.id] || {})
             };
 
-            const rComments = rPost.comments || [];
+            const rComments = (rPost.comments || []).filter(c => !deletedIds.has(c.id) && c.status !== 'removido_usuario');
             const rCommentIds = new Set(rComments.map(c => c.id));
             const extraLocalComments = (localPost?.comments || []).filter(c => 
               !rCommentIds.has(c.id) && 
+              !deletedIds.has(c.id) &&
+              (c.id.startsWith('rt-comment-') || c.id.startsWith('local-')) &&
               c.authorId && 
               !c.authorId.startsWith('u-')
             );
@@ -793,7 +835,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             };
           });
 
-          return [...localOnly, ...mergedRemote].map(sanitizePost);
+          const finalPosts = [...localOnly, ...mergedRemote].map(sanitizePost);
+          try {
+            localStorage.setItem('elana_community_posts_cache', JSON.stringify(finalPosts));
+          } catch {}
+          return finalPosts;
         });
         setHasMorePosts(data.length >= PAGE_SIZE);
       }
@@ -1698,35 +1744,47 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const deletePost = async (postId: string): Promise<void> => {
-    // 1. Otimista: remove do estado local imediatamente
-    setPosts(prev => prev.filter(p => p.id !== postId));
+    recordDeletedContentId(postId);
 
-    // 2. Soft delete no Supabase: atualiza category para 'removido_usuario' (coluna garantida de existir)
+    // 1. Otimista: remove do estado local imediatamente e sincroniza o cache
+    setPosts(prev => {
+      const updated = prev.filter(p => p.id !== postId);
+      try {
+        localStorage.setItem('elana_community_posts_cache', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    // 2. Soft delete / exclusão no Supabase
     try {
-      const { error } = await supabase
+      await supabase
         .from('community_posts')
-        .update({ category: 'removido_usuario' })
+        .delete()
         .eq('id', postId);
-
-      if (error) {
-        console.warn('Erro ao atualizar status do post para removido_usuario no Supabase:', error.message);
-      }
     } catch (err) {
       console.warn('Exceção ao excluir post no Supabase:', err);
     }
   };
 
   const deleteComment = async (postId: string, commentId: string): Promise<void> => {
-    // 1. Otimista: remove do post local imediatamente
-    setPosts(prev => prev.map(p => {
-      if (p.id === postId && p.comments) {
-        return {
-          ...p,
-          comments: p.comments.filter(c => c.id !== commentId)
-        };
-      }
-      return p;
-    }));
+    recordDeletedContentId(commentId);
+
+    // 1. Otimista: remove do post local imediatamente e sincroniza o cache
+    setPosts(prev => {
+      const updated = prev.map(p => {
+        if (p.id === postId && p.comments) {
+          return {
+            ...p,
+            comments: p.comments.filter(c => c.id !== commentId)
+          };
+        }
+        return p;
+      });
+      try {
+        localStorage.setItem('elana_community_posts_cache', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
 
     // 2. Limpar reações armazenadas desse comentário se houver
     try {
@@ -1740,17 +1798,13 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // 3. Excluir no Supabase
     try {
       if (commentId && commentId.length > 20) {
-        const { error } = await supabase
+        await supabase
           .from('community_comments')
           .delete()
           .eq('id', commentId);
-
-        if (error) {
-          console.warn('Erro ao excluir comentário no Supabase:', error.message);
-        }
       }
     } catch (err) {
-      console.warn('Exceção ao excluir comentário no Supabase:', err);
+      console.warn('Erro ao excluir comentário no Supabase:', err);
     }
   };
 

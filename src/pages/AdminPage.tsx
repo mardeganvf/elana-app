@@ -40,7 +40,7 @@ import {
   Save
 } from 'lucide-react';
 import { useAuth, isAdminUser, SOSMessage, deduplicateSosMessages } from '../context/AuthContext';
-import { useCommunity, checkContentSensitivity } from '../context/CommunityContext';
+import { useCommunity, checkContentSensitivity, recordDeletedContentId } from '../context/CommunityContext';
 import { useToast } from '../context/ToastContext';
 import { useJourneys } from '../context/JourneysContext';
 import { supabase } from '../lib/supabase';
@@ -1103,6 +1103,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         });
       }
 
+      recordDeletedContentId(item.id);
       if (item.type === 'comment') {
         if (item.postId) {
           await deleteComment(item.postId, item.id);
@@ -1110,7 +1111,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           await supabase.from('community_comments').delete().eq('id', item.id);
         }
       } else {
-        deletePost(item.id);
+        await deletePost(item.id);
         await supabase.from('community_posts').delete().eq('id', item.id);
       }
 
