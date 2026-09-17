@@ -266,7 +266,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // 🚫 Modal de Remoção e Calibração da IA
   const [rejectModalItem, setRejectModalItem] = useState<ModerationItem | null>(null);
-  const [rejectCategory, setRejectCategory] = useState<'antijulgamento' | 'vulnerabilidade' | 'sexual' | 'outro'>('antijulgamento');
+  const [rejectCategory, setRejectCategory] = useState<'antijulgamento' | 'abuso_sexual' | 'sexual_explicito' | 'vulnerabilidade' | 'outro'>('antijulgamento');
   const [rejectReason, setRejectReason] = useState('');
   const [trainFilterActive, setTrainFilterActive] = useState(true);
   const [isSubmittingRejection, setIsSubmittingRejection] = useState(false);
@@ -1032,7 +1032,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         setRejectModalItem(targetItem);
         const cleanReason = targetItem.flagReason.replace(/^🚩 \d+ denúncias? de usuários: /, '');
         setRejectReason(cleanReason !== 'Conteúdo livre' ? cleanReason : '');
-        setRejectCategory(targetItem.flagReason.includes('Acolhimento') || targetItem.flagReason.includes('vulnerabilidade') ? 'vulnerabilidade' : 'antijulgamento');
+        
+        // Determinar categoria inicial baseada no motivo detectado
+        const reasonLower = (targetItem.flagReason || '').toLowerCase();
+        let initialCat: 'antijulgamento' | 'abuso_sexual' | 'sexual_explicito' | 'vulnerabilidade' | 'outro' = 'antijulgamento';
+        if (reasonLower.includes('acolhimento') || reasonLower.includes('vulnerabilidade')) {
+          initialCat = 'vulnerabilidade';
+        } else if (reasonLower.includes('abuso') || reasonLower.includes('consentimento') || reasonLower.includes('estupro')) {
+          initialCat = 'abuso_sexual';
+        } else if (reasonLower.includes('sexual') || reasonLower.includes('vulgar') || reasonLower.includes('obscen') || reasonLower.includes('porn')) {
+          initialCat = 'sexual_explicito';
+        }
+        setRejectCategory(initialCat);
         setTrainFilterActive(true);
       }
     }
@@ -2479,9 +2490,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                                 <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
                                   ex.category === 'vulnerabilidade'
                                     ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                                    : 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                                    : ex.category === 'abuso_sexual'
+                                      ? 'bg-red-500/20 text-red-300 border-red-500/30'
+                                      : ex.category === 'sexual_explicito'
+                                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                        : ex.category === 'outro'
+                                          ? 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                                          : 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                                 }`}>
-                                  {ex.category === 'vulnerabilidade' ? '💔 Vulnerabilidade' : '🛡️ Antijulgamento / Violação'}
+                                  {ex.category === 'vulnerabilidade' ? '💔 Vulnerabilidade' :
+                                   ex.category === 'abuso_sexual' ? '🚫 Abuso Sexual / Coerção' :
+                                   ex.category === 'sexual_explicito' ? '🔞 Conteúdo Sexual' :
+                                   ex.category === 'outro' ? '⚠️ Violação de Regras' :
+                                   '🛡️ Antijulgamento / Violação'}
                                 </span>
                                 <span className="text-[11px] text-slate-300 font-bold">
                                   {ex.reason}
@@ -3736,14 +3757,27 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                 </label>
                 <select
                   value={rejectCategory}
-                  onChange={e => setRejectCategory(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 bg-[#070D0F] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500/50"
+                  onChange={e => {
+                    const val = e.target.value as any;
+                    setRejectCategory(val);
+                    if (!rejectReason || rejectReason.includes('Conteúdo rejeitado')) {
+                      const defaults: Record<string, string> = {
+                        sexual_explicito: 'Conteúdo sexualmente explícito / Pornografia proibida',
+                        abuso_sexual: 'Violação de consentimento / Assédio sexual / Coerção',
+                        antijulgamento: 'Julgamento agressivo / Mom-shaming / Ofensa degradante',
+                        vulnerabilidade: 'Alerta de Acolhimento: Sofrimento extremo / Ideação',
+                        outro: 'Spam ou desrespeito às diretrizes da comunidade'
+                      };
+                      if (defaults[val]) setRejectReason(defaults[val]);
+                    }
+                  }}
+                  className="w-full px-3.5 py-2.5 bg-[#070D0F] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500/50 cursor-pointer"
                 >
-                  <option value="antijulgamento">Antijulgamento / Agressão / Mom-shaming</option>
-                  <option value="antijulgamento">Violação de consentimento / Abuso sexual / Coerção</option>
-                  <option value="antijulgamento">Conteúdo sexualmente explícito / Pornográfico</option>
-                  <option value="vulnerabilidade">Risco à vida / Sofrimento extremo / Ideação</option>
-                  <option value="outro">Outro / Spam / Desrespeito às regras</option>
+                  <option value="sexual_explicito">🔞 Conteúdo sexualmente explícito / Pornográfico</option>
+                  <option value="abuso_sexual">🚫 Violação de consentimento / Abuso sexual / Coerção</option>
+                  <option value="antijulgamento">🛡️ Antijulgamento / Agressão / Mom-shaming</option>
+                  <option value="vulnerabilidade">💔 Risco à vida / Sofrimento extremo / Ideação</option>
+                  <option value="outro">⚠️ Outro / Spam / Desrespeito às regras</option>
                 </select>
               </div>
 
