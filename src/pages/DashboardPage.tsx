@@ -1543,46 +1543,72 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
               )}
             </div>
 
-            {user?.parentalArchetype && PARENTAL_ARCHETYPES[user.parentalArchetype] ? (
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-[#18272B] to-[#141F23] border border-white/10 space-y-4">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#FFD166]">
-                      Superpoder Dominante
-                    </span>
-                    <h4 className="text-xl font-black text-white">
-                      {PARENTAL_ARCHETYPES[user.parentalArchetype].name}
-                    </h4>
+            {user?.parentalArchetype && PARENTAL_ARCHETYPES[user.parentalArchetype] ? (() => {
+              const dominant = PARENTAL_ARCHETYPES[user.parentalArchetype];
+              const secondary = user.parentalSecondaryArchetype && PARENTAL_ARCHETYPES[user.parentalSecondaryArchetype]
+                ? PARENTAL_ARCHETYPES[user.parentalSecondaryArchetype]
+                : null;
+
+              return (
+                <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#18272B] via-[#121E22] to-[#101B1E] border border-white/10 space-y-5 shadow-xl">
+                  {/* Grid equilibrado: Dominante e Secundário com o mesmo peso */}
+                  <div className={`grid gap-4 ${secondary ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+                    {/* Card 1: Superpoder Dominante */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white/5 border border-[#FFD166]/25 space-y-3 relative overflow-hidden flex flex-col justify-between hover:border-[#FFD166]/50 transition-colors">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#FFD166] shrink-0 shadow-sm shadow-[#FFD166]/50" />
+                          <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-[#FFD166]">
+                            Superpoder Dominante
+                          </span>
+                        </div>
+                        <h4 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                          {dominant.name}
+                        </h4>
+                      </div>
+                      <p className="text-xs text-slate-300 italic border-l-2 border-[#FFD166] pl-3 py-1 leading-relaxed">
+                        "{dominant.mantra}"
+                      </p>
+                    </div>
+
+                    {/* Card 2: Superpoder Secundário */}
+                    {secondary && (
+                      <div className="p-4 sm:p-5 rounded-2xl bg-white/5 border border-[#FF7F5B]/25 space-y-3 relative overflow-hidden flex flex-col justify-between hover:border-[#FF7F5B]/50 transition-colors">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-[#FF7F5B] shrink-0 shadow-sm shadow-[#FF7F5B]/50" />
+                            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-[#FF7F5B]">
+                              Superpoder Secundário
+                            </span>
+                          </div>
+                          <h4 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                            {secondary.name}
+                          </h4>
+                        </div>
+                        <p className="text-xs text-slate-300 italic border-l-2 border-[#FF7F5B] pl-3 py-1 leading-relaxed">
+                          "{secondary.mantra}"
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  {user.parentalSecondaryArchetype && PARENTAL_ARCHETYPES[user.parentalSecondaryArchetype] && (
-                    <div className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-right">
-                      <span className="text-[10px] text-slate-400 block font-bold uppercase">Poder Secundário</span>
-                      <span className="text-xs font-bold text-white">{PARENTAL_ARCHETYPES[user.parentalSecondaryArchetype].name}</span>
-                    </div>
-                  )}
+                  <div className="pt-1 flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={onOpenQuiz}
+                      className="px-5 py-2.5 rounded-xl bg-[#FF7F5B] hover:bg-[#e06847] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer"
+                    >
+                      Ver Dossiê Completo
+                    </button>
+                    <button
+                      onClick={onOpenQuiz}
+                      className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-300 hover:text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                    >
+                      REFAZER
+                    </button>
+                  </div>
                 </div>
-
-                <p className="text-xs sm:text-sm text-slate-300 italic border-l-2 border-[#FF7F5B] pl-3 py-1">
-                  "{PARENTAL_ARCHETYPES[user.parentalArchetype].mantra}"
-                </p>
-
-                <div className="pt-2 flex flex-wrap items-center gap-3">
-                  <button
-                    onClick={onOpenQuiz}
-                    className="px-4 py-2.5 rounded-xl bg-[#FF7F5B] hover:bg-[#e06847] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer"
-                  >
-                    Ver Dossiê Completo
-                  </button>
-                  <button
-                    onClick={onOpenQuiz}
-                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-300 hover:text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
-                  >
-                    REFAZER
-                  </button>
-                </div>
-              </div>
-            ) : (
+              );
+            })() : (
               <div className="p-6 rounded-2xl bg-gradient-to-r from-[#FF7F5B]/10 to-[#FFD166]/10 border border-dashed border-[#FF7F5B]/30 text-center space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-[#FF7F5B]/20 text-[#FF7F5B] flex items-center justify-center mx-auto text-2xl font-bold">
                   ⚡

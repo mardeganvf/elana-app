@@ -682,73 +682,98 @@ export const QuizPage: React.FC<QuizPageProps> = ({
           </div>
         </div>
 
-        {/* 🌟 CARD PRINCIPAL DO ARQUÉTIPO DOMINANTE */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#18272B] via-[#101B1E] to-[#1a1310] border border-white/15 p-6 sm:p-10 shadow-2xl space-y-6">
-          {/* Glows coloridos de fundo de acordo com a cor do arquétipo */}
-          <div
-            className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl opacity-20 pointer-events-none"
-            style={{ backgroundColor: dominant.themeColor }}
-          />
+        {/* 🌟 CARDS DOS SUPERPODERES: DOMINANTE E SECUNDÁRIO COM O MESMO PESO */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {/* ⚡ CARD DO SUPERPODER DOMINANTE */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#18272B] via-[#101B1E] to-[#1a1310] border border-white/15 p-6 sm:p-8 shadow-2xl space-y-5 flex flex-col justify-between hover:border-[#FFD166]/40 transition-all">
+            {/* Glows coloridos de fundo */}
+            <div
+              className="absolute -top-20 -right-20 w-60 h-60 rounded-full blur-3xl opacity-20 pointer-events-none"
+              style={{ backgroundColor: dominant.themeColor }}
+            />
 
-          <div className="relative z-10 space-y-4 text-center sm:text-left">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-              {/* Ícone Redondo com Glow */}
-              <div
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl flex items-center justify-center text-slate-950 shadow-2xl shrink-0"
-                style={{ backgroundColor: dominant.themeColor }}
-              >
-                {getArchetypeIcon(dominant.iconName, 'w-8 h-8 sm:w-10 sm:h-10 text-slate-950 stroke-[2.5]')}
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center gap-4">
+                {/* Ícone Redondo */}
+                <div
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-slate-950 shadow-xl shrink-0"
+                  style={{ backgroundColor: dominant.themeColor }}
+                >
+                  {getArchetypeIcon(dominant.iconName, 'w-7 h-7 sm:w-8 sm:h-8 text-slate-950 stroke-[2.5]')}
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-[#FFD166]">
+                    SEU PODER DOMINANTE ({dominantPercentage}%)
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                    {dominant.name}
+                  </h2>
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-[#FFD166]">
-                  SEU SUPERPODER DOMINANTE ({dominantPercentage}%)
-                </span>
-                <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-                  {dominant.name}
-                </h1>
+              {/* Mantra em Destaque */}
+              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center italic text-xs sm:text-sm font-semibold text-slate-200">
+                "{dominant.mantra}"
               </div>
-            </div>
 
-            {/* Mantra em Destaque */}
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center italic text-xs sm:text-sm font-semibold text-slate-200">
-              "{dominant.mantra}"
+              {/* Sinopse Curta */}
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {dominant.shortSynopsis}
+              </p>
             </div>
-
-            {/* Sinopse Curta Magnética */}
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              {dominant.shortSynopsis}
-            </p>
           </div>
 
-          {/* ARQUÉTIPO SECUNDÁRIO / SEU PODER SECUNDÁRIO */}
-          <div className="relative z-10 pt-4 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-950 shrink-0"
-                style={{ backgroundColor: secondary.themeColor }}
-              >
-                {getArchetypeIcon(secondary.iconName, 'w-5 h-5 text-slate-950')}
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  SEU PODER SECUNDÁRIO ({secondaryPercentage}%)
-                </span>
-                <span className="text-xs sm:text-sm font-black text-white">
-                  {secondary.name}
-                </span>
-              </div>
-            </div>
+          {/* ✨ CARD DO SUPERPODER SECUNDÁRIO */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#18272B] via-[#101B1E] to-[#1a1310] border border-white/15 p-6 sm:p-8 shadow-2xl space-y-5 flex flex-col justify-between hover:border-[#FF7F5B]/40 transition-all">
+            {/* Glows coloridos de fundo */}
+            <div
+              className="absolute -top-20 -right-20 w-60 h-60 rounded-full blur-3xl opacity-20 pointer-events-none"
+              style={{ backgroundColor: secondary.themeColor }}
+            />
 
-            {/* Botão Compartilhar */}
-            <button
-              onClick={handleShare}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white text-xs font-bold transition-all cursor-pointer active:scale-95"
-            >
-              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
-              <span>{copiedLink ? 'Link Copiado!' : 'Compartilhar Resultado'}</span>
-            </button>
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center gap-4">
+                {/* Ícone Redondo */}
+                <div
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-slate-950 shadow-xl shrink-0"
+                  style={{ backgroundColor: secondary.themeColor }}
+                >
+                  {getArchetypeIcon(secondary.iconName, 'w-7 h-7 sm:w-8 sm:h-8 text-slate-950 stroke-[2.5]')}
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-[#FF7F5B]">
+                    SEU PODER SECUNDÁRIO ({secondaryPercentage}%)
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                    {secondary.name}
+                  </h2>
+                </div>
+              </div>
+
+              {/* Mantra em Destaque */}
+              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center italic text-xs sm:text-sm font-semibold text-slate-200">
+                "{secondary.mantra}"
+              </div>
+
+              {/* Sinopse Curta */}
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {secondary.shortSynopsis}
+              </p>
+            </div>
           </div>
+        </div>
+
+        {/* Barra de Compartilhamento */}
+        <div className="flex items-center justify-end">
+          <button
+            onClick={handleShare}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-md"
+          >
+            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
+            <span>{copiedLink ? 'Link Copiado!' : 'Compartilhar Meus Superpoderes'}</span>
+          </button>
         </div>
 
         {/* 📑 DOSSIÊ DETALHADO: ABAS (Luz, Sombra, Dicas Práticas) */}
@@ -789,62 +814,130 @@ export const QuizPage: React.FC<QuizPageProps> = ({
 
           {/* Conteúdo da Aba */}
           {activeTabDossie === 'luz' && (
-            <div className="space-y-3 animate-in fade-in duration-150">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400">
-                <Sparkles className="w-4 h-4" />
-                <span>Sua Grande Força como Mãe ou Pai</span>
+            <div className="space-y-4 animate-in fade-in duration-150">
+              {/* Força Dominante */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-white/5 border border-[#FFD166]/20 space-y-2">
+                <div className="inline-flex items-center gap-2 text-xs font-black text-[#FFD166]">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Sua Força no Poder Dominante: {dominant.name}</span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed pl-6">
+                  {dominant.greatStrength || dominant.essence}
+                </p>
               </div>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                {dominant.greatStrength || dominant.essence}
-              </p>
+
+              {/* Força Secundária */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-white/5 border border-[#FF7F5B]/20 space-y-2">
+                <div className="inline-flex items-center gap-2 text-xs font-black text-[#FF7F5B]">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Sua Força no Poder Secundário: {secondary.name}</span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed pl-6">
+                  {secondary.greatStrength || secondary.essence}
+                </p>
+              </div>
             </div>
           )}
 
           {activeTabDossie === 'sombra' && (
-            <div className="space-y-3 animate-in fade-in duration-150">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-400">
-                <AlertCircle className="w-4 h-4" />
-                <span>Onde Ter Cuidado no Dia a Dia</span>
+            <div className="space-y-4 animate-in fade-in duration-150">
+              {/* Ponto de Atenção Dominante */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-white/5 border border-rose-500/20 space-y-2">
+                <div className="inline-flex items-center gap-2 text-xs font-black text-rose-400">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Ponto de Atenção: {dominant.name} (Poder Dominante)</span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed pl-6">
+                  {dominant.blindSpot || 'Lembre-se de cuidar de você para não se sobrecarregar nas decisões familiares.'}
+                </p>
               </div>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                {dominant.blindSpot || 'Lembre-se de cuidar de você para não se sobrecarregar nas decisões familiares.'}
-              </p>
+
+              {/* Ponto de Atenção Secundário */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-white/5 border border-rose-500/20 space-y-2">
+                <div className="inline-flex items-center gap-2 text-xs font-black text-rose-400">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Ponto de Atenção: {secondary.name} (Poder Secundário)</span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed pl-6">
+                  {secondary.blindSpot || 'Mantenha a atenção equilibrada para não sobrecarregar as rotinas da casa.'}
+                </p>
+              </div>
             </div>
           )}
 
           {activeTabDossie === 'dicas' && (
-            <div className="space-y-3 animate-in fade-in duration-150">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Exercícios Práticos para a Semana</span>
-              </div>
+            <div className="space-y-8 animate-in fade-in duration-150">
+              {/* Dicas do Dominante */}
               <div className="space-y-3">
-                {dominant.practicalTips?.map((tip, i) => {
-                  const colonIdx = tip.indexOf(':');
-                  const hasColon = colonIdx > 0 && colonIdx < 50;
-                  const title = hasColon ? tip.slice(0, colonIdx).replace(/^["']|["']$/g, '').trim() : null;
-                  const desc = hasColon ? tip.slice(colonIdx + 1).trim() : tip;
-                  return (
-                    <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
-                      {title ? (
-                        <>
-                          <h4 className="text-xs font-black text-emerald-400 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-                            {title}
-                          </h4>
-                          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed pl-4">
-                            {desc}
+                <div className="inline-flex items-center gap-2 text-xs font-black text-[#FFD166]">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Exercícios Práticos para o Poder Dominante: {dominant.name}</span>
+                </div>
+                <div className="space-y-3">
+                  {dominant.practicalTips?.map((tip, i) => {
+                    const colonIdx = tip.indexOf(':');
+                    const hasColon = colonIdx > 0 && colonIdx < 50;
+                    const title = hasColon ? tip.slice(0, colonIdx).replace(/^["']|["']$/g, '').trim() : null;
+                    const desc = hasColon ? tip.slice(colonIdx + 1).trim() : tip;
+                    return (
+                      <div key={`dom-${i}`} className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
+                        {title ? (
+                          <>
+                            <h4 className="text-xs font-black text-emerald-400 flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                              {title}
+                            </h4>
+                            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed pl-4">
+                              {desc}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                            {tip}
                           </p>
-                        </>
-                      ) : (
-                        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                          {tip}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Dicas do Secundário */}
+              {secondary.practicalTips && secondary.practicalTips.length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-white/10">
+                  <div className="inline-flex items-center gap-2 text-xs font-black text-[#FF7F5B]">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Exercícios Práticos para o Poder Secundário: {secondary.name}</span>
+                  </div>
+                  <div className="space-y-3">
+                    {secondary.practicalTips?.map((tip, i) => {
+                      const colonIdx = tip.indexOf(':');
+                      const hasColon = colonIdx > 0 && colonIdx < 50;
+                      const title = hasColon ? tip.slice(0, colonIdx).replace(/^["']|["']$/g, '').trim() : null;
+                      const desc = hasColon ? tip.slice(colonIdx + 1).trim() : tip;
+                      return (
+                        <div key={`sec-${i}`} className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
+                          {title ? (
+                            <>
+                              <h4 className="text-xs font-black text-emerald-400 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                                {title}
+                              </h4>
+                              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed pl-4">
+                                {desc}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                              {tip}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
