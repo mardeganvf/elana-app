@@ -914,7 +914,7 @@ export const QuizPage: React.FC<QuizPageProps> = ({
             className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Refazer Diagnóstico</span>
+            <span className="uppercase tracking-wider font-bold">REFAZER</span>
           </button>
         </div>
       </div>

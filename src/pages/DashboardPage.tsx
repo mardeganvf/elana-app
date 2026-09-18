@@ -1576,9 +1576,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   </button>
                   <button
                     onClick={onOpenQuiz}
-                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-300 hover:text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
                   >
-                    Refazer Diagnóstico
+                    REFAZER
                   </button>
                 </div>
               </div>
