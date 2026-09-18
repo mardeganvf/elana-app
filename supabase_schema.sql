@@ -132,17 +132,18 @@ CREATE TABLE IF NOT EXISTS public.community_reports (
 ALTER TABLE public.community_reports ENABLE ROW LEVEL SECURITY;
 
 -- Usuários autenticados podem inserir apenas suas próprias denúncias
-CREATE POLICY IF NOT EXISTS "users_can_report" ON public.community_reports
+CREATE POLICY "users_can_report" ON public.community_reports
   FOR INSERT WITH CHECK (auth.uid() = reporter_id);
 
--- Admins (service_role) podem ler todas as denúncias
-CREATE POLICY IF NOT EXISTS "admins_can_read_reports" ON public.community_reports
-  FOR SELECT USING (true);
+-- Apenas administradores podem ler denúncias de outros usuários
+DROP POLICY IF EXISTS "admins_can_read_reports" ON public.community_reports;
+CREATE POLICY "admins_can_read_reports" ON public.community_reports
+  FOR SELECT USING (public.is_admin());
 
--- Admins / Moderação podem excluir denúncias resolvidas
+-- Apenas administradores podem excluir denúncias resolvidas
 DROP POLICY IF EXISTS "reports_delete_all" ON public.community_reports;
 CREATE POLICY "reports_delete_all" ON public.community_reports
-  FOR DELETE USING (true);
+  FOR DELETE USING (public.is_admin());
 
 
 -- 7. TABELA DE BADGES / CONQUISTAS DESBLOQUEADAS
@@ -251,9 +252,13 @@ ALTER TABLE public.profile_testimonials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sos_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_follows ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Permitir leitura de follows" ON public.user_follows;
+DROP POLICY IF EXISTS "Permitir insercao de follows" ON public.user_follows;
+DROP POLICY IF EXISTS "Permitir remocao de follows" ON public.user_follows;
+
 CREATE POLICY "Permitir leitura de follows" ON public.user_follows FOR SELECT USING (true);
-CREATE POLICY "Permitir insercao de follows" ON public.user_follows FOR INSERT WITH CHECK (true);
-CREATE POLICY "Permitir remocao de follows" ON public.user_follows FOR DELETE USING (true);
+CREATE POLICY "Permitir insercao de follows" ON public.user_follows FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Permitir remocao de follows" ON public.user_follows FOR DELETE USING (auth.uid()::text = follower_id OR public.is_admin());
 
 -- ========================================================
 -- POLÍTICAS RLS SEGURAS: auth.uid() por tabela
@@ -402,13 +407,19 @@ DROP POLICY IF EXISTS "posts_insert_own" ON public.community_posts;
 DROP POLICY IF EXISTS "posts_update_own" ON public.community_posts;
 DROP POLICY IF EXISTS "posts_delete_own" ON public.community_posts;
 
-CREATE POLICY "Allow public read community_posts" ON public.community_posts FOR SELECT USING (true);
+CREATE POLICY "Allow public read community_posts" ON public.community_posts FOR SELECT
+  USING (
+    status = 'aprovado'
+    OR status IS NULL
+    OR (auth.uid() IS NOT NULL AND auth.uid() = author_id)
+    OR public.is_admin()
+  );
 CREATE POLICY "Allow public insert community_posts" ON public.community_posts FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow author or admin update community_posts" ON public.community_posts FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
 CREATE POLICY "Allow author or admin delete community_posts" ON public.community_posts FOR DELETE USING (auth.uid() = author_id OR public.is_admin());
 
 -- --------------------------------------------------------
--- COMMUNITY COMMENTS: leitura pública,
+-- COMMUNITY COMMENTS: leitura pública (apenas aprovados),
 -- edição/exclusão restrita ao autor ou admin
 -- --------------------------------------------------------
 DROP POLICY IF EXISTS "Allow public read community_comments" ON public.community_comments;
@@ -420,7 +431,13 @@ DROP POLICY IF EXISTS "comments_insert_own" ON public.community_comments;
 DROP POLICY IF EXISTS "comments_update_own" ON public.community_comments;
 DROP POLICY IF EXISTS "comments_delete_own" ON public.community_comments;
 
-CREATE POLICY "Allow public read community_comments" ON public.community_comments FOR SELECT USING (true);
+CREATE POLICY "Allow public read community_comments" ON public.community_comments FOR SELECT
+  USING (
+    status = 'aprovado'
+    OR status IS NULL
+    OR (auth.uid() IS NOT NULL AND auth.uid() = author_id)
+    OR public.is_admin()
+  );
 CREATE POLICY "Allow public insert community_comments" ON public.community_comments FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow author or admin update community_comments" ON public.community_comments FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
 CREATE POLICY "Allow author or admin delete community_comments" ON public.community_comments FOR DELETE USING (auth.uid() = author_id OR public.is_admin());
@@ -1202,15 +1219,15 @@ CREATE POLICY "reactions_select_all"
 
 CREATE POLICY "reactions_insert_all"
   ON public.community_reactions FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (auth.uid() IS NOT NULL);
 
 CREATE POLICY "reactions_update_all"
   ON public.community_reactions FOR UPDATE
-  USING (true);
+  USING (auth.uid() = user_id OR public.is_admin());
 
 CREATE POLICY "reactions_delete_all"
   ON public.community_reactions FOR DELETE
-  USING (true);
+  USING (auth.uid() = user_id OR public.is_admin());
 
 -- Garantir coluna reactions nas tabelas de postagens e comentários para cache estruturado
 ALTER TABLE public.community_posts ADD COLUMN IF NOT EXISTS reactions JSONB DEFAULT '{}'::jsonb;
@@ -1238,15 +1255,15 @@ CREATE POLICY "role_permissions_select_all"
 
 CREATE POLICY "role_permissions_insert_all"
   ON public.role_permissions FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (public.is_admin());
 
 CREATE POLICY "role_permissions_update_all"
   ON public.role_permissions FOR UPDATE
-  USING (true);
+  USING (public.is_admin());
 
 CREATE POLICY "role_permissions_delete_all"
   ON public.role_permissions FOR DELETE
-  USING (true);
+  USING (public.is_admin());
 
 -- ========================================================
 -- 20. TABELA DE HISTÓRICO DE PRESENÇA / DIAS ÚNICOS DE ACESSO (PUBLIC.USER_DAILY_VISITS)
@@ -1269,10 +1286,62 @@ DROP POLICY IF EXISTS "visits_insert_all" ON public.user_daily_visits;
 DROP POLICY IF EXISTS "visits_update_all" ON public.user_daily_visits;
 DROP POLICY IF EXISTS "visits_delete_all" ON public.user_daily_visits;
 
-CREATE POLICY "visits_select_all" ON public.user_daily_visits FOR SELECT USING (true);
-CREATE POLICY "visits_insert_all" ON public.user_daily_visits FOR INSERT WITH CHECK (true);
-CREATE POLICY "visits_update_all" ON public.user_daily_visits FOR UPDATE USING (true);
-CREATE POLICY "visits_delete_all" ON public.user_daily_visits FOR DELETE USING (true);
+CREATE POLICY "visits_select_all" ON public.user_daily_visits FOR SELECT USING (auth.uid() = profile_id OR public.is_admin());
+CREATE POLICY "visits_insert_all" ON public.user_daily_visits FOR INSERT WITH CHECK (auth.uid() = profile_id OR public.is_admin());
+CREATE POLICY "visits_update_all" ON public.user_daily_visits FOR UPDATE USING (auth.uid() = profile_id OR public.is_admin());
+CREATE POLICY "visits_delete_all" ON public.user_daily_visits FOR DELETE USING (public.is_admin());
 
+-- ========================================================
+-- 21. TABELA DE PEDIDOS E TRANSAÇÕES DE VENDAS (PUBLIC.ORDERS)
+-- Suporte completo para webhooks da Kiwify, Hotmart, Eduzz, Stripe.
+-- Permite conciliação contábil, auto-provisionamento e auditoria de reembolsos.
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  external_id TEXT NOT NULL,
+  platform TEXT NOT NULL, -- 'kiwify' | 'hotmart' | 'eduzz' | 'stripe' | 'generic'
+  buyer_email TEXT NOT NULL,
+  buyer_name TEXT,
+  buyer_phone TEXT,
+  product_id TEXT NOT NULL,
+  journey_id TEXT NOT NULL,
+  amount NUMERIC(10,2),
+  status TEXT NOT NULL, -- 'approved', 'refunded', 'chargedback', 'canceled', 'pending'
+  payload JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(platform, external_id, status)
+);
 
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "orders_select_admin_or_buyer" ON public.orders;
+DROP POLICY IF EXISTS "orders_insert_admin" ON public.orders;
+DROP POLICY IF EXISTS "orders_update_admin" ON public.orders;
+DROP POLICY IF EXISTS "orders_delete_admin" ON public.orders;
+
+-- Administradores consultam todos os pedidos; alunos autenticados consultam seus próprios pedidos
+CREATE POLICY "orders_select_admin_or_buyer"
+  ON public.orders FOR SELECT
+  USING (
+    public.is_admin()
+    OR (auth.jwt()->>'email' IS NOT NULL AND LOWER(auth.jwt()->>'email') = LOWER(buyer_email))
+  );
+
+-- Inserção, alteração e exclusão permitida apenas via backend (service_role) ou administradores
+CREATE POLICY "orders_insert_admin"
+  ON public.orders FOR INSERT
+  WITH CHECK (public.is_admin());
+
+CREATE POLICY "orders_update_admin"
+  ON public.orders FOR UPDATE
+  USING (public.is_admin());
+
+CREATE POLICY "orders_delete_admin"
+  ON public.orders FOR DELETE
+  USING (public.is_admin());
+
+CREATE INDEX IF NOT EXISTS idx_orders_buyer_email ON public.orders(buyer_email);
+CREATE INDEX IF NOT EXISTS idx_orders_external_id ON public.orders(external_id);
+CREATE INDEX IF NOT EXISTS idx_orders_journey_id ON public.orders(journey_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);

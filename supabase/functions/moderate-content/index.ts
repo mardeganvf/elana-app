@@ -223,10 +223,39 @@ Deno.serve(async (req) => {
     const action = body.action || 'moderate';
     const apiKey = Deno.env.get('GEMINI_API_KEY');
 
+    // 🛡️ Validação de autorização de administrador
+    async function verifyIsAdmin(request: Request): Promise<boolean> {
+      if (!supabase) return false;
+      const authHeader = request.headers.get('Authorization') || request.headers.get('authorization');
+      if (!authHeader) return false;
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (!token) return false;
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      if (userError || !user) return false;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      const role = (profile?.role || '').toLowerCase().trim();
+      return role === 'admin' || role === 'administrador';
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // AÇÃO 1: Treinar / Adicionar Exemplo Banido (Active Learning Human-in-the-Loop)
     // ──────────────────────────────────────────────────────────────────────────
     if (action === 'train_example') {
+      const isAdmin = await verifyIsAdmin(req);
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: 'UNAUTHORIZED_ADMIN_ACTION', message: 'Acesso restrito a administradores.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const { text, category, reason, adminNotes } = body;
       if (!text || typeof text !== 'string' || !text.trim()) {
         return new Response(
@@ -278,6 +307,14 @@ Deno.serve(async (req) => {
     // AÇÃO 2: Resolver denúncias e aprovar conteúdo (Admin Bypass RLS)
     // ──────────────────────────────────────────────────────────────────────────
     if (action === 'resolve_reports') {
+      const isAdmin = await verifyIsAdmin(req);
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: 'UNAUTHORIZED_ADMIN_ACTION', message: 'Acesso restrito a administradores.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const { contentId, contentType } = body;
       if (!contentId) {
         return new Response(

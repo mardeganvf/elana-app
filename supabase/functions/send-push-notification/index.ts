@@ -7,14 +7,16 @@ const corsHeaders = {
 };
 
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') || Deno.env.get('VITE_VAPID_PUBLIC_KEY') || 'BE2PXd_maQ142gLFDJAybKQ7zXSp3py0U7Jqq72laxy0uuxa0h2nNg4qFoymgpGSDqzVt9ErIiS4LAfwU9WkYWM';
-const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') || 'YyoE38NcILWR4DM3vP_gLUDnOMZpNdmGN2Px1NDrpaI';
+const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') || '';
 const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') || 'mailto:contato@elana.app.br';
 
-webpush.setVapidDetails(
-  VAPID_SUBJECT,
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
+if (VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    VAPID_SUBJECT,
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY
+  );
+}
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -25,6 +27,13 @@ const supabase = (supabaseUrl && supabaseServiceKey)
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  if (!VAPID_PRIVATE_KEY) {
+    return new Response(
+      JSON.stringify({ error: 'VAPID_PRIVATE_KEY_NOT_CONFIGURED', message: 'Configure o segredo VAPID_PRIVATE_KEY via supabase secrets set.' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   try {

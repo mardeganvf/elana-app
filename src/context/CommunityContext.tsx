@@ -1281,6 +1281,43 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       )
       .on(
         'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'community_comments' },
+        (payload: any) => {
+          const updated = payload.new;
+          if (!updated || !updated.id) return;
+          setPosts(prev => prev.map(post => {
+            if (post.id === updated.post_id || post.comments.some(c => c.id === updated.id)) {
+              // Se foi removido pelo usuário, deletado ou colocado sob moderação pelo admin, remove do feed
+              if (updated.status === 'removido_usuario' || updated.status === 'deletado' || updated.status === 'sob_moderacao') {
+                return { ...post, comments: post.comments.filter(c => c.id !== updated.id) };
+              }
+              return {
+                ...post,
+                comments: post.comments.map(c => c.id === updated.id ? {
+                  ...c,
+                  content: updated.content,
+                  status: (updated.status || c.status) as any
+                } : c)
+              };
+            }
+            return post;
+          }));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'community_comments' },
+        (payload: any) => {
+          const oldItem = payload.old;
+          if (!oldItem || !oldItem.id) return;
+          setPosts(prev => prev.map(post => ({
+            ...post,
+            comments: post.comments.filter(c => c.id !== oldItem.id)
+          })));
+        }
+      )
+      .on(
+        'postgres_changes',
         { event: '*', schema: 'public', table: 'community_polls' },
         (payload: any) => {
           if (payload.new) {
