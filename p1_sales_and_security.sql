@@ -66,6 +66,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
 -- Apenas administradores podem ler denúncias de terceiros ou excluí-las.
 -- ------------------------------------------------------------------------------
 DROP POLICY IF EXISTS "admins_can_read_reports" ON public.community_reports;
+DROP POLICY IF EXISTS "reports_select_admin" ON public.community_reports;
 DROP POLICY IF EXISTS "reports_delete_all" ON public.community_reports;
 
 CREATE POLICY "admins_can_read_reports" ON public.community_reports
@@ -78,7 +79,26 @@ CREATE POLICY "reports_delete_all" ON public.community_reports
 -- 3. BLINDAGEM DE SEGUIDORES: user_follows
 -- Apenas o próprio seguidor ou admin pode deixar de seguir.
 -- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.user_follows (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  follower_id TEXT NOT NULL,
+  followed_id TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(follower_id, followed_id)
+);
+
+ALTER TABLE public.user_follows ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Permitir leitura de follows" ON public.user_follows;
+DROP POLICY IF EXISTS "Permitir insercao de follows" ON public.user_follows;
 DROP POLICY IF EXISTS "Permitir remocao de follows" ON public.user_follows;
+
+CREATE POLICY "Permitir leitura de follows" ON public.user_follows
+  FOR SELECT USING (true);
+
+CREATE POLICY "Permitir insercao de follows" ON public.user_follows
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
 CREATE POLICY "Permitir remocao de follows" ON public.user_follows
   FOR DELETE USING (auth.uid()::text = follower_id OR public.is_admin());
 
@@ -115,9 +135,22 @@ CREATE POLICY "visits_delete_all" ON public.user_daily_visits FOR DELETE USING (
 -- 6. BLINDAGEM DE PAPÉIS E PERMISSÕES: role_permissions
 -- Leitura pública; inserção, atualização e exclusão restritas exclusivamente a admins.
 -- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.role_permissions (
+  role TEXT PRIMARY KEY, -- 'membro', 'guia', 'admin'
+  permissions JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.role_permissions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "role_permissions_select_all" ON public.role_permissions;
 DROP POLICY IF EXISTS "role_permissions_insert_all" ON public.role_permissions;
 DROP POLICY IF EXISTS "role_permissions_update_all" ON public.role_permissions;
 DROP POLICY IF EXISTS "role_permissions_delete_all" ON public.role_permissions;
+
+CREATE POLICY "role_permissions_select_all"
+  ON public.role_permissions FOR SELECT
+  USING (true);
 
 CREATE POLICY "role_permissions_insert_all"
   ON public.role_permissions FOR INSERT
@@ -136,6 +169,8 @@ CREATE POLICY "role_permissions_delete_all"
 -- Posts com status 'sob_moderacao' ficam visíveis apenas para o autor e admins.
 -- ------------------------------------------------------------------------------
 DROP POLICY IF EXISTS "Allow public read community_posts" ON public.community_posts;
+DROP POLICY IF EXISTS "Allow public delete community_posts" ON public.community_posts;
+DROP POLICY IF EXISTS "Allow public update community_posts" ON public.community_posts;
 CREATE POLICY "Allow public read community_posts" ON public.community_posts FOR SELECT
   USING (
     status = 'aprovado'
@@ -145,6 +180,8 @@ CREATE POLICY "Allow public read community_posts" ON public.community_posts FOR 
   );
 
 DROP POLICY IF EXISTS "Allow public read community_comments" ON public.community_comments;
+DROP POLICY IF EXISTS "Allow public delete community_comments" ON public.community_comments;
+DROP POLICY IF EXISTS "Allow public update community_comments" ON public.community_comments;
 CREATE POLICY "Allow public read community_comments" ON public.community_comments FOR SELECT
   USING (
     status = 'aprovado'
