@@ -1548,19 +1548,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="space-y-1">
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#FFD166]">
-                      Força Dominante
+                      Superpoder Dominante
                     </span>
                     <h4 className="text-xl font-black text-white">
                       {PARENTAL_ARCHETYPES[user.parentalArchetype].name}
                     </h4>
-                    <p className="text-xs text-slate-400 font-medium">
-                      Arquétipo: {PARENTAL_ARCHETYPES[user.parentalArchetype].baseArchetype}
-                    </p>
                   </div>
 
                   {user.parentalSecondaryArchetype && PARENTAL_ARCHETYPES[user.parentalSecondaryArchetype] && (
                     <div className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-right">
-                      <span className="text-[10px] text-slate-400 block font-bold uppercase">Apoio Secundário</span>
+                      <span className="text-[10px] text-slate-400 block font-bold uppercase">Poder Secundário</span>
                       <span className="text-xs font-bold text-white">{PARENTAL_ARCHETYPES[user.parentalSecondaryArchetype].name}</span>
                     </div>
                   )}

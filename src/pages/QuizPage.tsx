@@ -438,9 +438,6 @@ export const QuizPage: React.FC<QuizPageProps> = ({
                 <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
                   {dominant.name}
                 </h1>
-                <p className="text-xs text-slate-400 font-semibold">
-                  Arquétipo Clássico: {dominant.baseArchetype}
-                </p>
               </div>
             </div>
 
@@ -455,7 +452,7 @@ export const QuizPage: React.FC<QuizPageProps> = ({
             </p>
           </div>
 
-          {/* ARQUÉTIPO SECUNDÁRIO / FORÇA DE APOIO */}
+          {/* ARQUÉTIPO SECUNDÁRIO / SEU PODER SECUNDÁRIO */}
           <div className="relative z-10 pt-4 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
@@ -466,10 +463,10 @@ export const QuizPage: React.FC<QuizPageProps> = ({
               </div>
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Força de Apoio Secundária ({secondaryPercentage}%)
+                  SEU PODER SECUNDÁRIO ({secondaryPercentage}%)
                 </span>
                 <span className="text-xs sm:text-sm font-black text-white">
-                  {secondary.name} ({secondary.baseArchetype})
+                  {secondary.name}
                 </span>
               </div>
             </div>
@@ -552,14 +549,33 @@ export const QuizPage: React.FC<QuizPageProps> = ({
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Exercícios Práticos para a Semana</span>
               </div>
-              <ul className="space-y-2.5">
-                {dominant.practicalTips?.map((tip, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs sm:text-sm text-slate-300">
-                    <span className="text-[#FF7F5B] font-black text-sm shrink-0">•</span>
-                    <span>{tip}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-3">
+                {dominant.practicalTips?.map((tip, i) => {
+                  const colonIdx = tip.indexOf(':');
+                  const hasColon = colonIdx > 0 && colonIdx < 50;
+                  const title = hasColon ? tip.slice(0, colonIdx).replace(/^["']|["']$/g, '').trim() : null;
+                  const desc = hasColon ? tip.slice(colonIdx + 1).trim() : tip;
+                  return (
+                    <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
+                      {title ? (
+                        <>
+                          <h4 className="text-xs font-black text-emerald-400 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                            {title}
+                          </h4>
+                          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed pl-4">
+                            {desc}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                          {tip}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

@@ -386,10 +386,9 @@ export const PARENTAL_ARCHETYPES: Record<string, ArchetypeProfile> = {
     "greatStrength": "Você constrói uma base de segurança e otimismo que servirá como uma âncora emocional para o resto da vida dos seus filhos. Eles crescem acreditando no seu próprio valor e no potencial do mundo, o que os torna pessoas confiantes, esperançosas e com uma grande capacidade de encontrar alegria na vida.",
     "blindSpot": "Sua maior força pode se tornar sua fraqueza: a aversão ao negativo . Ao superproteger, você pode, sem querer, dificultar o desenvolvimento da resiliência e da capacidade de lidar com a frustração. Seus filhos podem sentir-se despreparados para enfrentar conflitos, decepções e a complexidade do mundo real, onde nem tudo é bom ou justo.",
     "practicalTips": [
-      "\"Dia do Sentimento Rabugento\":",
-      "Uma vez por semana, permita que todos falem sobre algo que os irritou, sem julgamentos. Mostra que é seguro não estar feliz o tempo todo.",
-      "Heróis com Falhas:"
-    ],
+      "\"Dia do Sentimento Rabugento\": Uma vez por semana, permita que todos falem sobre algo que os irritou, sem julgamentos. Mostra que é seguro não estar feliz o tempo todo.",
+      "Heróis com Falhas: Leia ou veja histórias onde os protagonistas erram e enfrentam dificuldades reais. Discuta como eles superaram os problemas."
+],
     "themeColor": "#FFD166",
     "iconName": "Sun",
     "recommendedJourneyId": "pais-recem-nascidos",
@@ -407,10 +406,9 @@ export const PARENTAL_ARCHETYPES: Record<string, ArchetypeProfile> = {
     "greatStrength": "Você oferece aos seus filhos o presente da estabilidade e do pertencimento . Eles crescem com os pés bem assentes na terra, sabendo quem são e de onde vêm. Tornam-se adultos resilientes, com grande capacidade de adaptação social e uma forte ética de trabalho.",
     "blindSpot": "A armadilha do Realista é a resistência à individualidade e ao extraordinário . O medo de se destacar ou de parecer diferente pode levar a reprimir os talentos e sonhos mais únicos dos seus filhos. A ênfase no \"nós\" e no \"comum\" pode, por vezes, sufocar o \"eu\" e o que ele tem de especial.",
     "practicalTips": [
-      "Elogie a Diferença:",
-      "Faça um esforço consciente para elogiar uma qualidade do seu filho que seja totalmente diferente da sua ou da maioria.",
-      "\"Sexta-feira Maluca\":"
-    ],
+      "Elogie a Diferença: Faça um esforço consciente para elogiar uma qualidade do seu filho que seja totalmente diferente da sua ou da maioria.",
+      "\"Sexta-feira Maluca\": Institua um dia onde uma regra normal da casa é quebrada de propósito (ex: jantar de pijama na sala)."
+],
     "themeColor": "#8A9A5B",
     "iconName": "Users",
     "recommendedJourneyId": "pais-recem-nascidos",
@@ -419,19 +417,18 @@ export const PARENTAL_ARCHETYPES: Record<string, ArchetypeProfile> = {
   },
   "protetor": {
     "id": "protetor",
-    "name": "Protetor(a)",
+    "name": "Protetor",
     "baseArchetype": "O Herói",
-    "superpowerTitle": "Superpoder: Protetor(a)",
+    "superpowerTitle": "Superpoder: Protetor",
     "mantra": "Eu vou te proteger e te ensinar a ser forte para vencer.",
     "shortSynopsis": "A sua missão é ser o grande campeão do seu filho. Você encara a parentalidade com coragem e determinação, sempre pronto(a) para defender e fortalecer os seus filhos, ensinando-os a superar desafios e a vencer na vida.",
     "essence": "Você encara a parentalidade como a mais nobre das missões. Existe um desafio a ser superado, um mundo a ser conquistado, e seu papel é ser o treinador, o defensor e o maior campeão do seu filho. Você é movido(a) pela coragem e pela determinação, e seu objetivo é criar filhos fortes, resilientes e capazes de superar qualquer adversidade.",
     "greatStrength": "Seu maior presente é a infusão de coragem e resiliência . Seus filhos aprendem a não desistir, a lutar pelo que querem e a encarar os desafios de frente. Sentem-se profundamente seguros sob sua proteção e desenvolvem uma autoestima baseada na competência e na superação.",
     "blindSpot": "A sombra do Herói é a necessidade de um inimigo e o controlo excessivo . Você pode, sem querer, criar uma visão de mundo de \"nós contra eles\", onde tudo é uma competição. A ânsia de proteger pode levá-lo(a) a controlar demais a vida dos filhos, não permitindo que eles aprendam com os próprios fracassos, que são essenciais para o crescimento.",
     "practicalTips": [
-      "\"Pausa de 10 segundos\":",
-      "Antes de intervir para resolver um problema do seu filho, conte até 10. Muitas vezes, ele encontrará a solução sozinho nesse tempo.",
-      "Partilhe um \"Fracasso\":"
-    ],
+      "\"Pausa de 10 segundos\": Antes de intervir para resolver um problema do seu filho, conte até 10. Muitas vezes, ele encontrará a solução sozinho nesse tempo.",
+      "Partilhe um \"Fracasso\": Conte uma história sua sobre uma vez em que você tentou algo e não conseguiu, e o que aprendeu com isso."
+],
     "themeColor": "#FF7F5B",
     "iconName": "Shield",
     "recommendedJourneyId": "construindo-pontes",
@@ -440,19 +437,18 @@ export const PARENTAL_ARCHETYPES: Record<string, ArchetypeProfile> = {
   },
   "cuidador": {
     "id": "cuidador",
-    "name": "Nutridor(a)",
+    "name": "Nutridor",
     "baseArchetype": "O Cuidador",
-    "superpowerTitle": "Superpoder: Nutridor(a)",
+    "superpowerTitle": "Superpoder: Nutridor",
     "mantra": "Meu amor e cuidado são seu porto seguro incondicional.",
     "shortSynopsis": "Movido(a) por uma compaixão imensa, você é o porto seguro incondicional da sua família. A sua maior força é a capacidade de cuidar, de oferecer conforto e de garantir que todos se sintam profundamente amados e seguros.",
     "essence": "No coração da sua parentalidade pulsa uma força poderosa e generosa: a compaixão. Você é a personificação do cuidado, do afeto que conforta e da presença que acalma. Sua missão, quase instintiva, é garantir que seus filhos se sintam seguros, amados e profundamente cuidados em todos os momentos.",
     "greatStrength": "Seu maior presente é a criação de um vínculo afetivo profundo e inabalável . Seus filhos crescem com uma inteligência emocional notável, aprendendo com seu exemplo a serem empáticos, gentis e solidários. Eles internalizam a certeza de que são dignos de amor, o que constrói uma autoestima resiliente.",
-    "blindSpot": "A armadilha do Nutridor(a) é o autossacrifício e a dificuldade com limites . Em sua imensa generosidade, você corre o risco de se anular, esquecendo das suas próprias necessidades e sonhos. Isso pode levar ao esgotamento e, sutilmente, ensinar aos filhos que o amor significa não ter vontades próprias. A dificuldade em dizer \"não\" ou em permitir que os filhos enfrentem as consequências de seus atos pode atrasar o desenvolvimento da autonomia e da resiliência deles.",
+    "blindSpot": "A armadilha do Nutridor é o autossacrifício e a dificuldade com limites . Em sua imensa generosidade, você corre o risco de se anular, esquecendo das suas próprias necessidades e sonhos. Isso pode levar ao esgotamento e, sutilmente, ensinar aos filhos que o amor significa não ter vontades próprias. A dificuldade em dizer \"não\" ou em permitir que os filhos enfrentem as consequências de seus atos pode atrasar o desenvolvimento da autonomia e da resiliência deles.",
     "practicalTips": [
-      "A Pergunta Mágica:",
-      "Quando seu filho pedir ajuda com uma tarefa, respire fundo e, em vez de a fazer por ele, pergunte com um sorriso: \"Qual é a sua primeira ideia para resolver isso?\".",
-      "Agende o Seu Tempo:"
-    ],
+      "A Pergunta Mágica: Quando seu filho pedir ajuda com uma tarefa, respire fundo e, em vez de a fazer por ele, pergunte com um sorriso: \"Qual é a sua primeira ideia para resolver isso?\".",
+      "Agende o Seu Tempo: Coloque na sua agenda, como se fosse uma reunião importante, 30 minutos por semana que sejam só para si. Leia um livro, ouça música, caminhe. Sem culpas."
+],
     "themeColor": "#E66795",
     "iconName": "Heart",
     "recommendedJourneyId": "pais-recem-nascidos",
@@ -461,19 +457,18 @@ export const PARENTAL_ARCHETYPES: Record<string, ArchetypeProfile> = {
   },
   "aventureiro": {
     "id": "aventureiro",
-    "name": "Aventureiro(a)",
+    "name": "Aventureiro",
     "baseArchetype": "O Explorador",
-    "superpowerTitle": "Superpoder: Aventureiro(a)",
+    "superpowerTitle": "Superpoder: Aventureiro",
     "mantra": "O mundo é uma grande sala de aula; vamos descobri-lo!",
     "shortSynopsis": "Você acredita que o mundo é a maior sala de aula. A sua energia incentiva a independência, a curiosidade e a coragem de desbravar novos caminhos. Para si, a parentalidade é uma grande jornada de descoberta, vivida em liberdade.",
     "essence": "Você é uma alma livre e a parentalidade, para você, é a maior das jornadas. Você anseia por novas experiências e quer partilhá-las com seus filhos. A rotina o(a) entedia; a verdadeira aprendizagem, você acredita, acontece fora da zona de conforto, na exploração do desconhecido.",
     "greatStrength": "Você presenteia seus filhos com a adaptabilidade e a independência . Eles crescem corajosos, flexíveis e com uma imensa curiosidade sobre o mundo. Aprendem a ser autossuficientes e não se sentem intimidados pela mudança ou pela novidade, tornando-se adultos desenrascados e autoconfiantes.",
-    "blindSpot": "A sombra do Aventureiro(a) é a dificuldade com o compromisso e a estrutura . A busca constante por novidade pode levar a uma falta de rotina e de raízes, o que pode gerar ansiedade em crianças que precisam de mais previsibilidade. Você pode, por vezes, parecer emocionalmente distante, mais focado(a) na jornada do que nos sentimentos internos da família.",
+    "blindSpot": "A sombra do Aventureiro é a dificuldade com o compromisso e a estrutura . A busca constante por novidade pode levar a uma falta de rotina e de raízes, o que pode gerar ansiedade em crianças que precisam de mais previsibilidade. Você pode, por vezes, parecer emocionalmente distante, mais focado(a) na jornada do que nos sentimentos internos da família.",
     "practicalTips": [
-      "Ritual Inegociável:",
-      "Escolha UMA coisa para fazer todos os dias, à mesma hora (ex: ler uma história antes de dormir). Cumpra-a religiosamente.",
-      "\"Explorador de Bairro\":"
-    ],
+      "Ritual Inegociável: Escolha UMA coisa para fazer todos os dias, à mesma hora (ex: ler uma história antes de dormir). Cumpra-a religiosamente.",
+      "\"Explorador de Bairro\": Em vez de ir para longe, dedique uma tarde a explorar a sua própria rua ou bairro como se fossem turistas, descobrindo detalhes novos."
+],
     "themeColor": "#003B46",
     "iconName": "Compass",
     "recommendedJourneyId": "construindo-pontes",
@@ -482,19 +477,18 @@ export const PARENTAL_ARCHETYPES: Record<string, ArchetypeProfile> = {
   },
   "questionador": {
     "id": "questionador",
-    "name": "Questionador(a)",
+    "name": "Questionador",
     "baseArchetype": "O Rebelde",
-    "superpowerTitle": "Superpoder: Questionador(a)",
+    "superpowerTitle": "Superpoder: Questionador",
     "mantra": "Não aceite o mundo como ele é. Crie suas próprias regras.",
     "shortSynopsis": "Você não se contenta com o \"porque sim\". A sua força está em desafiar o status quo e em ensinar os seus filhos a pensarem por si mesmos. Você valoriza a autenticidade radical e a coragem de ser diferente.",
     "essence": "Você é um(a) agitador(a) de águas paradas, um(a) pensador(a) livre que não aceita o \"porque sim\". A parentalidade, para você, é um ato revolucionário: a chance de criar um ser humano que não seguirá a manada, que questionará a autoridade e que terá a coragem de ser radicalmente autêntico.",
     "greatStrength": "Seu dom é o de cultivar a autenticidade e o pensamento crítico . Seus filhos crescem com uma forte noção de identidade, não têm medo de ser diferentes e desenvolvem uma capacidade notável de analisar o mundo à sua volta. Tornam-se adultos corajosos, inovadores e agentes de mudança.",
-    "blindSpot": "A armadilha do Questionador(a) é a instabilidade e o conflito por princípio . A rebeldia constante pode criar um ambiente caótico e inseguro para uma criança. Ao ensinar a questionar tudo, pode ser difícil estabelecer os limites e a autoridade parental necessários para a segurança. A linha entre o pensamento crítico e a simples oposição pode tornar-se ténue.",
+    "blindSpot": "A armadilha do Questionador é a instabilidade e o conflito por princípio . A rebeldia constante pode criar um ambiente caótico e inseguro para uma criança. Ao ensinar a questionar tudo, pode ser difícil estabelecer os limites e a autoridade parental necessários para a segurança. A linha entre o pensamento crítico e a simples oposição pode tornar-se ténue.",
     "practicalTips": [
-      "\"O Advogado do Diabo\":",
-      "Quando seu filho questionar uma regra, em vez de a defender, peça-lhe para argumentar a favor dela. Ajuda a ver os dois lados.",
-      "Crie uma Tradição Vossa:"
-    ],
+      "\"O Advogado do Diabo\": Quando seu filho questionar uma regra, em vez de a defender, peça-lhe para argumentar a favor dela. Ajuda a ver os dois lados.",
+      "Crie uma Tradição Vossa: Invente uma tradição familiar que seja única e que ninguém mais faça. Isso canaliza a energia rebelde para a construção de identidade."
+],
     "themeColor": "#F97316",
     "iconName": "Flame",
     "recommendedJourneyId": "construindo-pontes",
@@ -503,19 +497,18 @@ export const PARENTAL_ARCHETYPES: Record<string, ArchetypeProfile> = {
   },
   "afetivo": {
     "id": "afetivo",
-    "name": "Afetivo(a)",
+    "name": "Afetivo",
     "baseArchetype": "O Amante",
-    "superpowerTitle": "Superpoder: Afetivo(a)",
+    "superpowerTitle": "Superpoder: Afetivo",
     "mantra": "O mais importante de tudo é a nossa conexão e o nosso amor.",
     "shortSynopsis": "Para si, a base de tudo é a conexão. A sua energia é focada em criar laços de intimidade, carinho e harmonia. Você é um(a) especialista em comunicação emocional e acredita que um vínculo forte é o maior presente que pode oferecer.",
     "essence": "Você é um(a) especialista em vínculos, um(a) arquiteto(a) de relações. A parentalidade, para você, é a mais profunda das conexões humanas. Sua maior alegria e prioridade é criar um ambiente de harmonia, beleza e intimidade emocional, onde todos se sintam vistos, ouvidos e profundamente amados.",
     "greatStrength": "Seu presente é a inteligência emocional e a capacidade de criar laços seguros . Seus filhos crescem com uma facilidade imensa para identificar, expressar e valorizar os sentimentos (os seus e os dos outros). Tornam-se adultos empáticos, ótimos comunicadores e capazes de construir relações íntimas e saudáveis.",
-    "blindSpot": "A sombra do Afetivo(a) é a aversão ao conflito e a dificuldade com a separação . O desejo de manter a harmonia a todo custo pode levá-lo(a) a evitar conversas difíceis ou a impor os limites necessários, o que é uma forma de amor. Pode haver uma tendência a uma relação fusional, onde a individualidade de cada um se perde, dificultando o processo natural de autonomia do filho.",
+    "blindSpot": "A sombra do Afetivo é a aversão ao conflito e a dificuldade com a separação . O desejo de manter a harmonia a todo custo pode levá-lo(a) a evitar conversas difíceis ou a impor os limites necessários, o que é uma forma de amor. Pode haver uma tendência a uma relação fusional, onde a individualidade de cada um se perde, dificultando o processo natural de autonomia do filho.",
     "practicalTips": [
-      "Pratique o \"Desacordo Amoroso\":",
-      "Da próxima vez que discordar do seu filho, diga: \"Eu vejo as coisas de forma diferente, e tudo bem. Eu amo você mesmo assim.\"",
-      "\"Tempo Sozinho\" é Sagrado:"
-    ],
+      "Pratique o \"Desacordo Amoroso\": Da próxima vez que discordar do seu filho, diga: \"Eu vejo as coisas de forma diferente, e tudo bem. Eu amo você mesmo assim.\"",
+      "\"Tempo Sozinho\" é Sagrado: Incentive e celebre o tempo que seu filho passa sozinho ou com amigos, sem a sua presença. É um sinal de uma base segura."
+],
     "themeColor": "#FB7185",
     "iconName": "Sparkles",
     "recommendedJourneyId": "pais-recem-nascidos",
@@ -524,19 +517,18 @@ export const PARENTAL_ARCHETYPES: Record<string, ArchetypeProfile> = {
   },
   "inspirador": {
     "id": "inspirador",
-    "name": "Inspirador(a)",
+    "name": "Inspirador",
     "baseArchetype": "O Criador",
-    "superpowerTitle": "Superpoder: Inspirador(a)",
+    "superpowerTitle": "Superpoder: Inspirador",
     "mantra": "Se você pode imaginar, pode criar. Deixe sua marca no mundo.",
     "shortSynopsis": "A sua casa é um ateliê de imaginação. Você vê o potencial criativo em toda a parte e a sua missão é ajudar os seus filhos a encontrarem a sua voz única. Você inspira a inovação, a autoexpressão e a beleza.",
     "essence": "Você é um(a) visionário(a), um(a) artista da vida. A parentalidade, para você, é o projeto criativo supremo: a oportunidade de ajudar a moldar um ser humano único e original. Sua casa é um laboratório de ideias onde a imaginação e a inovação são os valores mais altos.",
     "greatStrength": "Seu dom é o de fomentar a criatividade e a autoestima . Seus filhos crescem acreditando no valor das suas próprias ideias e com uma forte capacidade de pensar de forma original e de resolver problemas. Não têm medo de errar, pois entendem o erro como parte do processo criativo.",
-    "blindSpot": "A sombra do Inspirador(a) é o perfeccionismo e a desordem . A paixão pela visão final pode gerar frustração com o processo, que é naturalmente caótico. A vida familiar pode carecer de estrutura e rotina, o que é desestabilizador para algumas crianças. Há também o risco de projetar suas próprias ambições criativas nos filhos.",
+    "blindSpot": "A sombra do Inspirador é o perfeccionismo e a desordem . A paixão pela visão final pode gerar frustração com o processo, que é naturalmente caótico. A vida familiar pode carecer de estrutura e rotina, o que é desestabilizador para algumas crianças. Há também o risco de projetar suas próprias ambições criativas nos filhos.",
     "practicalTips": [
-      "Elogie a Bagunça:",
-      "Enquanto a criação acontece, diga em voz alta: \"Adoro esta bagunça criativa! Mostra que estamos a divertir-nos.\"",
-      "\"Problema do Dia\":"
-    ],
+      "Elogie a Bagunça: Enquanto a criação acontece, diga em voz alta: \"Adoro esta bagunça criativa! Mostra que estamos a divertir-nos.\"",
+      "\"Problema do Dia\": Apresente um pequeno problema doméstico (ex: \"como podemos organizar estes sapatos?\") e peça uma solução \"maluca\" e criativa."
+],
     "themeColor": "#A855F7",
     "iconName": "Palette",
     "recommendedJourneyId": "singular",
@@ -545,19 +537,18 @@ export const PARENTAL_ARCHETYPES: Record<string, ArchetypeProfile> = {
   },
   "brincalhao": {
     "id": "brincalhao",
-    "name": "Brincalhão(na)",
+    "name": "Brincalhão",
     "baseArchetype": "O Bobo da Corte",
-    "superpowerTitle": "Superpoder: Brincalhão(na)",
+    "superpowerTitle": "Superpoder: Brincalhão",
     "mantra": "A vida é muito curta para não ser divertida.",
     "shortSynopsis": "A sua principal ferramenta na parentalidade é a alegria. Você acredita que o riso e a leveza são essenciais para uma infância feliz e para criar laços fortes. Você usa o humor para ensinar, conectar e navegar os desafios da vida.",
     "essence": "Você é a alegria em pessoa. Acredita que o riso é o melhor remédio, a melhor ferramenta de ensino e a forma mais rápida de conexão. A parentalidade, para você, não precisa ser um fardo pesado e sério. É uma oportunidade de redescobrir o prazer, a espontaneidade e a pura diversão de estar vivo.",
     "greatStrength": "Seu maior presente é a criação de um ambiente de alegria e resiliência emocional . Seus filhos aprendem a não dramatizar os problemas e a usar o humor como uma ferramenta para lidar com o stress e a adversidade. O vínculo que vocês constroem através da diversão partilhada é incrivelmente forte e duradouro.",
-    "blindSpot": "A armadilha do Brincalhão(na) é a evitação de emoções difíceis e a falta de seriedade . O humor pode se tornar um escudo para não lidar com assuntos sérios que exigem gravidade, como a tristeza, o medo ou a raiva. Sua dificuldade em ser firme pode ser interpretada como permissividade, tornando a imposição de limites um desafio constante.",
+    "blindSpot": "A armadilha do Brincalhão é a evitação de emoções difíceis e a falta de seriedade . O humor pode se tornar um escudo para não lidar com assuntos sérios que exigem gravidade, como a tristeza, o medo ou a raiva. Sua dificuldade em ser firme pode ser interpretada como permissividade, tornando a imposição de limites um desafio constante.",
     "practicalTips": [
-      "\"5 Minutos de Seriedade\":",
-      "Crie um ritual diário para perguntar \"Como você se sente",
-      "hoje?\" e ouça a resposta em silêncio, sem piadas."
-    ],
+      "\"5 Minutos de Seriedade\": Crie um ritual diário para perguntar \"Como você se sente de verdade hoje?\" e ouça a resposta em silêncio, sem piadas.",
+      "A \"Palavra de Ordem\": Combine uma palavra-chave que significa \"agora é a sério\". Quando você a usa, a brincadeira para e a escuta começa."
+],
     "themeColor": "#F59E0B",
     "iconName": "Smile",
     "recommendedJourneyId": "pais-recem-nascidos",
@@ -566,19 +557,18 @@ export const PARENTAL_ARCHETYPES: Record<string, ArchetypeProfile> = {
   },
   "mentor": {
     "id": "mentor",
-    "name": "Mentor(a)",
+    "name": "Mentor",
     "baseArchetype": "O Sábio",
-    "superpowerTitle": "Superpoder: Mentor(a)",
+    "superpowerTitle": "Superpoder: Mentor",
     "mantra": "O conhecimento liberta. Entender o porquê é o caminho.",
     "shortSynopsis": "Você é um(a) guia por natureza. A sua paixão é a busca pela verdade e pelo conhecimento. A sua missão é cultivar uma mente crítica e curiosa nos seus filhos, ensinando-os a entender o porquê das coisas.",
     "essence": "Você é um(a) guia, um(a) professor(a) por natureza. A sua paixão é a busca pela verdade, pelo conhecimento e pela compreensão. A parentalidade, para você, é uma oportunidade fascinante de guiar outra mente na descoberta do mundo, ensinando-a a pensar de forma crítica, lógica e objetiva.",
     "greatStrength": "Seu dom é o de cultivar uma mente crítica e curiosa . Seus filhos desenvolvem um amor pelo aprendizado, uma impressionante capacidade de argumentação e um raciocínio lógico apurado. Tornam-se adultos informados, ponderados e que não se deixam levar por informações falsas ou por pensamentos superficiais.",
-    "blindSpot": "A sombra do Mentor(a) é a desconexão emocional e o excesso de análise . A tendência a intelectualizar tudo pode fazer com que você invalide ou ignore as necessidades puramente emocionais (as suas e as do seu filho). Pode ser percebido como frio, distante ou excessivamente crítico, e ter dificuldade em simplesmente oferecer conforto em vez de uma explicação.",
+    "blindSpot": "A sombra do Mentor é a desconexão emocional e o excesso de análise . A tendência a intelectualizar tudo pode fazer com que você invalide ou ignore as necessidades puramente emocionais (as suas e as do seu filho). Pode ser percebido como frio, distante ou excessivamente crítico, e ter dificuldade em simplesmente oferecer conforto em vez de uma explicação.",
     "practicalTips": [
-      "Primeiro o Coração, Depois a Cabeça:",
-      "Quando seu filho estiver chateado, a sua primeira frase deve ser de validação emocional (ex: \"Isso parece mesmo frustrante\"), antes de tentar analisar o problema.",
-      "\"Dia do Especialista\":"
-    ],
+      "Primeiro o Coração, Depois a Cabeça: Quando seu filho estiver chateado, a sua primeira frase deve ser de validação emocional (ex: \"Isso parece mesmo frustrante\"), antes de tentar analisar o problema.",
+      "\"Dia do Especialista\": Deixe seu filho ser o \"especialista\" num assunto que ele adora (dinossauros, videojogos) e ensiná-lo a si. Faça perguntas como um aluno genuinamente interessado."
+],
     "themeColor": "#3B82F6",
     "iconName": "BookOpen",
     "recommendedJourneyId": "construindo-pontes",
@@ -587,19 +577,18 @@ export const PARENTAL_ARCHETYPES: Record<string, ArchetypeProfile> = {
   },
   "transformador": {
     "id": "transformador",
-    "name": "Transformador(a)",
+    "name": "Transformador",
     "baseArchetype": "O Mago",
-    "superpowerTitle": "Superpoder: Transformador(a)",
+    "superpowerTitle": "Superpoder: Transformador",
     "mantra": "Você tem o poder de transformar sua realidade e alcançar seu potencial.",
     "shortSynopsis": "Você tem uma capacidade intuitiva de ver o potencial mais profundo dos seus filhos. A sua energia é visionária e catalisadora, ajudando a transformar sonhos em realidade e a inspirar uma autoconfiança quase mágica.",
     "essence": "Você é um(a) catalisador(a) de sonhos, um(a) visionário(a) que vê para além do que é. A parentalidade é um ato de alquimia: ajudar a transformar o potencial bruto do seu filho na sua melhor versão.",
     "greatStrength": "Você inspira uma autoconfiança transcendental . Seus filhos crescem com uma forte sensação de propósito e acreditam profundamente no seu próprio poder de criar a vida que desejam. Desenvolvem uma mentalidade positiva e uma conexão forte com a sua intuição.",
-    "blindSpot": "A armadilha do Transformador(a) é o idealismo desligado da realidade e a pressão do potencial . A ênfase no poder da mente pode levar a negligenciar os passos práticos. A constante menção ao \"seu incrível potencial\" pode gerar na criança o medo de desapontar.",
+    "blindSpot": "A armadilha do Transformador é o idealismo desligado da realidade e a pressão do potencial . A ênfase no poder da mente pode levar a negligenciar os passos práticos. A constante menção ao \"seu incrível potencial\" pode gerar na criança o medo de desapontar.",
     "practicalTips": [
-      "Elogie o \"Hoje\":",
-      "Faça um elogio específico sobre uma qualidade que seu filho demonstrou",
-      ", não sobre o que ele"
-    ],
+      "Elogie o \"Hoje\": Faça um elogio específico sobre uma qualidade que seu filho demonstrou hoje, não sobre o que ele será no futuro.",
+      "O \"Primeiro Passo\": Quando falarem sobre um grande sonho, termine a conversa com a pergunta: \"Qual é o primeiro passo, bem pequenino, que podemos dar amanhã para chegar mais perto disso?\"."
+],
     "themeColor": "#8B5CF6",
     "iconName": "Wand2",
     "recommendedJourneyId": "singular",
@@ -617,10 +606,9 @@ export const PARENTAL_ARCHETYPES: Record<string, ArchetypeProfile> = {
     "greatStrength": "Seu presente é a criação de um ambiente de segurança e estabilidade . Seus filhos crescem com um forte senso de responsabilidade, disciplina e autossuficiência. A previsibilidade do ambiente familiar permite que eles se sintam seguros para se desenvolverem.",
     "blindSpot": "A sombra do Líder é a rigidez e o autoritarismo . A necessidade de controlo pode levar a uma falta de flexibilidade, sufocando a espontaneidade e a criatividade dos filhos. Você pode ter dificuldade em admitir erros ou em adaptar as regras à medida que os filhos crescem.",
     "practicalTips": [
-      "\"O Ministro das Regras\":",
-      "Envolva seu filho na revisão de uma regra da casa. Peça a opinião dele sobre se a regra é justa e como poderia ser melhorada.",
-      "Quebre uma Regra (de Propósito):"
-    ],
+      "\"O Ministro das Regras\": Envolva seu filho na revisão de uma regra da casa. Peça a opinião dele sobre se a regra é justa e como poderia ser melhorada.",
+      "Quebre uma Regra (de Propósito): Uma vez por mês, anuncie que uma regra específica está suspensa por um dia (ex: \"hoje não há hora de dormir!\")."
+],
     "themeColor": "#B87353",
     "iconName": "Crown",
     "recommendedJourneyId": "construindo-pontes",
