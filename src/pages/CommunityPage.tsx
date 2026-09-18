@@ -974,7 +974,7 @@ export const CommunityPage: React.FC = () => {
   // busca diretamente os 10 primeiros tópicos daquela sala no Supabase.
   useEffect(() => {
     if (!activeSelection) return;
-    if (filteredPosts.length < 10) {
+    if (filteredPosts.length < 15) {
       fetchPostsForRoom(activeSelection);
     }
   }, [activeSelection, filteredPosts.length, user?.id]);
@@ -2115,16 +2115,14 @@ export const CommunityPage: React.FC = () => {
                 })}
 
                 {/* Carregar Mais Button (Brings next 15 topics from local or remote Supabase) */}
-                {(visibleCount < filteredPosts.length || hasMorePosts) && (
+                {(visibleCount < filteredPosts.length || hasMorePosts) ? (
                   <div className="pt-6 pb-4 text-center">
                     <button
                       onClick={async () => {
-                        if (visibleCount < filteredPosts.length) {
-                          setVisibleCount(prev => prev + 15);
-                        } else if (hasMorePosts) {
-                          await loadMorePosts();
-                          setVisibleCount(prev => prev + 15);
+                        if (visibleCount + 15 >= filteredPosts.length && hasMorePosts) {
+                          await loadMorePosts(activeSelection);
                         }
+                        setVisibleCount(prev => prev + 15);
                       }}
                       disabled={isLoadingMore}
                       className="bg-[#101B1E] hover:bg-white/10 text-white border border-white/20 px-8 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mx-auto disabled:opacity-50 cursor-pointer"
@@ -2136,7 +2134,7 @@ export const CommunityPage: React.FC = () => {
                         </span>
                       ) : (
                         <>
-                          <span>Carregar Mais Conversas</span>
+                          <span>Carregar Mais 15 Conversas</span>
                           <span className="bg-[#FF7F5B] text-slate-950 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold">
                             +15
                           </span>
@@ -2144,7 +2142,11 @@ export const CommunityPage: React.FC = () => {
                       )}
                     </button>
                   </div>
-                )}
+                ) : filteredPosts.length > 0 ? (
+                  <div className="pt-6 pb-4 text-center text-xs text-slate-400">
+                    Você chegou ao final das conversas.
+                  </div>
+                ) : null}
               </>
             )}
           </section>

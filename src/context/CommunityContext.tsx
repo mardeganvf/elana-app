@@ -398,7 +398,7 @@ interface CommunityContextType {
   isRoomLoading: boolean;
   hasMorePosts: boolean;
   isLoadingMore: boolean;
-  loadMorePosts: () => Promise<void>;
+  loadMorePosts: (target?: RoomSelectionTarget | null) => Promise<void>;
   fetchPostsForRoom: (selection: RoomSelectionTarget) => Promise<void>;
   createPost: (payload: CreatePostPayload) => void;
   toggleReaction: (postId: string, reactionKey: string) => void;
@@ -567,7 +567,7 @@ const persistCommentReaction = (
   saveStoredReactionsData(store);
 };
 
-const PAGE_SIZE = 40;
+const PAGE_SIZE = 15;
 
 export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, awardBadge } = useAuth();
@@ -607,6 +607,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               }
               return true;
             })
+            .slice(0, PAGE_SIZE)
             .map(p => {
               const sanitized = sanitizePost(p);
               const postReactions = reactionsStore.posts[sanitized.id] || sanitized.reactions || {};
@@ -924,18 +925,39 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const loadMorePosts = async () => {
+  const loadMorePosts = async (target?: RoomSelectionTarget | null) => {
     if (isLoadingMore || !hasMorePosts) return;
     setIsLoadingMore(true);
     try {
-      const from = posts.length;
-      const to = from + PAGE_SIZE - 1;
-      const { data, error } = await supabase
+      let query = supabase
         .from('community_posts')
         .select('*, community_comments(*)')
         .not('author_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .order('created_at', { ascending: false });
+
+      let from = posts.length;
+      if (target) {
+        if (target.type === 'geral' && target.roomId) {
+          query = query.eq('transversal_room_id', target.roomId);
+          from = posts.filter(p => p.transversalRoomId === target.roomId).length;
+        } else if (target.type === 'jornada' && target.journeyId) {
+          query = query.eq('journey_id', target.journeyId);
+          from = posts.filter(p => p.journeyId === target.journeyId).length;
+        } else if (target.type === 'idade' && target.ageId) {
+          query = query.eq('age_bracket_id', target.ageId);
+          from = posts.filter(p => p.ageBracketId === target.ageId).length;
+        } else if (target.type === 'minhas-publicacoes') {
+          if (!user?.id) {
+            setIsLoadingMore(false);
+            return;
+          }
+          query = query.eq('author_id', user.id);
+          from = posts.filter(p => p.authorId === user.id).length;
+        }
+      }
+
+      const to = from + PAGE_SIZE - 1;
+      const { data, error } = await query.range(from, to);
 
       if (error) {
         console.warn('Supabase load more notice:', error.message);
@@ -975,7 +997,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setPosts(prev => {
           const existingIds = new Set(prev.map(p => p.id));
           const filtered = newPosts.filter(p => !existingIds.has(p.id));
-          return [...prev, ...filtered].map(sanitizePost);
+          const updated = [...prev, ...filtered].map(sanitizePost);
+          try {
+            localStorage.setItem('elana_community_posts_cache', JSON.stringify(updated));
+          } catch {}
+          return updated;
         });
         if (data.length < PAGE_SIZE) {
           setHasMorePosts(false);
@@ -991,7 +1017,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   // 🎯 Busca Direcionada por Sala ao Clicar (Sob Demanda)
-  // Carrega até 10 tópicos específicos da sala se ela ainda não tiver conteúdo em memória
+  // Carrega até 15 tópicos específicos da sala se ela ainda não tiver conteúdo em memória
   const fetchPostsForRoom = async (selection: RoomSelectionTarget) => {
     const roomKey = 
       selection.type === 'geral' ? `geral:${selection.roomId}` :
@@ -1009,7 +1035,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .select('*, community_comments(*)')
         .not('author_id', 'is', null)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(PAGE_SIZE);
 
       if (selection.type === 'geral' && selection.roomId) {
         query = query.eq('transversal_room_id', selection.roomId);
@@ -1093,6 +1119,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           } catch {}
           return merged;
         });
+        setHasMorePosts(data.length >= PAGE_SIZE);
+      } else {
+        setHasMorePosts(false);
       }
     } catch (err) {
       console.warn('Erro ao carregar tópicos da sala:', err);
