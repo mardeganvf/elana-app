@@ -60,7 +60,7 @@ export const getHowToUnlock = (badge: Badge): string => {
     b33: 'Interaja com um post ou comentário na sala Cuidando de Quem Cuida.',
     b34: 'Visite e interaja em todas as 4 salas da Comunidade.',
     b35: 'Experimente usar todos os tipos de reações acolhedoras nos posts.',
-    b36: 'Envie sua primeira resposta ou comentário acolhendo outro pai/mãe.',
+    b36: 'Envie sua primeira resposta ou comentário acolhendo outra mãe ou pai.',
     b37: 'Responda e acolha publicações de 5 pessoas diferentes.',
     b38: 'Envie 25 comentários e palavras de apoio na Comunidade.',
     b39: 'Apoie 100 membros com respostas carinhosas na Comunidade.',

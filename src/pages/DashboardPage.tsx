@@ -1593,14 +1593,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 <div className="space-y-1 max-w-md mx-auto">
                   <h4 className="text-sm font-bold text-white">Descubra sua força secreta na criação</h4>
                   <p className="text-xs text-slate-400">
-                    Responda a 15 perguntas reflexivas sobre a rotina da sua casa e desbloqueie seu arquétipo parental (+75 XP).
+                    Responda a 15 perguntas reflexivas sobre a rotina da sua casa e desbloqueie seu arquétipo parental (+75 pontos).
                   </p>
                 </div>
                 <button
                   onClick={onOpenQuiz}
                   className="inline-flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                 >
-                  <span>Descobrir Meu Superpoder (+75 XP)</span>
+                  <span>Descobrir Meu Superpoder (+75 pontos)</span>
                   <ChevronDown className="w-3.5 h-3.5 -rotate-90" />
                 </button>
               </div>

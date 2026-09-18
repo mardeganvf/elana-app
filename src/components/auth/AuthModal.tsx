@@ -222,7 +222,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         name: name.trim(),
         avatar: GENERIC_DEFAULT_AVATAR,
         role: 'Membro da Comunidade',
-        family_tag: 'Mãe / Pai de 1ª viagem',
+        family_tag: 'Mãe ou Pai de 1ª viagem',
         xp: guestSuperpoder ? 75 : 0,
         level_number: 1,
         level_name: 'Semente Plantada',

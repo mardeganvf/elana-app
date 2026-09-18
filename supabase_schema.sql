@@ -1051,7 +1051,7 @@ VALUES (
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   'Membro da Aldeia',
   'Mãe de 1ª viagem (0-2 anos)',
-  'Mãe / Pai de 1ª viagem',
+  'Mãe ou Pai de 1ª viagem',
   1,
   'Semente Plantada',
   '🌱',

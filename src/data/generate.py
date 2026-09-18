@@ -68,7 +68,7 @@ comments_pool = [
     'Te acolho profundamente. O que você está sentindo é 100% legítimo e compreensível.',
     'Aqui em casa passamos exatamente por isso! O tempo e a consistência trazem a leveza de volta.',
     'Que relato lindo e emocionante! Obrigado por compartilhar com tanta generosidade.',
-    'Um abraço bem apertado no seu coração. Você é uma mãe/pai extraordinário!',
+    'Um abraço bem apertado no seu coração. Você é uma mãe ou pai extraordinário!',
     'Essa dica do banho/rotina salvou nossas noites por aqui também. Que alegria ver o avanço!',
     'Respira fundo. O processo de criação é cheio de altos e baixos, mas estamos juntos nessa jornada.',
     'Me identifiquei em cada palavra. É um alívio saber que não estou sozinha nesse sentimento.',

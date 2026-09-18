@@ -63,7 +63,7 @@ export const QuizCardBanner: React.FC<QuizCardBannerProps> = ({ onStartQuiz, use
               </span>
               <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-extrabold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full">
                 <Award className="w-3 h-3" />
-                +75 XP
+                +75 pontos
               </span>
             </div>
 

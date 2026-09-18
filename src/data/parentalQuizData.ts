@@ -44,7 +44,7 @@ export interface QuizCalculationResult {
 export const PARENTAL_QUESTIONS: QuizQuestion[] = [
   {
     "id": 1,
-    "question": "Qual destas frases melhor descreve a sua principal missão como pai/mãe?",
+    "question": "Qual destas frases melhor descreve a sua principal missão como mãe ou pai?",
     "options": [
       {
         "letter": "A",
