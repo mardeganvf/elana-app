@@ -207,17 +207,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       const supabaseUserId = sessionData?.session?.user?.id || authData?.user?.id;
 
       const validId = (supabaseUserId && supabaseUserId.length > 20) ? supabaseUserId : crypto.randomUUID();
-      const profilePayload = {
+      
+      let guestSuperpoder: any = null;
+      try {
+        const rawGuest = localStorage.getItem('elana_guest_superpoder');
+        if (rawGuest) guestSuperpoder = JSON.parse(rawGuest);
+      } catch {
+        // ignore
+      }
+
+      const profilePayload: Record<string, any> = {
         id: validId,
         email: inputVal.trim().toLowerCase(),
         name: name.trim(),
         avatar: GENERIC_DEFAULT_AVATAR,
         role: 'Membro da Comunidade',
         family_tag: 'Mãe / Pai de 1ª viagem',
-        xp: 0,
+        xp: guestSuperpoder ? 100 : 0,
         level_number: 1,
         level_name: 'Semente Plantada',
         level_icon: '🌱',
+        parental_archetype: guestSuperpoder?.dominantId || null,
+        parental_secondary_archetype: guestSuperpoder?.secondaryId || null,
+        parental_quiz_completed_at: guestSuperpoder ? (guestSuperpoder.timestamp || new Date().toISOString()) : null,
         updated_at: new Date().toISOString()
       };
 
@@ -227,6 +239,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
       if (profileError) {
         console.error('Supabase Profiles Table Insert Error:', profileError.message);
+      }
+
+      if (guestSuperpoder) {
+        localStorage.removeItem('elana_guest_superpoder');
       }
 
       setSuccessMessage('Conta validada com sucesso! Entrando...');

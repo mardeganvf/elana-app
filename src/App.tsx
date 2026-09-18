@@ -32,6 +32,7 @@ const GuidedSpotlightTour = React.lazy(() => import('./components/onboarding/Gui
 const BadgeRewardModal = React.lazy(() => import('./components/onboarding/BadgeRewardModal').then(m => ({ default: m.BadgeRewardModal })));
 const ProfileCompletionInviteModal = React.lazy(() => import('./components/onboarding/ProfileCompletionInviteModal').then(m => ({ default: m.ProfileCompletionInviteModal })));
 const CommunityPollModal = React.lazy(() => import('./components/community/CommunityPollModal').then(m => ({ default: m.CommunityPollModal })));
+const QuizPage = React.lazy(() => import('./pages/QuizPage').then(m => ({ default: m.QuizPage })));
 
 const PageLoadingFallback: React.FC = () => (
   <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 space-y-4 animate-fade-in">
@@ -47,7 +48,17 @@ const AppContent: React.FC = () => {
   const { activePoll, userVotedPollsMap, refreshPosts } = useCommunity();
   const { journeys } = useJourneys();
   
-  const [activeTab, setActiveTab] = useState<string>('home');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('tab') === 'quiz' || window.location.pathname === '/quiz') {
+        return 'quiz';
+      }
+    } catch {
+      // ignore
+    }
+    return 'home';
+  });
   const [selectedJourneyForCheckout, setSelectedJourneyForCheckout] = useState<Journey | null>(null);
   const [selectedJourneyForClassroom, setSelectedJourneyForClassroom] = useState<Journey | null>(null);
   const [selectedLessonIdForClassroom, setSelectedLessonIdForClassroom] = useState<string | undefined>(undefined);
@@ -162,6 +173,62 @@ const AppContent: React.FC = () => {
     }, 100);
   };
 
+  if (!user && activeTab === 'quiz') {
+    return (
+      <div className="min-h-screen flex flex-col justify-between bg-[#070D0F] text-slate-100">
+        <header className="border-b border-white/10 bg-[#070D0F]/90 backdrop-blur-md px-4 py-3.5 sticky top-0 z-30">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={() => {
+                setActiveTab('login');
+                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+              }}
+            >
+              <span className="text-xl">🌿</span>
+              <span className="text-base font-black tracking-wider uppercase text-white">Elana Academy</span>
+            </div>
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="text-xs font-bold text-[#FF7F5B] hover:text-[#ff987d] px-3.5 py-1.5 rounded-xl border border-[#FF7F5B]/30 hover:bg-[#FF7F5B]/10 transition-colors cursor-pointer"
+            >
+              Entrar / Criar Conta
+            </button>
+          </div>
+        </header>
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoadingFallback />}>
+              <QuizPage
+                onBackToHome={() => {
+                  setActiveTab('login');
+                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                }}
+                onOpenAuthModal={() => setIsAuthModalOpen(true)}
+              />
+            </Suspense>
+          </ErrorBoundary>
+        </main>
+
+        <Footer />
+
+        {isAuthModalOpen && (
+          <Suspense fallback={null}>
+            <AuthModal
+              isOpen={isAuthModalOpen}
+              onClose={() => setIsAuthModalOpen(false)}
+              onSuccess={() => {
+                setIsAuthModalOpen(false);
+                setActiveTab('home');
+              }}
+            />
+          </Suspense>
+        )}
+      </div>
+    );
+  }
+
   if (!user || activeTab === 'login') {
     return (
       <Suspense fallback={<PageLoadingFallback />}>
@@ -204,6 +271,10 @@ const AppContent: React.FC = () => {
                 <HomePage
                   onSelectJourney={handleSelectJourney}
                   onStartLearning={handleStartLearning}
+                  onStartQuiz={() => {
+                    setActiveTab('quiz');
+                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  }}
                 />
               )}
 
@@ -234,6 +305,10 @@ const AppContent: React.FC = () => {
                     setActiveTab('community');
                     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
                   }}
+                  onOpenQuiz={() => {
+                    setActiveTab('quiz');
+                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  }}
                 />
               )}
 
@@ -246,6 +321,24 @@ const AppContent: React.FC = () => {
                   onOpenLogin={() => {
                     setActiveTab('login');
                     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  }}
+                />
+              )}
+
+              {activeTab === 'quiz' && (
+                <QuizPage
+                  onBackToHome={() => {
+                    setActiveTab('home');
+                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  }}
+                  onSelectJourney={(journeyId) => {
+                    const found = journeys.find(j => j.id === journeyId);
+                    if (found) {
+                      handleSelectJourney(found);
+                    } else {
+                      setActiveTab('home');
+                      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                    }
                   }}
                 />
               )}

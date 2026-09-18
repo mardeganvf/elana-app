@@ -23,6 +23,7 @@ import {
   Lock,
   ShieldCheck,
   Wind,
+  Zap,
   CheckCircle2,
   Clock,
   Phone,
@@ -719,6 +720,19 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                       >
                         <HelpCircle className="w-4 h-4 text-slate-400" />
                         <span>Tutorial de Boas-Vindas</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          setActiveTab('quiz');
+                          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                        }}
+                        className="w-full text-xs font-medium text-slate-300 hover:text-white px-2.5 py-2 rounded-xl hover:bg-white/5 flex items-center gap-2.5 transition-colors text-left cursor-pointer"
+                      >
+                        <Zap className="w-4 h-4 text-[#FFD166]" />
+                        <span>Meu Superpoder Parental</span>
                       </button>
 
                       {isStaff && (

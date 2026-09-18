@@ -12,6 +12,7 @@ import { BadgeGallery, getUnlockedBadgesCount } from '../components/gamification
 import { UserLevelsModal } from '../components/gamification/UserLevelsModal';
 import { NotebookModal } from '../components/gamification/NotebookModal';
 import { getLevelFromXP, ALL_BADGES } from '../data/gamificationData';
+import { PARENTAL_ARCHETYPES } from '../data/parentalQuizData';
 import { uploadImageToStorage } from '../lib/storage';
 import { supabase } from '../lib/supabase';
 import { GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
@@ -24,6 +25,7 @@ interface DashboardPageProps {
   onExploreCatalog: () => void;
   onRestartTutorial?: () => void;
   onGoToCommunity?: () => void;
+  onOpenQuiz?: () => void;
 }
 
 // Helper para máscara de celular brasileiro: (00) 00000-0000 ou (00) 0000-0000
@@ -35,7 +37,7 @@ const formatPhoneMask = (val: string) => {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 };
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog, onRestartTutorial, onGoToCommunity }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, onOpenCertificate, onExploreCatalog, onRestartTutorial, onGoToCommunity, onOpenQuiz }) => {
   const { user, logout, updateUser, awardBadge, refreshUserFromBackend } = useAuth();
   const { fetchUserPosts, deletePost } = useCommunity();
   const { showToast } = useToast();
@@ -1523,6 +1525,86 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
               )}
             </div>
 
+          </div>
+
+          {/* ⚡ Meu Superpoder Parental */}
+          <div className="bg-[#101B1E] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⚡</span>
+                <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Meu Superpoder Parental
+                </h3>
+              </div>
+              {user?.parentalArchetype && (
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-[#FFD166]/10 text-[#FFD166] border border-[#FFD166]/30">
+                  Diagnóstico Ativo
+                </span>
+              )}
+            </div>
+
+            {user?.parentalArchetype && PARENTAL_ARCHETYPES[user.parentalArchetype] ? (
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-[#18272B] to-[#141F23] border border-white/10 space-y-4">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#FFD166]">
+                      Força Dominante
+                    </span>
+                    <h4 className="text-xl font-black text-white">
+                      {PARENTAL_ARCHETYPES[user.parentalArchetype].name}
+                    </h4>
+                    <p className="text-xs text-slate-400 font-medium">
+                      Arquétipo: {PARENTAL_ARCHETYPES[user.parentalArchetype].baseArchetype}
+                    </p>
+                  </div>
+
+                  {user.parentalSecondaryArchetype && PARENTAL_ARCHETYPES[user.parentalSecondaryArchetype] && (
+                    <div className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-right">
+                      <span className="text-[10px] text-slate-400 block font-bold uppercase">Apoio Secundário</span>
+                      <span className="text-xs font-bold text-white">{PARENTAL_ARCHETYPES[user.parentalSecondaryArchetype].name}</span>
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-xs sm:text-sm text-slate-300 italic border-l-2 border-[#FF7F5B] pl-3 py-1">
+                  "{PARENTAL_ARCHETYPES[user.parentalArchetype].mantra}"
+                </p>
+
+                <div className="pt-2 flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={onOpenQuiz}
+                    className="px-4 py-2.5 rounded-xl bg-[#FF7F5B] hover:bg-[#e06847] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer"
+                  >
+                    Ver Dossiê Completo
+                  </button>
+                  <button
+                    onClick={onOpenQuiz}
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Refazer Diagnóstico
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 rounded-2xl bg-gradient-to-r from-[#FF7F5B]/10 to-[#FFD166]/10 border border-dashed border-[#FF7F5B]/30 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-[#FF7F5B]/20 text-[#FF7F5B] flex items-center justify-center mx-auto text-2xl font-bold">
+                  ⚡
+                </div>
+                <div className="space-y-1 max-w-md mx-auto">
+                  <h4 className="text-sm font-bold text-white">Descubra sua força secreta na criação</h4>
+                  <p className="text-xs text-slate-400">
+                    Responda a 15 perguntas reflexivas sobre a rotina da sua casa e desbloqueie seu arquétipo parental (+100 XP).
+                  </p>
+                </div>
+                <button
+                  onClick={onOpenQuiz}
+                  className="inline-flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                >
+                  <span>Descobrir Meu Superpoder (+100 XP)</span>
+                  <ChevronDown className="w-3.5 h-3.5 -rotate-90" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Minha Rede de Apoio */}

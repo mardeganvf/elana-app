@@ -96,6 +96,9 @@ export interface UserProfile {
   isBanned?: boolean;
   bannedAt?: string;
   bannedReason?: string;
+  parentalArchetype?: string;
+  parentalSecondaryArchetype?: string;
+  parentalQuizCompletedAt?: string;
   children?: {
     id: string;
     emoji: string;

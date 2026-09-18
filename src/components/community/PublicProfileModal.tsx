@@ -28,6 +28,7 @@ import { JOURNEYS_DATA } from '../../data/journeysData';
 import { getLevelFromXP } from '../../data/gamificationData';
 import { supabase } from '../../lib/supabase';
 import { isFollowingMember, toggleFollowMember, getFollowedMembers, FOLLOWED_MEMBERS_CHANGED_EVENT } from '../../lib/followService';
+import { PARENTAL_ARCHETYPES } from '../../data/parentalQuizData';
 
 export interface ChildInfo {
   id: string;
@@ -55,6 +56,7 @@ export interface PublicUserProfile {
   levelNumber?: number;
   xp?: number;
   bio?: string;
+  parentalArchetype?: string;
   joinedDate?: string;
   streakDays?: number;
   postsCount?: number;
@@ -377,6 +379,13 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
                 <Award className="w-3.5 h-3.5 text-[#FF7F5B]" />
                 <span>{levelInfo.title}</span>
               </button>
+
+              {profile.parentalArchetype && PARENTAL_ARCHETYPES[profile.parentalArchetype] && (
+                <span className="bg-[#FFD166]/15 text-[#FFD166] text-xs font-bold px-2.5 py-0.5 rounded-md border border-[#FFD166]/30 flex items-center gap-1">
+                  <span>⚡</span>
+                  <span>Superpoder: {PARENTAL_ARCHETYPES[profile.parentalArchetype].name}</span>
+                </span>
+              )}
 
               {profile.isAnonymous && (
                 <span className="text-[10px] font-extrabold bg-purple-500/20 text-purple-300 border border-purple-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">

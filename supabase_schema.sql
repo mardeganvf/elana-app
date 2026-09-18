@@ -48,6 +48,9 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS respiro_cycles INTEGER NOT 
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS banned_reason TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS parental_archetype TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS parental_secondary_archetype TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS parental_quiz_completed_at TIMESTAMPTZ;
 
 -- 2. TABELA DE MEMBROS DA FAMÍLIA (FILHOS / GESTAÇÃO)
 CREATE TABLE IF NOT EXISTS public.family_members (

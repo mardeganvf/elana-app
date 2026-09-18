@@ -1013,6 +1013,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isBanned: !!profile.is_banned,
         bannedAt: profile.banned_at || undefined,
         bannedReason: profile.banned_reason || undefined,
+        parentalArchetype: profile.parental_archetype || undefined,
+        parentalSecondaryArchetype: profile.parental_secondary_archetype || undefined,
+        parentalQuizCompletedAt: profile.parental_quiz_completed_at || undefined,
         children: finalChildren
       };
 
@@ -1157,6 +1160,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           notifications_enabled: !!updatedUser.notificationsEnabled,
           onboarding_completed: !!updatedUser.onboardingCompleted,
           respiro_cycles: updatedUser.respiroCycles !== undefined ? updatedUser.respiroCycles : (baseUser.respiroCycles || 0),
+          parental_archetype: updatedUser.parentalArchetype || null,
+          parental_secondary_archetype: updatedUser.parentalSecondaryArchetype || null,
+          parental_quiz_completed_at: updatedUser.parentalQuizCompletedAt || null,
           last_active_date: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };

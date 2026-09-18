@@ -9,10 +9,13 @@ import { useJourneys } from '../context/JourneysContext';
 import { useDestaques } from '../context/DestaquesContext';
 import { Play, Flame, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Lock, Sparkles, Bell, Check } from 'lucide-react';
 import { useJourneyNotifications } from '../hooks/useJourneyNotifications';
+import { QuizCardBanner } from '../components/quiz/QuizCardBanner';
+import { PARENTAL_ARCHETYPES } from '../data/parentalQuizData';
 
 interface HomePageProps {
   onSelectJourney: (journey: Journey) => void;
   onStartLearning: (journey: Journey, lessonId?: string) => void;
+  onStartQuiz?: () => void;
 }
 
 // Helper: Extrair automaticamente a thumbnail padrão do Panda Video
@@ -77,7 +80,7 @@ const LESSON_THUMBS: Record<string, string> = {
   'dds-2-1': 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=500&auto=format&fit=crop&q=80'
 };
 
-export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLearning }) => {
+export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLearning, onStartQuiz }) => {
   const { user } = useAuth();
   const { journeys: dynamicJourneys } = useJourneys();
   const { isJourneyNotified, toggleJourneyNotification } = useJourneyNotifications();
@@ -432,6 +435,33 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
         </div>
 
       </section>
+ 
+      {/* ⚡ Banner do Quiz de Superpoder Parental (caso o usuário ainda não tenha feito) */}
+      {!user?.parentalArchetype && onStartQuiz && (
+        <section className="animate-fade-in -mt-3 sm:-mt-1">
+          <QuizCardBanner onStartQuiz={onStartQuiz} userId={user?.id} />
+        </section>
+      )}
+
+      {/* 🌟 Indicador de Superpoder Parental já descoberto */}
+      {user?.parentalArchetype && PARENTAL_ARCHETYPES[user.parentalArchetype] && onStartQuiz && (
+        <section className="animate-fade-in -mt-3 sm:-mt-1">
+          <div className="flex items-center justify-between gap-3 px-5 py-3 rounded-2xl bg-gradient-to-r from-[#18272B] to-[#101B1E] border border-[#FFD166]/20 shadow-lg">
+            <div className="flex items-center gap-2.5">
+              <span className="text-base">⚡</span>
+              <span className="text-xs text-slate-300">
+                Seu Superpoder Parental: <strong className="text-[#FFD166]">{PARENTAL_ARCHETYPES[user.parentalArchetype].name}</strong>
+              </span>
+            </div>
+            <button
+              onClick={onStartQuiz}
+              className="text-xs font-bold text-[#FF7F5B] hover:text-[#ff987d] transition-colors cursor-pointer"
+            >
+              Ver Dossiê Completo →
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Card de Retomada Imediata: Próximo Conteúdo Para Você */}
       {nextLessonData && (
