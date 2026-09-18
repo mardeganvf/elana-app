@@ -233,16 +233,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         updated_at: new Date().toISOString()
       };
 
-      const { error: profileError } = await supabase
+      let { error: profileError } = await supabase
         .from('profiles')
         .upsert(profilePayload, { onConflict: 'id' });
 
       if (profileError) {
-        console.error('Supabase Profiles Table Insert Error:', profileError.message);
+        console.warn('Supabase Profiles Table Insert Warning:', profileError.message);
+        if (profileError.message?.includes('parental_') || profileError.code === '42703') {
+          const fallbackPayload = { ...profilePayload };
+          delete fallbackPayload.parental_archetype;
+          delete fallbackPayload.parental_secondary_archetype;
+          delete fallbackPayload.parental_quiz_completed_at;
+          const { error: retryErr } = await supabase
+            .from('profiles')
+            .upsert(fallbackPayload, { onConflict: 'id' });
+          if (retryErr) {
+            console.error('Supabase Profiles Fallback Error:', retryErr.message);
+          }
+        }
       }
 
       if (guestSuperpoder) {
-        localStorage.removeItem('elana_guest_superpoder');
+        try {
+          const cleanEmail = inputVal.trim().toLowerCase();
+          localStorage.setItem(`elana_superpoder_${validId}`, JSON.stringify(guestSuperpoder));
+          localStorage.setItem(`elana_superpoder_${cleanEmail}`, JSON.stringify(guestSuperpoder));
+          localStorage.removeItem('elana_guest_superpoder');
+        } catch {}
+
         await supabase.from('user_badges').upsert({
           profile_id: validId,
           badge_id: 'b_superpoder',

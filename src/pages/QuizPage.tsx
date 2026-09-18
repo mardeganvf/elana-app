@@ -59,10 +59,35 @@ export const QuizPage: React.FC<QuizPageProps> = ({
 
   // Recupera resultado anterior se já existir
   useEffect(() => {
-    if (user?.parentalArchetype && PARENTAL_ARCHETYPES[user.parentalArchetype]) {
-      const dominant = PARENTAL_ARCHETYPES[user.parentalArchetype];
-      const secondary = user.parentalSecondaryArchetype && PARENTAL_ARCHETYPES[user.parentalSecondaryArchetype]
-        ? PARENTAL_ARCHETYPES[user.parentalSecondaryArchetype]
+    let dominantId = user?.parentalArchetype;
+    let secondaryId = user?.parentalSecondaryArchetype;
+
+    if (!dominantId) {
+      try {
+        const keys = [
+          user?.id ? `elana_superpoder_${user.id}` : '',
+          user?.email ? `elana_superpoder_${user.email.toLowerCase().trim()}` : '',
+          'elana_guest_superpoder'
+        ].filter(Boolean);
+
+        for (const k of keys) {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.dominantId) {
+              dominantId = parsed.dominantId;
+              secondaryId = parsed.secondaryId;
+              break;
+            }
+          }
+        }
+      } catch {}
+    }
+
+    if (dominantId && PARENTAL_ARCHETYPES[dominantId]) {
+      const dominant = PARENTAL_ARCHETYPES[dominantId];
+      const secondary = secondaryId && PARENTAL_ARCHETYPES[secondaryId]
+        ? PARENTAL_ARCHETYPES[secondaryId]
         : PARENTAL_ARCHETYPES['otimista'];
 
       setCalculationResult({
@@ -76,7 +101,7 @@ export const QuizPage: React.FC<QuizPageProps> = ({
         allPercentages: { [dominant.id]: 65, [secondary.id]: 35 }
       });
     }
-  }, [user?.parentalArchetype, user?.parentalSecondaryArchetype]);
+  }, [user?.parentalArchetype, user?.parentalSecondaryArchetype, user?.id, user?.email]);
 
   const handleStart = () => {
     setCurrentQuestionIdx(0);
@@ -118,7 +143,7 @@ export const QuizPage: React.FC<QuizPageProps> = ({
     setTimeout(() => setCalculatingStepText('Mapeando suas reações mais profundas...'), 500);
     setTimeout(() => setCalculatingStepText('Identificando sua grande força parental...'), 1100);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       const result = calculateParentalQuizResult(finalAnswers);
       setCalculationResult(result);
       setStage('result');
@@ -135,9 +160,25 @@ export const QuizPage: React.FC<QuizPageProps> = ({
         // fallback silencioso
       }
 
+      // Salva backup local imediatamente (garante persistência mesmo se Supabase oscilar)
+      const superpoderBackup = {
+        dominantId: result.dominant.id,
+        secondaryId: result.secondary.id,
+        timestamp: new Date().toISOString()
+      };
+      try {
+        if (user?.id) {
+          localStorage.setItem(`elana_superpoder_${user.id}`, JSON.stringify(superpoderBackup));
+        }
+        if (user?.email) {
+          localStorage.setItem(`elana_superpoder_${user.email.toLowerCase().trim()}`, JSON.stringify(superpoderBackup));
+        }
+        localStorage.setItem('elana_guest_superpoder', JSON.stringify(superpoderBackup));
+      } catch {}
+
       // Se o usuário está logado, persiste e premia
       if (user) {
-        updateUser({
+        await updateUser({
           parentalArchetype: result.dominant.id,
           parentalSecondaryArchetype: result.secondary.id,
           parentalQuizCompletedAt: new Date().toISOString()
@@ -145,18 +186,7 @@ export const QuizPage: React.FC<QuizPageProps> = ({
 
         // Concede badge de Superpoder Parental (+75 pontos)
         if (!user.badges?.some(b => b.id === 'b_superpoder')) {
-          awardBadge('b_superpoder');
-        }
-      } else {
-        // Se visitante, salva temporariamente no storage para hidratar caso crie conta
-        try {
-          localStorage.setItem('elana_guest_superpoder', JSON.stringify({
-            dominantId: result.dominant.id,
-            secondaryId: result.secondary.id,
-            timestamp: new Date().toISOString()
-          }));
-        } catch {
-          // ignore
+          await awardBadge('b_superpoder');
         }
       }
     }, 1800);

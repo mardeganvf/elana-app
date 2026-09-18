@@ -525,6 +525,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const profileId = profile.id || userId;
 
+      // Recuperar arquétipo parental (da coluna Supabase ou do cache/backup local caso a coluna ainda não exista no banco)
+      let finalArchetype = profile.parental_archetype;
+      let finalSecondaryArchetype = profile.parental_secondary_archetype;
+      let finalQuizCompletedAt = profile.parental_quiz_completed_at;
+
+      if (!finalArchetype) {
+        try {
+          const keysToTry = [
+            `elana_superpoder_${profileId}`,
+            `elana_superpoder_${emailClean}`,
+            `elana_guest_superpoder`
+          ];
+          for (const key of keysToTry) {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed?.dominantId) {
+                finalArchetype = parsed.dominantId;
+                finalSecondaryArchetype = parsed.secondaryId;
+                finalQuizCompletedAt = parsed.timestamp;
+                break;
+              }
+            }
+          }
+          if (!finalArchetype) {
+            const rawSession = localStorage.getItem('elana_user_session');
+            if (rawSession) {
+              const parsedSession = JSON.parse(rawSession);
+              if (parsedSession?.parentalArchetype) {
+                finalArchetype = parsedSession.parentalArchetype;
+                finalSecondaryArchetype = parsedSession.parentalSecondaryArchetype;
+                finalQuizCompletedAt = parsedSession.parentalQuizCompletedAt;
+              }
+            }
+          }
+        } catch {}
+      }
+
       // 2. Buscar Badges conquistadas
       const { data: userBadgesData } = await supabase
         .from('user_badges')
@@ -773,8 +811,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profile.notifications_enabled) {
         checkAndAddBadge('b3'); // Sempre Alerta
       }
-      if (profile.parental_archetype) {
-        checkAndAddBadge('b_superpoder'); // Superpoder Parental (75 XP)
+      if (finalArchetype) {
+        checkAndAddBadge('b_superpoder'); // Superpoder Parental (75 pontos)
       }
 
       // ▶️ 2. Jornadas de Conhecimento (b4, b5, b6, b7, b9)
@@ -1016,9 +1054,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isBanned: !!profile.is_banned,
         bannedAt: profile.banned_at || undefined,
         bannedReason: profile.banned_reason || undefined,
-        parentalArchetype: profile.parental_archetype || undefined,
-        parentalSecondaryArchetype: profile.parental_secondary_archetype || undefined,
-        parentalQuizCompletedAt: profile.parental_quiz_completed_at || undefined,
+        parentalArchetype: finalArchetype || undefined,
+        parentalSecondaryArchetype: finalSecondaryArchetype || undefined,
+        parentalQuizCompletedAt: finalQuizCompletedAt || undefined,
         children: finalChildren
       };
 
@@ -1128,6 +1166,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       localStorage.setItem('elana_user_session', JSON.stringify(updatedUser));
+      if (updatedUser.parentalArchetype) {
+        const archetypeBackup = {
+          dominantId: updatedUser.parentalArchetype,
+          secondaryId: updatedUser.parentalSecondaryArchetype,
+          timestamp: updatedUser.parentalQuizCompletedAt || new Date().toISOString()
+        };
+        localStorage.setItem(`elana_superpoder_${updatedUser.id}`, JSON.stringify(archetypeBackup));
+        if (updatedUser.email) {
+          localStorage.setItem(`elana_superpoder_${updatedUser.email.toLowerCase().trim()}`, JSON.stringify(archetypeBackup));
+        }
+      }
     } catch (err) {
       console.warn('LocalStorage error:', err);
     }
@@ -1190,12 +1239,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
-        const { error: profileErr } = await supabase
+        let { error: profileErr } = await supabase
           .from('profiles')
           .upsert(profilePayload, { onConflict: 'id' });
 
         if (profileErr) {
-          console.error('Supabase profile update error:', profileErr.message);
+          console.warn('Supabase profile update warning:', profileErr.message);
+          // Se o erro for devido à ausência das colunas no Supabase, tenta novamente sem elas
+          if (profileErr.message?.includes('parental_') || profileErr.message?.includes('onboarding_completed') || profileErr.code === '42703') {
+            const fallbackPayload = { ...profilePayload };
+            delete fallbackPayload.parental_archetype;
+            delete fallbackPayload.parental_secondary_archetype;
+            delete fallbackPayload.parental_quiz_completed_at;
+            delete fallbackPayload.onboarding_completed;
+            const { error: retryErr } = await supabase
+              .from('profiles')
+              .upsert(fallbackPayload, { onConflict: 'id' });
+            if (retryErr) {
+              console.error('Supabase profile fallback update error:', retryErr.message);
+            }
+          }
         }
 
         // 2. Sincronizar Filhos na tabela family_members (se foram alterados)
