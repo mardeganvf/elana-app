@@ -49,6 +49,13 @@ button, input, select, textarea {
   font-family: var(--font-ui);
 }
 
+/* 📱 Prevenção de Auto-Zoom no iOS Safari em telas móveis */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* Horizontal Scrollbar Hide / Customize for Netflix Rows */
 .no-scrollbar::-webkit-scrollbar,
 .scrollbar-hide::-webkit-scrollbar {

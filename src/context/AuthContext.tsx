@@ -1004,6 +1004,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         lessonNotes,
         badges,
         respiroCycles: breathCycles,
+        isBanned: !!profile.is_banned,
+        bannedAt: profile.banned_at || undefined,
+        bannedReason: profile.banned_reason || undefined,
         children: finalChildren
       };
 

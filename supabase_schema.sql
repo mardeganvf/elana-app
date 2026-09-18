@@ -44,8 +44,10 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS bio TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS joined_date TEXT NOT NULL DEFAULT 'Janeiro/2026';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_active_date TIMESTAMPTZ NOT NULL DEFAULT NOW();
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS respiro_cycles INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS banned_reason TEXT;
 
 -- 2. TABELA DE MEMBROS DA FAMÍLIA (FILHOS / GESTAÇÃO)
 CREATE TABLE IF NOT EXISTS public.family_members (
@@ -414,7 +416,14 @@ CREATE POLICY "Allow public read community_posts" ON public.community_posts FOR 
     OR (auth.uid() IS NOT NULL AND auth.uid() = author_id)
     OR public.is_admin()
   );
-CREATE POLICY "Allow public insert community_posts" ON public.community_posts FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public insert community_posts" ON public.community_posts
+  FOR INSERT WITH CHECK (
+    auth.uid() IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND is_banned = true
+    )
+  );
 CREATE POLICY "Allow author or admin update community_posts" ON public.community_posts FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
 CREATE POLICY "Allow author or admin delete community_posts" ON public.community_posts FOR DELETE USING (auth.uid() = author_id OR public.is_admin());
 
@@ -438,7 +447,14 @@ CREATE POLICY "Allow public read community_comments" ON public.community_comment
     OR (auth.uid() IS NOT NULL AND auth.uid() = author_id)
     OR public.is_admin()
   );
-CREATE POLICY "Allow public insert community_comments" ON public.community_comments FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public insert community_comments" ON public.community_comments
+  FOR INSERT WITH CHECK (
+    auth.uid() IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND is_banned = true
+    )
+  );
 CREATE POLICY "Allow author or admin update community_comments" ON public.community_comments FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
 CREATE POLICY "Allow author or admin delete community_comments" ON public.community_comments FOR DELETE USING (auth.uid() = author_id OR public.is_admin());
 
@@ -1192,15 +1208,18 @@ WHERE profile_id IS NULL
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.community_reactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id UUID REFERENCES public.community_posts(id) ON DELETE CASCADE NOT NULL,
+  post_id UUID REFERENCES public.community_posts(id) ON DELETE CASCADE,
+  comment_id UUID REFERENCES public.community_comments(id) ON DELETE CASCADE,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   reaction_key TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE(post_id, user_id)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_community_reactions_post ON public.community_reactions(post_id);
+CREATE INDEX IF NOT EXISTS idx_community_reactions_comment ON public.community_reactions(comment_id);
 CREATE INDEX IF NOT EXISTS idx_community_reactions_user ON public.community_reactions(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_community_reactions_post_user ON public.community_reactions(post_id, user_id) WHERE post_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_community_reactions_comment_user ON public.community_reactions(comment_id, user_id) WHERE comment_id IS NOT NULL;
 
 ALTER TABLE public.community_reactions ENABLE ROW LEVEL SECURITY;
 
@@ -1219,7 +1238,13 @@ CREATE POLICY "reactions_select_all"
 
 CREATE POLICY "reactions_insert_all"
   ON public.community_reactions FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL);
+  WITH CHECK (
+    auth.uid() IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND is_banned = true
+    )
+  );
 
 CREATE POLICY "reactions_update_all"
   ON public.community_reactions FOR UPDATE

@@ -133,7 +133,10 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     applyPlaybackSpeed(playbackSpeed);
   }, [playbackSpeed, activeLesson.id, mediaMode]);
 
-  // Listener para eventos do Panda Video (Play, Pause, TimeUpdate, Ended)
+  // Trava anti-duplicação para autoplay do próximo episódio
+  const triggerAutoplayRef = useRef<() => void>();
+
+  // Listener único para eventos do Panda Video (Play, Pause, TimeUpdate, Ended)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       try {
@@ -148,9 +151,16 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
           if (typeof data.currentTime === 'number') setAudioCurrentTime(data.currentTime);
           if (typeof data.duration === 'number') setAudioDuration(data.duration);
         }
-        if (data?.message === 'panda_ended' || data?.type === 'panda_ended') {
+        if (
+          data?.message === 'panda_ended' ||
+          data?.type === 'panda_ended' ||
+          data?.message === 'ended' ||
+          data?.type === 'ended' ||
+          data?.event === 'ended' ||
+          data === 'panda_ended'
+        ) {
           setIsAudioPlaying(false);
-          triggerAutoplayCountdown();
+          triggerAutoplayRef.current?.();
         }
       } catch (e) {}
     };
@@ -361,29 +371,10 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     return () => clearInterval(interval);
   }, [autoplayTimer, nextLesson]);
 
-  // Escutar evento de término de vídeo do Panda Video (iframe postMessage)
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (
-          data?.message === 'panda_ended' ||
-          data?.message === 'ended' ||
-          data?.type === 'ended' ||
-          data?.event === 'ended' ||
-          data === 'panda_ended'
-        ) {
-          triggerAutoplayCountdown();
-        }
-      } catch {}
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [activeLesson.id, nextLesson]);
-
   const triggerAutoplayCountdown = () => {
     if (isCurrentLessonLocked) return;
+    if (autoplayTimer !== null) return; // 🛡️ Trava anti-duplicação caso múltiplos eventos de término cheguem em paralelo
+
     // Limpar ponto salvo pois a aula foi concluída
     const userKey = user?.id || 'anon';
     try {
@@ -399,6 +390,9 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
       setAutoplayTimer(5);
     }
   };
+
+  // Mantém a ref sincronizada para o listener principal
+  triggerAutoplayRef.current = triggerAutoplayCountdown;
 
   const cancelAutoplay = () => {
     setAutoplayTimer(null);
@@ -645,23 +639,53 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                         </div>
                       )}
 
-                      <video
-                        ref={videoRef}
-                        key={activeLesson.id}
-                        controls={mediaMode === 'video'}
-                        playsInline
-                        preload="metadata"
-                        autoPlay={false}
-                        onTimeUpdate={handleVideoTimeUpdate}
-                        onPause={handleVideoPause}
-                        onPlay={() => setIsAudioPlaying(true)}
-                        onEnded={triggerAutoplayCountdown}
-                        className="w-full h-full object-cover"
-                        poster={activeLesson.thumbnailUrl || "https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=1000&auto=format&fit=crop&q=80"}
-                      >
-                        <source src={activeLesson.videoUrl} type="video/mp4" />
-                        Seu navegador não suporta a execução deste vídeo.
-                      </video>
+                      {!activeLesson.videoUrl || activeLesson.videoUrl === '#' ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#101B1E] via-[#0A1215] to-[#070D0F] p-6 text-center space-y-3 relative overflow-hidden">
+                          <div className="absolute w-64 h-64 rounded-full bg-[#FF7F5B]/10 blur-3xl pointer-events-none -top-10" />
+                          <div className="relative z-10 w-14 h-14 rounded-2xl bg-[#FF7F5B]/15 border border-[#FF7F5B]/30 flex items-center justify-center text-2xl shadow-xl">
+                            🌱
+                          </div>
+                          <div className="relative z-10 space-y-1 max-w-sm">
+                            <span className="text-[10px] font-extrabold text-[#FFD166] uppercase tracking-wider bg-[#FFD166]/10 px-2.5 py-0.5 rounded-full border border-[#FFD166]/20 inline-block">
+                              Em Preparação & Gravação Final
+                            </span>
+                            <h3 className="text-sm sm:text-base font-bold text-white line-clamp-1">{activeLesson.title}</h3>
+                            <p className="text-[11px] text-slate-300 line-clamp-2">
+                              {activeLesson.description || 'Esta aula está sendo finalizada em estúdio com os especialistas da Elana Academy.'}
+                            </p>
+                          </div>
+                          <div className="relative z-10 pt-1">
+                            <button
+                              onClick={() => {
+                                if (completeLesson) completeLesson(activeLesson.id);
+                                showToast('success', 'Aula concluída! Parabéns pelo seu avanço 🌱');
+                              }}
+                              className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 flex items-center gap-1.5 shadow-md active:scale-95"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#8A9A5B]" />
+                              <span>Marcar como Concluída</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <video
+                          ref={videoRef}
+                          key={activeLesson.id}
+                          controls={mediaMode === 'video'}
+                          playsInline
+                          preload="metadata"
+                          autoPlay={false}
+                          onTimeUpdate={handleVideoTimeUpdate}
+                          onPause={handleVideoPause}
+                          onPlay={() => setIsAudioPlaying(true)}
+                          onEnded={triggerAutoplayCountdown}
+                          className="w-full h-full object-cover"
+                          poster={activeLesson.thumbnailUrl || "https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=1000&auto=format&fit=crop&q=80"}
+                        >
+                          <source src={activeLesson.videoUrl} type="video/mp4" />
+                          Seu navegador não suporta a execução deste vídeo.
+                        </video>
+                      )}
                     </>
                   )}
                 </div>
@@ -923,20 +947,35 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
               {/* Tab 4: Materials */}
               {activeTab === 'resources' && activeLesson.resources && (
                 <div className="space-y-2">
-                  {activeLesson.resources.map((res, i) => (
-                    <a
-                      key={i}
-                      href={res.url}
-                      onClick={(e) => { e.preventDefault(); showToast('info', `Download: ${res.title}`); }}
-                      className="flex items-center justify-between p-3.5 rounded-xl border border-white/10 bg-[#070D0F] hover:bg-white/5 transition-colors text-xs font-semibold text-white"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-[#FF7F5B]" />
-                        <span>{res.title}</span>
-                      </div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">Baixar PDF</span>
-                    </a>
-                  ))}
+                  {activeLesson.resources.map((res, i) => {
+                    const isRealUrl = Boolean(res.url && res.url.trim() && res.url !== '#' && (res.url.startsWith('http://') || res.url.startsWith('https://') || res.url.startsWith('/')));
+                    return (
+                      <a
+                        key={i}
+                        href={isRealUrl ? res.url : undefined}
+                        target={isRealUrl ? "_blank" : undefined}
+                        rel={isRealUrl ? "noopener noreferrer" : undefined}
+                        download={isRealUrl ? true : undefined}
+                        onClick={(e) => {
+                          if (!isRealUrl) {
+                            e.preventDefault();
+                            showToast('info', 'Material complementar em fase de diagramação final. Em breve disponível para download!');
+                          } else {
+                            showToast('success', `Abrindo material: ${res.title}`);
+                          }
+                        }}
+                        className="flex items-center justify-between p-3.5 rounded-xl border border-white/10 bg-[#070D0F] hover:bg-white/5 transition-colors text-xs font-semibold text-white cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-[#FF7F5B]" />
+                          <span>{res.title}</span>
+                        </div>
+                        <span className="text-[10px] text-[#FF7F5B] hover:text-[#ff9577] uppercase font-bold tracking-wider">
+                          Baixar PDF ↓
+                        </span>
+                      </a>
+                    );
+                  })}
                 </div>
               )}
             </div>

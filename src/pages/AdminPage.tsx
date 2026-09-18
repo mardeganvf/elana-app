@@ -37,7 +37,8 @@ import {
   Minimize2,
   Minus,
   Bell,
-  Save
+  Save,
+  Ban
 } from 'lucide-react';
 import { useAuth, isAdminUser, SOSMessage, deduplicateSosMessages } from '../context/AuthContext';
 import { useCommunity, checkContentSensitivity, recordDeletedContentId } from '../context/CommunityContext';
@@ -108,6 +109,9 @@ interface MemberUser {
   xp: number;
   joinedDays: number;
   bio?: string;
+  isBanned?: boolean;
+  bannedAt?: string | null;
+  bannedReason?: string | null;
 }
 
 interface EmotionStatBreakdown {
@@ -276,21 +280,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
 
   // Travar o scroll da página enquanto o modal de confirmação estiver aberto
   useEffect(() => {
-    if (rejectModalItem) {
+    if (rejectModalItem || memberToBan) {
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = '';
       };
     }
-  }, [rejectModalItem]);
+  }, [rejectModalItem, memberToBan]);
 
   // Moderation status is persisted directly in Supabase (community_posts.status / community_comments.status)
 
   // 👥 Members State
   const [members, setMembers] = useState<MemberUser[]>([]);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
-  const [memberCategoryFilter, setMemberCategoryFilter] = useState<'todos' | 'membro' | 'guia' | 'admin'>('todos');
+  const [memberCategoryFilter, setMemberCategoryFilter] = useState<'todos' | 'membro' | 'guia' | 'admin' | 'banidos'>('todos');
   const [selectedMemberProfile, setSelectedMemberProfile] = useState<PublicUserProfile | null>(null);
+  const [memberToBan, setMemberToBan] = useState<MemberUser | null>(null);
+  const [banReason, setBanReason] = useState<string>('Violação das diretrizes da comunidade');
+  const [isBanning, setIsBanning] = useState<boolean>(false);
 
   // 📊 Termômetro Emocional Real State
   const [emotionalStats, setEmotionalStats] = useState<EmotionalStats | null>(null);
@@ -779,7 +786,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
             levelIcon: p.level_icon || '🌱',
             xp: p.xp || 0,
             joinedDays: Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000),
-            bio: p.bio || undefined
+            bio: p.bio || undefined,
+            isBanned: !!p.is_banned,
+            bannedAt: p.banned_at || null,
+            bannedReason: p.banned_reason || null
           };
         }));
       }
@@ -1204,6 +1214,77 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     if (!target) return;
     const newRole = target.role === 'guia' ? 'membro' : 'guia';
     await handleUpdateMemberRole(userId, newRole);
+  };
+
+  // 🚫 Banir Membro da Comunidade
+  const handleBanMember = async () => {
+    if (!memberToBan) return;
+    if (memberToBan.role === 'admin') {
+      showToast('error', 'Administradores não podem ser banidos.');
+      return;
+    }
+    setIsBanning(true);
+    try {
+      const bannedAt = new Date().toISOString();
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          is_banned: true,
+          banned_at: bannedAt,
+          banned_reason: banReason
+        })
+        .eq('id', memberToBan.id);
+
+      if (error) {
+        showToast('error', `Erro ao banir membro: ${error.message}`);
+        return;
+      }
+
+      setMembers(prev => prev.map(m => m.id === memberToBan.id ? {
+        ...m,
+        isBanned: true,
+        bannedAt,
+        bannedReason: banReason
+      } : m));
+
+      showToast('success', `${memberToBan.name} foi banido(a) da comunidade.`);
+      setMemberToBan(null);
+      setBanReason('Violação das diretrizes da comunidade');
+    } catch (err: any) {
+      showToast('error', err?.message || 'Erro ao banir membro.');
+    } finally {
+      setIsBanning(false);
+    }
+  };
+
+  // 💚 Desbanir / Reativar Membro
+  const handleUnbanMember = async (member: MemberUser) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          is_banned: false,
+          banned_at: null,
+          banned_reason: null
+        })
+        .eq('id', member.id);
+
+      if (error) {
+        showToast('error', `Erro ao desbanir membro: ${error.message}`);
+        return;
+      }
+
+      setMembers(prev => prev.map(m => m.id === member.id ? {
+        ...m,
+        isBanned: false,
+        bannedAt: null,
+        bannedReason: null
+      } : m));
+
+      showToast('success', `${member.name} foi reativado(a) com sucesso! ✨`);
+    } catch (err: any) {
+      showToast('error', err?.message || 'Erro ao desbanir membro.');
+    }
   };
 
   // 🛡️ Handlers para Customização de Permissões
@@ -2886,9 +2967,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         const totalUsersCount = members.filter(m => m.role === 'membro').length;
         const totalGuiasCount = members.filter(m => m.role === 'guia').length;
         const totalAdminsCount = members.filter(m => m.role === 'admin').length;
+        const totalBannedCount = members.filter(m => m.isBanned).length;
 
         const filteredMembers = members.filter(member => {
-          if (memberCategoryFilter !== 'todos' && member.role !== memberCategoryFilter) {
+          if (memberCategoryFilter === 'banidos') {
+            if (!member.isBanned) return false;
+          } else if (memberCategoryFilter !== 'todos' && member.role !== memberCategoryFilter) {
             return false;
           }
           if (memberSearchQuery.trim()) {
@@ -2909,11 +2993,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   Gestão de Membros
                 </h2>
 
-                  {/* Filtro por Categoria de Membro (Usuário, Guia e Admin) */}
+                  {/* Filtro por Categoria de Membro (Usuário, Guia, Admin e Banidos) */}
                   <div className="relative inline-flex items-center">
                     <select
                       value={memberCategoryFilter}
-                      onChange={(e) => setMemberCategoryFilter(e.target.value as 'todos' | 'membro' | 'guia' | 'admin')}
+                      onChange={(e) => setMemberCategoryFilter(e.target.value as 'todos' | 'membro' | 'guia' | 'admin' | 'banidos')}
                       className="appearance-none bg-[#070D0F] text-xs font-bold text-slate-200 hover:text-white pl-3.5 pr-8 py-2 rounded-2xl border border-white/10 hover:border-white/20 focus:outline-none focus:border-[#FF7F5B] cursor-pointer transition-all shadow-sm"
                       title="Filtrar por Categoria de Membro"
                     >
@@ -2921,6 +3005,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                       <option value="membro" className="bg-[#101B1E] text-white">Usuário ({totalUsersCount})</option>
                       <option value="guia" className="bg-[#101B1E] text-white">Guia ({totalGuiasCount})</option>
                       <option value="admin" className="bg-[#101B1E] text-white">Admin ({totalAdminsCount})</option>
+                      {totalBannedCount > 0 && (
+                        <option value="banidos" className="bg-[#101B1E] text-red-400">🚫 Banidos ({totalBannedCount})</option>
+                      )}
                     </select>
                     <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
                   </div>
@@ -2963,7 +3050,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   </div>
                 ) : (
                   filteredMembers.map(member => (
-                    <div key={member.id} className="bg-[#070D0F] p-4 rounded-2xl border border-white/10 flex items-center justify-between gap-4 hover:border-white/20 transition-all">
+                    <div key={member.id} className={`bg-[#070D0F] p-4 rounded-2xl border flex items-center justify-between gap-4 transition-all ${
+                      member.isBanned ? 'border-red-500/30 bg-red-950/10' : 'border-white/10 hover:border-white/20'
+                    }`}>
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <img 
                           src={member.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120'} 
@@ -2971,7 +3060,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                           onClick={() => handleOpenMemberProfile(member)}
                           loading="lazy"
                           className={`w-11 h-11 rounded-full object-cover border-2 shrink-0 cursor-pointer hover:opacity-85 transition-opacity ${
-                            member.role === 'admin' 
+                            member.isBanned
+                              ? 'border-red-500 opacity-60'
+                              : member.role === 'admin' 
                               ? 'border-purple-400' 
                               : member.role === 'guia' 
                               ? 'border-[#8A9A5B]' 
@@ -2993,11 +3084,46 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                             <span>{member.levelIcon}</span>
                             <span>{member.levelTitle}</span>
                           </span>
+
+                          {member.isBanned && (
+                            <span 
+                              className="bg-red-500/20 text-red-300 text-[10px] font-bold px-2 py-0.5 rounded-md border border-red-500/40 flex items-center gap-1 shrink-0" 
+                              title={member.bannedReason ? `Motivo: ${member.bannedReason}` : 'Membro banido'}
+                            >
+                              <Ban className="w-3 h-3 text-red-400" />
+                              <span>Banido</span>
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      {/* Seletor de Categoria do Membro */}
-                      <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                      {/* Ações e Seletor de Categoria do Membro */}
+                      <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+                        {/* Botão de Banir / Desbanir */}
+                        {member.role !== 'admin' && (
+                          member.isBanned ? (
+                            <button
+                              type="button"
+                              onClick={() => handleUnbanMember(member)}
+                              className="px-2.5 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                              title="Reativar acesso do membro à comunidade"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Desbanir</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setMemberToBan(member)}
+                              className="px-2.5 py-1.5 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                              title="Banir membro da comunidade"
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Banir</span>
+                            </button>
+                          )
+                        )}
+
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hidden sm:inline">
                           Categoria:
                         </span>
@@ -3005,8 +3131,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                           <select
                             value={member.role}
                             onChange={(e) => handleUpdateMemberRole(member.id, e.target.value as 'membro' | 'guia' | 'admin')}
+                            disabled={member.isBanned}
                             className={`appearance-none text-xs font-bold pl-3 pr-7 py-1.5 rounded-xl border transition-all cursor-pointer shadow-sm ${
-                              member.role === 'admin'
+                              member.isBanned
+                                ? 'bg-zinc-900/50 text-slate-500 border-white/5 cursor-not-allowed opacity-60'
+                                : member.role === 'admin'
                                 ? 'bg-purple-950/40 text-purple-200 border-purple-500/40 hover:border-purple-400'
                                 : member.role === 'guia'
                                 ? 'bg-[#8A9A5B]/20 text-[#c2d689] border-[#8A9A5B]/40 hover:border-[#8A9A5B]'
@@ -3874,6 +4003,102 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
                   <>
                     <XCircle className="w-4 h-4" />
                     <span>{rejectModalItem.type === 'comment' ? 'Confirmar Exclusão' : 'Confirmar Remoção'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 🚫 Modal de Confirmação de Banimento de Membro */}
+      {memberToBan && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#101B1E] border border-red-500/40 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5 text-red-400 font-bold text-sm">
+                <Ban className="w-5 h-5" />
+                <span>Banir Membro da Comunidade</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMemberToBan(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 bg-[#070D0F] p-3.5 rounded-2xl border border-white/5">
+                <img
+                  src={memberToBan.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120'}
+                  alt={memberToBan.name}
+                  className="w-10 h-10 rounded-full object-cover border border-white/20 shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-white truncate">{memberToBan.name}</p>
+                  <p className="text-xs text-slate-400 truncate">{memberToBan.email || 'Sem e-mail'}</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-200 space-y-1">
+                <p className="font-bold">Atenção ao banir:</p>
+                <p className="text-[11px] text-red-300/90 leading-relaxed">
+                  O membro não poderá mais publicar posts, enviar comentários, reagir ou votar em enquetes. Suas tentativas de interação serão bloqueadas pelo banco de dados (RLS).
+                </p>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-300 block mb-1.5">
+                  Motivo do Banimento:
+                </label>
+                <select
+                  value={banReason}
+                  onChange={e => setBanReason(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-[#070D0F] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-red-500/50 mb-2.5"
+                >
+                  <option value="Violação das diretrizes da comunidade">Violação das diretrizes da comunidade</option>
+                  <option value="Comportamento hostil ou ofensivo">Comportamento hostil ou ofensivo</option>
+                  <option value="Spam ou autopromoção insistente">Spam ou autopromoção insistente</option>
+                  <option value="Coerção, assédio ou exposição de terceiros">Coerção, assédio ou exposição de terceiros</option>
+                  <option value="Tentativa de invasão ou uso indevido">Tentativa de invasão ou uso indevido</option>
+                  <option value="Outro">Outro (especificar abaixo)</option>
+                </select>
+
+                {banReason === 'Outro' && (
+                  <input
+                    type="text"
+                    placeholder="Descreva o motivo detalhado..."
+                    onChange={e => setBanReason(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-[#070D0F] border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500/50"
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setMemberToBan(null)}
+                disabled={isBanning}
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleBanMember}
+                disabled={isBanning}
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-lg cursor-pointer"
+              >
+                {isBanning ? (
+                  <span>Banindo...</span>
+                ) : (
+                  <>
+                    <Ban className="w-4 h-4" />
+                    <span>Confirmar Banimento</span>
                   </>
                 )}
               </button>

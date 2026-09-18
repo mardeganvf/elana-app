@@ -758,18 +758,24 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return;
       }
 
-      // 2. Buscar reações APENAS dos posts visíveis (.in filtra por IDs)
+      // 2. Buscar reações APENAS dos posts e comentários visíveis
       const remoteReactionsByPost: Record<string, Record<string, number>> = {};
       const remoteUserReactionsByPost: Record<string, Record<string, boolean>> = {};
+      const remoteReactionsByComment: Record<string, Record<string, number>> = {};
+      const remoteUserReactionsByComment: Record<string, Record<string, boolean>> = {};
 
       try {
         const postIds = (data || []).map((p: any) => p.id).filter(Boolean);
+        const commentIds = (data || []).flatMap((p: any) => 
+          (Array.isArray(p.community_comments) ? p.community_comments : (Array.isArray(p.comments) ? p.comments : []))
+            .map((c: any) => c.id)
+        ).filter(Boolean);
 
         if (postIds.length > 0) {
           const { data: reactionsData, error: reactError } = await supabase
             .from('community_reactions')
             .select('post_id, user_id, reaction_key')
-            .in('post_id', postIds); // 🔑 Filtra apenas reações dos posts visíveis
+            .in('post_id', postIds);
 
           if (reactionsData && !reactError) {
             reactionsData.forEach((r: any) => {
@@ -789,8 +795,33 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             });
           }
         }
+
+        if (commentIds.length > 0) {
+          const { data: commentReactionsData, error: cReactError } = await supabase
+            .from('community_reactions')
+            .select('comment_id, user_id, reaction_key')
+            .in('comment_id', commentIds);
+
+          if (commentReactionsData && !cReactError) {
+            commentReactionsData.forEach((r: any) => {
+              if (!r.comment_id || !r.reaction_key) return;
+              if (!remoteReactionsByComment[r.comment_id]) {
+                remoteReactionsByComment[r.comment_id] = {};
+              }
+              remoteReactionsByComment[r.comment_id][r.reaction_key] =
+                (remoteReactionsByComment[r.comment_id][r.reaction_key] || 0) + 1;
+
+              if (user?.id && r.user_id === user.id) {
+                if (!remoteUserReactionsByComment[r.comment_id]) {
+                  remoteUserReactionsByComment[r.comment_id] = {};
+                }
+                remoteUserReactionsByComment[r.comment_id][r.reaction_key] = true;
+              }
+            });
+          }
+        }
       } catch {
-        // Silencioso se a tabela ainda não foi criada no Supabase
+        // Silencioso se houver falha de rede temporária
       }
 
       if (data) {
@@ -857,11 +888,13 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 reactions: {
                   ...(stored.comments[c.id] || {}),
                   ...(localComment?.reactions || {}),
+                  ...(remoteReactionsByComment[c.id] || {}),
                   ...(c.reactions || {})
                 },
                 userReactions: {
                   ...(stored.userCommentReactions[userKey]?.[c.id] || {}),
                   ...(localComment?.userReactions || {}),
+                  ...(remoteUserReactionsByComment[c.id] || {}),
                   ...(c.userReactions || {})
                 }
               };
@@ -1357,6 +1390,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const createPost = (payload: CreatePostPayload) => {
     if (!user) return;
+    if (user.isBanned) {
+      console.warn('[CommunityContext] Usuário banido impedido de criar post.');
+      return;
+    }
 
     const sensitivityCheck = payload.sensitivityCheck || checkContentSensitivity(`${payload.title} ${payload.content}`);
 
@@ -1492,6 +1529,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const toggleReaction = (postId: string, reactionKey: string) => {
+    if (!user || user.isBanned) return;
+
     // 🏆 Conquista: Acolhimento Pleno (usou reações)
     awardBadge('b35');
 
@@ -1595,6 +1634,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const toggleCommentReaction = (postId: string, commentId: string, reactionKey: string) => {
+    if (!user || user.isBanned) return;
+
     let isNowActive = false;
     let nextCommentReactions: Record<string, number> = {};
 
@@ -1655,6 +1696,31 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .then(({ error }) => {
           if (error) console.warn('Supabase comment likes_count notice:', error.message);
         });
+
+      // Sincronizar na tabela individual de reações (community_reactions) se houver usuário
+      if (user?.id) {
+        if (isNowActive) {
+          supabase
+            .from('community_reactions')
+            .upsert({
+              comment_id: commentId,
+              user_id: user.id,
+              reaction_key: reactionKey
+            }, { onConflict: 'comment_id,user_id' })
+            .then(({ error }) => {
+              if (error) console.warn('Supabase comment reaction notice:', error.message);
+            });
+        } else {
+          supabase
+            .from('community_reactions')
+            .delete()
+            .eq('comment_id', commentId)
+            .eq('user_id', user.id)
+            .then(({ error }) => {
+              if (error) console.warn('Supabase comment reaction notice:', error.message);
+            });
+        }
+      }
     }
   };
 
@@ -1665,6 +1731,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     customSensitivity?: ContentSensitivityResult
   ): { isFlagged: boolean; matchedWord?: string; flagType?: SensitivityFlagType } => {
     if (!user) return { isFlagged: false };
+    if (user.isBanned) {
+      console.warn('[CommunityContext] Usuário banido impedido de comentar.');
+      return { isFlagged: false };
+    }
 
     const sensitivity = customSensitivity || checkContentSensitivity(content);
     const isFlagged = sensitivity.isFlagged;
@@ -1802,6 +1872,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const votePoll = async (pollId: string, optionId: string) => {
+    if (!user || user.isBanned) return;
     const userKey = user?.id || 'anon';
     if (userVotedPollsMap[pollId]) return;
 

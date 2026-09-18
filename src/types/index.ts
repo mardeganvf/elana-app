@@ -92,6 +92,9 @@ export interface UserProfile {
   notificationsEnabled?: boolean;
   onboardingCompleted?: boolean;
   respiroCycles?: number;
+  isBanned?: boolean;
+  bannedAt?: string;
+  bannedReason?: string;
   children?: {
     id: string;
     emoji: string;

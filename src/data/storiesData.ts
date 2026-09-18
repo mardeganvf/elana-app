@@ -39,7 +39,7 @@ export const STORIES_DATA: StoryItem[] = [
     authorName: 'Luciana Ferreira',
     authorHandle: '@lu.atipica',
     authorAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
     posterUrl: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=600&auto=format&fit=crop&q=80',
     duration: '0:50',
     date: 'Há 2 dias',

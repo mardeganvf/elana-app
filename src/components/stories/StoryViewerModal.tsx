@@ -98,13 +98,13 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({ stories, ini
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-hidden animate-fade-in"
+      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-hidden animate-fade-in"
       onClick={onClose}
     >
       
       {/* Centered Compact 9:16 Story Frame Container */}
       <div 
-        className="relative w-[340px] sm:w-[380px] aspect-[9/16] max-h-[85vh] bg-slate-950 rounded-3xl overflow-hidden shadow-2xl border border-white/20 flex flex-col justify-between select-none"
+        className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[9/16] max-h-[92vh] sm:max-h-[85vh] bg-slate-950 rounded-3xl overflow-hidden shadow-2xl border border-white/20 flex flex-col justify-between select-none mx-auto"
         onClick={(e) => e.stopPropagation()}
       >
         
