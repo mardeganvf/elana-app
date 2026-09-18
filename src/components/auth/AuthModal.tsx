@@ -223,7 +223,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         avatar: GENERIC_DEFAULT_AVATAR,
         role: 'Membro da Comunidade',
         family_tag: 'Mãe / Pai de 1ª viagem',
-        xp: guestSuperpoder ? 100 : 0,
+        xp: guestSuperpoder ? 75 : 0,
         level_number: 1,
         level_name: 'Semente Plantada',
         level_icon: '🌱',
@@ -243,6 +243,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
       if (guestSuperpoder) {
         localStorage.removeItem('elana_guest_superpoder');
+        await supabase.from('user_badges').upsert({
+          profile_id: validId,
+          badge_id: 'b_superpoder',
+          unlocked_at: new Date().toISOString()
+        }, { onConflict: 'profile_id, badge_id' });
       }
 
       setSuccessMessage('Conta validada com sucesso! Entrando...');

@@ -1,11 +1,11 @@
 import { Badge, UserLevel } from '../types';
 
 export const ALL_BADGES: Badge[] = [
-  // 1. 🌿 Primeiros Passos (4 Conquistas - 160 XP)
+  // 1. 🌿 Primeiros Passos (4 Conquistas - 135 XP)
   { id: 'b1', title: 'Semente Plantada', icon: '🌱', category: 'Primeiros Passos', rewardXp: 25, description: 'Que bom que você chegou! Sua caminhada com a gente começa agora.' },
   { id: 'b2', title: 'Criando Raízes', icon: '🪵', category: 'Primeiros Passos', rewardXp: 25, description: 'Perfil pronto com a sua cara e com a realidade da sua casa.' },
   { id: 'b3', title: 'Sempre Alerta', icon: '🔔', category: 'Primeiros Passos', rewardXp: 10, description: 'Notificações ligadas pra gente te lembrar de respirar no meio da correria.' },
-  { id: 'b_superpoder', title: 'Superpoder Parental', icon: '⚡', category: 'Primeiros Passos', rewardXp: 100, description: 'Descobriu a sua maior força na criação através do Quiz de Superpoder Parental!' },
+  { id: 'b_superpoder', title: 'Superpoder Parental', icon: '⚡', category: 'Primeiros Passos', rewardXp: 75, description: 'Descobriu a sua maior força na criação através do Quiz de Superpoder Parental!' },
 
   // 2. 🎓 Jornadas de Conhecimento (11 Conquistas - 225 XP)
   { id: 'b4', title: 'Minha Jornada', icon: '▶️', category: 'Jornadas de Conhecimento', rewardXp: 25, description: 'Você deu o play no primeiro vídeo. Sem pressa, no seu próprio ritmo.' },

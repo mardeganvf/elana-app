@@ -26,6 +26,7 @@ export const getHowToUnlock = (badge: Badge): string => {
     b1: 'Faça seu cadastro e entre no Elana App pela primeira vez.',
     b2: 'Complete as informações do seu perfil, bio e filhos na aba Perfil.',
     b3: 'Ative o botão de notificações na página do seu Perfil.',
+    b_superpoder: 'Descubra sua maior força na criação concluindo o teste de Superpoder Parental.',
     b4: 'Assista ao primeiro vídeo em qualquer uma das 6 Jornadas Guiadas.',
     b5: 'Conclua 25% de todas as aulas de uma jornada de conhecimento.',
     b6: 'Conclua 50% de todas as aulas de uma jornada de conhecimento.',

@@ -773,6 +773,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profile.notifications_enabled) {
         checkAndAddBadge('b3'); // Sempre Alerta
       }
+      if (profile.parental_archetype) {
+        checkAndAddBadge('b_superpoder'); // Superpoder Parental (75 XP)
+      }
 
       // ▶️ 2. Jornadas de Conhecimento (b4, b5, b6, b7, b9)
       if (completedLessonIds.length >= 1) {

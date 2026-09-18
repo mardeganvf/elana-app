@@ -143,10 +143,9 @@ export const QuizPage: React.FC<QuizPageProps> = ({
           parentalQuizCompletedAt: new Date().toISOString()
         });
 
-        // Concede badge de Superpoder Parental (+100 XP)
-        const badgeSuperpoder = ALL_BADGES.find(b => b.id === 'b_superpoder');
-        if (badgeSuperpoder && !user.badges?.some(b => b.id === 'b_superpoder')) {
-          awardBadge(badgeSuperpoder);
+        // Concede badge de Superpoder Parental (+75 XP)
+        if (!user.badges?.some(b => b.id === 'b_superpoder')) {
+          awardBadge('b_superpoder');
         }
       } else {
         // Se visitante, salva temporariamente no storage para hidratar caso crie conta
@@ -254,7 +253,7 @@ export const QuizPage: React.FC<QuizPageProps> = ({
             </div>
             <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
               <span className="text-base">🎁</span>
-              <h4 className="text-xs font-black text-white">+100 XP no Perfil</h4>
+              <h4 className="text-xs font-black text-white">+75 XP no Perfil</h4>
               <p className="text-[11px] text-slate-400">Desbloqueia a badge oficial e a jornada recomendada.</p>
             </div>
           </div>
@@ -410,7 +409,7 @@ export const QuizPage: React.FC<QuizPageProps> = ({
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-black">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Diagnóstico Concluído (+100 XP)</span>
+            <span>Diagnóstico Concluído (+75 XP)</span>
           </div>
         </div>
 
