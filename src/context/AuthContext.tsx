@@ -5,6 +5,7 @@ import { JOURNEYS_DATA } from '../data/journeysData';
 import { supabase } from '../lib/supabase';
 import { getFollowedMembers } from '../lib/followService';
 import confetti from 'canvas-confetti';
+import { setSentryUser } from '../lib/sentry';
 
 export interface SOSMessage {
   id: string;
@@ -183,6 +184,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const userRef = useRef<UserProfile | null>(user);
   useEffect(() => {
     userRef.current = user;
+    if (user) {
+      setSentryUser({ id: user.id, email: user.email, role: user.role });
+    } else {
+      setSentryUser(null);
+    }
   }, [user]);
 
   const [unlockedBadgeModal, setUnlockedBadgeModal] = useState<Badge | null>(null);

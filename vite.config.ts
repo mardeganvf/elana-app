@@ -21,6 +21,9 @@ export default defineConfig(({ mode }) => ({
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
             }
+            if (id.includes('@sentry')) {
+              return 'vendor-sentry';
+            }
             if (id.includes('canvas-confetti')) {
               return 'vendor-confetti';
             }

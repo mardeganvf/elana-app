@@ -28,6 +28,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -36,8 +37,10 @@ body {
   color: var(--text-main);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -45,8 +48,13 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: 0.5px;
 }
 
-button, input, select, textarea {
+button, a, input, select, textarea {
   font-family: var(--font-ui);
+  touch-action: manipulation;
+}
+
+button {
+  -webkit-touch-callout: none;
 }
 
 /* 📱 Prevenção de Auto-Zoom no iOS Safari em telas móveis */
