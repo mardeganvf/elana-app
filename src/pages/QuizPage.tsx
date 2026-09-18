@@ -876,8 +876,8 @@ export const QuizPage: React.FC<QuizPageProps> = ({
                 <div className="space-y-3">
                   {dominant.practicalTips?.map((tip, i) => {
                     const colonIdx = tip.indexOf(':');
-                    const hasColon = colonIdx > 0 && colonIdx < 50;
-                    const title = hasColon ? tip.slice(0, colonIdx).replace(/^["']|["']$/g, '').trim() : null;
+                    const hasColon = colonIdx > 0 && colonIdx < 60;
+                    const title = hasColon ? tip.slice(0, colonIdx).replace(/["'“”]/g, '').trim() : null;
                     const desc = hasColon ? tip.slice(colonIdx + 1).trim() : tip;
                     return (
                       <div key={`dom-${i}`} className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
@@ -912,8 +912,8 @@ export const QuizPage: React.FC<QuizPageProps> = ({
                   <div className="space-y-3">
                     {secondary.practicalTips?.map((tip, i) => {
                       const colonIdx = tip.indexOf(':');
-                      const hasColon = colonIdx > 0 && colonIdx < 50;
-                      const title = hasColon ? tip.slice(0, colonIdx).replace(/^["']|["']$/g, '').trim() : null;
+                      const hasColon = colonIdx > 0 && colonIdx < 60;
+                      const title = hasColon ? tip.slice(0, colonIdx).replace(/["'“”]/g, '').trim() : null;
                       const desc = hasColon ? tip.slice(colonIdx + 1).trim() : tip;
                       return (
                         <div key={`sec-${i}`} className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
