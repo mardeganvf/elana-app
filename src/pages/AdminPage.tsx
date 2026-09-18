@@ -278,16 +278,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   // IDs aprovados na sessão pelo admin para garantir consistência otimista imediata
   const [approvedItemIds, setApprovedItemIds] = useState<Set<string>>(new Set());
 
-  // Travar o scroll da página enquanto o modal de confirmação estiver aberto
-  useEffect(() => {
-    if (rejectModalItem || memberToBan) {
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = '';
-      };
-    }
-  }, [rejectModalItem, memberToBan]);
-
   // Moderation status is persisted directly in Supabase (community_posts.status / community_comments.status)
 
   // 👥 Members State
@@ -302,6 +292,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
   // 📊 Termômetro Emocional Real State
   const [emotionalStats, setEmotionalStats] = useState<EmotionalStats | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+
+  // Travar o scroll da página enquanto o modal de confirmação estiver aberto
+  useEffect(() => {
+    if (rejectModalItem || memberToBan) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [rejectModalItem, memberToBan]);
 
   // 🛡️ Moderation Loader - carrega fila completa de moderação e denúncias
   const loadModeration = async () => {
