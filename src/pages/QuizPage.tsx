@@ -30,7 +30,11 @@ import {
   PARENTAL_ARCHETYPES,
   calculateParentalQuizResult,
   ArchetypeProfile,
-  QuizCalculationResult
+  QuizCalculationResult,
+  ParentalStatus,
+  ChildAgeBracket,
+  CHILD_AGE_OPTIONS,
+  getRecommendedJourneyByAge
 } from '../data/parentalQuizData';
 import { useAuth } from '../context/AuthContext';
 import { ALL_BADGES } from '../data/gamificationData';
@@ -48,14 +52,34 @@ export const QuizPage: React.FC<QuizPageProps> = ({
 }) => {
   const { user, updateUser, awardBadge } = useAuth();
 
-  // Estados do fluxo: 'intro' | 'questions' | 'calculating' | 'result'
-  const [stage, setStage] = useState<'intro' | 'questions' | 'calculating' | 'result'>('intro');
+  // Estados do fluxo: 'intro' | 'preliminary-status' | 'preliminary-ages' | 'questions' | 'calculating' | 'result'
+  const [stage, setStage] = useState<'intro' | 'preliminary-status' | 'preliminary-ages' | 'questions' | 'calculating' | 'result'>('intro');
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState<number>(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [calculationResult, setCalculationResult] = useState<QuizCalculationResult | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [calculatingStepText, setCalculatingStepText] = useState('Cruzando seus instintos...');
   const [activeTabDossie, setActiveTabDossie] = useState<'luz' | 'sombra' | 'dicas'>('luz');
+
+  // Estados das perguntas preliminares (contexto familiar)
+  const [parentalStatus, setParentalStatus] = useState<ParentalStatus | null>(() => {
+    try {
+      const saved = localStorage.getItem('elana_quiz_parental_status');
+      if (saved === 'sim' || saved === 'gestante' || saved === 'nao') return saved as ParentalStatus;
+    } catch {}
+    return null;
+  });
+
+  const [selectedAgeBrackets, setSelectedAgeBrackets] = useState<ChildAgeBracket[]>(() => {
+    try {
+      const saved = localStorage.getItem('elana_quiz_child_ages');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [];
+  });
 
   // Recupera resultado anterior se já existir
   useEffect(() => {
@@ -106,6 +130,42 @@ export const QuizPage: React.FC<QuizPageProps> = ({
   const handleStart = () => {
     setCurrentQuestionIdx(0);
     setSelectedAnswers({});
+    setStage('preliminary-status');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectStatus = (status: ParentalStatus) => {
+    setParentalStatus(status);
+    try {
+      localStorage.setItem('elana_quiz_parental_status', status);
+    } catch {}
+
+    if (status === 'sim') {
+      setStage('preliminary-ages');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setSelectedAgeBrackets([]);
+      try {
+        localStorage.setItem('elana_quiz_child_ages', JSON.stringify([]));
+      } catch {}
+      setStage('questions');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleToggleAgeBracket = (bracket: ChildAgeBracket) => {
+    setSelectedAgeBrackets(prev => {
+      const exists = prev.includes(bracket);
+      const next = exists ? prev.filter(b => b !== bracket) : [...prev, bracket];
+      try {
+        localStorage.setItem('elana_quiz_child_ages', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleContinueFromAges = () => {
+    if (selectedAgeBrackets.length === 0) return;
     setStage('questions');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -131,6 +191,14 @@ export const QuizPage: React.FC<QuizPageProps> = ({
   const handlePrevQuestion = () => {
     if (currentQuestionIdx > 0) {
       setCurrentQuestionIdx(prev => prev - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Se estava na primeira pergunta de superpoder, retorna à etapa preliminar correspondente
+      if (parentalStatus === 'sim') {
+        setStage('preliminary-ages');
+      } else {
+        setStage('preliminary-status');
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -313,7 +381,178 @@ export const QuizPage: React.FC<QuizPageProps> = ({
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 2. TELA DE CÁLCULO / INTERSTITIAL
+  // 2. ETAPA PRELIMINAR 1: VOCÊ TEM FILHOS?
+  // ───────────────────────────────────────────────────────────────────────────
+  if (stage === 'preliminary-status') {
+    return (
+      <div className="max-w-2xl mx-auto py-6 sm:py-10 px-4 animate-in fade-in duration-300">
+        <button
+          onClick={() => setStage('intro')}
+          className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors mb-6 cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Voltar</span>
+        </button>
+
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#18272B] to-[#101B1E] border border-white/10 p-6 sm:p-10 shadow-2xl space-y-8">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF7F5B]/10 border border-[#FF7F5B]/30 text-[#FF7F5B] text-xs font-extrabold uppercase tracking-wider">
+              <span>Etapa 1 de 2 • Contexto Familiar</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              1. Você tem filhos?
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400">
+              Isso nos ajuda a personalizar as recomendações práticas de acordo com o momento da sua casa.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              {
+                id: 'sim' as ParentalStatus,
+                emoji: '👶',
+                title: 'Sim, já tenho filhos',
+                desc: 'Tenho uma ou mais crianças ou adolescentes em casa'
+              },
+              {
+                id: 'gestante' as ParentalStatus,
+                emoji: '🤰',
+                title: 'Estou grávida ou esperando a chegada de um bebê',
+                desc: 'Me preparando para a chegada, puerpério e os primeiros meses'
+              },
+              {
+                id: 'nao' as ParentalStatus,
+                emoji: '🌱',
+                title: 'Ainda não tenho filhos',
+                desc: 'Quero descobrir meu estilo de cuidado e autoconhecimento'
+              }
+            ].map(item => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => handleSelectStatus(item.id)}
+                className={`w-full p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex items-center justify-between group ${
+                  parentalStatus === item.id
+                    ? 'bg-[#FF7F5B]/15 border-[#FF7F5B] shadow-lg shadow-[#FF7F5B]/10'
+                    : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className="text-2xl sm:text-3xl shrink-0">{item.emoji}</span>
+                  <div>
+                    <h4 className="text-sm sm:text-base font-black text-white group-hover:text-[#FFD166] transition-colors">
+                      {item.title}
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className={`w-5 h-5 shrink-0 transition-transform ${
+                  parentalStatus === item.id ? 'text-[#FF7F5B] translate-x-1' : 'text-slate-500 group-hover:text-white'
+                }`} />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 3. ETAPA PRELIMINAR 2: IDADE DOS FILHOS (MÚLTIPLA SELEÇÃO)
+  // ───────────────────────────────────────────────────────────────────────────
+  if (stage === 'preliminary-ages') {
+    return (
+      <div className="max-w-2xl mx-auto py-6 sm:py-10 px-4 animate-in fade-in duration-300">
+        <button
+          onClick={() => setStage('preliminary-status')}
+          className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors mb-6 cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Voltar</span>
+        </button>
+
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#18272B] to-[#101B1E] border border-white/10 p-6 sm:p-10 shadow-2xl space-y-8">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF7F5B]/10 border border-[#FF7F5B]/30 text-[#FF7F5B] text-xs font-extrabold uppercase tracking-wider">
+              <span>Etapa 2 de 2 • Idade dos Filhos</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              2. Qual a idade deles?
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400">
+              Você pode marcar mais de uma alternativa se tiver mais de um filho:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {CHILD_AGE_OPTIONS.map(opt => {
+              const isChecked = selectedAgeBrackets.includes(opt.id);
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => handleToggleAgeBracket(opt.id)}
+                  className={`p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex items-start gap-3 group ${
+                    isChecked
+                      ? 'bg-[#FF7F5B]/15 border-[#FF7F5B] shadow-md'
+                      : 'bg-white/5 border-white/10 hover:border-white/25 hover:bg-white/10'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                    isChecked
+                      ? 'bg-[#FF7F5B] border-[#FF7F5B] text-slate-950'
+                      : 'border-slate-500 group-hover:border-slate-300'
+                  }`}>
+                    {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-sm font-black text-white group-hover:text-[#FFD166] transition-colors block">
+                      {opt.label}
+                    </span>
+                    {opt.description && (
+                      <span className="text-[11px] text-slate-400 block leading-tight">
+                        {opt.description}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <button
+              type="button"
+              onClick={() => setStage('preliminary-status')}
+              className="text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              ← Alterar pergunta anterior
+            </button>
+
+            <button
+              type="button"
+              onClick={handleContinueFromAges}
+              disabled={selectedAgeBrackets.length === 0}
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 font-black text-xs uppercase tracking-wider px-6 py-3.5 rounded-2xl shadow-xl transition-all cursor-pointer ${
+                selectedAgeBrackets.length > 0
+                  ? 'bg-gradient-to-r from-[#FF7F5B] to-[#e06847] hover:from-[#ff8b6b] hover:to-[#eb7555] text-white shadow-[#FF7F5B]/30 active:scale-95'
+                  : 'bg-white/5 text-slate-500 border border-white/10 cursor-not-allowed'
+              }`}
+            >
+              <span>Ir para as Perguntas do Superpoder</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 4. TELA DE CÁLCULO / INTERSTITIAL
   // ───────────────────────────────────────────────────────────────────────────
   if (stage === 'calculating') {
     return (
@@ -335,7 +574,7 @@ export const QuizPage: React.FC<QuizPageProps> = ({
         </div>
 
         <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-          Cruzando suas escolhas com os 12 arquétipos para revelar sua maior força e sua trilha ideal.
+          Cruzando suas escolhas com os 12 arquétipos para revelar seu Superpoder Parental.
         </p>
       </div>
     );
@@ -610,38 +849,44 @@ export const QuizPage: React.FC<QuizPageProps> = ({
           )}
         </div>
 
-        {/* 📚 JORNADA ELANA RECOMENDADA */}
-        <div className="rounded-3xl bg-gradient-to-r from-[#18272B] to-[#101B1E] border border-white/10 p-5 sm:p-7 shadow-xl space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-[#FF7F5B]">
-              Trilha Recomendada para o seu Superpoder
-            </span>
-            <span className="text-xs font-bold text-slate-400">Jornada Indicada</span>
-          </div>
+        {/* 📚 JORNADA RECOMENDADA BASEADA NA IDADE DOS FILHOS */}
+        {(() => {
+          const rec = getRecommendedJourneyByAge(parentalStatus, selectedAgeBrackets);
+          if (!rec) return null;
+          return (
+            <div className="rounded-3xl bg-gradient-to-r from-[#18272B] to-[#101B1E] border border-white/10 p-5 sm:p-7 shadow-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-[#FF7F5B]">
+                  Jornada Recomendada para o Momento da Sua Família
+                </span>
+                <span className="text-xs font-bold text-slate-400">Recomendação por Idade</span>
+              </div>
 
-          <div className="space-y-1.5">
-            <h4 className="text-base sm:text-lg font-black text-white">
-              {dominant.recommendedJourneyTitle}
-            </h4>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              {dominant.recommendedJourneyReason}
-            </p>
-          </div>
+              <div className="space-y-1.5">
+                <h4 className="text-base sm:text-lg font-black text-white">
+                  {rec.journeyTitle}
+                </h4>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {rec.reason}
+                </p>
+              </div>
 
-          <button
-            onClick={() => {
-              if (onSelectJourney) {
-                onSelectJourney(dominant.recommendedJourneyId);
-              } else {
-                onBackToHome();
-              }
-            }}
-            className="inline-flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-extrabold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all cursor-pointer active:scale-95 shadow-lg shadow-[#FF7F5B]/20"
-          >
-            <span>Ver Aulas da Jornada</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+              <button
+                onClick={() => {
+                  if (onSelectJourney) {
+                    onSelectJourney(rec.journeyId);
+                  } else {
+                    onBackToHome();
+                  }
+                }}
+                className="inline-flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-white font-extrabold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all cursor-pointer active:scale-95 shadow-lg shadow-[#FF7F5B]/20"
+              >
+                <span>Assistir {rec.journeyTitle}</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          );
+        })()}
 
         {/* VISITANTE CTA: SE NÃO ESTIVER LOGADO */}
         {!user && onOpenAuthModal && (

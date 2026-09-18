@@ -14,9 +14,92 @@ export interface ArchetypeProfile {
   practicalTips: string[];
   themeColor: string;
   iconName: string;
-  recommendedJourneyId: string;
-  recommendedJourneyTitle: string;
-  recommendedJourneyReason: string;
+  recommendedJourneyId?: string;
+  recommendedJourneyTitle?: string;
+  recommendedJourneyReason?: string;
+}
+
+export type ParentalStatus = 'sim' | 'gestante' | 'nao';
+
+export type ChildAgeBracket = '0-3' | '3-6' | '6-9' | '10-14' | '14-18' | '18+';
+
+export interface ChildAgeOption {
+  id: ChildAgeBracket;
+  label: string;
+  description?: string;
+}
+
+export const CHILD_AGE_OPTIONS: ChildAgeOption[] = [
+  { id: '0-3', label: '0 a 3 anos', description: 'Bebês e primeiríssima infância' },
+  { id: '3-6', label: '3 a 6 anos', description: 'Primeira infância e pré-escola' },
+  { id: '6-9', label: '6 a 9 anos', description: 'Anos iniciais e alfabetização' },
+  { id: '10-14', label: '10 a 14 anos', description: 'Pré-adolescência' },
+  { id: '14-18', label: '14 a 18 anos', description: 'Adolescência' },
+  { id: '18+', label: '+18 anos', description: 'Jovens adultos' }
+];
+
+export interface RecommendedJourneyResult {
+  journeyId: string;
+  journeyTitle: string;
+  tagline: string;
+  reason: string;
+}
+
+/**
+ * Recomenda a trilha oficial da Elana com base na idade dos filhos:
+ * - Gestante ou 0 a 3 anos como alternativa única -> Pais Recém-Nascidos
+ * - Uma ou mais alternativas a partir de 6 anos -> Construindo Pontes
+ * - 3 a 6 anos -> Pais Recém-Nascidos (foco em desenvolvimento e limites)
+ */
+export function getRecommendedJourneyByAge(
+  status: ParentalStatus | null,
+  ageBrackets: ChildAgeBracket[]
+): RecommendedJourneyResult | null {
+  if (status === 'gestante') {
+    return {
+      journeyId: 'pais-recem-nascidos',
+      journeyTitle: 'Pais Recém-Nascidos',
+      tagline: 'Jornadas que Começam',
+      reason: 'Especialmente acolhedora para gestantes e quem está se preparando para a chegada do bebê: encontre seu ritmo, prepare a rotina e fortaleça o vínculo desde o começo.'
+    };
+  }
+
+  if (status !== 'sim' || ageBrackets.length === 0) {
+    return null;
+  }
+
+  // 1. Se indicou uma ou mais alternativas a partir de 6 anos -> Construindo Pontes
+  const hasSixOrOlder = ageBrackets.some(b => ['6-9', '10-14', '14-18', '18+'].includes(b));
+  if (hasSixOrOlder) {
+    return {
+      journeyId: 'construindo-pontes',
+      journeyTitle: 'Construindo Pontes',
+      tagline: 'Jornadas que Começam',
+      reason: 'Ideal para famílias com crianças em idade escolar e adolescentes: troque o controle excessivo pelo diálogo, confiança e conexão profunda.'
+    };
+  }
+
+  // 2. Se indicou 0 a 3 anos como alternativa única -> Pais Recém-Nascidos
+  if (ageBrackets.length === 1 && ageBrackets[0] === '0-3') {
+    return {
+      journeyId: 'pais-recem-nascidos',
+      journeyTitle: 'Pais Recém-Nascidos',
+      tagline: 'Jornadas que Começam',
+      reason: 'Feita sob medida para pais de bebês e crianças até 3 anos: acolhimento para noites sem dormir, nova rotina e os alicerces de um desenvolvimento saudável.'
+    };
+  }
+
+  // 3. Se indicou 3 a 6 anos (ou combinação 0-3 e 3-6)
+  if (ageBrackets.every(b => ['0-3', '3-6'].includes(b))) {
+    return {
+      journeyId: 'pais-recem-nascidos',
+      journeyTitle: 'Pais Recém-Nascidos',
+      tagline: 'Jornadas que Começam',
+      reason: 'Acolhimento essencial para a primeira infância: rotina, educação positiva, autonomia e inteligência emocional nos primeiros passos do seu filho.'
+    };
+  }
+
+  return null;
 }
 
 export interface QuizOption {
