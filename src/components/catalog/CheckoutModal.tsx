@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Journey } from '../../types';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, isAdminUser } from '../../context/AuthContext';
 import { X, ShieldCheck, Check, Sparkles, CreditCard, QrCode } from 'lucide-react';
 
 interface CheckoutModalProps {
@@ -10,7 +10,8 @@ interface CheckoutModalProps {
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, onSuccess }) => {
-  const { user, isAdmin, purchaseJourney } = useAuth();
+  const { user, purchaseJourney } = useAuth();
+  const isAdmin = isAdminUser(user);
   const [isProcessing, setIsProcessing] = useState(false);
 
   if (!journey) return null;

@@ -9,7 +9,7 @@ interface GuidedSpotlightTourProps {
 }
 
 interface StepItem {
-  targetSelector?: string;
+  targetSelector?: string | null;
   badge?: string;
   titleLines?: string[];
   messageLines: string[];
