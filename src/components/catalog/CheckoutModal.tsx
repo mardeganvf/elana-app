@@ -10,19 +10,28 @@ interface CheckoutModalProps {
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, onSuccess }) => {
-  const { purchaseJourney } = useAuth();
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix'>('pix');
+  const { user, isAdmin, purchaseJourney } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
 
   if (!journey) return null;
 
-  const handleCompletePurchase = () => {
+  // Checkout real (Kiwify / Hotmart)
+  const handleGoToCheckout = () => {
+    if (journey.checkoutUrl) {
+      const url = new URL(journey.checkoutUrl);
+      if (user?.email) url.searchParams.set('email', user.email);
+      if (user?.name) url.searchParams.set('name', user.name);
+      window.open(url.toString(), '_blank', 'noopener,noreferrer');
+      onClose();
+    }
+  };
+
+  // Liberação imediata exclusiva para administradores / homologação
+  const handleAdminDirectUnlock = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
-      purchaseJourney(journey.id);
-      setIsProcessing(false);
-      onSuccess(journey);
-    }, 1200);
+    await purchaseJourney(journey.id);
+    setIsProcessing(false);
+    onSuccess(journey);
   };
 
   return (
@@ -64,7 +73,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
             <div className="space-y-2 bg-[#070D0F] p-4 rounded-2xl border border-white/10 text-xs text-slate-300">
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-400 font-bold" />
-                <span>Acesso completo aos <strong>{journey.modules.reduce((s, m) => s + m.lessons.length, 0)} conteúdos</strong> HD.</span>
+                <span>Acesso completo aos <strong>{journey.modules.reduce((s, m) => s + m.lessons.length, 0)} conteúdos</strong> em vídeo e áudio.</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-400 font-bold" />
@@ -81,72 +90,70 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
             </div>
           </div>
 
-          {/* Payment Option Selection */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Forma de Pagamento Simulada:
-            </h4>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('pix')}
-                className={`p-3.5 rounded-2xl border flex items-center justify-center gap-2 text-xs font-bold transition-all ${
-                  paymentMethod === 'pix'
-                    ? 'border-[#FF7F5B] bg-[#FF7F5B]/15 text-[#FF7F5B] shadow-md'
-                    : 'border-white/10 text-slate-400 hover:bg-white/5'
-                }`}
-              >
-                <QrCode className="w-4 h-4 text-[#8A9A5B]" />
-                PIX Instantâneo
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('card')}
-                className={`p-3.5 rounded-2xl border flex items-center justify-center gap-2 text-xs font-bold transition-all ${
-                  paymentMethod === 'card'
-                    ? 'border-[#FF7F5B] bg-[#FF7F5B]/15 text-[#FF7F5B] shadow-md'
-                    : 'border-white/10 text-slate-400 hover:bg-white/5'
-                }`}
-              >
-                <CreditCard className="w-4 h-4 text-[#E66795]" />
-                Cartão de Crédito
-              </button>
+          {/* Checkout Info Box */}
+          <div className="p-4 rounded-2xl bg-[#070D0F] border border-white/10 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-white">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Pagamento 100% Seguro & Protegido</span>
             </div>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              O pagamento é processado com criptografia de ponta. Aceitamos <strong>PIX Instantâneo</strong> e <strong>Cartão de Crédito em até 12x</strong>. Seu acesso é liberado automaticamente assim que a compra é confirmada.
+            </p>
           </div>
 
           {/* Summary & Guarantee */}
           <div className="border-t border-white/10 pt-4 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-xs text-slate-400 block">Total a pagar:</span>
+                <span className="text-xs text-slate-400 block">Investimento:</span>
                 <span className="text-2xl font-extrabold text-white">
                   R$ {journey.price},00
                 </span>
               </div>
               <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full">
                 <ShieldCheck className="w-4 h-4" />
-                Garantia de 7 dias
+                Garantia incondicional de 7 dias
               </div>
             </div>
 
-            <button
-              onClick={handleCompletePurchase}
-              disabled={isProcessing}
-              className="w-full flex items-center justify-center gap-2 text-white font-bold text-sm uppercase tracking-wider py-4 px-6 rounded-2xl shadow-xl transition-all active:scale-[0.98] disabled:opacity-50 hover:brightness-110"
-              style={{ backgroundColor: journey.themeColor }}
-            >
-              {isProcessing ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Liberando Acesso à Jornada...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 fill-current" />
-                  Confirmar e Desbloquear Jornada
-                </>
-              )}
-            </button>
+            {/* Ação de Compra */}
+            {journey.checkoutUrl ? (
+              <button
+                onClick={handleGoToCheckout}
+                className="w-full flex items-center justify-center gap-2 text-white font-bold text-sm uppercase tracking-wider py-4 px-6 rounded-2xl shadow-xl transition-all active:scale-[0.98] hover:brightness-110"
+                style={{ backgroundColor: journey.themeColor }}
+              >
+                <Sparkles className="w-4 h-4 fill-current" />
+                Ir para o Pagamento Seguro
+              </button>
+            ) : (
+              <div className="space-y-2">
+                {isAdmin ? (
+                  <button
+                    onClick={handleAdminDirectUnlock}
+                    disabled={isProcessing}
+                    className="w-full flex items-center justify-center gap-2 text-white font-bold text-sm uppercase tracking-wider py-4 px-6 rounded-2xl shadow-xl transition-all active:scale-[0.98] disabled:opacity-50 hover:brightness-110"
+                    style={{ backgroundColor: journey.themeColor }}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Liberando Acesso (Modo Admin)...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 fill-current" />
+                        Liberar Acesso de Teste (Admin)
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <div className="text-center p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
+                    As inscrições para esta turma serão abertas em breve. Fique atento aos avisos na comunidade!
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
         </div>

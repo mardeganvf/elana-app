@@ -70,7 +70,18 @@ Deno.serve(async (req) => {
     const bodyToken = body.token || body.signature || body.hottok;
     const providedToken = queryToken || headerToken || bodyToken;
 
-    if (webhookSecret && providedToken !== webhookSecret) {
+    if (!webhookSecret) {
+      console.error('❌ WEBHOOK_SECRET não configurado nos segredos do Supabase.');
+      return new Response(JSON.stringify({ 
+        error: 'SERVER_CONFIGURATION_ERROR',
+        message: 'WEBHOOK_SECRET is not configured on Supabase secrets.'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (!providedToken || providedToken !== webhookSecret) {
       console.warn('⚠️ Webhook rejeitado: Token inválido ou ausente.');
       return new Response(JSON.stringify({ error: 'UNAUTHORIZED_WEBHOOK_TOKEN' }), {
         status: 401,
@@ -209,32 +220,41 @@ Deno.serve(async (req) => {
       if (existingProfile?.id) {
         userId = existingProfile.id;
       } else {
-        // 4.2. Localizar no Supabase Auth caso o perfil não exista
-        const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
-        const foundAuthUser = usersList?.users?.find(u => u.email?.toLowerCase() === buyerEmail);
-
-        if (foundAuthUser?.id) {
-          userId = foundAuthUser.id;
-        } else {
-          // 4.3. 🚀 AUTO-PROVISIONAMENTO: Cria novo usuário no Supabase Auth
-          const { data: newAuthUser, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
-            email: buyerEmail,
-            email_confirm: true,
-            user_metadata: {
-              full_name: buyerName || 'Membro Elana',
-              phone: buyerPhone || null,
-              created_via: `webhook_${platform}`
-            }
-          });
-
-          if (createAuthError || !newAuthUser?.user?.id) {
-            console.error('Falha ao auto-provisionar usuário no Auth:', createAuthError);
-            throw new Error(`Falha no auto-provisionamento: ${createAuthError?.message}`);
+        // 4.2. 🚀 AUTO-PROVISIONAMENTO: Tenta criar novo usuário no Supabase Auth
+        const { data: newAuthUser, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
+          email: buyerEmail,
+          email_confirm: true,
+          user_metadata: {
+            full_name: buyerName || 'Membro Elana',
+            phone: buyerPhone || null,
+            created_via: `webhook_${platform}`
           }
+        });
 
+        if (newAuthUser?.user?.id) {
           userId = newAuthUser.user.id;
           autoProvisioned = true;
           console.log(`👤 Novo aluno provisionado automaticamente: ID ${userId} (${buyerEmail})`);
+        } else {
+          // Se o e-mail já existe no Auth (mas não tinha perfil ativo em public.profiles), busca paginando
+          let page = 1;
+          let foundUser = false;
+          while (!foundUser && page <= 10) {
+            const { data: paged } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 100 });
+            const match = paged?.users?.find(u => u.email?.toLowerCase() === buyerEmail.toLowerCase());
+            if (match?.id) {
+              userId = match.id;
+              foundUser = true;
+              break;
+            }
+            if (!paged?.users || paged.users.length < 100) break;
+            page++;
+          }
+
+          if (!userId) {
+            console.error('Falha ao auto-provisionar usuário no Auth:', createAuthError);
+            throw new Error(`Falha no auto-provisionamento: ${createAuthError?.message || 'User creation failed'}`);
+          }
         }
 
         // Garante que o profile existe no banco

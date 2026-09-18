@@ -10,6 +10,7 @@ interface AuthModalProps {
 }
 
 import { validateStrongPassword } from '../../utils/validators';
+import { LegalModal, LegalModalType } from '../legal/LegalModal';
 export { validateStrongPassword };
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => {
@@ -21,6 +22,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [confirmEmail, setConfirmEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [legalModalType, setLegalModalType] = useState<LegalModalType>(null);
 
   // 6-Digit Verification Code State
   const [inputCode, setInputCode] = useState('');
@@ -87,6 +90,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
         if (password !== confirmPassword) {
           setErrorMessage('As senhas informadas não coincidem.');
+          setLoading(false);
+          return;
+        }
+
+        if (!acceptedTerms) {
+          setErrorMessage('Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar sua conta.');
           setLoading(false);
           return;
         }
@@ -412,6 +421,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               </div>
             )}
 
+            {/* TERMOS DE USO & POLÍTICA DE PRIVACIDADE (LGPD) */}
+            {mode === 'register' && (
+              <div className="flex items-start gap-2 pt-1 text-[11px] text-slate-300">
+                <input
+                  type="checkbox"
+                  id="accept-terms-auth"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded bg-[#070D0F] border-white/20 text-[#FF7F5B] focus:ring-[#FF7F5B] focus:ring-offset-0 cursor-pointer"
+                />
+                <label htmlFor="accept-terms-auth" className="leading-snug cursor-pointer select-none">
+                  Li e concordo com os{' '}
+                  <button
+                    type="button"
+                    onClick={() => setLegalModalType('terms')}
+                    className="text-[#FF7F5B] underline hover:text-[#ff9577] font-semibold"
+                  >
+                    Termos de Uso
+                  </button>{' '}
+                  e a{' '}
+                  <button
+                    type="button"
+                    onClick={() => setLegalModalType('privacy')}
+                    className="text-[#FF7F5B] underline hover:text-[#ff9577] font-semibold"
+                  >
+                    Política de Privacidade (LGPD)
+                  </button>
+                  , ciente do acolhimento e tratamento de dados da minha família.
+                </label>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -485,6 +526,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           </div>
         </div>
       )}
+
+      {/* LEGAL / PRIVACY MODAL */}
+      <LegalModal 
+        type={legalModalType} 
+        onClose={() => setLegalModalType(null)} 
+      />
     </div>
   );
 };

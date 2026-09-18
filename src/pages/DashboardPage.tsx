@@ -77,6 +77,35 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
     }
   };
 
+  // 🛡️ LGPD Art. 18: Exclusão voluntária definitiva de conta
+  const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmationText.trim().toUpperCase() !== 'EXCLUIR') {
+      showToast('error', 'Digite EXCLUIR para confirmar.');
+      return;
+    }
+    setIsDeletingAccount(true);
+    try {
+      const { error } = await supabase.rpc('delete_own_account');
+      if (error) {
+        console.error('Erro ao excluir conta:', error);
+        showToast('error', 'Não foi possível processar a exclusão automática. Fale com suporte@elana.app.br');
+        setIsDeletingAccount(false);
+        return;
+      }
+      showToast('info', 'Sua conta e todos os dados foram eliminados permanentemente.');
+      setIsDeleteAccountModalOpen(false);
+      logout();
+    } catch (e) {
+      console.error(e);
+      showToast('error', 'Erro ao excluir conta.');
+      setIsDeletingAccount(false);
+    }
+  };
+
   // Efeito reativo central: Concede a conquista "Criando Raízes" (b2) quando o perfil for completado
   const checkCriandoRaizes = () => {
     const hasBio = (user?.bio && user.bio.trim().length > 0) || (bioText && bioText.trim().length > 0);
@@ -1906,8 +1935,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             <span>Rever Tutorial de Boas-Vindas</span>
           </button>
         )}
-        <div className="flex justify-end">
+        <div className="flex flex-wrap items-center justify-end gap-3">
           <button
+            type="button"
+            onClick={() => setIsDeleteAccountModalOpen(true)}
+            className="flex items-center justify-center gap-1.5 text-slate-500 hover:text-red-400 text-xs font-semibold py-2.5 px-3 rounded-xl border border-white/5 hover:border-red-500/20 transition-all cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Excluir Conta</span>
+          </button>
+          <button
+            type="button"
             onClick={logout}
             className="flex items-center justify-center gap-2 text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl border border-red-500/30 hover:bg-red-500/10 transition-all cursor-pointer w-full sm:w-auto"
           >
@@ -1987,6 +2025,65 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                   </>
                 ) : (
                   <span>Sim, Excluir</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal de Exclusão de Conta Definitiva (LGPD Art. 18) */}
+      {isDeleteAccountModalOpen && createPortal(
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
+          <div className="bg-[#101B1E] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-red-500/40 text-white space-y-5 animate-scale-up text-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center mx-auto shadow-lg">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                Excluir Conta Permanentemente?
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Em conformidade com a <strong>LGPD (Art. 18)</strong>, esta ação apagará permanentemente seu perfil, seu diário emocional, postagens na comunidade, anotações de estudo e certificados. <strong>Esta ação é irreversível.</strong>
+              </p>
+            </div>
+
+            <div className="space-y-1 text-left">
+              <label className="text-[11px] font-bold text-slate-300">
+                Digite <span className="text-red-400 font-mono">EXCLUIR</span> para confirmar:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmationText}
+                onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                placeholder="EXCLUIR"
+                className="w-full p-3 bg-[#070D0F] border border-red-500/30 rounded-xl text-xs text-white focus:outline-none focus:border-red-500 font-mono uppercase"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDeleteAccountModalOpen(false);
+                  setDeleteConfirmationText('');
+                }}
+                className="flex-1 py-3 bg-white/10 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={isDeletingAccount || deleteConfirmationText.trim().toUpperCase() !== 'EXCLUIR'}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-red-950/50"
+              >
+                {isDeletingAccount ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <span>Confirmar Exclusão</span>
                 )}
               </button>
             </div>

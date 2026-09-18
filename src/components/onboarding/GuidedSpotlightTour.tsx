@@ -94,7 +94,7 @@ export const GuidedSpotlightTour: React.FC<GuidedSpotlightTourProps> = ({ isOpen
       tipCenter: true
     },
     {
-      targetSelector: '[data-tour="privacy-note"]',
+      targetSelector: null,
       badge: 'Seu espaço seguro',
       titleLines: ['Sua intimidade protegida.'],
       messageLines: [

@@ -53,6 +53,44 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 🛡️ BLINDAGEM: Validação de autenticação (Bearer Token ou Service Role)
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'UNAUTHORIZED', message: 'Missing Authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    if (supabaseServiceKey && token !== supabaseServiceKey) {
+      const { data: userData, error: userError } = await supabase.auth.getUser(token);
+      if (userError || !userData?.user) {
+        return new Response(JSON.stringify({ error: 'UNAUTHORIZED', message: 'Invalid or expired authentication token' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Se o remetente não é o próprio destinatário da notificação, exige papel de Administrador
+      const callerId = userData.user.id;
+      if (callerId !== profile_id) {
+        const { data: callerProfile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', callerId)
+          .maybeSingle();
+
+        const isAdmin = callerProfile?.role === 'admin' || callerProfile?.role === 'Administrador';
+        if (!isAdmin) {
+          return new Response(JSON.stringify({ error: 'FORBIDDEN', message: 'Apenas administradores podem disparar notificações para outros membros' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+    }
+
     // 1. Busca todas as subscriptions ativas deste perfil
     const { data: subscriptions, error: fetchErr } = await supabase
       .from('push_subscriptions')

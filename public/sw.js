@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elana-v4';
+const CACHE_NAME = 'elana-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html'
@@ -37,22 +37,9 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
   
-  // Network-first for API requests (Supabase)
+  // 🛡️ SEGURANÇA & PRIVACIDADE: Nunca armazenar em cache respostas autenticadas de API (Supabase)
   if (url.origin.includes('supabase.co')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clonedResponse = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, clonedResponse);
-            }).catch(() => {});
-          }
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
-    return;
+    return; // Passa direto para a rede nativa do navegador
   }
   
   // Cache-first for static assets

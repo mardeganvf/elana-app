@@ -45,6 +45,7 @@ export interface Journey {
   isComingSoon?: boolean;
   coverImageUrl?: string;
   isEnabled?: boolean;
+  checkoutUrl?: string;
 }
 
 export interface UserLevel {

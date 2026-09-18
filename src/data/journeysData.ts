@@ -82,7 +82,7 @@ export const JOURNEYS_DATA: Journey[] = [
     bgLight: '#f3f6ec',
     iconName: 'Users',
     price: 227,
-    isComingSoon: false,
+    isComingSoon: true,
         modules: [
       {
         id: 'cp-mod-1',
