@@ -160,6 +160,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   }, []);
 
   const handleToggleAudioPlay = () => {
+    if (isCurrentLessonLocked) return;
     const isPanda = Boolean(getEmbedUrl(activeLesson.videoUrl));
     if (isPanda) {
       try {
@@ -184,6 +185,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   };
 
   const handleSeekAudio = (deltaSeconds: number) => {
+    if (isCurrentLessonLocked) return;
     const isPanda = Boolean(getEmbedUrl(activeLesson.videoUrl));
     const target = Math.max(0, audioCurrentTime + deltaSeconds);
     if (isPanda) {
@@ -381,6 +383,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   }, [activeLesson.id, nextLesson]);
 
   const triggerAutoplayCountdown = () => {
+    if (isCurrentLessonLocked) return;
     // Limpar ponto salvo pois a aula foi concluída
     const userKey = user?.id || 'anon';
     try {
@@ -502,15 +505,21 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
 
               <button
                 onClick={() => {
+                  if (isCurrentLessonLocked) {
+                    showToast('warning', 'Esta aula é exclusiva. Adquira a jornada para acessar o modo só áudio.');
+                    return;
+                  }
                   setMediaMode('audio');
                   awardBadge('b8');
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
-                  mediaMode === 'audio'
+                  isCurrentLessonLocked
+                    ? 'text-slate-600 cursor-not-allowed opacity-50'
+                    : mediaMode === 'audio'
                     ? 'bg-[#FF7F5B] text-white shadow-md'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                title="Economia de bateria e iluminação reduzida para escuta confortável."
+                title={isCurrentLessonLocked ? "Conteúdo exclusivo bloqueado" : "Economia de bateria e iluminação reduzida para escuta confortável."}
               >
                 <Headphones className="w-3.5 h-3.5" />
                 <span>Só Áudio</span>
@@ -551,9 +560,9 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
           {/* Media Player Box (Unified Video and Audio Player) */}
           <div className="bg-black rounded-3xl overflow-hidden shadow-2xl relative border border-white/10 aspect-video w-full">
 
-            {/* ── PAYWALL GATE ── */}
+            {/* ── PAYWALL GATE (Quando a aula está bloqueada, NENHUM player de mídia é renderizado no DOM) ── */}
             {isCurrentLessonLocked ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-gradient-to-b from-[#070D0F] to-[#101B1E] p-8 text-center z-10">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-gradient-to-b from-[#070D0F] to-[#101B1E] p-8 text-center z-30">
                 <div className="w-16 h-16 rounded-full bg-[#FF7F5B]/15 border border-[#FF7F5B]/40 flex items-center justify-center">
                   <Lock className="w-7 h-7 text-[#FF7F5B]" />
                 </div>
@@ -577,177 +586,179 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                   Voltar ao conteúdo gratuito
                 </button>
               </div>
-            ) : null}
-
-            {/* Player Container: Iframe do Panda Video ou HTML5 Video */}
-            <div className={`w-full h-full ${isCurrentLessonLocked ? 'invisible' : ''} ${mediaMode === 'audio' ? 'opacity-0 pointer-events-none absolute inset-0 -z-10' : 'relative group'}`}>
-              {getEmbedUrl(activeLesson.videoUrl) ? (
-                <iframe
-                  id="panda-player"
-                  key={activeLesson.id + '-' + activeLesson.videoUrl}
-                  src={getEmbedUrl(activeLesson.videoUrl)!}
-                  title={activeLesson.title}
-                  className="w-full h-full border-0 rounded-3xl"
-                  style={{ border: 'none', position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-                  allowFullScreen
-                  onLoad={() => {
-                    setTimeout(() => {
-                      applyPlaybackSpeed(playbackSpeed);
-                    }, 800);
-                  }}
-                />
-              ) : (
-                <>
-                  {/* Floating Timestamp Resume Prompt */}
-                  {resumePromptTime !== null && (
-                    <div className="absolute top-3 left-3 right-3 z-30 bg-[#070D0F]/95 backdrop-blur-md border border-[#FF7F5B]/40 p-3 rounded-2xl flex items-center justify-between shadow-2xl animate-fade-in text-xs">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-[#FF7F5B]/20 text-[#FF7F5B] flex items-center justify-center font-bold text-sm shrink-0">
-                          ⏱️
+            ) : (
+              <>
+                {/* Player Container: Iframe do Panda Video ou HTML5 Video */}
+                <div className={`w-full h-full ${mediaMode === 'audio' ? 'opacity-0 pointer-events-none absolute inset-0 -z-10' : 'relative group'}`}>
+                  {getEmbedUrl(activeLesson.videoUrl) ? (
+                    <iframe
+                      id="panda-player"
+                      key={activeLesson.id + '-' + activeLesson.videoUrl}
+                      src={getEmbedUrl(activeLesson.videoUrl)!}
+                      title={activeLesson.title}
+                      className="w-full h-full border-0 rounded-3xl"
+                      style={{ border: 'none', position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                      onLoad={() => {
+                        setTimeout(() => {
+                          applyPlaybackSpeed(playbackSpeed);
+                        }, 800);
+                      }}
+                    />
+                  ) : (
+                    <>
+                      {/* Floating Timestamp Resume Prompt */}
+                      {resumePromptTime !== null && (
+                        <div className="absolute top-3 left-3 right-3 z-30 bg-[#070D0F]/95 backdrop-blur-md border border-[#FF7F5B]/40 p-3 rounded-2xl flex items-center justify-between shadow-2xl animate-fade-in text-xs">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-[#FF7F5B]/20 text-[#FF7F5B] flex items-center justify-center font-bold text-sm shrink-0">
+                              ⏱️
+                            </div>
+                            <div>
+                              <span className="font-extrabold text-white block">Continuar de onde parou?</span>
+                              <span className="text-[11px] text-slate-300">Você estava aos {formatSecondsToTime(resumePromptTime)}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                if (videoRef.current) {
+                                  videoRef.current.currentTime = resumePromptTime;
+                                  videoRef.current.play().catch(() => {});
+                                }
+                                setResumePromptTime(null);
+                                showToast('info', `Vídeo continuado aos ${formatSecondsToTime(resumePromptTime)} 🎬`);
+                              }}
+                              className="bg-[#FF7F5B] hover:bg-[#e06847] text-white px-3.5 py-1.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                            >
+                              <span>Continuar</span>
+                            </button>
+                            <button
+                              onClick={() => setResumePromptTime(null)}
+                              className="bg-white/10 hover:bg-white/20 text-slate-300 px-2.5 py-1.5 rounded-xl transition-all font-bold text-xs"
+                              title="Fechar e assistir do início"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-extrabold text-white block">Continuar de onde parou?</span>
-                          <span className="text-[11px] text-slate-300">Você estava aos {formatSecondsToTime(resumePromptTime)}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            if (videoRef.current) {
-                              videoRef.current.currentTime = resumePromptTime;
-                              videoRef.current.play().catch(() => {});
-                            }
-                            setResumePromptTime(null);
-                            showToast('info', `Vídeo continuado aos ${formatSecondsToTime(resumePromptTime)} 🎬`);
-                          }}
-                          className="bg-[#FF7F5B] hover:bg-[#e06847] text-white px-3.5 py-1.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-95 flex items-center gap-1.5"
-                        >
-                          <span>Continuar</span>
-                        </button>
-                        <button
-                          onClick={() => setResumePromptTime(null)}
-                          className="bg-white/10 hover:bg-white/20 text-slate-300 px-2.5 py-1.5 rounded-xl transition-all font-bold text-xs"
-                          title="Fechar e assistir do início"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <video
-                    ref={videoRef}
-                    key={activeLesson.id}
-                    controls={mediaMode === 'video'}
-                    playsInline
-                    preload="metadata"
-                    autoPlay={false}
-                    onTimeUpdate={handleVideoTimeUpdate}
-                    onPause={handleVideoPause}
-                    onPlay={() => setIsAudioPlaying(true)}
-                    onEnded={triggerAutoplayCountdown}
-                    className="w-full h-full object-cover"
-                    poster={activeLesson.thumbnailUrl || "https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=1000&auto=format&fit=crop&q=80"}
-                  >
-                    <source src={activeLesson.videoUrl} type="video/mp4" />
-                    Seu navegador não suporta a execução deste vídeo.
-                  </video>
-                </>
-              )}
-            </div>
-
-            {/* MODO SÓ AUDIO - Perfectly Centered in the Player Frame */}
-            {mediaMode === 'audio' && (
-              <div className="absolute inset-0 z-20 bg-gradient-to-br from-[#101B1E] via-[#091113] to-[#070D0F] p-4 sm:p-8 flex flex-col items-center justify-center text-center space-y-3 sm:space-y-4 animate-fade-in">
-                {/* Acoustic Ambient Glow */}
-                <div className="absolute w-72 h-72 rounded-full bg-[#FF7F5B]/10 blur-3xl pointer-events-none -top-12" />
-                
-                <div className="relative z-10 space-y-3 sm:space-y-4 flex flex-col items-center w-full max-w-md">
-                  {/* Pulsing Visual */}
-                  <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full border flex items-center justify-center transition-all ${
-                    isAudioPlaying 
-                      ? 'bg-[#FF7F5B]/25 border-[#FF7F5B]/60 text-[#FF7F5B] scale-105 shadow-lg shadow-[#FF7F5B]/20 animate-pulse' 
-                      : 'bg-white/10 border-white/20 text-slate-400'
-                  }`}>
-                    <Volume2 className="w-7 h-7 sm:w-8 sm:h-8" />
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-[11px] sm:text-xs font-black text-[#FFD166] uppercase tracking-wider block">
-                      🎧 MODO SÓ AUDIO
-                    </span>
-                    <h3 className="text-sm sm:text-lg font-bold text-white line-clamp-1">{activeLesson.title}</h3>
-                    <p className="text-[10px] sm:text-xs text-slate-400 max-w-sm mx-auto hidden sm:block">
-                      Economia de bateria e iluminação reduzida. Ideal para ouvir enquanto nina, dirige ou descansa.
-                    </p>
-                  </div>
-
-                  {/* Audio Controls Bar */}
-                  <div className="flex items-center justify-center gap-3 sm:gap-4 w-full">
-                    {/* -10s */}
-                    <button
-                      type="button"
-                      onClick={() => handleSeekAudio(-10)}
-                      className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/10 text-white/80 hover:text-white flex items-center justify-center text-xs font-extrabold transition-all cursor-pointer shrink-0"
-                      title="Retroceder 10 segundos"
-                    >
-                      -10s
-                    </button>
-
-                    {/* Central Play/Pause button */}
-                    <button
-                      type="button"
-                      onClick={handleToggleAudioPlay}
-                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#FF7F5B] hover:bg-[#e06847] active:scale-95 text-white flex items-center justify-center shadow-xl shadow-[#FF7F5B]/30 transition-all cursor-pointer shrink-0"
-                      title={isAudioPlaying ? "Pausar áudio" : "Tocar áudio"}
-                    >
-                      {isAudioPlaying ? (
-                        <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
-                      ) : (
-                        <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current ml-0.5" />
                       )}
-                    </button>
 
-                    {/* +10s */}
-                    <button
-                      type="button"
-                      onClick={() => handleSeekAudio(10)}
-                      className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/10 text-white/80 hover:text-white flex items-center justify-center text-xs font-extrabold transition-all cursor-pointer shrink-0"
-                      title="Avançar 10 segundos"
-                    >
-                      +10s
-                    </button>
-                  </div>
-
-                  {/* Audio Timeline / Time Display */}
-                  {(() => {
-                    const effDuration = audioDuration || parseDurationToSeconds(activeLesson.duration) || 0;
-                    return effDuration > 0 ? (
-                      <div className="w-full max-w-xs space-y-1 pt-0.5">
-                        <div 
-                          className="w-full bg-white/10 hover:bg-white/15 h-1.5 sm:h-2 rounded-full overflow-hidden cursor-pointer transition-colors"
-                          onClick={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                            handleSeekToTime(percent * effDuration);
-                          }}
-                        >
-                          <div 
-                            className="bg-[#FF7F5B] h-full rounded-full transition-all"
-                            style={{ width: `${Math.min(100, (audioCurrentTime / effDuration) * 100)}%` }}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400 font-medium">
-                          <span>{formatSecondsToTime(audioCurrentTime)}</span>
-                          <span>{formatSecondsToTime(effDuration)}</span>
-                        </div>
-                      </div>
-                    ) : null;
-                  })()}
-
+                      <video
+                        ref={videoRef}
+                        key={activeLesson.id}
+                        controls={mediaMode === 'video'}
+                        playsInline
+                        preload="metadata"
+                        autoPlay={false}
+                        onTimeUpdate={handleVideoTimeUpdate}
+                        onPause={handleVideoPause}
+                        onPlay={() => setIsAudioPlaying(true)}
+                        onEnded={triggerAutoplayCountdown}
+                        className="w-full h-full object-cover"
+                        poster={activeLesson.thumbnailUrl || "https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=1000&auto=format&fit=crop&q=80"}
+                      >
+                        <source src={activeLesson.videoUrl} type="video/mp4" />
+                        Seu navegador não suporta a execução deste vídeo.
+                      </video>
+                    </>
+                  )}
                 </div>
-              </div>
+
+                {/* MODO SÓ AUDIO - Perfectly Centered in the Player Frame */}
+                {mediaMode === 'audio' && (
+                  <div className="absolute inset-0 z-20 bg-gradient-to-br from-[#101B1E] via-[#091113] to-[#070D0F] p-4 sm:p-8 flex flex-col items-center justify-center text-center space-y-3 sm:space-y-4 animate-fade-in">
+                    {/* Acoustic Ambient Glow */}
+                    <div className="absolute w-72 h-72 rounded-full bg-[#FF7F5B]/10 blur-3xl pointer-events-none -top-12" />
+                    
+                    <div className="relative z-10 space-y-3 sm:space-y-4 flex flex-col items-center w-full max-w-md">
+                      {/* Pulsing Visual */}
+                      <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full border flex items-center justify-center transition-all ${
+                        isAudioPlaying 
+                          ? 'bg-[#FF7F5B]/25 border-[#FF7F5B]/60 text-[#FF7F5B] scale-105 shadow-lg shadow-[#FF7F5B]/20 animate-pulse' 
+                          : 'bg-white/10 border-white/20 text-slate-400'
+                      }`}>
+                        <Volume2 className="w-7 h-7 sm:w-8 sm:h-8" />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[11px] sm:text-xs font-black text-[#FFD166] uppercase tracking-wider block">
+                          🎧 MODO SÓ AUDIO
+                        </span>
+                        <h3 className="text-sm sm:text-lg font-bold text-white line-clamp-1">{activeLesson.title}</h3>
+                        <p className="text-[10px] sm:text-xs text-slate-400 max-w-sm mx-auto hidden sm:block">
+                          Economia de bateria e iluminação reduzida. Ideal para ouvir enquanto nina, dirige ou descansa.
+                        </p>
+                      </div>
+
+                      {/* Audio Controls Bar */}
+                      <div className="flex items-center justify-center gap-3 sm:gap-4 w-full">
+                        {/* -10s */}
+                        <button
+                          type="button"
+                          onClick={() => handleSeekAudio(-10)}
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/10 text-white/80 hover:text-white flex items-center justify-center text-xs font-extrabold transition-all cursor-pointer shrink-0"
+                          title="Retroceder 10 segundos"
+                        >
+                          -10s
+                        </button>
+
+                        {/* Central Play/Pause button */}
+                        <button
+                          type="button"
+                          onClick={handleToggleAudioPlay}
+                          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#FF7F5B] hover:bg-[#e06847] active:scale-95 text-white flex items-center justify-center shadow-xl shadow-[#FF7F5B]/30 transition-all cursor-pointer shrink-0"
+                          title={isAudioPlaying ? "Pausar áudio" : "Tocar áudio"}
+                        >
+                          {isAudioPlaying ? (
+                            <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
+                          ) : (
+                            <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current ml-0.5" />
+                          )}
+                        </button>
+
+                        {/* +10s */}
+                        <button
+                          type="button"
+                          onClick={() => handleSeekAudio(10)}
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/10 text-white/80 hover:text-white flex items-center justify-center text-xs font-extrabold transition-all cursor-pointer shrink-0"
+                          title="Avançar 10 segundos"
+                        >
+                          +10s
+                        </button>
+                      </div>
+
+                      {/* Audio Timeline / Time Display */}
+                      {(() => {
+                        const effDuration = audioDuration || parseDurationToSeconds(activeLesson.duration) || 0;
+                        return effDuration > 0 ? (
+                          <div className="w-full max-w-xs space-y-1 pt-0.5">
+                            <div 
+                              className="w-full bg-white/10 hover:bg-white/15 h-1.5 sm:h-2 rounded-full overflow-hidden cursor-pointer transition-colors"
+                              onClick={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                                handleSeekToTime(percent * effDuration);
+                              }}
+                            >
+                              <div 
+                                className="bg-[#FF7F5B] h-full rounded-full transition-all"
+                                style={{ width: `${Math.min(100, (audioCurrentTime / effDuration) * 100)}%` }}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400 font-medium">
+                              <span>{formatSecondsToTime(audioCurrentTime)}</span>
+                              <span>{formatSecondsToTime(effDuration)}</span>
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -803,13 +814,28 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
               {/* Botão de Sinalização e Controle: 100% Assistido */}
               <button
                 type="button"
-                onClick={() => toggleCompleteLesson(activeLesson.id)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer shrink-0 border ${
-                  user?.completedLessonIds.includes(activeLesson.id)
-                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30'
-                    : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                disabled={isCurrentLessonLocked}
+                onClick={() => {
+                  if (isCurrentLessonLocked) {
+                    showToast('warning', 'Esta aula é exclusiva. Adquira a jornada para concluir e registrar progresso.');
+                    return;
+                  }
+                  toggleCompleteLesson(activeLesson.id);
+                }}
+                className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-md shrink-0 border ${
+                  isCurrentLessonLocked
+                    ? 'opacity-40 cursor-not-allowed bg-white/5 border-white/5 text-slate-500'
+                    : user?.completedLessonIds.includes(activeLesson.id)
+                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 active:scale-95 cursor-pointer'
+                    : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 active:scale-95 cursor-pointer'
                 }`}
-                title={user?.completedLessonIds.includes(activeLesson.id) ? 'Clique para desmarcar como concluído' : 'Clique para marcar este vídeo como 100% assistido'}
+                title={
+                  isCurrentLessonLocked
+                    ? 'Conteúdo exclusivo bloqueado'
+                    : user?.completedLessonIds.includes(activeLesson.id)
+                    ? 'Clique para desmarcar como concluído'
+                    : 'Clique para marcar este vídeo como 100% assistido'
+                }
               >
                 <CheckCircle2 className={`w-4 h-4 ${user?.completedLessonIds.includes(activeLesson.id) ? 'fill-current text-emerald-400' : 'text-slate-500'}`} />
                 <span>{user?.completedLessonIds.includes(activeLesson.id) ? '100% Concluído' : 'Marcar como 100% Assistido'}</span>

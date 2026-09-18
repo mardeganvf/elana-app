@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elana-v3';
+const CACHE_NAME = 'elana-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html'
@@ -29,6 +29,12 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Never intercept non-GET requests (POST, PUT, DELETE, PATCH, etc.)
+  // The Cache API strictly throws: TypeError: Request method 'POST' is not supported
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   const url = new URL(event.request.url);
   
   // Network-first for API requests (Supabase)
@@ -36,10 +42,12 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          const clonedResponse = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clonedResponse);
-          });
+          if (response && response.status === 200) {
+            const clonedResponse = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, clonedResponse);
+            }).catch(() => {});
+          }
           return response;
         })
         .catch(() => caches.match(event.request))
@@ -60,10 +68,12 @@ self.addEventListener('fetch', (event) => {
           return cachedResponse;
         }
         return fetch(event.request).then((response) => {
-          const clonedResponse = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clonedResponse);
-          });
+          if (response && response.status === 200) {
+            const clonedResponse = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, clonedResponse);
+            }).catch(() => {});
+          }
           return response;
         });
       })

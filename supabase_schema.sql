@@ -296,6 +296,29 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 🛡️ BLINDAGEM DE SEGURANÇA: Impede que usuários comuns se auto-promovam a Administrador
+CREATE OR REPLACE FUNCTION public.protect_profile_role()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.role IS DISTINCT FROM 'user' AND NOT public.is_admin() THEN
+      NEW.role := 'user';
+    END IF;
+  ELSIF TG_OP = 'UPDATE' THEN
+    IF NEW.role IS DISTINCT FROM OLD.role AND NOT public.is_admin() THEN
+      NEW.role := OLD.role;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_protect_profile_role ON public.profiles;
+CREATE TRIGGER trg_protect_profile_role
+  BEFORE INSERT OR UPDATE ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_profile_role();
+
 -- Permite que o próprio usuário atualize seu perfil e que administradores gerenciem qualquer perfil
 CREATE POLICY "profiles_update_admin_or_own"
   ON public.profiles FOR UPDATE
@@ -367,8 +390,8 @@ CREATE POLICY "checkins_delete_own"
   USING (auth.uid() = profile_id);
 
 -- --------------------------------------------------------
--- COMMUNITY POSTS: leitura para todos autenticados,
--- escrita/edição/exclusão apenas do próprio autor
+-- COMMUNITY POSTS: leitura para todos,
+-- escrita autenticada, edição/exclusão apenas do autor ou admin
 -- --------------------------------------------------------
 DROP POLICY IF EXISTS "Allow public read community_posts" ON public.community_posts;
 DROP POLICY IF EXISTS "Allow public insert community_posts" ON public.community_posts;
@@ -381,11 +404,12 @@ DROP POLICY IF EXISTS "posts_delete_own" ON public.community_posts;
 
 CREATE POLICY "Allow public read community_posts" ON public.community_posts FOR SELECT USING (true);
 CREATE POLICY "Allow public insert community_posts" ON public.community_posts FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update community_posts" ON public.community_posts FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete community_posts" ON public.community_posts FOR DELETE USING (true);
+CREATE POLICY "Allow author or admin update community_posts" ON public.community_posts FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
+CREATE POLICY "Allow author or admin delete community_posts" ON public.community_posts FOR DELETE USING (auth.uid() = author_id OR public.is_admin());
 
 -- --------------------------------------------------------
--- COMMUNITY COMMENTS: leitura e escrita na comunidade
+-- COMMUNITY COMMENTS: leitura pública,
+-- edição/exclusão restrita ao autor ou admin
 -- --------------------------------------------------------
 DROP POLICY IF EXISTS "Allow public read community_comments" ON public.community_comments;
 DROP POLICY IF EXISTS "Allow public insert community_comments" ON public.community_comments;
@@ -398,12 +422,31 @@ DROP POLICY IF EXISTS "comments_delete_own" ON public.community_comments;
 
 CREATE POLICY "Allow public read community_comments" ON public.community_comments FOR SELECT USING (true);
 CREATE POLICY "Allow public insert community_comments" ON public.community_comments FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update community_comments" ON public.community_comments FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete community_comments" ON public.community_comments FOR DELETE USING (true);
+CREATE POLICY "Allow author or admin update community_comments" ON public.community_comments FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
+CREATE POLICY "Allow author or admin delete community_comments" ON public.community_comments FOR DELETE USING (auth.uid() = author_id OR public.is_admin());
 
-CREATE POLICY "comments_delete_own"
-  ON public.community_comments FOR DELETE
-  USING (auth.uid() = author_id);
+-- 🛡️ PRIVACIDADE E ANONIMATO: Força author_id = NULL se is_anonymous for TRUE
+CREATE OR REPLACE FUNCTION public.sanitize_anonymous_posts()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.is_anonymous = TRUE THEN
+    NEW.author_id := NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_sanitize_anonymous_posts ON public.community_posts;
+CREATE TRIGGER trg_sanitize_anonymous_posts
+  BEFORE INSERT OR UPDATE ON public.community_posts
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sanitize_anonymous_posts();
+
+DROP TRIGGER IF EXISTS trg_sanitize_anonymous_comments ON public.community_comments;
+CREATE TRIGGER trg_sanitize_anonymous_comments
+  BEFORE INSERT OR UPDATE ON public.community_comments
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sanitize_anonymous_posts();
 
 -- --------------------------------------------------------
 -- USER BADGES: somente o dono
@@ -444,22 +487,27 @@ DROP POLICY IF EXISTS "journeys_select_own" ON public.user_purchased_journeys;
 DROP POLICY IF EXISTS "journeys_insert_own" ON public.user_purchased_journeys;
 DROP POLICY IF EXISTS "journeys_update_own" ON public.user_purchased_journeys;
 DROP POLICY IF EXISTS "journeys_delete_own" ON public.user_purchased_journeys;
+DROP POLICY IF EXISTS "journeys_insert_admin_or_service" ON public.user_purchased_journeys;
+DROP POLICY IF EXISTS "journeys_update_admin_or_service" ON public.user_purchased_journeys;
+DROP POLICY IF EXISTS "journeys_delete_admin_or_service" ON public.user_purchased_journeys;
 
+-- 🛡️ BLINDAGEM DE PAYWALL: Apenas o próprio aluno ou administradores podem consultar compras
 CREATE POLICY "journeys_select_own"
   ON public.user_purchased_journeys FOR SELECT
-  USING (auth.uid() = profile_id);
+  USING (auth.uid() = profile_id OR public.is_admin());
 
-CREATE POLICY "journeys_insert_own"
+-- Inserção, alteração e exclusão permitidas apenas para administradores e service_role (Webhooks)
+CREATE POLICY "journeys_insert_admin_or_service"
   ON public.user_purchased_journeys FOR INSERT
-  WITH CHECK (auth.uid() = profile_id);
+  WITH CHECK (public.is_admin());
 
-CREATE POLICY "journeys_update_own"
+CREATE POLICY "journeys_update_admin_or_service"
   ON public.user_purchased_journeys FOR UPDATE
-  USING (auth.uid() = profile_id);
+  USING (public.is_admin());
 
-CREATE POLICY "journeys_delete_own"
+CREATE POLICY "journeys_delete_admin_or_service"
   ON public.user_purchased_journeys FOR DELETE
-  USING (auth.uid() = profile_id);
+  USING (public.is_admin());
 
 -- --------------------------------------------------------
 -- USER COMPLETED LESSONS: somente o dono
@@ -557,22 +605,27 @@ DROP POLICY IF EXISTS "Allow public delete sos_tickets" ON public.sos_tickets;
 DROP POLICY IF EXISTS "sos_select_auth" ON public.sos_tickets;
 DROP POLICY IF EXISTS "sos_insert_auth" ON public.sos_tickets;
 DROP POLICY IF EXISTS "sos_update_auth" ON public.sos_tickets;
+DROP POLICY IF EXISTS "sos_delete_auth" ON public.sos_tickets;
 
+-- 🛡️ PRIVACIDADE E LGPD: Apenas o autor da crise emocional ou a equipe de acolhimento (admin) podem ver o chamado
 CREATE POLICY "sos_select_auth"
   ON public.sos_tickets FOR SELECT
-  USING (true);
+  USING (auth.uid() = profile_id OR public.is_admin());
 
+-- Usuário autenticado cria o próprio chamado ou administrador abre chamado
 CREATE POLICY "sos_insert_auth"
   ON public.sos_tickets FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (auth.uid() = profile_id OR public.is_admin());
 
+-- Apenas o autor ou administrador podem responder e atualizar mensagens
 CREATE POLICY "sos_update_auth"
   ON public.sos_tickets FOR UPDATE
-  USING (true);
+  USING (auth.uid() = profile_id OR public.is_admin());
 
+-- Exclusão de tickets sensíveis restrita exclusivamente para administradores
 CREATE POLICY "sos_delete_auth"
   ON public.sos_tickets FOR DELETE
-  USING (true);
+  USING (public.is_admin());
 
 -- ========================================================
 -- STORAGE: BUCKET user-media — uploads apenas autenticados,
@@ -779,6 +832,53 @@ CREATE POLICY "poll_votes_update_own"
 
 CREATE INDEX IF NOT EXISTS idx_poll_votes_profile ON public.poll_votes(profile_id);
 CREATE INDEX IF NOT EXISTS idx_poll_votes_poll ON public.poll_votes(poll_id);
+
+-- --------------------------------------------------------
+-- RPC: VOTAÇÃO ATÔMICA EM ENQUETES (vote_on_poll)
+-- Garante integridade atômica, idempotência e atualização JSONB segura
+-- --------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.vote_on_poll(
+  p_poll_id    UUID,
+  p_option_id  TEXT,
+  p_profile_id UUID
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- 1. Guard idempotente: ignora se o usuário já votou nesta enquete
+  IF EXISTS (
+    SELECT 1 FROM public.poll_votes
+    WHERE poll_id = p_poll_id AND profile_id = p_profile_id
+  ) THEN
+    RETURN;
+  END IF;
+
+  -- 2. Registra o voto na tabela poll_votes (fonte da verdade do voto por usuário)
+  INSERT INTO public.poll_votes (poll_id, profile_id, option_id, voted_at)
+  VALUES (p_poll_id, p_profile_id, p_option_id, NOW())
+  ON CONFLICT (poll_id, profile_id) DO NOTHING;
+
+  -- 3. Incremento atômico no JSONB options e no total_votes de community_polls
+  UPDATE public.community_polls
+  SET
+    total_votes = total_votes + 1,
+    options = (
+      SELECT jsonb_agg(
+        CASE
+          WHEN (opt->>'id') = p_option_id
+          THEN jsonb_set(opt, '{votesCount}', to_jsonb(COALESCE((opt->>'votesCount')::int, 0) + 1))
+          ELSE opt
+        END
+      )
+      FROM jsonb_array_elements(options) AS opt
+    )
+  WHERE id = p_poll_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.vote_on_poll(UUID, TEXT, UUID) TO authenticated;
 
 -- --------------------------------------------------------
 -- 14. TABELA DE JORNADAS, SUBTEMAS E CONTEÚDOS DINÂMICOS

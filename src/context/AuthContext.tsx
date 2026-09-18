@@ -946,9 +946,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const badges = ALL_BADGES.filter(b => unlockedBadgeIds.has(b.id));
 
-      // Pontuação de XP estritamente igual à soma real das conquistas (badges) desbloqueadas
+      // Pontuação de XP calculada de forma segura: nunca rebaixa o XP existente se a busca de badges falhar
       const badgeXpSum = badges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
-      const xp = badgeXpSum;
+      const xp = Math.max(profile.xp || 0, badgeXpSum);
       const levelInfo = getLevelFromXP(xp);
       const isTourFinished = Boolean(profile.onboarding_completed) || profile.tag === 'onboarded' || xp >= 25 || (isUserAdmin && xp > 0);
 
