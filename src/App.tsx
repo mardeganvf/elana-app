@@ -43,25 +43,46 @@ const PageLoadingFallback: React.FC = () => (
   </div>
 );
 
+// 🧭 Helper para extrair a aba e parâmetros da URL de forma segura
+const getTabFromUrl = (): { tab: string; journeyId?: string; lessonId?: string } => {
+  try {
+    const url = new URL(window.location.href);
+    const path = url.pathname.replace(/\/$/, '').toLowerCase();
+    const queryTab = url.searchParams.get('tab')?.toLowerCase();
+    const journeyId = url.searchParams.get('journey') || undefined;
+    const lessonId = url.searchParams.get('lesson') || undefined;
+
+    if (queryTab) {
+      if (queryTab === 'comunidade' || queryTab === 'community') return { tab: 'community' };
+      if (queryTab === 'perfil' || queryTab === 'dashboard') return { tab: 'dashboard' };
+      if (queryTab === 'admin') return { tab: 'admin' };
+      if (queryTab === 'quiz') return { tab: 'quiz' };
+      if (queryTab === 'aula' || queryTab === 'classroom') return { tab: 'classroom', journeyId, lessonId };
+      if (queryTab === 'login') return { tab: 'login' };
+      if (queryTab === 'home' || queryTab === 'inicio') return { tab: 'home' };
+    }
+
+    if (path === '/quiz') return { tab: 'quiz' };
+    if (path === '/comunidade' || path === '/community') return { tab: 'community' };
+    if (path === '/perfil' || path === '/dashboard') return { tab: 'dashboard' };
+    if (path === '/admin') return { tab: 'admin' };
+    if (path === '/aula' || path === '/classroom') return { tab: 'classroom', journeyId, lessonId };
+    if (path === '/login') return { tab: 'login' };
+  } catch {}
+
+  return { tab: 'home' };
+};
+
 const AppContent: React.FC = () => {
   const { user, login, updateUser, unlockedBadgeModal, closeBadgeModal, unlockedLevelUpModal, closeLevelUpModal } = useAuth();
   const { activePoll, userVotedPollsMap, refreshPosts } = useCommunity();
   const { journeys } = useJourneys();
   
-  const [activeTab, setActiveTab] = useState<string>(() => {
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('tab') === 'quiz' || window.location.pathname === '/quiz') {
-        return 'quiz';
-      }
-    } catch {
-      // ignore
-    }
-    return 'home';
-  });
+  const initialNav = getTabFromUrl();
+  const [activeTab, setActiveTab] = useState<string>(initialNav.tab);
   const [selectedJourneyForCheckout, setSelectedJourneyForCheckout] = useState<Journey | null>(null);
   const [selectedJourneyForClassroom, setSelectedJourneyForClassroom] = useState<Journey | null>(null);
-  const [selectedLessonIdForClassroom, setSelectedLessonIdForClassroom] = useState<string | undefined>(undefined);
+  const [selectedLessonIdForClassroom, setSelectedLessonIdForClassroom] = useState<string | undefined>(initialNav.lessonId);
   const [certificateJourney, setCertificateJourney] = useState<Journey | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSpotlightTourOpen, setIsSpotlightTourOpen] = useState(false);
@@ -140,33 +161,141 @@ const AppContent: React.FC = () => {
     }
   }, [activeTab]);
 
+  // 🧭 Navegação Centralizada com Sincronização da History API (Botão Voltar)
+  const navigateToTab = (
+    nextTab: string, 
+    options?: { journey?: Journey; lessonId?: string; replace?: boolean }
+  ) => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
+    const journey = options?.journey ?? (nextTab === 'classroom' ? selectedJourneyForClassroom : null);
+    const lessonId = options?.lessonId ?? (nextTab === 'classroom' ? selectedLessonIdForClassroom : undefined);
+
+    if (options?.journey) setSelectedJourneyForClassroom(options.journey);
+    if (options?.lessonId !== undefined) setSelectedLessonIdForClassroom(options.lessonId);
+
+    setActiveTab(nextTab);
+    if (nextTab === 'community') {
+      refreshPosts();
+    }
+
+    try {
+      const url = new URL(window.location.href);
+      if (nextTab === 'home') {
+        url.searchParams.delete('tab');
+        url.searchParams.delete('journey');
+        url.searchParams.delete('lesson');
+      } else {
+        url.searchParams.set('tab', nextTab);
+        if (journey?.id) {
+          url.searchParams.set('journey', journey.id);
+        } else {
+          url.searchParams.delete('journey');
+        }
+        if (lessonId) {
+          url.searchParams.set('lesson', lessonId);
+        } else {
+          url.searchParams.delete('lesson');
+        }
+      }
+
+      const historyState = {
+        tab: nextTab,
+        journeyId: journey?.id,
+        lessonId: lessonId
+      };
+
+      if (options?.replace || activeTab === nextTab) {
+        window.history.replaceState(historyState, '', url.toString());
+      } else {
+        window.history.pushState(historyState, '', url.toString());
+      }
+    } catch (err) {
+      console.warn('History pushState notice:', err);
+    }
+  };
+
+  // 🧭 Sincronização inicial do Histórico e restauração de jornada
+  useEffect(() => {
+    try {
+      const current = getTabFromUrl();
+      const url = new URL(window.location.href);
+      const historyState = {
+        tab: current.tab,
+        journeyId: current.journeyId,
+        lessonId: current.lessonId
+      };
+      window.history.replaceState(historyState, '', url.toString());
+
+      if (current.journeyId && !selectedJourneyForClassroom && journeys.length > 0) {
+        const found = journeys.find(j => j.id === current.journeyId);
+        if (found) setSelectedJourneyForClassroom(found);
+      }
+    } catch {}
+  }, [journeys]);
+
+  // 🔙 Suporte ao botão "Voltar" do navegador ou smartphone (PopState)
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      // Se houver modal de checkout aberto, fecha prioritariamente
+      if (selectedJourneyForCheckout) {
+        setSelectedJourneyForCheckout(null);
+        return;
+      }
+      if (isAuthModalOpen) {
+        setIsAuthModalOpen(false);
+        return;
+      }
+      if (isResetPasswordModalOpen) {
+        setIsResetPasswordModalOpen(false);
+        return;
+      }
+
+      const state = event.state as { tab?: string; journeyId?: string; lessonId?: string } | null;
+      const urlInfo = getTabFromUrl();
+      const targetTab = state?.tab || urlInfo.tab || 'home';
+      const targetJourneyId = state?.journeyId || urlInfo.journeyId;
+      const targetLessonId = state?.lessonId || urlInfo.lessonId;
+
+      setActiveTab(targetTab);
+
+      if (targetJourneyId) {
+        const found = journeys.find(j => j.id === targetJourneyId);
+        if (found) setSelectedJourneyForClassroom(found);
+      }
+      setSelectedLessonIdForClassroom(targetLessonId);
+
+      if (targetTab === 'community') {
+        refreshPosts();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [selectedJourneyForCheckout, isAuthModalOpen, isResetPasswordModalOpen, journeys]);
+
   const handleSelectJourney = (journey: Journey) => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     if (user?.purchasedJourneyIds.includes(journey.id)) {
-      setSelectedJourneyForClassroom(journey);
-      setActiveTab('classroom');
+      navigateToTab('classroom', { journey });
     } else {
       setSelectedJourneyForCheckout(journey);
     }
   };
 
   const handleStartLearning = (journey: Journey, lessonId?: string) => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    setSelectedJourneyForClassroom(journey);
-    setSelectedLessonIdForClassroom(lessonId);
-    setActiveTab('classroom');
+    navigateToTab('classroom', { journey, lessonId });
   };
 
   const handleCheckoutSuccess = (journey: Journey) => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setSelectedJourneyForCheckout(null);
-    setSelectedJourneyForClassroom(journey);
-    setActiveTab('classroom');
+    navigateToTab('classroom', { journey });
   };
 
   const handleRestartTutorial = () => {
-    setActiveTab('home');
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    navigateToTab('home');
     setIsSpotlightTourOpen(false);
     setTimeout(() => {
       setIsSpotlightTourOpen(true);
@@ -181,8 +310,7 @@ const AppContent: React.FC = () => {
             <div
               className="flex items-center gap-2 cursor-pointer"
               onClick={() => {
-                setActiveTab('login');
-                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                navigateToTab('login');
               }}
             >
               <span className="text-xl">🌿</span>
@@ -202,8 +330,7 @@ const AppContent: React.FC = () => {
             <Suspense fallback={<PageLoadingFallback />}>
               <QuizPage
                 onBackToHome={() => {
-                  setActiveTab('login');
-                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  navigateToTab('login');
                 }}
                 onOpenAuthModal={() => setIsAuthModalOpen(true)}
               />
@@ -220,7 +347,7 @@ const AppContent: React.FC = () => {
               onClose={() => setIsAuthModalOpen(false)}
               onSuccess={() => {
                 setIsAuthModalOpen(false);
-                setActiveTab('home');
+                navigateToTab('home');
               }}
             />
           </Suspense>
@@ -234,8 +361,7 @@ const AppContent: React.FC = () => {
       <Suspense fallback={<PageLoadingFallback />}>
         <LoginPage
           onSuccess={(isNewUser) => {
-            setActiveTab('home');
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            navigateToTab('home');
             if (isNewUser) {
               setIsSpotlightTourOpen(true);
             }
@@ -250,17 +376,8 @@ const AppContent: React.FC = () => {
       <div>
         <Navbar
           activeTab={activeTab}
-          setActiveTab={(tab) => {
-            setActiveTab(tab);
-            if (tab === 'community') {
-              refreshPosts();
-            }
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-          }}
-          onOpenAuthModal={() => {
-            setActiveTab('login');
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-          }}
+          setActiveTab={(tab) => navigateToTab(tab)}
+          onOpenAuthModal={() => navigateToTab('login')}
           onRestartTutorial={handleRestartTutorial}
         />
 
@@ -271,10 +388,7 @@ const AppContent: React.FC = () => {
                 <HomePage
                   onSelectJourney={handleSelectJourney}
                   onStartLearning={handleStartLearning}
-                  onStartQuiz={() => {
-                    setActiveTab('quiz');
-                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                  }}
+                  onStartQuiz={() => navigateToTab('quiz')}
                 />
               )}
 
@@ -282,10 +396,7 @@ const AppContent: React.FC = () => {
                 <ClassroomPage
                   journey={journeys.find(j => j.id === selectedJourneyForClassroom.id) || selectedJourneyForClassroom}
                   initialLessonId={selectedLessonIdForClassroom}
-                  onBack={() => {
-                    setActiveTab('home');
-                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                  }}
+                  onBack={() => navigateToTab('home')}
                   onOpenCertificate={(journey: Journey) => setCertificateJourney(journey)}
                 />
               )}
@@ -296,48 +407,29 @@ const AppContent: React.FC = () => {
                 <DashboardPage
                   onStartLearning={handleStartLearning}
                   onOpenCertificate={(journey: Journey) => setCertificateJourney(journey)}
-                  onExploreCatalog={() => {
-                    setActiveTab('home');
-                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                  }}
+                  onExploreCatalog={() => navigateToTab('home')}
                   onRestartTutorial={handleRestartTutorial}
-                  onGoToCommunity={() => {
-                    setActiveTab('community');
-                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                  }}
-                  onOpenQuiz={() => {
-                    setActiveTab('quiz');
-                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                  }}
+                  onGoToCommunity={() => navigateToTab('community')}
+                  onOpenQuiz={() => navigateToTab('quiz')}
                 />
               )}
 
               {activeTab === 'admin' && (
                 <AdminPage
-                  onBackToHome={() => {
-                    setActiveTab('home');
-                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                  }}
-                  onOpenLogin={() => {
-                    setActiveTab('login');
-                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                  }}
+                  onBackToHome={() => navigateToTab('home')}
+                  onOpenLogin={() => navigateToTab('login')}
                 />
               )}
 
               {activeTab === 'quiz' && (
                 <QuizPage
-                  onBackToHome={() => {
-                    setActiveTab('home');
-                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                  }}
+                  onBackToHome={() => navigateToTab('home')}
                   onSelectJourney={(journeyId) => {
                     const found = journeys.find(j => j.id === journeyId);
                     if (found) {
                       handleSelectJourney(found);
                     } else {
-                      setActiveTab('home');
-                      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                      navigateToTab('home');
                     }
                   }}
                 />
@@ -434,12 +526,10 @@ const AppContent: React.FC = () => {
           isOpen={isProfileInviteOpen}
           onClose={() => {
             setIsProfileInviteOpen(false);
-            setActiveTab('home');
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            navigateToTab('home');
           }}
           onGoToProfile={() => {
-            setActiveTab('dashboard');
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            navigateToTab('dashboard');
           }}
         />
 

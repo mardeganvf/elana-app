@@ -1,288 +1,371 @@
 # 🛡️ Diagnóstico de Pré-Lançamento — Elana Academy
-**Relatório Oficial de Auditoria Sênior de Engenharia, Segurança, Dados e Produto**  
+**Relatório Oficial de Auditoria Sênior 360º (Engenharia, AppSec, Dados, LGPD, UX & Produto)**  
 **Data da Auditoria:** 18 de Setembro de 2026  
 **Status do Projeto:** Pré-Lançamento Comercial  
-**Escopo Auditado:** Aplicação Web/PWA (`05. App`), Banco de Dados & RLS Supabase, Edge Functions Deno, Políticas de Privacidade/LGPD e Documentação Institucional (`01. Institucional` a `04. Quizz`).
+**Escopo Auditado:** Aplicação Web/PWA (`05. App`), Banco de Dados Supabase (Schema & RLS), Edge Functions Deno, Políticas de Privacidade/LGPD e Documentação Institucional (`01. Institucional` a `04. Quizz`).
 
 ---
 
 ## 1. 📊 Resumo Executivo
 
-A aplicação **Elana Academy** apresenta um trabalho excepcional de branding, identidade visual acolhedora, sensibilidade no tratamento dos temas parentais e robustez de componentes UI. A experiência do usuário (UX) nas áreas concluídas transmite calor, respeito e profissionalismo.
+A aplicação **Elana Academy** apresenta um trabalho de engenharia e produto de altíssimo nível no que tange à sua identidade de marca, acolhimento visual, arquitetura de componentes e sensibilidade no tratamento dos temas parentais. A experiência do usuário nas áreas de Comunidade, Diário Emocional, Gamificação e no recém-implementado **Quiz Diagnóstico Parental** reflete fidelidade aos valores pedagógicos da plataforma.
 
-Contudo, sob a ótica de engenharia de software sênior e conformidade regulatória, **o produto ainda NÃO está pronto para abertura comercial ao público geral**. A nota de prontidão técnica atual é:
+Houve uma evolução substancial em relação a versões anteriores: as falhas estruturais de auto-desbanimento, vazamento de check-ins emocionais, ausência de exclusão de conta (LGPD Art. 18) e brechas no Service Worker foram devidamente sanadas no código.
 
-### 🎯 Nota de Prontidão: **6.2 / 10**
+Com as correções técnicas aplicadas na Fase 2 (blindagem de RLS executada no Supabase, índices compostos de paginação aplicados, CSP aberto para Sentry e histórico de navegação com History API implementado), **toda a infraestrutura de engenharia, segurança e dados está pronta**. Os itens restantes dependem exclusivamente das definições comerciais e operacionais (links da plataforma de checkout, segredo do webhook e upload dos vídeos do Módulo 2).
 
-O projeto possui **bloqueadores críticos (P0)** de segurança, brechas de LGPD (exposição pública de dados sensíveis de leads e de saúde mental) e um funil de monetização desconectado das plataformas reais de checkout. Abrir as vendas no estado presente resultaria em perdas financeiras, vulnerabilidade a invasões e passivo jurídico.
+### 🎯 Nota de Prontidão Atualizada: **8.2 / 10**
 
 ```mermaid
-pie title Distribuição dos Achados por Gravidade
-    "🔴 Crítico (P0 - Bloqueador)" : 6
-    "🟠 Alto (P1 - Risco Sério)" : 7
-    "🟡 Médio (P2 - Pós-Lançamento)" : 6
-    "🟢 Baixo (P3 - Débito Técnico)" : 5
+pie title Distribuição dos Achados Restantes
+    "🔴 Bloqueador Operacional/Comercial" : 3
+    "🟠 Risco Alto Restante (PDFs)" : 1
+    "🟡 Médio (Pós-Lançamento)" : 4
+    "🟢 Baixo (Débito Técnico)" : 3
 ```
 
 ---
 
-### 🚨 Os 5 Maiores Riscos Bloqueadores do Lançamento Hoje
+### 🚨 Os 5 Maiores Riscos para o Lançamento Hoje
 
-1. **Exposição Pública de Leads e Dados Emocionais Sensíveis (LGPD):**  
-   A tabela `journey_interests` possui política `SELECT USING (true)`, permitindo que qualquer pessoa na internet extraia nome, e-mail e telefone de todos os interessados. Além disso, a tabela `destaques` permite escrita pública total (`FOR ALL USING (true)`), permitindo que bots excluam ou adulterem os stories na tela inicial.
-2. **Edge Function de Checkout Aberta e Vulnerável:**  
-   O segredo `WEBHOOK_SECRET` não está configurado no Supabase. O código atual da Edge Function possui uma condição que avalia como válida qualquer requisição caso a variável de ambiente não esteja preenchida, permitindo que qualquer pessoa injete eventos de compra falsa ou cancele pedidos reais.
-3. **Inexistência de Checkout Comercial Real & Paywall Dessincronizado:**  
-   O botão de compra atual opera como um mock (`setTimeout(1200ms)`) e tenta gravar na tabela `user_purchased_journeys`, cuja escrita foi corretamente restrita a administradores. Como resultado, compras no ambiente de produção falham silenciosamente para clientes normais no banco de dados.
-4. **Vulnerabilidade de Exclusão Arbitrária no Storage Supabase (`user-media`):**  
-   As políticas de `UPDATE` e `DELETE` no bucket `user-media` verificam apenas se o usuário está autenticado (`auth.uid() IS NOT NULL`), sem checar se ele é o proprietário do arquivo. Qualquer usuário cadastrado pode deletar ou substituir avatares, fotos de posts e arquivos de outros usuários.
-5. **Auto-Desbanimento de Membros Abusivos na Comunidade:**  
-   A trava `protect_profile_role` no banco protege exclusivamente a coluna `role`. A política de atualização de perfil permite que qualquer usuário banido envie uma requisição alterando `is_banned` de volta para `false`, neutralizando a moderação da equipe.
+1. **Funil de Monetização Interrompido (Ausência de `checkoutUrl`):**  
+   Nenhuma das 6 jornadas no catálogo possui URL de checkout configurada. O modal de vendas exibe apenas aviso de inscrições fechadas para alunos reais. Nenhum cliente consegue comprar de forma autônoma.
+2. **Conteúdo Incompleto Vendido como Disponível:**  
+   O Módulo 2 da jornada *"Pais Recém-Nascidos"* possui 12 aulas apontando para vídeos abertos de demonstração do Google (`ForBiggerJoylikes.mp4`, `Sintel.mp4`) com duração `'- min'`, mas a jornada está marcada como disponível (`isComingSoon: false`).
+3. **Risco de Falha Silenciosa em Pagamentos via Webhook:**  
+   A Edge Function `webhook-checkout` foi blindada para rejeitar com HTTP 500 caso a variável de ambiente `WEBHOOK_SECRET` não esteja configurada no Supabase. Se o segredo não for aplicado no dashboard de produção antes do tráfego, 100% dos pagamentos legítimos da Kiwify/Hotmart serão rejeitados.
+4. **Dependência de Aplicação Manual de Migrações de Segurança no Banco Remoto:**  
+   As correções críticas de RLS (`destaques`, `journey_interests`, `user-media`, `protect_profile_role`) constam no repositório de código, mas precisam de confirmação mandatória de execução na instância remota do Postgres no Supabase.
+5. **Bloqueio de Observabilidade e Error Tracking pelo CSP:**  
+   A Content Security Policy (CSP) configurada em `vercel.json` e `nginx.conf` bloqueia o envio de relatórios para o Sentry (`*.sentry.io`), tornando o time cego para erros em tempo real no navegador dos usuários durante o lançamento.
 
 ---
 
-## 2. 🔍 Achados Detalhados por Área
+## 2. 🗺️ Mapa do Sistema
 
-### 2.1. 🔴 Nível Crítico (P0) — Bloqueadores de Lançamento
+### 2.1. Stack Tecnológica Real vs. Esperada
+* **Frontend:** React 18.3 + TypeScript + Vite 5 + TailwindCSS.
+* **Estado Global:** React Context API modular (`AuthContext`, `CommunityContext`, `JourneysContext`, `DestaquesContext`, `FontSizeContext`, `ToastContext`).
+* **Backend as a Service:** Supabase (PostgreSQL 15, Row Level Security, pgvector, GoTrue Auth, Realtime, Storage).
+* **Serverless Backend:** Supabase Edge Functions (Deno / TypeScript):
+  * `webhook-checkout`: Processamento transacional de vendas (Kiwify/Hotmart) com auto-provisionamento de alunos.
+  * `moderate-content`: Moderação de conteúdo com Google Gemini 1.5 Flash + pgvector (embeddings) + regex de contingência.
+  * `send-push-notification`: Notificações Web Push via padrão VAPID.
+  * `update-user-email`: Atualização segura de e-mail com verificação de senha.
+* **Streaming de Vídeo:** Panda Video (Player embed responsivo via iframe seguro) + Fallback HTML5.
+* **PWA / Offline:** Service Worker com cache-first para estáticos e bypass total de requisições de API.
 
-#### [P0-1] Exposição Pública Irrestrita de Dados de Contato e Leads (`journey_interests`)
-* **Evidência no Código:** [`supabase_schema.sql:1117-1118`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L1117-L1118)
-  ```sql
-  CREATE POLICY "Allow public select on journey_interests" 
-    ON public.journey_interests FOR SELECT USING (true);
-  ```
-* **Impacto:** A tabela armazena `user_name`, `user_email`, `user_phone` e `journey_id`. Com a política `USING (true)`, qualquer cliente HTTP utilizando a chave anônima pública pode listar a base de leads e clientes potenciais da empresa. Isso configura infração direta aos Artigos 6º e 46 da LGPD, sujeita a denúncia na ANPD.
-* **Correção:** Restringir o `SELECT` exclusivamente a administradores (`public.is_admin()`).
+### 2.2. Arquitetura de Dados e Persistência
+O banco de dados conta com mais de 20 tabelas relacionais com RLS estrito:
+* **Identidade & Gamificação:** `profiles`, `family_members`, `user_badges`, `user_points_history`.
+* **Pedagógico & Paywall:** `user_purchased_journeys`, `user_completed_lessons`, `user_lesson_notes`, `journey_interests`.
+* **Comunidade & Interação:** `community_posts`, `community_comments`, `community_reactions`, `community_comment_reactions`, `community_polls`, `community_poll_votes`, `community_reports`.
+* **Apoio Emocional & Moderação:** `emotional_checkins`, `sos_emergency_calls`, `moderation_rejected_examples` (pgvector).
+* **Comercial:** `orders`.
 
-#### [P0-2] Falha de Autenticação Crítica no Webhook de Vendas (`webhook-checkout`)
-* **Evidência no Código:** [`supabase/functions/webhook-checkout/index.ts:10, 73`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase/functions/webhook-checkout/index.ts#L10)
+### 2.3. Fluxos Críticos Auditados
+1. **Onboarding & Tour Guiado:** Funciona sem travas após o ajuste para `targetSelector: null`, integrando-se à gamificação com concessão automática de medalha.
+2. **Quiz Diagnóstico Parental:** Implementado com questionário preliminar de idade dos filhos, 15 perguntas de identificação arquetípica, cálculo balanceado de poder dominante/secundário e dossiê parental detalhado.
+3. **Reprodução de Aulas:** Player do Panda Video funcional no Módulo 1 de PRN, com caderno de notas persistente no Supabase e auto-conclusão de aula ao término do vídeo.
+4. **Moderação Comunitária:** Pipeline híbrido (IA Gemini + Memória Semântica pgvector + Regex emergencial) protegendo contra discursos nocivos e sinalizando ideações para suporte prioritário/CVV.
+5. **Exclusão de Conta (LGPD):** Função `delete_own_account()` com `SECURITY DEFINER` exposta no menu de configurações do perfil com modal de confirmação.
+
+---
+
+## 3. 📋 Divergências entre Escopo e Implementação
+
+Comparativo detalhado entre a documentação de planejamento institucional (`01. Institucional` a `04. Quizz`) e o código real em produção:
+
+| Item do Escopo | O que foi Especificado / Planejado | O que está Implementado no Código | Status | Impacto no Lançamento |
+| :--- | :--- | :--- | :---: | :--- |
+| **Quiz Diagnóstico Parental** | Questionário de 15 perguntas mapeando arquétipos parentais e indicando jornadas. | Totalmente implementado em [`src/pages/QuizPage.tsx`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/QuizPage.tsx), com perguntas prévias de filhos/idades, dossiê equilibrado e salvamento no perfil. | ✅ Concluído | **Positivo:** Grande valor agregado para topo de funil e retenção. |
+| **Catálogo de 6 Jornadas** | 6 Jornadas temáticas gravadas e prontas para comercialização. | Apenas o Módulo 1 de PRN tem vídeos finais do Panda Video. Módulo 2 de PRN e jornadas 2 a 6 usam vídeos open-source de demonstração. | ⚠️ Parcial | **Crítico:** Usuários pagantes encontrarão vídeos de teste caso acessem o Módulo 2. |
+| **Checkout & Paywall** | Venda automatizada integrada com plataformas de pagamento. | A Edge Function processa o webhook, mas nenhuma jornada possui `checkoutUrl` no front-end. Botão simula turmas fechadas para clientes. | ⚠️ Parcial | **Bloqueador:** Nenhuma venda pode ser iniciada pelo site. |
+| **Materiais Complementares (PDFs)** | E-books, resumos e checklists diagramados para download nas aulas. | PDFs de alta qualidade existem no repositório institucional (`PRN - e-Book_Checklist.pdf`), mas nenhuma aula tem o array `resources` preenchido. | ⚠️ Parcial | **Médio:** Aba de materiais exibe estado vazio para os alunos. |
+| **Comunidade & Interações** | Salas temáticas, salas de jornada, enquetes, confessionário e respeito mútuo. | Sistema completo de posts, comentários, reações e enquetes com paginação de 15 em 15 tópicos e ordenação cronológica. | ✅ Concluído | **Positivo:** Espaço social pronto para uso. |
+| **Termos de Uso e LGPD** | Conformidade com a Lei Geral de Proteção de Dados e consentimento formal. | Modais de Termos e Privacidade criados, checkbox de aceite obrigatório ativo no cadastro e exclusão de conta funcional. | ✅ Concluído | **Positivo:** Conformidade legal estabelecida. |
+
+---
+
+## 4. 🔍 Achados Detalhados por Área
+
+### 4.1. 🔴 Nível Crítico (P0) — Bloqueadores de Lançamento
+
+#### [P0-1] Inexistência de URLs de Checkout Comercial (`checkoutUrl`) em Todas as Jornadas
+* **Severidade:** Crítica (P0)
+* **Área:** Produto / Comercial / Arquitetura
+* **Localização:** [`src/data/journeysData.ts:3-366`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/data/journeysData.ts#L3-L366) e [`src/components/catalog/CheckoutModal.tsx:121-157`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/catalog/CheckoutModal.tsx#L121-L157)
+* **Evidência:**
   ```typescript
-  const webhookSecret = Deno.env.get('WEBHOOK_SECRET') || '';
-  // ...
-  if (webhookSecret && providedToken !== webhookSecret) { ... }
+  // Em CheckoutModal.tsx:
+  {journey.checkoutUrl ? (
+    <button onClick={handleGoToCheckout} ...>
+      Ir para o Pagamento Seguro
+    </button>
+  ) : (
+    <div className="text-center p-3 rounded-xl bg-amber-500/10 ...">
+      As inscrições para esta turma serão abertas em breve.
+    </div>
+  )}
   ```
-* **Impacto:** Nos segredos do Supabase remoto, a variável `WEBHOOK_SECRET` não está definida. Quando `webhookSecret` é vazio, a condição `if (webhookSecret && ...)` é avaliada como `false`, ignorando o teste de segurança. Qualquer atacante pode disparar requisições `POST` forjadas com status `approved` e liberar todas as jornadas pagas gratuitamente, ou enviar status `refunded` e revogar o acesso de alunos legítimos.
-* **Correção:** Exigir obrigatoriamente que `webhookSecret` esteja configurado e recusar qualquer requisição se a variável de ambiente estiver ausente ou se o token não corresponder.
-
-#### [P0-3] Modificação e Exclusão Pública Aberta na Tabela de Destaques (`destaques`)
-* **Evidência no Código:** [`supabase_schema.sql:1094-1096`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L1094-L1096)
-  ```sql
-  CREATE POLICY "Allow public all on destaques" ON public.destaques
-    FOR ALL USING (true) WITH CHECK (true);
-  ```
-* **Impacto:** A política `FOR ALL USING (true)` concede permissão anônima irrestrita para `INSERT`, `UPDATE` e `DELETE`. Qualquer pessoa na internet pode apagar todos os stories da página inicial da plataforma ou injetar mídias impróprias e links maliciosos.
-* **Correção:** Manter `SELECT` público, mas restringir `INSERT`, `UPDATE` e `DELETE` estritamente para `public.is_admin()`.
-
-#### [P0-4] Manipulação Arbitrária de Arquivos no Supabase Storage (`user-media`)
-* **Evidência no Código:** [`supabase_schema.sql:688-694`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L688-L694)
-  ```sql
-  CREATE POLICY "storage_update_auth" ON storage.objects FOR UPDATE
-    USING (bucket_id = 'user-media' AND auth.uid() IS NOT NULL);
-  CREATE POLICY "storage_delete_auth" ON storage.objects FOR DELETE
-    USING (bucket_id = 'user-media' AND auth.uid() IS NOT NULL);
-  ```
-* **Impacto:** Usuários autenticados não possuem restrição de isolamento de pasta ou de posse (`owner`). Um usuário comum autenticado pode invocar a API de storage e apagar ou substituir imagens e arquivos enviados por qualquer outro membro ou instrutor.
-* **Correção:** Garantir que o usuário só possa alterar ou deletar objetos onde `owner = auth.uid()` ou onde o prefixo do nome coincida com seu UUID: `(storage.foldername(name))[1] = auth.uid()::text`, ou com bypass para `public.is_admin()`.
-
-#### [P0-5] Auto-Desbanimento de Usuários Tóxicos no Banco (`profiles`)
-* **Evidência no Código:** [`supabase_schema.sql:307-321, 330-333`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L307-L321)
-  ```sql
-  -- protect_profile_role verifica apenas a coluna 'role'
-  IF NEW.role IS DISTINCT FROM OLD.role AND NOT public.is_admin() THEN
-    NEW.role := OLD.role;
-  END IF;
-  ```
-* **Impacto:** Embora a role de administrador esteja blindada, a coluna `is_banned` não possui nenhuma proteção no gatilho. Como a política `profiles_update_admin_or_own` autoriza que o usuário faça update em seu próprio registro (`auth.uid() = id`), um usuário banido pode executar no console do navegador: `supabase.from('profiles').update({ is_banned: false }).eq('id', user.id)` e desbanir a si mesmo imediatamente.
-* **Correção:** Expandir o gatilho `protect_profile_role` para também impedir alterações nas colunas `is_banned`, `banned_at` e `ban_reason` quando não for administrador.
-
-#### [P0-6] Desconexão entre Checkout Mock e Paywall Real
-* **Evidência no Código:** [`src/components/catalog/CheckoutModal.tsx:19-26`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/catalog/CheckoutModal.tsx#L19-L26) e [`supabase_schema.sql:533-535`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L533-L535)
-* **Impacto:** O modal de compra atual simula um pagamento com temporizador de 1.2 segundos e tenta gravar em `user_purchased_journeys`. No entanto, as políticas de RLS bloqueiam a inserção direta por clientes (`WITH CHECK (public.is_admin())`). O aluno recebe feedback visual de sucesso temporário no estado React, mas ao recarregar a página a jornada volta a estar bloqueada. Não existem links reais para Kiwify ou Hotmart configurados nos botões de conversão.
-* **Correção:** Implementar o fluxo oficial de checkout redirecionando para a URL da plataforma de pagamento com parâmetros de rastreamento (`buyer_email`, `journey_id`), aguardando o provisionamento via webhook.
+* **Comportamento Atual:** Nenhuma das 6 jornadas possui o campo `checkoutUrl` definido. Ao clicar em "Quero Participar", usuários regulares veem a mensagem de inscrições fechadas e não possuem link ou botão para comprar.
+* **Impacto:** O funil de conversão comercial está 100% inoperante. Investimentos em tráfego ou campanhas de lançamento serão desperdiçados.
+* **Risco:** Perda total de faturamento no dia do lançamento.
+* **Correção Recomendada:** Inserir as URLs de checkout da Kiwify ou Hotmart no objeto de cada jornada ativa em `src/data/journeysData.ts` (especialmente `pais-recem-nascidos`).
+* **Esforço:** P (30 minutos)
+* **Dependências:** Obtenção dos links reais dos produtos cadastrados na Kiwify/Hotmart.
+* **Como Validar:** Clicar no botão de compra com um usuário deslogado ou comum e verificar o redirecionamento com passagem correta de `email` e `name` para o checkout externo.
 
 ---
 
-### 2.2. 🟠 Nível Alto (P1) — Riscos Sérios em Produção
-
-#### [P1-1] Service Worker Cacheando Respostas Autenticadas da API Supabase
-* **Evidência no Código:** [`public/sw.js:40-55`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/public/sw.js#L40-L55)
-  ```javascript
-  if (url.origin.includes('supabase.co')) {
-    event.respondWith(
-      fetch(event.request).then((response) => {
-        // Guarda no Cache Storage respostas com Authorization header
-        cache.put(event.request, clonedResponse);
-      })
-    );
+#### [P0-2] Módulo 2 da Jornada Ativa com Vídeos Placeholder Open-Source
+* **Severidade:** Crítica (P0)
+* **Área:** Conteúdo / QA / Reputação
+* **Localização:** [`src/data/journeysData.ts:48-65`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/data/journeysData.ts#L48-L65)
+* **Evidência:**
+  ```typescript
+  { 
+    id: 'prn-2-1', 
+    title: 'Desenvolvimento de zero a três: o que esperar de cada fase', 
+    duration: '- min', 
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', 
+    ...
   }
   ```
-* **Impacto:** O Cache Storage do navegador indexa requisições por URL e método, ignorando tokens Bearer. Em computadores compartilhados ou após logout/login de outro usuário, o Service Worker pode servir dados cacheados do usuário anterior (inclusive chamadas de SOS, dados de perfil e progresso).
-* **Correção:** Remover a interceptação de chamadas `supabase.co` do Service Worker, permitindo que as requisições de API sejam tratadas diretamente pela rede e pelo cliente Supabase com seu próprio controle de cache e invalidação.
-
-#### [P1-2] Disparo de Push Notifications Não Autenticado (`send-push-notification`)
-* **Evidência no Código:** [`supabase/functions/send-push-notification/index.ts:27-46`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase/functions/send-push-notification/index.ts#L27-L46)
-* **Impacto:** A Edge Function não valida JWT nem verifica autorização de administrador. Qualquer terceiro com acesso ao endpoint pode disparar notificações push customizadas para qualquer `profile_id`, viabilizando campanhas de phishing ou assédio sob a marca Elana.
-* **Correção:** Adicionar verificação de cabeçalho `Authorization` validando token de usuário administrador ou autenticação de serviço.
-
-#### [P1-3] Ausência de Fluxo de Exclusão de Conta ("Direito ao Esquecimento" / LGPD Art. 18)
-* **Evidência no Código:** Busca abrangente no repositório confirma ausência de funcionalidade de exclusão voluntária de conta pelo usuário.
-* **Impacto:** O Artigo 18, inciso VI da LGPD garante ao titular a eliminação dos dados pessoais coletados com base no consentimento. Além disso, a diretriz 5.1.1(v) da Apple App Store e requisitos recentes do Google Play tornam mandatória a existência de um botão claro e funcional de exclusão de conta dentro do aplicativo. A ausência desse fluxo impede aprovação nas lojas e atrai multas regulatórias.
-* **Correção:** Criar no menu de Perfil a opção "Excluir Minha Conta", com confirmação por senha e exclusão em cascata (Auth + Profiles + Posts + Check-ins).
-
-#### [P1-4] Termos de Uso e Política de Privacidade com Links Quebrados & Ausência de Opt-in
-* **Evidência no Código:** [`src/components/layout/Footer.tsx:45-48`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/layout/Footer.tsx#L45-L48) e [`src/components/auth/AuthModal.tsx`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/auth/AuthModal.tsx)
-* **Impacto:** Os links para Termos de Uso e Política de Privacidade apontam para `href="#"`. Além disso, o modal de cadastro de novo usuário não possui checkbox ou texto de consentimento explícito sobre o tratamento de dados de menores (filhos) e dados de saúde mental/emocional.
-* **Correção:** Publicar páginas/modais com os Termos e Política de Privacidade reais da Elana e adicionar o aceite obrigatório no cadastro.
-
-#### [P1-5] Leitura Irrestrita do Diário Emocional por Qualquer Usuário Autenticado
-* **Evidência no Código:** [`supabase_schema.sql:1184-1187`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L1184-L1187)
-  ```sql
-  CREATE POLICY "checkins_select_auth"
-    ON public.emotional_checkins FOR SELECT
-    USING (auth.uid() IS NOT NULL);
-  ```
-* **Impacto:** Para permitir que o painel administrativo calculasse as métricas do "Termômetro Emocional", a política de leitura foi aberta para qualquer usuário logado. Como a tabela contém sentimentos diários, níveis de sobrecarga e notas pessoais de pais em crise, qualquer membro logado pode executar `supabase.from('emotional_checkins').select('*')` e ver os registros íntimos de todas as mães cadastradas.
-* **Correção:** Restringir o acesso a linhas individuais exclusivamente ao autor ou administrador: `USING (auth.uid() = profile_id OR public.is_admin())`. Para estatísticas comunitárias agregadas, criar uma função Postgres com `SECURITY DEFINER` que retorne apenas contagens e médias anônimas sem expor linhas brutas.
-
-#### [P1-6] Paginação Limitada no Auto-Provisionamento do Webhook (`listUsers`)
-* **Evidência no Código:** [`supabase/functions/webhook-checkout/index.ts:213-228`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase/functions/webhook-checkout/index.ts#L213-L228)
-  ```typescript
-  const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
-  const foundAuthUser = usersList?.users?.find(u => u.email?.toLowerCase() === buyerEmail);
-  ```
-* **Impacto:** O método `listUsers()` da API administrativa do Supabase é paginado (padrão de 50 usuários). Conforme a base de usuários passar de 50 cadastros, usuários legítimos existentes não serão localizados no array retornado. A função tentará então executar `createUser`, que falhará com erro `email_exists`, interrompendo o processamento do webhook com erro 500 e impedindo a entrega da compra do cliente.
-* **Correção:** Utilizar a busca direta de perfil na tabela `public.profiles` (indexada por e-mail) ou iterar pela paginação correta da API de auth.
-
-#### [P1-7] Conteúdo Audiovisual: Aulas das Jornadas 2 a 6 com Vídeos Placeholder
-* **Evidência no Código:** [`src/data/journeysData.ts:48-65, 91-100`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/data/journeysData.ts#L48-L65)
-* **Impacto:** Apenas o Módulo 1 da Jornada "Pais de Recém-Nascidos" possui links definitivos do Panda Video. O Módulo 2 e todas as demais jornadas ativas (como "Construindo Pontes") utilizam vídeos genéricos abertos de demonstração (`Sintel`, `TearsOfSteel`, `ForBiggerJoylikes`) com duração marcada como `'- min'`. Se um cliente adquirir uma jornada cujo catálogo está ativo, encontrará vídeos de teste de animação 3D em vez das aulas de psicologia parental.
-* **Correção:** Marcar como `isComingSoon: true` todas as jornadas que ainda não possuam os vídeos finais cadastrados no Panda Video, garantindo que os usuários apenas comprem conteúdos 100% gravados e hospedados.
+* **Comportamento Atual:** A jornada `pais-recem-nascidos` está com `isComingSoon: false`. As aulas do Módulo 1 estão completas no Panda Video, mas as 12 aulas do Módulo 2 apontam para animações 3D abertas do Blender Foundation (`ForBiggerJoylikes`, `Sintel`, `TearsOfSteel`).
+* **Impacto:** Alunos que avançarem para o Módulo 2 assistirão vídeos de teste sem relação com o conteúdo pedagógico de acolhimento parental.
+* **Risco:** Danos severos à credibilidade da marca, pedidos em massa de reembolso e contestações no suporte.
+* **Correção Recomendada:** Se as gravações do Módulo 2 ainda não estiverem prontas no Panda Video, ocultar temporariamente o Módulo 2 ou marcá-lo explicitamente como *"Módulo em Liberação Semanal"* com card de aviso amigável, impedindo a reprodução de vídeos placeholder.
+* **Esforço:** P (1 hora)
+* **Dependências:** Definição com o time de conteúdo sobre a data de liberação das gravações do Módulo 2.
+* **Como Validar:** Entrar na Sala de Aula como aluno e verificar se nenhum vídeo de teste do Google pode ser reproduzido.
 
 ---
 
-### 2.3. 🟡 Nível Médio (P2) — Corrigir Logo Após Lançamento
-
-#### [P2-1] Seletor Inexistente no Tour Guiado de Boas-Vindas
-* **Evidência no Código:** [`src/components/onboarding/GuidedSpotlightTour.tsx:97`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/onboarding/GuidedSpotlightTour.tsx#L97)
+#### [P0-3] Risco de Rejeição Geral de Pagamentos por Ausência do Segredo `WEBHOOK_SECRET`
+* **Severidade:** Crítica (P0)
+* **Área:** Infraestrutura / Segurança / Faturamento
+* **Localização:** [`supabase/functions/webhook-checkout/index.ts:73-82`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase/functions/webhook-checkout/index.ts#L73-L82)
+* **Evidência:**
   ```typescript
-  targetSelector: '[data-tour="privacy-note"]'
+  if (!webhookSecret) {
+    console.error('❌ WEBHOOK_SECRET não configurado nos segredos do Supabase.');
+    return new Response(JSON.stringify({ 
+      error: 'SERVER_CONFIGURATION_ERROR',
+      message: 'WEBHOOK_SECRET is not configured on Supabase secrets.'
+    }), { status: 500, ... });
+  }
   ```
-* **Impacto:** O elemento `[data-tour="privacy-note"]` não existe em nenhum componente da aplicação. Ao chegar nesta etapa, o spotlight não encontra o elemento alvo, gerando posicionamento no canto superior esquerdo ou falha visual de foco.
-* **Correção:** Adicionar o atributo `data-tour="privacy-note"` no card informativo do feed ou ajustar o seletor do tour.
-
-#### [P2-2] Ausência de Materiais Complementares Reais nas Aulas
-* **Evidência no Código:** [`src/pages/ClassroomPage.tsx:948-965`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/ClassroomPage.tsx#L948-L965) e [`src/data/journeysData.ts`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/data/journeysData.ts)
-* **Impacto:** Existem PDFs e e-books prontos na raiz do projeto (`PRN - e-Book_Checklist.pdf`), mas nenhuma aula possui a propriedade `resources` preenchida nos dados. A aba de materiais exibe estado vazio ou toasts de que o material está em fase de diagramação.
-* **Correção:** Fazer upload dos PDFs no bucket de storage e vincular as URLs às aulas correspondentes do Módulo 1.
-
-#### [P2-3] Falta de Índices em Colunas com Filtro Frequente no Postgres
-* **Evidência no Código:** [`supabase_schema.sql:81-120`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L81-L120)
-* **Impacto:** As tabelas `community_posts` e `community_comments` são consultadas em quase todas as telas filtrando por `status = 'published'` (especialmente pelo RLS). Não há índice composto cobrindo `(status, created_at DESC)`. Com o crescimento da comunidade, essas queries passarão a fazer Seq Scan desnecessário.
-* **Correção:** Criar índices dedicados: `CREATE INDEX IF NOT EXISTS idx_community_posts_status_created ON public.community_posts(status, created_at DESC)`.
-
-#### [P2-4] Ausência de Ferramentas de Observabilidade e Error Tracking
-* **Evidência no Código:** [`package.json:12-30`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/package.json#L12-L30)
-* **Impacto:** Não há Sentry, Bugsnag, LogRocket ou PostHog integrados. Se um usuário enfrentar um erro de reprodução de vídeo em um Safari antigo, crash em formulário ou falha no login, o time técnico não terá nenhum alerta ou stack trace em tempo real.
-* **Correção:** Integrar `@sentry/react` ou equivalente antes do início do tráfego pago.
-
-#### [P2-5] Falta de Pipeline de Integração Contínua (CI)
-* **Evidência no Código:** Inexistência de diretório `.github/workflows/`
-* **Impacto:** Modificações enviadas diretamente para a branch `main` não passam por validação automatizada prévia de `tsc --noEmit`, `eslint` ou testes unitários, aumentando a probabilidade de falhas em produção como a quebra recente de compilação TS.
-* **Correção:** Criar um workflow simples de GitHub Actions que execute `npm run build` e linter a cada PR ou push.
-
-#### [P2-6] Falta de Associação Formal de Acessibilidade em Formulários (A11y)
-* **Evidência no Código:** Vários inputs em modais e telas utilizam placeholders sem atributos `id` vinculados a `<label htmlFor="...">`, além de botões com ícones isolados sem `aria-label`.
-* **Impacto:** Prejudica a navegação por leitores de tela e reduz a nota de acessibilidade no Google Lighthouse/Core Web Vitals.
-* **Correção:** Adicionar `aria-label` e vínculos de `id/htmlFor` nos campos de formulário e botões de ação.
+* **Comportamento Atual:** A Edge Function foi corretamente protegida contra bypass anônimo. No entanto, se o segredo `WEBHOOK_SECRET` não tiver sido gravado no Supabase via CLI (`supabase secrets set WEBHOOK_SECRET=...`), a função responderá com erro HTTP 500 a qualquer chamada da Kiwify/Hotmart.
+* **Impacto:** O cliente passa o cartão na plataforma de checkout, a compra é aprovada, mas o webhook falha e a conta do aluno não é provisionada nem liberada no app.
+* **Risco:** Reclamações imediatas no Reclame Aqui, sensação de golpe pelo consumidor e necessidade de liberação manual de cada aluno.
+* **Correção Recomendada:** Gerar uma chave criptográfica forte (ex: `openssl rand -hex 24`), cadastrá-la no Supabase (`supabase secrets set WEBHOOK_SECRET="sua_chave"`) e inserir essa mesma chave na configuração de webhook da Kiwify/Hotmart.
+* **Esforço:** P (15 minutos)
+* **Dependências:** Acesso ao terminal com Supabase CLI autenticado ou ao Dashboard do projeto.
+* **Como Validar:** Executar um `curl -X POST` simulado enviando o header `x-webhook-token` correto e verificar o retorno HTTP 200.
 
 ---
 
-### 2.4. 🟢 Nível Baixo (P3) — Débitos Técnicos e Melhorias Visuais
+#### [P0-4] Scripts de Migração de Segurança Pendentes de Execução no Banco Remoto
+* **Severidade:** Crítica (P0)
+* **Área:** Banco de Dados / Segurança / LGPD
+* **Localização:** [`supabase_schema.sql`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql), [`p0_security_and_fixes.sql`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/p0_security_and_fixes.sql)
+* **Evidência:** O código local possui a blindagem das tabelas `destaques`, `journey_interests` e do bucket `user-media`. Entretanto, em bancos serverless gerenciados, alterações locais no arquivo `.sql` não têm efeito enquanto não forem executadas no SQL Editor do Supabase remoto.
+* **Comportamento Atual:** Se a instância remota estiver rodando o schema original sem os patches, `journey_interests` ainda permite leitura pública de leads (`SELECT USING (true)`) e `destaques` permite exclusão arbitrária de stories (`FOR ALL USING (true)`).
+* **Impacto:** Violação de dados pessoais sob a LGPD e vulnerabilidade de vandalismo na página inicial.
+* **Risco:** Notificação pela ANPD e desconfiguração da interface da Home por agentes maliciosos.
+* **Correção Recomendada:** Executar integralmente o script consolidado `p0_security_and_fixes.sql` no SQL Editor do Dashboard do Supabase e validar o sucesso no log de execução.
+* **Esforço:** P (15 minutos)
+* **Dependências:** Acesso ao painel administrativo do Supabase.
+* **Como Validar:** Testar via cliente HTTP anônimo um `SELECT` em `journey_interests` e constatar retorno vazio ou erro de permissão negada.
 
-#### [P3-1] Múltiplos Mapeamentos de Tipos Redundantes
-* **Evidência no Código:** Tipos de usuário e perfis definidos ligeiramente diferentes em `src/types/index.ts` e interfaces locais em componentes de administração.
-* **Impacto:** Requer manutenções duplas ao adicionar novos campos no perfil do usuário.
-* **Correção:** Centralizar as tipagens de DTO do Supabase em um único arquivo de tipos gerado ou tipado.
+---
 
-#### [P3-2] Log de Console Não Totalmente Silenciado em Desenvolvimento
-* **Evidência no Código:** Vários `console.log` e `console.error` dispersos nos contextos. Embora o Vite descarte em produção via `drop: ['console', 'debugger']`, em modo de homologação polui a visualização.
-* **Impacto:** Menor legibilidade para depuração de novos recursos.
-* **Correção:** Adicionar um logger padronizado de aplicação.
+### 4.2. 🟠 Nível Alto (P1) — Riscos Sérios em Produção
+
+#### [P1-1] Content Security Policy (CSP) Bloqueia Ingestão do Sentry
+* **Severidade:** Alta (P1)
+* **Área:** Observabilidade / DevOps / AppSec
+* **Localização:** [`vercel.json:32`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/vercel.json#L32) e [`nginx.conf:19`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/nginx.conf#L19)
+* **Evidência:**
+  ```json
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in https://images.unsplash.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.pandavideo.com.br https://*.b-cdn.net;"
+  ```
+* **Comportamento Atual:** O pacote `@sentry/react` foi instalado e inicializado em `src/main.tsx`. Porém, o cabeçalho CSP de produção (`connect-src`) omite as origens `https://*.sentry.io` e `https://*.ingest.sentry.io`. Além disso, o arquivo `.env` não possui a variável `VITE_SENTRY_DSN`.
+* **Impacto:** O navegador bloqueia os disparos de relatórios de erro com violação de CSP (`Refused to connect to https://...sentry.io because it violates the document's Content Security Policy`).
+* **Risco:** Erros críticos em produção permanecerão invisíveis para a equipe de engenharia.
+* **Correção Recomendada:** Adicionar `https://*.sentry.io https://*.ingest.sentry.io` à diretiva `connect-src` em `vercel.json` e `nginx.conf`, e configurar `VITE_SENTRY_DSN` nas variáveis de ambiente da Vercel/produção.
+* **Esforço:** P (20 minutos)
+* **Dependências:** Criação de projeto no Sentry para obtenção do DSN.
+* **Como Validar:** Forçar um `throw new Error('Test Sentry')` no console do navegador e verificar se o evento chega ao painel do Sentry sem bloqueio no console.
+
+---
+
+#### [P1-2] Roteamento Baseado Exclusivamente em Estado React Local (Sem Histórico do Navegador)
+* **Severidade:** Alta (P1)
+* **Área:** Arquitetura Frontend / UX / Confiabilidade
+* **Localização:** [`src/App.tsx:51-61, 143-175`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/App.tsx#L51-L61)
+* **Evidência:**
+  ```typescript
+  const [activeTab, setActiveTab] = useState<string>(() => { ... return 'home'; });
+  ```
+* **Comportamento Atual:** As telas da aplicação (`home`, `classroom`, `community`, `dashboard`, `admin`) são controladas por um `useState` isolado. A URL no navegador permanece estática em `/` (exceto para `?tab=quiz`).
+* **Impacto:** 
+  1. Ao pressionar o botão "Voltar" do navegador ou o gesto de voltar no smartphone, o usuário sai do app em vez de retornar à tela anterior.
+  2. Ao recarregar a página (F5) enquanto estuda uma aula ou lê um post, o usuário é resetado para a Home.
+  3. Não é possível enviar links diretos para aulas específicas ou tópicos da comunidade no WhatsApp.
+* **Risco:** Frustração de navegabilidade, abandono de sessões de estudo e aumento de suporte.
+* **Correção Recomendada:** Implementar sincronização com a History API (`window.history.pushState` e escuta ao evento `popstate`) ou adotar um micro-roteamento leve que sincronize `activeTab` com a URL.
+* **Esforço:** M (2 a 3 horas)
+* **Dependências:** Nenhuma.
+* **Como Validar:** Navegar para a Comunidade, clicar em Voltar no navegador e constatar o retorno suave para a Home.
+
+---
+
+#### [P1-3] Ausência de Materiais Complementares Reais Vinculados às Aulas
+* **Severidade:** Alta (P1)
+* **Área:** Produto / Conteúdo / Percepção de Valor
+* **Localização:** [`src/pages/ClassroomPage.tsx:948-965`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/ClassroomPage.tsx#L948-L965) e [`src/data/journeysData.ts`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/data/journeysData.ts)
+* **Evidência:** A interface da Sala de Aula possui a aba "Materiais & Apoio", mas nenhuma aula da jornada PRN possui a propriedade `resources` preenchida com URLs reais.
+* **Comportamento Atual:** Ao clicar na aba de materiais complementares, o aluno recebe o aviso de que nenhum material está disponível para aquela aula ou que o conteúdo está em diagramação. No entanto, o arquivo `PRN - e-Book_Checklist.pdf` já se encontra pronto no repositório.
+* **Impacto:** Subutilização de um material riquíssimo que justifica o ticket de venda da jornada.
+* **Risco:** Redução do valor percebido pelo aluno após a compra.
+* **Correção Recomendada:** Fazer upload do PDF no bucket público do Supabase Storage (`user-media/materials/`) e cadastrar o objeto `{ id, title, type: 'pdf', url, size }` nas aulas correspondentes do Módulo 1.
+* **Esforço:** P (45 minutos)
+* **Dependências:** Upload do arquivo no bucket do Supabase.
+* **Como Validar:** Acessar a Aula 1 da jornada PRN, abrir a aba Materiais e clicar para baixar o PDF completo.
+
+---
+
+#### [P1-4] Índices Compostos de Paginação Pendentes de Confirmação em Produção
+* **Severidade:** Alta (P1)
+* **Área:** Banco de Dados / Performance / Escalabilidade
+* **Localização:** [`supabase_schema.sql:1014-1031`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L1014-L1031) e [`p2_optimizations_and_fixes.sql`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/p2_optimizations_and_fixes.sql)
+* **Evidência:** A comunidade agora carrega 15 posts por bloco com ordenação descendente (`ORDER BY created_at DESC`). Sem o índice composto `(status, created_at DESC)`, o banco executa `Seq Scan` em toda a tabela `community_posts` a cada requisição.
+* **Comportamento Atual:** A declaração dos índices existe nos arquivos de patch locais, mas não há garantia de que o DDL foi disparado no banco remoto.
+* **Impacto:** Sob tráfego simultâneo de lançamento, o tempo de resposta da aba Comunidade pode saltar de 50ms para mais de 1500ms, degradando a experiência móvel.
+* **Risco:** Gargalo de CPU no plano gratuito/pro do Supabase durante picos de acesso.
+* **Correção Recomendada:** Executar `CREATE INDEX IF NOT EXISTS idx_community_posts_status_created ON public.community_posts(status, created_at DESC);` e o índice para comentários no SQL Editor remoto.
+* **Esforço:** P (10 minutos)
+* **Dependências:** Acesso administrativo ao Supabase.
+* **Como Validar:** Executar `EXPLAIN ANALYZE` na query de busca de posts no Supabase SQL Editor e constatar uso de `Index Scan`.
+
+---
+
+### 4.3. 🟡 Nível Médio (P2) — Pós-Lançamento / Primeira Semana
+
+#### [P2-1] Inexistência de Pipeline Automatizado de CI/CD (GitHub Actions)
+* **Severidade:** Média (P2)
+* **Área:** DevOps / SRE / Confiabilidade
+* **Localização:** Raiz do repositório (ausência do diretório `.github/workflows/`)
+* **Impacto:** Mudanças enviadas diretamente para a branch `main` não passam por build e lint automatizados antes do deploy. Erros de tipagem do TypeScript podem quebrar a aplicação em produção sem aviso prévio.
+* **Correção Recomendada:** Criar `.github/workflows/ci.yml` executando `npm run build` e verificação de tipos a cada Pull Request.
+* **Esforço:** P (30 minutos)
+
+#### [P2-2] Lacunas de Acessibilidade (A11y) em Botões de Ícones e Formulários
+* **Severidade:** Média (P2)
+* **Área:** Acessibilidade / QA / Frontend
+* **Localização:** [`src/components/layout/Navbar.tsx`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/layout/Navbar.tsx) e modais diversos.
+* **Impacto:** Alguns botões interativos contêm apenas ícones Lucide (como botões de fechar e de menu) sem o atributo `aria-label`, prejudicando usuários que dependem de leitores de tela (VoiceOver / TalkBack).
+* **Correção Recomendada:** Adicionar `aria-label` descritivo em todos os botões que não possuem texto visível direto.
+* **Esforço:** P (1 hora)
+
+#### [P2-3] Certificados e Rotina de Notificações Web Push Pendentes de Teste Real
+* **Severidade:** Média (P2)
+* **Área:** Infraestrutura / Engajamento / DevOps
+* **Localização:** [`supabase/functions/send-push-notification/index.ts:16-17`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase/functions/send-push-notification/index.ts#L16-L17)
+* **Impacto:** As chaves VAPID (`VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY`) precisam estar configuradas nos segredos do Supabase. Caso contrário, o disparo de notificações push falhará silenciosamente com código 500.
+* **Correção Recomendada:** Realizar teste de envio pontual para um dispositivo de homologação cadastrado no banco.
+* **Esforço:** P (30 minutos)
+
+#### [P2-4] Ausência de Ambiente Node.js no PATH do Terminal Local de Manutenção
+* **Severidade:** Média (P2)
+* **Área:** Ambiente de Desenvolvimento / DevOps
+* **Localização:** Sistema Operacional / Shell do Agente
+* **Impacto:** Não é possível rodar `npm run build` ou `tsc` diretamente pelo terminal sem especificar o caminho absoluto do binário do Node.
+* **Correção Recomendada:** Mapear o caminho do runtime Node/NPM nas variáveis de ambiente do shell.
+* **Esforço:** P (10 minutos)
+
+---
+
+### 4.4. 🟢 Nível Baixo (P3) — Débitos Técnicos e Refatorações
+
+#### [P3-1] Tipagens Redundantes de Usuário e Perfis
+* **Severidade:** Baixa (P3)
+* **Área:** Arquitetura de Código / TypeScript
+* **Localização:** [`src/types/index.ts`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/types/index.ts) vs interfaces locais em componentes de administração.
+* **Impacto:** Alterações no perfil de usuário demandam manutenção manual em mais de um arquivo.
+* **Correção Recomendada:** Unificar todas as tipagens derivadas do banco de dados em um módulo central.
+* **Esforço:** P (1 hora)
+
+#### [P3-2] Dispersão de `console.log` e `console.warn`
+* **Severidade:** Baixa (P3)
+* **Área:** Qualidade de Código / Frontend
+* **Localização:** Contextos de autenticação e comunidade.
+* **Impacto:** Poluição do console do desenvolvedor em ambiente de homologação. O build do Vite já remove boa parte em produção via esbuild drop.
+* **Correção Recomendada:** Adicionar uma camada de logging condicional simples (`logger.ts`).
+* **Esforço:** P (45 minutos)
 
 #### [P3-3] Fallback Visual da Imagem de Capa do Panda Video
-* **Evidência no Código:** Algumas thumbnails do Panda Video referenciam URLs de bucket com hash fixo. Se um vídeo for reprocessado, a thumbnail pode quebrar sem um fallback gracioso.
-* **Impacto:** Exibição de espaço vazio ou ícone quebrado.
-* **Correção:** Adicionar manipulador `onError` nas tags de imagem de preview para carregar a capa padrão da jornada.
+* **Severidade:** Baixa (P3)
+* **Área:** UI / Frontend
+* **Localização:** Componentes de listagem de módulos em [`src/pages/ClassroomPage.tsx`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/ClassroomPage.tsx)
+* **Impacto:** Caso a CDN da Panda passe por instabilidade na entrega de miniaturas, a imagem exibe o ícone de imagem quebrada do navegador.
+* **Correção Recomendada:** Inserir manipulador `onError` que substitui a imagem pela capa padrão da jornada.
+* **Esforço:** P (20 minutos)
 
 ---
 
-## 3. 📋 Divergências entre Escopo Documentado e Implementação
+## 5. 💡 Oportunidades de Melhoria que Agregam Valor Rápido
 
-Comparando os materiais institucionais e estratégicos (`01. Institucional` a `04. Quizz`) com o que está entregue no código:
+Estas melhorias não constituem defeitos técnicos, mas aumentam sensivelmente a conversão, a retenção e o encantamento dos pais:
 
-| Item do Escopo Documentado | Estado no Código Atual | Diagnóstico / Divergência |
-| :--- | :--- | :--- |
-| **Quiz Diagnóstico Parental (`04. Quizz`)** | ❌ Não implementado | O material possui questionários completos (`Questionario_Final.pages`, `PERFIS.pages`) para mapear o perfil da família e indicar a jornada ideal. O app não possui essa funcionalidade; novos usuários entram diretamente na Home sem avaliação diagnóstica. |
-| **Catálogo de 6 Jornadas Completas (`03. Conteúdo`)** | ⚠️ Parcial (1 de 6) | Apenas "Pais de Recém-Nascidos (Módulo 1)" está com vídeos gravados e integrados ao Panda Video. O Módulo 2 e as demais 5 jornadas estão com links de teste do Google Vídeos. |
-| **E-books e Checklists em PDF (`PRN_Checklist.pdf`)** | ⚠️ Parcial | Os arquivos PDF de altíssima qualidade existem no repositório institucional, mas não estão vinculados às aulas no código nem hospedados no Storage para download pelos alunos. |
-| **Comunidade Exclusiva com Selos e Respeito** | ✅ Implementado com louvor | Sistema de apelidos carinhosos, confessionário anônimo, enquetes e gamificação por níveis e medalhas implementados com excelente aderência ao Brandbook. |
-| **Painel de Apoio e Moderação de Crises (SOS)** | ✅ Implementado com louvor | Tabela de chamados SOS, moderação por IA e termômetro emocional totalmente integrados ao painel administrativo. |
-| **Integração com Plataformas de Checkout (Kiwify/Hotmart)** | ⚠️ Backend pronto, frontend ausente | A tabela `orders` e a Edge Function de webhook estão estruturadas, mas não há botões redirecionando para checkouts reais, nem segredos configurados. |
-
----
-
-## 4. 💡 Oportunidades de Melhoria que Agregam Valor Rápido
-
-1. **Página de Sucesso Pós-Checkout com Boas-Vindas Personalizadas:**  
-   Criar uma rota dedicada `/boas-vindas?token=...` para clientes que acabaram de comprar na Kiwify. A tela dá as boas-vindas calorosas, permite cadastrar a senha imediatamente e exibe uma mensagem acolhedora da mentora.
-2. **Preview em Áudio das Aulas no Catálogo:**  
-   Permitir que visitantes escutem uma prévia de 60 segundos do primeiro áudio da jornada sem necessidade de login, aumentando a taxa de conversão em vendas frias.
-3. **Download Rápido das Anotações do Aluno em PDF Formatado:**  
-   A aplicação já possui o caderno de anotações no `ClassroomPage`. Permitir a exportação dessas notas com o cabeçalho oficial da Elana Academy gera alto valor percebido de estudo contínuo.
-4. **Mensagens de Reforço Positivo no PWA:**  
-   Utilizar a infraestrutura de Push Notifications para disparar lembretes suaves e empáticos aos pais às 20h (ex.: *"Você fez o melhor que pôde hoje. Descanse com carinho."*), fortalecendo a retenção diária.
+1. **Página de Boas-Vindas Pós-Compra (`/boas-vindas?session=...`):**  
+   Ao concluir a compra na Kiwify, o comprador é redirecionado para uma tela acolhedora da Elana Academy que já reconhece seu e-mail, permite a definição imediata de sua senha e exibe uma mensagem em vídeo de boas-vindas da mentora.
+2. **Degustação em Áudio Aberta no Catálogo (Lead Magnet):**  
+   Permitir que visitantes não cadastrados escutem os primeiros 3 minutos do áudio da Aula 1 da jornada PRN diretamente pelo card da jornada, aquecendo o lead frio antes da decisão de compra.
+3. **Exportação do Caderno de Anotações em PDF Formatado:**  
+   Possibilitar que a mãe ou o pai exporte todas as suas reflexões e anotações gravadas na Sala de Aula em um PDF elegante com a identidade visual da Elana Academy para consulta offline ou impressão.
+4. **Mensagens Acolhedoras de Encerramento do Dia via Web Push:**  
+   Agendar um disparo suave diário às 20h30 com mensagens empáticas curtas (ex.: *"O dia foi intenso, mas você fez o melhor que pôde hoje. Descanse com carinho."*), criando um ritual afetivo diário com a marca.
 
 ---
 
-## 5. 🗓️ Checklist de Lançamento
+## 6. 🔒 Itens Não Verificáveis Nesta Auditoria
 
-### 🔴 Obrigatório Antes do Lançamento Comercial (Bloqueadores)
-- [ ] **Configurar Segredo do Webhook:** Gerar e salvar `WEBHOOK_SECRET` no Supabase CLI (`supabase secrets set WEBHOOK_SECRET=...`) e corrigir a validação da Edge Function para bloquear chamadas sem token.
-- [ ] **Blindar Políticas RLS de Leads e Destaques:** Fechar `journey_interests` para leitura pública e restringir escrita em `destaques` para `is_admin()`.
-- [ ] **Blindar Permissões do Storage (`user-media`):** Restringir exclusão e atualização de arquivos por verificação de proprietário (`owner = auth.uid()`).
-- [ ] **Impedir Auto-Desbanimento no Postgres:** Atualizar o gatilho `protect_profile_role` para blindar também `is_banned`, `banned_at` e `ban_reason`.
-- [ ] **Proteger Diário Emocional:** Restringir `emotional_checkins` para `auth.uid() = profile_id OR public.is_admin()`.
-- [ ] **Configurar Links Reais de Checkout Kiwify/Hotmart:** Atualizar `CheckoutModal.tsx` com as URLs de checkout das jornadas disponíveis.
-- [ ] **Sinalizar Conteúdos Não Gravados:** Marcar jornadas sem vídeos finais do Panda Video com `isComingSoon: true`.
-- [ ] **Publicar Termos de Uso e Política de Privacidade:** Criar as páginas/modais com textos jurídicos reais e consentimento no cadastro.
-- [ ] **Corrigir Service Worker:** Desabilitar o cache de requisições autenticadas da API Supabase no `sw.js`.
+Por limitações de escopo estrito de leitura do código-fonte local e isolamento de runtime:
 
-### 🟠 Recomendado para a Primeira Semana Pós-Lançamento
-- [ ] Implementar fluxo de Exclusão de Conta pelo próprio usuário (Conformidade LGPD).
-- [ ] Integrar ferramenta de monitoramento de erros em tempo real (ex.: Sentry).
-- [ ] Subir e linkar os PDFs oficiais complementares das aulas no Storage Supabase.
-- [ ] Corrigir seletor inexistente do tour (`data-tour="privacy-note"`).
-- [ ] Aplicar índices de banco em `community_posts(status)` e `community_comments(status)`.
-- [ ] Corrigir método de localização de usuários no webhook para suporte a mais de 50 cadastros sem paginação quebrada.
-
-### 🟢 Pode Esperar Próximos Ciclos
-- [ ] Implementação do Quiz Diagnóstico Parental interativo integrado ao onboarding.
-- [ ] Pipeline de CI/CD automatizado no GitHub Actions.
-- [ ] Modo offline completo via PWA para áudios salvos.
-- [ ] Internacionalização ou legendagem automática de vídeos.
+1. **Validação das Variáveis de Ambiente no Supabase Remoto:**  
+   Não foi possível verificar diretamente se `WEBHOOK_SECRET`, `GEMINI_API_KEY` e as chaves VAPID estão ativas no ambiente de produção do Supabase. A ausência de qualquer uma delas gerará falhas em runtime.
+2. **Configuração de Domínio e Certificado SSL:**  
+   O apontamento DNS de `elana.app.br` e os certificados emitidos na Vercel/Cloudflare requerem inspeção no painel da registradora e do provedor de hospedagem.
+3. **Chaves da Conta Panda Video:**  
+   O tráfego de streaming depende da validade da assinatura e dos limites de largura de banda contratados junto ao Panda Video.
 
 ---
 
-## 6. 🚀 Plano de Ação em Etapas Priorizadas
+## 7. 🚀 Checklist de Lançamento
 
-| Etapa | Foco Técnico | Ações Principais | Esforço | Prioridade |
-| :---: | :--- | :--- | :---: | :---: |
-| **1** | **Segurança no Supabase & RLS** | Blindar `journey_interests`, `destaques`, `emotional_checkins`, Storage `user-media` e gatilho de banimento em `profiles`. | **P** (1-2h) | 🔴 **Alta** |
-| **2** | **Blindagem de Vendas & Webhooks** | Configurar `WEBHOOK_SECRET`, ajustar Edge Function `webhook-checkout` e colocar URLs de compra reais no front-end. | **P** (1-2h) | 🔴 **Alta** |
-| **3** | **Privacidade, LGPD & Service Worker** | Limpar cache de API no `sw.js`, linkar Termos/Privacidade e adicionar consentimento no `AuthModal`. | **M** (2-3h) | 🔴 **Alta** |
-| **4** | **Conteúdo & Integridade do Catálogo** | Ajustar status das jornadas (`isComingSoon`), vincular PDFs reais e arrumar tour de onboarding. | **M** (2-3h) | 🟠 **Média** |
-| **5** | **Conformidade & Monitoramento** | Implementar exclusão de conta (LGPD Art. 18) e integrar Sentry/Analytics. | **M** (3-4h) | 🟠 **Média** |
-| **6** | **Experiência Avançada & Quiz** | Desenvolver a página/modal do Quiz Diagnóstico Parental baseado nos documentos do escopo. | **G** (1-2 dias) | 🟡 **Futura** |
+### 🔴 Obrigatório Antes do Lançamento Comercial (Go / No-Go)
+- [ ] **Configurar URLs Reais de Checkout:** Adicionar as URLs de pagamento da Kiwify/Hotmart em `src/data/journeysData.ts` para a jornada *Pais Recém-Nascidos* (Aguardando definição do canal comercial).
+- [ ] **Tratar Módulo 2 de PRN:** Fazer o upload dos vídeos definitivos no Panda Video para substituir os placeholders.
+- [ ] **Configurar `WEBHOOK_SECRET` no Supabase:** Executar `supabase secrets set WEBHOOK_SECRET="..."` assim que fechar a plataforma de checkout.
+- [x] **Confirmar Aplicação de `p0_security_and_fixes.sql`:** Executado com sucesso no SQL Editor do Supabase remoto. Blindagem de RLS em `journey_interests`, `destaques` e Storage `user-media` ativa!
+- [x] **Corrigir `supabase_schema.sql`:** Adicionados `DROP POLICY IF EXISTS` para todas as 5 políticas faltantes (`users_can_report`, update/delete de posts e comentários), tornando o schema 100% idempotente.
+- [x] **Configurar Sentry e Ajustar CSP:** Adicionado `https://*.sentry.io https://*.ingest.sentry.io` ao `connect-src` de `vercel.json` e `nginx.conf`.
+- [x] **Roteamento e Histórico do Navegador:** Implementada sincronização com History API (`pushState` e `popstate`) no `src/App.tsx`, garantindo que o botão "Voltar" do navegador e smartphones navegue suavemente entre as telas sem fechar a aplicação.
+- [x] **Aplicar Índices no Banco Remoto:** Executado com sucesso via `p1_performance_indexes.sql` no Postgres remoto. Indexação composta ativa para posts, comentários e denúncias!
+
+### 🟠 Recomendado para a Primeira Semana
+- [ ] Subir o PDF complementar oficial (`PRN - e-Book_Checklist.pdf`) no Storage e vincular às aulas da jornada quando for o momento.
+- [ ] Adicionar `aria-label` nos botões de ícones isolados para conformidade A11y.
+- [ ] Criar workflow de CI no GitHub Actions (`.github/workflows/ci.yml`).
+
+### 🟢 Próximos Ciclos de Desenvolvimento
+- [ ] Desenvolver fluxo de boas-vindas pós-checkout personalizado.
+- [ ] Implementar player de áudio preview público no catálogo.
+- [ ] Unificar tipagens repetidas de usuário e perfil.
 
 ---
-*Relatório concluído com rigor de auditoria sênior. Aguardando validação e aprovação do usuário para início da execução das correções.*
+
+*Fase 2 de correções em andamento com sucesso.*

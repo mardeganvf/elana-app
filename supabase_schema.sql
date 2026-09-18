@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS public.community_reports (
 ALTER TABLE public.community_reports ENABLE ROW LEVEL SECURITY;
 
 -- Usuários autenticados podem inserir apenas suas próprias denúncias
+DROP POLICY IF EXISTS "users_can_report" ON public.community_reports;
 CREATE POLICY "users_can_report" ON public.community_reports
   FOR INSERT WITH CHECK (auth.uid() = reporter_id);
 
@@ -442,7 +443,9 @@ CREATE POLICY "Allow public insert community_posts" ON public.community_posts
       WHERE id = auth.uid() AND is_banned = true
     )
   );
+DROP POLICY IF EXISTS "Allow author or admin update community_posts" ON public.community_posts;
 CREATE POLICY "Allow author or admin update community_posts" ON public.community_posts FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
+DROP POLICY IF EXISTS "Allow author or admin delete community_posts" ON public.community_posts;
 CREATE POLICY "Allow author or admin delete community_posts" ON public.community_posts FOR DELETE USING (auth.uid() = author_id OR public.is_admin());
 
 -- --------------------------------------------------------
@@ -473,7 +476,9 @@ CREATE POLICY "Allow public insert community_comments" ON public.community_comme
       WHERE id = auth.uid() AND is_banned = true
     )
   );
+DROP POLICY IF EXISTS "Allow author or admin update community_comments" ON public.community_comments;
 CREATE POLICY "Allow author or admin update community_comments" ON public.community_comments FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
+DROP POLICY IF EXISTS "Allow author or admin delete community_comments" ON public.community_comments;
 CREATE POLICY "Allow author or admin delete community_comments" ON public.community_comments FOR DELETE USING (auth.uid() = author_id OR public.is_admin());
 
 -- 🛡️ PRIVACIDADE E ANONIMATO: Força author_id = NULL se is_anonymous for TRUE
