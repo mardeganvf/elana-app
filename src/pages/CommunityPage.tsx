@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useCommunity, checkContentSensitivity, checkContentSensitivityAI } from '../context/CommunityContext';
 import { useAuth } from '../context/AuthContext';
-import { JOURNEYS_DATA } from '../data/journeysData';
+import { JOURNEYS_DATA, STRIPE_COMMUNITY_CHECKOUT_URL } from '../data/journeysData';
 import { useJourneys } from '../context/JourneysContext';
 import { supabase } from '../lib/supabase';
 import { 
@@ -10,8 +10,9 @@ import {
   TRANSVERSAL_ROOMS, 
   AGE_BRACKET_ROOMS 
 } from '../data/communityData';
-import { CommunityPost } from '../types';
+import { CommunityPost, hasCommunityAccess, getCommunityAccessInfo } from '../types';
 import { CreatePostModal } from '../components/community/CreatePostModal';
+import { JoinCommunityModal } from '../components/community/JoinCommunityModal';
 import { PublicProfileModal, PublicUserProfile, ChildInfo, ProfileTestimonial } from '../components/community/PublicProfileModal';
 import { CommunityPollBanner } from '../components/community/CommunityPollBanner';
 import { PostSkeleton } from '../components/common/SkeletonLoader';
@@ -492,7 +493,11 @@ const splitTextIntoTwoLines = (text: string) => {
   return { line1, line2 };
 };
 
-export const CommunityPage: React.FC = () => {
+interface CommunityPageProps {
+  onExploreCatalog?: () => void;
+}
+
+export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }) => {
   const { 
     posts, 
     isLoading, 
@@ -516,6 +521,28 @@ export const CommunityPage: React.FC = () => {
   const { journeys: dynamicJourneys } = useJourneys();
   const rawJourneys = dynamicJourneys && dynamicJourneys.length > 0 ? dynamicJourneys : JOURNEYS_DATA;
   const availableJourneys = rawJourneys.filter(j => j.isEnabled !== false && j.id !== 'depois-do-silencio');
+
+  // 💳 Verificação de acesso à Comunidade & Stripe Checkout
+  const accessInfo = useMemo(() => getCommunityAccessInfo(user), [user]);
+  const canAccessCommunity = accessInfo.hasAccess;
+  const [isJoinCommunityModalOpen, setIsJoinCommunityModalOpen] = useState(false);
+
+  const communityCheckoutUrl = useMemo(() => {
+    if (!user) return STRIPE_COMMUNITY_CHECKOUT_URL;
+    const params = new URLSearchParams();
+    if (user.email) params.append('prefilled_email', user.email);
+    if (user.id) params.append('client_reference_id', user.id);
+    const qs = params.toString();
+    return qs ? `${STRIPE_COMMUNITY_CHECKOUT_URL}?${qs}` : STRIPE_COMMUNITY_CHECKOUT_URL;
+  }, [user]);
+
+  const handleOpenCreateTopic = () => {
+    if (!canAccessCommunity) {
+      setIsJoinCommunityModalOpen(true);
+      return;
+    }
+    setIsCreateModalOpen(true);
+  };
 
   // Forçar atualização dos posts sempre que abrir a aba/página da Comunidade
   useEffect(() => {
@@ -988,6 +1015,11 @@ export const CommunityPage: React.FC = () => {
 
   const handleInlineCommentSubmit = async (postId: string, e: React.FormEvent) => {
     e.preventDefault();
+    if (!canAccessCommunity) {
+      showToast('info', 'Assine a Comunidade por R$ 9,90/mês ou adquira uma jornada para poder interagir.');
+      setIsJoinCommunityModalOpen(true);
+      return;
+    }
     const content = commentInputs[postId];
     if (!content || !content.trim() || isSubmittingCommentMap[postId]) return;
 
@@ -1635,6 +1667,69 @@ export const CommunityPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Banner de Boas-Vindas / Conversão para Comunidade Elana (quando não tem acesso) */}
+          {!canAccessCommunity && (
+            <div className="bg-gradient-to-r from-[#101B1E] via-[#16272C] to-[#101B1E] border border-[#FF7F5B]/30 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden space-y-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1.5 max-w-xl">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FF7F5B]/20 text-[#FF7F5B] text-[10px] font-extrabold uppercase tracking-wider">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Rede de Apoio & Escuta Real</span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Faça parte da Comunidade Elana
+                  </h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Você pode ler todos os relatos livremente. Para desabafar, responder e interagir, <strong className="text-white">assine por R$ 9,90/mês</strong> ou <strong className="text-[#FFD166]">ganhe 90 dias grátis</strong> ao adquirir qualquer jornada de conhecimento.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+                  <a
+                    href={communityCheckoutUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 sm:flex-none text-center bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-3 px-5 rounded-2xl shadow-lg transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                  >
+                    Assinar R$ 9,90/mês
+                  </a>
+                  {onExploreCatalog && (
+                    <button
+                      onClick={onExploreCatalog}
+                      className="flex-1 sm:flex-none text-center bg-white/10 hover:bg-white/15 text-white font-bold text-xs py-3 px-4 rounded-2xl border border-white/15 transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      Ver Jornadas
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Banner de Cortesia Ativa (90 Dias de Jornada) */}
+          {accessInfo.type === 'trial_bonus' && accessInfo.daysRemaining !== null && (
+            <div className="bg-[#101B1E] border border-[#FFD166]/30 rounded-2xl p-3.5 sm:p-4 shadow-md flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5 text-slate-200">
+                <span className="w-8 h-8 rounded-xl bg-[#FFD166]/15 text-[#FFD166] flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </span>
+                <div>
+                  <span className="font-bold text-white">Cortesia da Jornada Ativa: </span>
+                  <span className="text-[#FFD166] font-extrabold">{accessInfo.daysRemaining} {accessInfo.daysRemaining === 1 ? 'dia restante' : 'dias restantes'}</span>
+                  <span className="text-slate-400 hidden sm:inline"> de acesso completo à comunidade.</span>
+                </div>
+              </div>
+              <a
+                href={communityCheckoutUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] font-bold text-[#FF7F5B] hover:underline whitespace-nowrap"
+              >
+                Garantir R$ 9,90/mês →
+              </a>
+            </div>
+          )}
+
           {/* Text Search Bar & Criar Tópico Button Side-by-Side */}
           <div className="flex items-center gap-2.5 w-full">
             <div className="relative flex-1 min-w-0">
@@ -1659,7 +1754,7 @@ export const CommunityPage: React.FC = () => {
             {/* Only show Criar Tópico button when user is inside a specific room/journey (activeSelection !== null) */}
             {activeSelection && (
               <button
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={handleOpenCreateTopic}
                 className="flex items-center gap-1.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-extrabold text-[11px] sm:text-xs uppercase tracking-wider py-2.5 sm:py-3 px-3.5 sm:px-5 rounded-xl sm:rounded-2xl shadow-lg transition-all active:scale-95 shrink-0 whitespace-nowrap cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1686,7 +1781,7 @@ export const CommunityPage: React.FC = () => {
                   {searchQuery ? `Nenhum resultado para "${searchQuery}". Tente buscar por outros termos.` : 'Seja o primeiro a compartilhar seu relato nesta sala!'}
                 </p>
                 <button
-                  onClick={() => setIsCreateModalOpen(true)}
+                  onClick={handleOpenCreateTopic}
                   className="inline-flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl mt-2 shadow-lg transition-all cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
@@ -2160,6 +2255,14 @@ export const CommunityPage: React.FC = () => {
           activeSelection={activeSelection?.type === 'minhas-publicacoes' ? null : activeSelection}
         />
       )}
+
+      {/* Join Community Modal */}
+      <JoinCommunityModal
+        isOpen={isJoinCommunityModalOpen}
+        onClose={() => setIsJoinCommunityModalOpen(false)}
+        checkoutUrl={communityCheckoutUrl}
+        onExploreCatalog={onExploreCatalog}
+      />
 
       {/* IA Antijulgamento (Anti-Mom Shaming Filter) Warning Modal */}
       {flaggedCommentInfo?.isOpen && createPortal(

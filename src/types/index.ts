@@ -107,7 +107,49 @@ export interface UserProfile {
     birthdate?: string;
     isPregnancy?: boolean;
   }[];
+  // 💳 Campos de Assinatura Stripe & Acesso à Comunidade
+  stripeCustomerId?: string;
+  communitySubscriptionStatus?: 'free' | 'trial_bonus' | 'active' | 'canceled' | 'past_due';
+  communitySubscriptionId?: string;
+  communityAccessExpiresAt?: string;
 }
+
+// 🧭 Helper de verificação de permissão de acesso à Comunidade
+export type CommunityAccessType = 'admin' | 'active_subscription' | 'trial_bonus' | 'journey_courtesy' | 'none';
+
+export interface CommunityAccessInfo {
+  hasAccess: boolean;
+  type: CommunityAccessType;
+  daysRemaining: number | null;
+}
+
+export const getCommunityAccessInfo = (user?: UserProfile | null): CommunityAccessInfo => {
+  if (!user) {
+    return { hasAccess: false, type: 'none', daysRemaining: 0 };
+  }
+  if (user.role === 'admin' || user.role === 'Administrador') {
+    return { hasAccess: true, type: 'admin', daysRemaining: null };
+  }
+  if (user.communitySubscriptionStatus === 'active') {
+    return { hasAccess: true, type: 'active_subscription', daysRemaining: null };
+  }
+  if (user.communityAccessExpiresAt) {
+    const msRemaining = new Date(user.communityAccessExpiresAt).getTime() - Date.now();
+    const days = Math.ceil(msRemaining / (1000 * 60 * 60 * 24));
+    if (days > 0) {
+      return { hasAccess: true, type: 'trial_bonus', daysRemaining: days };
+    }
+  }
+  // Se o usuário comprou qualquer jornada no passado, garante acesso como cortesia
+  if (user.purchasedJourneyIds && user.purchasedJourneyIds.length > 0) {
+    return { hasAccess: true, type: 'journey_courtesy', daysRemaining: null };
+  }
+  return { hasAccess: false, type: 'none', daysRemaining: 0 };
+};
+
+export const hasCommunityAccess = (user?: UserProfile | null): boolean => {
+  return getCommunityAccessInfo(user).hasAccess;
+};
 
 export type EmotionalIntention = 'ajuda' | 'desabafar' | 'celebrar';
 export type SensitivityLevel = 'padrao' | 'elevado' | 'critico';

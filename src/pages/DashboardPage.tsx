@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useJourneys } from '../context/JourneysContext';
 import { useCommunity } from '../context/CommunityContext';
-import { JOURNEYS_DATA as STATIC_JOURNEYS } from '../data/journeysData';
-import { Journey, CommunityPost } from '../types';
+import { JOURNEYS_DATA as STATIC_JOURNEYS, STRIPE_COMMUNITY_CHECKOUT_URL } from '../data/journeysData';
+import { Journey, CommunityPost, getCommunityAccessInfo } from '../types';
 import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle, HelpCircle, Trash2, ArrowRight, MessageSquare, ChevronDown, LayoutDashboard, Shield } from 'lucide-react';
 import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
 import { getFollowedMembers, syncFollowedMembersFromSupabase, FOLLOWED_MEMBERS_CHANGED_EVENT } from '../lib/followService';
@@ -433,8 +433,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const { journeys: dynamicJourneys } = useJourneys();
   const allJourneys = dynamicJourneys && dynamicJourneys.length > 0 ? dynamicJourneys : STATIC_JOURNEYS;
   const purchasedJourneys = allJourneys.filter(j => user.purchasedJourneyIds.includes(j.id));
-
   const userLevelInfo = getLevelFromXP(user.xp);
+  const communityAccess = getCommunityAccessInfo(user);
+
+  const communityCheckoutUrl = React.useMemo(() => {
+    if (!user) return STRIPE_COMMUNITY_CHECKOUT_URL;
+    const params = new URLSearchParams();
+    if (user.email) params.append('prefilled_email', user.email);
+    if (user.id) params.append('client_reference_id', user.id);
+    const qs = params.toString();
+    return qs ? `${STRIPE_COMMUNITY_CHECKOUT_URL}?${qs}` : STRIPE_COMMUNITY_CHECKOUT_URL;
+  }, [user]);
 
   return (
     <div className="space-y-8 pb-20 animate-fade-in max-w-6xl mx-auto text-white -mt-4">
@@ -1094,6 +1103,88 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 })}
               </div>
             )}
+          </section>
+
+          {/* Comunidade Elana & Status de Assinatura */}
+          <section className="bg-[#101B1E] rounded-3xl p-6 sm:p-7 border border-white/10 shadow-lg space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 flex items-center justify-center shrink-0">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                      Comunidade Elana
+                    </h3>
+                    {communityAccess.type === 'active_subscription' && (
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#8A9A5B]/20 text-[#8A9A5B] border border-[#8A9A5B]/30">
+                        ● Assinatura Ativa (R$ 9,90/mês)
+                      </span>
+                    )}
+                    {communityAccess.type === 'trial_bonus' && (
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#FFD166]/20 text-[#FFD166] border border-[#FFD166]/30">
+                        ✨ Bônus da Jornada: {communityAccess.daysRemaining} {communityAccess.daysRemaining === 1 ? 'dia restante' : 'dias restantes'}
+                      </span>
+                    )}
+                    {communityAccess.type === 'journey_courtesy' && (
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#FFD166]/20 text-[#FFD166] border border-[#FFD166]/30">
+                        ✨ Cortesia por Jornada Adquirida
+                      </span>
+                    )}
+                    {communityAccess.type === 'admin' && (
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        👑 Acesso Administrador
+                      </span>
+                    )}
+                    {communityAccess.type === 'none' && (
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-white/10 text-slate-400 border border-white/10">
+                        Não Assinante
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed max-w-xl">
+                    {communityAccess.type === 'active_subscription' && 'Sua assinatura mensal está em dia. Você tem acesso livre e ilimitado a todas as salas temáticas, confessionário anônimo e trocas com outros pais.'}
+                    {communityAccess.type === 'trial_bonus' && `Você ganhou 90 dias de cortesia ao comprar sua jornada. Aproveite os ${communityAccess.daysRemaining} dias restantes para participar ativamente das conversas.`}
+                    {communityAccess.type === 'journey_courtesy' && 'Acesso liberado à nossa rede de apoio acolhedora graças à sua jornada adquirida.'}
+                    {communityAccess.type === 'admin' && 'Acesso irrestrito com privilégios de moderação e suporte.'}
+                    {communityAccess.type === 'none' && 'Participe das salas temáticas, troque experiências reais e receba acolhimento seguro em todas as fases da parentalidade.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+                {onGoToCommunity && communityAccess.hasAccess && (
+                  <button
+                    onClick={onGoToCommunity}
+                    className="flex-1 sm:flex-none text-center bg-white/10 hover:bg-white/15 text-white text-xs font-bold px-4 py-2.5 rounded-xl border border-white/10 transition-all cursor-pointer"
+                  >
+                    Ir para a Comunidade
+                  </button>
+                )}
+                {communityAccess.type === 'none' && (
+                  <a
+                    href={communityCheckoutUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 sm:flex-none text-center bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 text-xs font-black uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap"
+                  >
+                    Assinar R$ 9,90/mês
+                  </a>
+                )}
+                {communityAccess.type === 'trial_bonus' && (
+                  <a
+                    href={communityCheckoutUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 sm:flex-none text-center bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 text-xs font-black uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap"
+                    title="Garante a continuidade após o término dos 90 dias sem interrupções"
+                  >
+                    Garantir R$ 9,90/mês
+                  </a>
+                )}
+              </div>
+            </div>
           </section>
 
           {/* Um pouquinho sobre mim & Minha Família */}

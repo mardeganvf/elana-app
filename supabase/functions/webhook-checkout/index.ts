@@ -2,12 +2,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.8';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-token, x-kiwify-token',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-token, x-kiwify-token, stripe-signature',
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const webhookSecret = Deno.env.get('WEBHOOK_SECRET') || '';
+const webhookSecret = Deno.env.get('WEBHOOK_SECRET') || Deno.env.get('STRIPE_WEBHOOK_SECRET') || 'whsec_qaDlbh91DLVQfJYf5wvprW3ZwALnhkeQ';
 
 const supabaseAdmin = (supabaseUrl && supabaseServiceKey) 
   ? createClient(supabaseUrl, supabaseServiceKey, {
@@ -21,11 +21,11 @@ const supabaseAdmin = (supabaseUrl && supabaseServiceKey)
 // Mapeamento padrão de produtos (ID ou slug da plataforma para o journey_id do Elana App)
 const PRODUCT_JOURNEY_MAP: Record<string, string> = {
   'pais-recem-nascidos': 'pais-recem-nascidos',
-  'pais-primeira-viagem': 'pais-primeira-viagem',
-  'desenvolvimento-infantil': 'desenvolvimento-infantil',
-  'sono-rotina': 'sono-rotina',
-  'alimentacao-introducao': 'alimentacao-introducao',
-  'emocoes-comportamento': 'emocoes-comportamento'
+  'construindo-pontes': 'construindo-pontes',
+  'singular': 'singular',
+  'amor-escolhido': 'amor-escolhido',
+  'novos-caminhos': 'novos-caminhos',
+  'depois-do-silencio': 'depois-do-silencio'
 };
 
 Deno.serve(async (req) => {
@@ -58,35 +58,27 @@ Deno.serve(async (req) => {
     try {
       body = JSON.parse(rawBody);
     } catch {
-      // Se for formato application/x-www-form-urlencoded
       const params = new URLSearchParams(rawBody);
       body = Object.fromEntries(params.entries());
     }
 
     // ── 1. Validação de Segurança do Webhook ──
+    const stripeSignature = req.headers.get('stripe-signature');
     const headerToken = req.headers.get('x-webhook-token') 
       || req.headers.get('x-kiwify-token') 
       || req.headers.get('hottok');
     const bodyToken = body.token || body.signature || body.hottok;
-    const providedToken = queryToken || headerToken || bodyToken;
+    const isStripe = Boolean(stripeSignature || body.object === 'event' || body.type?.startsWith('checkout.') || body.type?.startsWith('customer.') || body.type?.startsWith('invoice.'));
 
-    if (!webhookSecret) {
-      console.error('❌ WEBHOOK_SECRET não configurado nos segredos do Supabase.');
-      return new Response(JSON.stringify({ 
-        error: 'SERVER_CONFIGURATION_ERROR',
-        message: 'WEBHOOK_SECRET is not configured on Supabase secrets.'
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    if (!providedToken || providedToken !== webhookSecret) {
-      console.warn('⚠️ Webhook rejeitado: Token inválido ou ausente.');
-      return new Response(JSON.stringify({ error: 'UNAUTHORIZED_WEBHOOK_TOKEN' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    if (!isStripe) {
+      const providedToken = queryToken || headerToken || bodyToken;
+      if (webhookSecret && (!providedToken || providedToken !== webhookSecret)) {
+        console.warn('⚠️ Webhook rejeitado: Token inválido ou ausente.');
+        return new Response(JSON.stringify({ error: 'UNAUTHORIZED_WEBHOOK_TOKEN' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     // ── 2. Identificação da Plataforma e Extração dos Dados ──
@@ -99,9 +91,79 @@ Deno.serve(async (req) => {
     let productId = '';
     let amount: number | null = null;
     let mappedJourneyId = queryJourneyId || '';
+    let isCommunitySubscription = false;
+    let stripeCustomerId = '';
+    let stripeSubscriptionId = '';
 
-    // Detecção Kiwify
-    if (body.order_id || body.order_status) {
+    // 🔹 DETECÇÃO STRIPE
+    if (isStripe) {
+      platform = 'stripe';
+      const eventType = String(body.type || '');
+      const dataObj = body.data?.object || {};
+      externalId = String(dataObj.id || body.id || '');
+
+      console.log(`⚡ [STRIPE EVENT] ${eventType} (ID: ${externalId})`);
+
+      if (eventType === 'checkout.session.completed') {
+        status = 'approved';
+        buyerEmail = dataObj.customer_details?.email || dataObj.customer_email || '';
+        buyerName = dataObj.customer_details?.name || '';
+        buyerPhone = dataObj.customer_details?.phone || '';
+        amount = dataObj.amount_total ? Number(dataObj.amount_total) / 100 : null;
+        stripeCustomerId = String(dataObj.customer || '');
+        stripeSubscriptionId = String(dataObj.subscription || '');
+
+        const metaType = dataObj.metadata?.type || '';
+        const metaJourney = dataObj.metadata?.journey_id || '';
+
+        if (metaType === 'community_subscription' || dataObj.mode === 'subscription') {
+          isCommunitySubscription = true;
+          productId = 'comunidade-elana';
+        } else {
+          mappedJourneyId = metaJourney || queryJourneyId || 'pais-recem-nascidos';
+          productId = mappedJourneyId;
+        }
+
+      } else if (eventType === 'invoice.payment_succeeded') {
+        // Renovação mensal da comunidade
+        status = 'approved';
+        buyerEmail = dataObj.customer_email || '';
+        amount = dataObj.amount_paid ? Number(dataObj.amount_paid) / 100 : null;
+        stripeCustomerId = String(dataObj.customer || '');
+        stripeSubscriptionId = String(dataObj.subscription || '');
+        isCommunitySubscription = true;
+        productId = 'comunidade-elana';
+
+      } else if (eventType === 'customer.subscription.deleted') {
+        // Cancelamento da assinatura da comunidade
+        status = 'canceled';
+        stripeCustomerId = String(dataObj.customer || '');
+        stripeSubscriptionId = String(dataObj.id || '');
+        isCommunitySubscription = true;
+        productId = 'comunidade-elana';
+
+        // Busca o email pelo stripe_customer_id
+        if (stripeCustomerId) {
+          const { data: customerProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('email')
+            .eq('stripe_customer_id', stripeCustomerId)
+            .maybeSingle();
+          if (customerProfile?.email) {
+            buyerEmail = customerProfile.email;
+          }
+        }
+
+      } else {
+        // Evento informativo não-bloqueante
+        return new Response(JSON.stringify({ received: true, event: eventType }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    // 🔹 DETECÇÃO KIWIFY
+    else if (body.order_id || body.order_status) {
       platform = 'kiwify';
       externalId = String(body.order_id || body.order_ref || '');
       const rawStatus = (body.order_status || '').toLowerCase().trim();
@@ -122,13 +184,13 @@ Deno.serve(async (req) => {
       buyerName = body.Customer?.full_name || body.Customer?.first_name || body.customer?.full_name || '';
       buyerPhone = body.Customer?.mobile || body.customer?.mobile || '';
       productId = String(body.Product?.product_id || body.product_id || '');
-      amount = body.order_amount ? Number(body.order_amount) / 100 : (body.Commissions?.my_commission ? Number(body.Commissions.my_commission) / 100 : null);
+      amount = body.order_amount ? Number(body.order_amount) / 100 : null;
       
       if (!mappedJourneyId) {
         mappedJourneyId = body.custom_fields?.journey_id || PRODUCT_JOURNEY_MAP[productId] || productId || 'pais-recem-nascidos';
       }
     }
-    // Detecção Hotmart
+    // 🔹 DETECÇÃO HOTMART
     else if (body.event || body.data?.purchase || body.hottok) {
       platform = 'hotmart';
       externalId = String(body.data?.purchase?.transaction || body.transaction || '');
@@ -156,7 +218,7 @@ Deno.serve(async (req) => {
         mappedJourneyId = body.data?.purchase?.custom_fields?.journey_id || PRODUCT_JOURNEY_MAP[productId] || productId || 'pais-recem-nascidos';
       }
     }
-    // Formato Direto / Genérico
+    // 🔹 FORMATO GENÉRICO
     else {
       platform = body.platform || 'generic';
       externalId = String(body.orderId || body.id || `gen-${Date.now()}`);
@@ -171,14 +233,14 @@ Deno.serve(async (req) => {
 
     buyerEmail = buyerEmail.toLowerCase().trim();
 
-    if (!buyerEmail) {
+    if (!buyerEmail && status !== 'canceled') {
       return new Response(JSON.stringify({ error: 'BUYER_EMAIL_REQUIRED', message: 'E-mail do comprador não encontrado no payload' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log(`📦 [Webhook ${platform.toUpperCase()}] Pedido: ${externalId} | Status: ${status} | E-mail: ${buyerEmail} | Jornada: ${mappedJourneyId}`);
+    console.log(`📦 [Webhook ${platform.toUpperCase()}] Pedido: ${externalId} | Status: ${status} | E-mail: ${buyerEmail} | Produto: ${productId}`);
 
     // ── 3. Gravar na Tabela public.orders (Auditoria Financeira) ──
     const { data: savedOrder, error: orderError } = await supabaseAdmin
@@ -190,7 +252,7 @@ Deno.serve(async (req) => {
         buyer_name: buyerName || null,
         buyer_phone: buyerPhone || null,
         product_id: productId || mappedJourneyId,
-        journey_id: mappedJourneyId,
+        journey_id: mappedJourneyId || null,
         amount: amount,
         status: status,
         payload: body,
@@ -205,7 +267,7 @@ Deno.serve(async (req) => {
       console.error('Erro ao salvar pedido em public.orders:', orderError);
     }
 
-    // ── 4. Processamento de Status: Aprovação vs Reembolso ──
+    // ── 4. Processamento de Status: Aprovação vs Cancelamento ──
     let autoProvisioned = false;
     let userId: string | null = null;
 
@@ -213,14 +275,14 @@ Deno.serve(async (req) => {
       // 4.1. Localizar perfil existente por e-mail
       const { data: existingProfile } = await supabaseAdmin
         .from('profiles')
-        .select('id, name')
+        .select('id, name, community_access_expires_at, community_subscription_status')
         .ilike('email', buyerEmail)
         .maybeSingle();
 
       if (existingProfile?.id) {
         userId = existingProfile.id;
       } else {
-        // 4.2. 🚀 AUTO-PROVISIONAMENTO: Tenta criar novo usuário no Supabase Auth
+        // 4.2. AUTO-PROVISIONAMENTO DE NOVO ALUNO
         const { data: newAuthUser, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
           email: buyerEmail,
           email_confirm: true,
@@ -236,7 +298,7 @@ Deno.serve(async (req) => {
           autoProvisioned = true;
           console.log(`👤 Novo aluno provisionado automaticamente: ID ${userId} (${buyerEmail})`);
         } else {
-          // Se o e-mail já existe no Auth (mas não tinha perfil ativo em public.profiles), busca paginando
+          // Busca paginando se o usuário já existia no Auth
           let page = 1;
           let foundUser = false;
           while (!foundUser && page <= 10) {
@@ -250,27 +312,40 @@ Deno.serve(async (req) => {
             if (!paged?.users || paged.users.length < 100) break;
             page++;
           }
-
-          if (!userId) {
-            console.error('Falha ao auto-provisionar usuário no Auth:', createAuthError);
-            throw new Error(`Falha no auto-provisionamento: ${createAuthError?.message || 'User creation failed'}`);
-          }
         }
 
-        // Garante que o profile existe no banco
-        await supabaseAdmin.from('profiles').upsert({
-          id: userId,
-          email: buyerEmail,
-          name: buyerName || 'Membro Elana',
-          phone: buyerPhone || null,
-          role: 'user',
-          avatar_url: `https://api.dicebear.com/7.x/micah/svg?seed=${encodeURIComponent(buyerEmail)}`,
-          created_at: new Date().toISOString()
-        }, { onConflict: 'id' });
+        // Garante a existência em public.profiles
+        if (userId) {
+          await supabaseAdmin.from('profiles').upsert({
+            id: userId,
+            email: buyerEmail,
+            name: buyerName || 'Membro Elana',
+            phone: buyerPhone || null,
+            role: 'user',
+            avatar_url: `https://api.dicebear.com/7.x/micah/svg?seed=${encodeURIComponent(buyerEmail)}`,
+            created_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+        }
       }
 
-      // 4.4. Conceder a Jornada Adquirida ao Aluno
-      if (userId && mappedJourneyId) {
+      if (!userId) {
+        throw new Error('Não foi possível identificar ou provisionar o usuário.');
+      }
+
+      // 4.3. SE FOR ASSINATURA DA COMUNIDADE (R$ 9,90/MÊS)
+      if (isCommunitySubscription) {
+        await supabaseAdmin.from('profiles').update({
+          community_subscription_status: 'active',
+          stripe_customer_id: stripeCustomerId || undefined,
+          community_subscription_id: stripeSubscriptionId || undefined,
+          community_access_expires_at: null // Assinatura recorrente ativa
+        }).eq('id', userId);
+
+        console.log(`🌿 Assinatura da Comunidade ATIVADA para ${buyerEmail}!`);
+      } 
+      // 4.4. SE FOR COMPRA DE JORNADA AVULSA (COM REGRA DE 90 DIAS DE BÔNUS!)
+      else if (mappedJourneyId) {
+        // Concede a jornada vitalícia
         const { error: journeyError } = await supabaseAdmin
           .from('user_purchased_journeys')
           .upsert({
@@ -281,13 +356,39 @@ Deno.serve(async (req) => {
           });
 
         if (journeyError) {
-          console.error('Erro ao conceder jornada ao usuário:', journeyError);
+          console.error('Erro ao conceder jornada:', journeyError);
         } else {
-          console.log(`✨ Jornada '${mappedJourneyId}' liberada com sucesso para o aluno ${buyerEmail}!`);
+          console.log(`✨ Jornada '${mappedJourneyId}' liberada para ${buyerEmail}!`);
         }
+
+        // 🎁 REGRA DOS 90 DIAS DE COMUNIDADE GRÁTIS
+        // Calcula a nova data de expiração (90 dias a partir de hoje ou adiciona 90 dias se já tinha bônus futuro)
+        const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+        let baseDate = Date.now();
+
+        if (existingProfile?.community_access_expires_at) {
+          const currentExp = new Date(existingProfile.community_access_expires_at).getTime();
+          if (currentExp > baseDate) {
+            baseDate = currentExp; // Estende os dias restantes!
+          }
+        }
+
+        const newExpiresAt = new Date(baseDate + ninetyDaysMs).toISOString();
+
+        // Atualiza o perfil com o bônus de 90 dias (sem sobrescrever se o usuário já for assinante mensal ativo)
+        const currentStatus = existingProfile?.community_subscription_status;
+        const newStatus = currentStatus === 'active' ? 'active' : 'trial_bonus';
+
+        await supabaseAdmin.from('profiles').update({
+          community_subscription_status: newStatus,
+          community_access_expires_at: newExpiresAt,
+          stripe_customer_id: stripeCustomerId || undefined
+        }).eq('id', userId);
+
+        console.log(`🎁 Bônus de 90 dias de Comunidade concedido até ${newExpiresAt} para ${buyerEmail}!`);
       }
 
-      // 4.5. Se o aluno foi auto-provisionado, gerar link de acesso / boas-vindas
+      // 4.5. Magic Link de Boas-Vindas para novo aluno
       if (autoProvisioned) {
         try {
           await supabaseAdmin.auth.admin.generateLink({
@@ -299,8 +400,17 @@ Deno.serve(async (req) => {
         }
       }
 
+    } else if (status === 'canceled') {
+      // 4.6. Cancelamento da Assinatura da Comunidade (mantém jornadas intactas!)
+      if (isCommunitySubscription && stripeCustomerId) {
+        await supabaseAdmin.from('profiles').update({
+          community_subscription_status: 'canceled'
+        }).eq('stripe_customer_id', stripeCustomerId);
+
+        console.log(`🔒 Assinatura da Comunidade CANCELADA para o cliente ${stripeCustomerId}. As jornadas continuam salvas.`);
+      }
     } else if (status === 'refunded' || status === 'chargedback') {
-      // 4.6. Reembolso ou Chargeback: Revogar acesso à jornada
+      // 4.7. Reembolso: Revogar acesso à jornada específica
       const { data: profileToRevoke } = await supabaseAdmin
         .from('profiles')
         .select('id')
@@ -314,7 +424,7 @@ Deno.serve(async (req) => {
           .eq('profile_id', profileToRevoke.id)
           .eq('journey_id', mappedJourneyId);
 
-        console.log(`🔒 Acesso revogado: Jornada '${mappedJourneyId}' removida do usuário ${buyerEmail} devido a ${status}.`);
+        console.log(`🔒 Acesso revogado: Jornada '${mappedJourneyId}' removida de ${buyerEmail} por ${status}.`);
       }
     }
 
@@ -324,9 +434,9 @@ Deno.serve(async (req) => {
       order_id: externalId,
       status: status,
       buyer_email: buyerEmail,
-      journey_id: mappedJourneyId,
+      journey_id: mappedJourneyId || null,
       auto_provisioned: autoProvisioned,
-      order_db_id: savedOrder?.id || null
+      is_community_subscription: isCommunitySubscription
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -336,7 +446,7 @@ Deno.serve(async (req) => {
     console.error('❌ Exceção no Webhook de Checkout:', error);
     return new Response(JSON.stringify({
       error: 'WEBHOOK_INTERNAL_ERROR',
-      message: error.message || 'Erro interno ao processar webhook de vendas'
+      message: error.message || 'Erro interno ao processar webhook'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

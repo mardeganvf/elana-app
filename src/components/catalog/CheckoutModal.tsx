@@ -16,12 +16,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
 
   if (!journey) return null;
 
-  // Checkout real (Kiwify / Hotmart)
+  // Checkout real Stripe
   const handleGoToCheckout = () => {
     if (journey.checkoutUrl) {
       const url = new URL(journey.checkoutUrl);
-      if (user?.email) url.searchParams.set('email', user.email);
-      if (user?.name) url.searchParams.set('name', user.name);
+      if (user?.email) url.searchParams.set('prefilled_email', user.email);
+      if (user?.id) url.searchParams.set('client_reference_id', user.id);
       window.open(url.toString(), '_blank', 'noopener,noreferrer');
       onClose();
     }
@@ -78,11 +78,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-400 font-bold" />
-                <span>Espaço de notas pessoais e PDFs de apoio.</span>
+                <span>Espaço de notas pessoais e PDFs de apoio para download.</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400 font-bold" />
-                <span>Participação na Comunidade Elana e tópicos exclusivos.</span>
+              <div className="flex items-start gap-2 bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-xl text-emerald-300">
+                <Sparkles className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <span><strong>BÔNUS EXCLUSIVO:</strong> Ganhe <strong>90 dias gratuitos</strong> na Comunidade Elana e salas de acolhimento parental.</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-400 font-bold" />
@@ -95,10 +95,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
           <div className="p-4 rounded-2xl bg-[#070D0F] border border-white/10 space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-white">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Pagamento 100% Seguro & Protegido</span>
+              <span>Pagamento Seguro via Stripe</span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
-              O pagamento é processado com criptografia de ponta. Aceitamos <strong>PIX Instantâneo</strong> e <strong>Cartão de Crédito em até 12x</strong>. Seu acesso é liberado automaticamente assim que a compra é confirmada.
+              Processado com criptografia bancária de ponta a ponta pela <strong>Stripe</strong>. Aceitamos <strong>PIX Instantâneo</strong> e <strong>Cartão de Crédito</strong>. Seu acesso à jornada e os 90 dias de comunidade são liberados automaticamente.
             </p>
           </div>
 
@@ -108,7 +108,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
               <div>
                 <span className="text-xs text-slate-400 block">Investimento:</span>
                 <span className="text-2xl font-extrabold text-white">
-                  R$ {journey.price},00
+                  R$ {journey.price},90
                 </span>
               </div>
               <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full">

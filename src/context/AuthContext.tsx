@@ -1057,7 +1057,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         parentalArchetype: finalArchetype || undefined,
         parentalSecondaryArchetype: finalSecondaryArchetype || undefined,
         parentalQuizCompletedAt: finalQuizCompletedAt || undefined,
-        children: finalChildren
+        children: finalChildren,
+        stripeCustomerId: profile.stripe_customer_id || undefined,
+        communitySubscriptionStatus: profile.community_subscription_status || 'free',
+        communitySubscriptionId: profile.community_subscription_id || undefined,
+        communityAccessExpiresAt: profile.community_access_expires_at || undefined
       };
 
       return hydratedUser;
@@ -1215,6 +1219,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           parental_archetype: updatedUser.parentalArchetype || null,
           parental_secondary_archetype: updatedUser.parentalSecondaryArchetype || null,
           parental_quiz_completed_at: updatedUser.parentalQuizCompletedAt || null,
+          stripe_customer_id: updatedUser.stripeCustomerId || null,
+          community_subscription_status: updatedUser.communitySubscriptionStatus || 'free',
+          community_subscription_id: updatedUser.communitySubscriptionId || null,
+          community_access_expires_at: updatedUser.communityAccessExpiresAt || null,
           last_active_date: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -1252,6 +1260,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             delete fallbackPayload.parental_secondary_archetype;
             delete fallbackPayload.parental_quiz_completed_at;
             delete fallbackPayload.onboarding_completed;
+            delete fallbackPayload.stripe_customer_id;
+            delete fallbackPayload.community_subscription_status;
+            delete fallbackPayload.community_subscription_id;
+            delete fallbackPayload.community_access_expires_at;
             const { error: retryErr } = await supabase
               .from('profiles')
               .upsert(fallbackPayload, { onConflict: 'id' });

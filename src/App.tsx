@@ -401,7 +401,9 @@ const AppContent: React.FC = () => {
                 />
               )}
 
-              {activeTab === 'community' && <CommunityPage />}
+              {activeTab === 'community' && (
+                <CommunityPage onExploreCatalog={() => navigateToTab('home')} />
+              )}
 
               {activeTab === 'dashboard' && (
                 <DashboardPage

@@ -1,5 +1,7 @@
 import { Journey } from '../types';
 
+export const STRIPE_COMMUNITY_CHECKOUT_URL = 'https://buy.stripe.com/test_bJeaEQ6SF70E5y91UQ77O00';
+
 export const JOURNEYS_DATA: Journey[] = [
   {
     id: 'pais-recem-nascidos',
@@ -14,7 +16,8 @@ export const JOURNEYS_DATA: Journey[] = [
     themeColor: '#FF7F5B',
     bgLight: '#fff0eb',
     iconName: 'Sun',
-    price: 197,
+    price: 49,
+    checkoutUrl: 'https://buy.stripe.com/test_9B69AM5OB5WAe4Fczu77O01',
     isComingSoon: false,
         modules: [
       {
@@ -81,7 +84,8 @@ export const JOURNEYS_DATA: Journey[] = [
     themeColor: '#8A9A5B',
     bgLight: '#f3f6ec',
     iconName: 'Users',
-    price: 227,
+    price: 49,
+    checkoutUrl: 'https://buy.stripe.com/test_14AbIUel7et6aSt6b677O02',
     isComingSoon: true,
         modules: [
       {
@@ -147,7 +151,8 @@ export const JOURNEYS_DATA: Journey[] = [
     themeColor: '#003B46',
     bgLight: '#e6f1f3',
     iconName: 'Palette',
-    price: 247,
+    price: 39,
+    checkoutUrl: 'https://buy.stripe.com/test_bJe7sE5OB84If8J9ni77O03',
     isComingSoon: true,
         modules: [
       {
@@ -207,7 +212,8 @@ export const JOURNEYS_DATA: Journey[] = [
     themeColor: '#E66795',
     bgLight: '#fcebf2',
     iconName: 'HeartHandshake',
-    price: 217,
+    price: 39,
+    checkoutUrl: 'https://buy.stripe.com/test_8x2dR25OB4Sw4u50QM77O04',
     isComingSoon: true,
         modules: [
       {
@@ -264,7 +270,8 @@ export const JOURNEYS_DATA: Journey[] = [
     themeColor: '#B87353',
     bgLight: '#f8efe9',
     iconName: 'Compass',
-    price: 187,
+    price: 29,
+    checkoutUrl: 'https://buy.stripe.com/test_fZu00cel7ckYe4Fczu77O05',
     isComingSoon: true,
         modules: [
       {
@@ -319,7 +326,8 @@ export const JOURNEYS_DATA: Journey[] = [
     themeColor: '#FFD166',
     bgLight: '#fff9e6',
     iconName: 'Sparkles',
-    price: 197,
+    price: 39,
+    checkoutUrl: 'https://buy.stripe.com/test_00weV6dh34Sw0dP57277O06',
     isComingSoon: true,
     isEnabled: false,
         modules: [
