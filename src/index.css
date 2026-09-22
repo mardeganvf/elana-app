@@ -257,18 +257,12 @@ button {
   filter: sepia(0.3) saturate(1.1);
 }
 
-/* Previne zoom automático indesejado no iOS Safari e garante conforto de toque em telas mobile */
 @media screen and (max-width: 768px) {
+  /* Garante no mínimo 16px para todos os inputs no mobile evitando auto-zoom no iOS Safari */
   input,
   textarea,
   select {
     font-size: 16px !important;
-  }
-  input.search-input-compact {
-    font-size: 13px !important;
-  }
-  select.module-select-compact {
-    font-size: 11px !important;
   }
 }
 

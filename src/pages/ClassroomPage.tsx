@@ -342,7 +342,8 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   // Scroll to top of viewport whenever classroom page opens or lesson changes
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    setExpandedModuleId(null);
+    const currentMod = currentJourney.modules?.find(m => m.lessons?.some(l => l.id === activeLesson.id));
+    setExpandedModuleId(currentMod ? currentMod.id : null);
     setAutoplayTimer(null);
   }, [activeLesson.id, journey.id]);
 
@@ -552,7 +553,9 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
           </div>
 
           {/* Media Player Box (Unified Video and Audio Player) */}
-          <div className="bg-black rounded-3xl overflow-hidden shadow-2xl relative border border-white/10 aspect-video w-full">
+          <div className={`bg-black rounded-3xl overflow-hidden shadow-2xl relative border border-white/10 w-full transition-all ${
+            mediaMode === 'audio' ? 'min-h-[290px] sm:min-h-[320px]' : 'aspect-video'
+          }`}>
 
             {/* ── PAYWALL GATE (Quando a aula está bloqueada, NENHUM player de mídia é renderizado no DOM) ── */}
             {isCurrentLessonLocked ? (
@@ -759,17 +762,19 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                         return effDuration > 0 ? (
                           <div className="w-full max-w-xs space-y-1 pt-0.5">
                             <div 
-                              className="w-full bg-white/10 hover:bg-white/15 h-1.5 sm:h-2 rounded-full overflow-hidden cursor-pointer transition-colors"
+                              className="w-full py-2.5 cursor-pointer touch-manipulation group"
                               onClick={(e) => {
                                 const rect = e.currentTarget.getBoundingClientRect();
                                 const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
                                 handleSeekToTime(percent * effDuration);
                               }}
                             >
-                              <div 
-                                className="bg-[#FF7F5B] h-full rounded-full transition-all"
-                                style={{ width: `${Math.min(100, (audioCurrentTime / effDuration) * 100)}%` }}
-                              />
+                              <div className="w-full bg-white/10 group-hover:bg-white/20 h-2 rounded-full overflow-hidden transition-colors">
+                                <div 
+                                  className="bg-[#FF7F5B] h-full rounded-full transition-all"
+                                  style={{ width: `${Math.min(100, (audioCurrentTime / effDuration) * 100)}%` }}
+                                />
+                              </div>
                             </div>
                             <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400 font-medium">
                               <span>{formatSecondsToTime(audioCurrentTime)}</span>
@@ -921,7 +926,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                       value={noteText}
                       onChange={(e) => setNoteText(e.target.value)}
                       placeholder="Escreva seus pensamentos, reflexões e aprendizados sobre este conteúdo..."
-                      className="w-full p-3.5 rounded-xl border border-white/10 text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B]"
+                      className="w-full p-3.5 rounded-xl border border-white/10 text-base sm:text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B]"
                     />
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <button

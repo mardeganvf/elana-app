@@ -166,34 +166,43 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
     setDisplayIndex(targetIdx + 1);
   };
 
-  // Touch Swipe Handlers for Mobile
+  // Touch Swipe Handlers for Mobile with Y-axis angle check
   const touchStartX = React.useRef<number | null>(null);
+  const touchStartY = React.useRef<number | null>(null);
   const touchEndX = React.useRef<number | null>(null);
+  const touchEndY = React.useRef<number | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setIsPaused(true);
     touchStartX.current = e.targetTouches[0].clientX;
+    touchStartY.current = e.targetTouches[0].clientY;
     touchEndX.current = null;
+    touchEndY.current = null;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     touchEndX.current = e.targetTouches[0].clientX;
+    touchEndY.current = e.targetTouches[0].clientY;
   };
 
   const handleTouchEnd = () => {
     setIsPaused(false);
-    if (!touchStartX.current || !touchEndX.current) return;
-    const distance = touchStartX.current - touchEndX.current;
-    const isLeftSwipe = distance > 35;
-    const isRightSwipe = distance < -35;
+    if (touchStartX.current === null || touchEndX.current === null || touchStartY.current === null || touchEndY.current === null) return;
+    const deltaX = touchStartX.current - touchEndX.current;
+    const deltaY = touchStartY.current - touchEndY.current;
 
-    if (isLeftSwipe) {
-      nextSlide();
-    } else if (isRightSwipe) {
-      prevSlide();
+    // Dispara apenas se o movimento for predominantemente horizontal e maior que 40px
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
+      if (deltaX > 0) {
+        nextSlide();
+      } else {
+        prevSlide();
+      }
     }
     touchStartX.current = null;
+    touchStartY.current = null;
     touchEndX.current = null;
+    touchEndY.current = null;
   };
 
   // Auto-advance hero slider every 7 seconds unless user hovers / touches
@@ -305,13 +314,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
             return (
               <div 
                 key={`${journey.id}-${index}`}
-                className="relative min-w-full w-full min-h-[480px] sm:min-h-[580px] flex items-end p-6 sm:p-14 overflow-hidden shrink-0"
+                className="relative min-w-full w-full min-h-[400px] sm:min-h-[540px] flex items-end p-5 sm:p-14 overflow-hidden shrink-0"
               >
-                {/* Background Image */}
+                {/* Background Image with LCP Optimization */}
                 <img
                   src={journey.coverImageUrl || SLIDE_POSTERS[journey.id] || 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1600&auto=format&fit=crop&q=80'}
                   alt={journey.title}
-                  className="absolute inset-0 w-full h-full object-cover object-center" loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  loading={index === 1 ? "eager" : "lazy"}
+                  {...(index === 1 ? { fetchpriority: "high" } : {})}
                 />
                 
                 {/* Double Cinematic Vignette (Bottom + Left) for Readability */}
@@ -404,7 +415,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
         <button
           onClick={prevSlide}
           aria-label="Slide Anterior"
-          className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md border border-white/15 text-white flex items-center justify-center transition-all opacity-80 hover:opacity-100 hover:scale-105 cursor-pointer active:scale-95"
+          className="absolute left-2.5 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md border border-white/15 text-white flex items-center justify-center transition-all opacity-80 hover:opacity-100 hover:scale-105 cursor-pointer active:scale-95"
         >
           <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
@@ -412,24 +423,29 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
         <button
           onClick={nextSlide}
           aria-label="Próximo Slide"
-          className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md border border-white/15 text-white flex items-center justify-center transition-all opacity-80 hover:opacity-100 hover:scale-105 cursor-pointer active:scale-95"
+          className="absolute right-2.5 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md border border-white/15 text-white flex items-center justify-center transition-all opacity-80 hover:opacity-100 hover:scale-105 cursor-pointer active:scale-95"
         >
           <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
 
-        {/* 6 Slider Dots / Indicators */}
-        <div className="absolute bottom-4 right-4 sm:right-6 z-20 flex items-center gap-1.5 sm:gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full border border-white/10">
+        {/* 6 Slider Dots / Indicators with Comfortable Touch Padding */}
+        <div className="absolute bottom-4 right-4 sm:right-6 z-20 flex items-center gap-1 sm:gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full border border-white/10">
           {JOURNEYS_DATA.map((journey, idx) => {
             const isActive = idx === activeNormIdx;
             return (
               <button
                 key={journey.id}
                 onClick={() => scrollToIndex(idx)}
-                className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                  isActive ? 'w-6 sm:w-8 bg-[#FF7F5B]' : 'w-2 sm:w-2.5 bg-white/40 hover:bg-white/70'
-                }`}
+                className="p-2 flex items-center justify-center cursor-pointer touch-manipulation"
                 title={journey.title}
-              />
+                aria-label={`Ir para slide ${idx + 1}: ${journey.title}`}
+              >
+                <span
+                  className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 block ${
+                    isActive ? 'w-5 sm:w-8 bg-[#FF7F5B]' : 'w-2 sm:w-2.5 bg-white/40 hover:bg-white/70'
+                  }`}
+                />
+              </button>
             );
           })}
         </div>
@@ -620,7 +636,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
         {/* Stories Horizontal Carousel of Vertical 9:16 Custom Cover Art Cards */}
         <div 
           id="carousel-destaques"
-          className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 custom-scrollbar scroll-smooth"
+          className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 custom-scrollbar scroll-smooth pe-6"
         >
           {filteredStories.map((story) => {
             const originalIndex = STORIES_DATA.findIndex(s => s.id === story.id);
@@ -779,7 +795,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
             {/* Horizontal Scrollable Carousel of Lessons for Selected Module */}
             <div 
               id={carouselId}
-              className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 custom-scrollbar scroll-smooth"
+              className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 custom-scrollbar scroll-smooth pe-6"
             >
               {displayLessons.map((lesson, lessonIndex) => {
                 const { subgroup, videoName } = formatLessonText(currentModule, lesson);
@@ -859,9 +875,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                         </div>
                       )}
 
-                      {/* Play, Lock or 1-Click Notification Overlay on hover */}
-                      <div className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${
-                        journey.isComingSoon ? 'bg-black/40' : 'bg-black/40 backdrop-blur-[2px]'
+                      {/* Play, Lock or 1-Click Notification Overlay on hover (visible on mobile for coming soon) */}
+                      <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
+                        journey.isComingSoon 
+                          ? 'bg-black/50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100' 
+                          : 'bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100'
                       }`}>
                         {journey.isComingSoon ? (
                           <button
@@ -870,7 +888,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectJourney, onStartLear
                               e.stopPropagation();
                               toggleJourneyNotification(journey.id, journey.title);
                             }}
-                            className={`px-3.5 py-2 rounded-xl text-xs font-black shadow-2xl flex items-center gap-2 transition-transform hover:scale-105 cursor-pointer ${
+                            className={`px-3.5 py-2 rounded-xl text-xs font-black shadow-2xl flex items-center gap-2 transition-transform hover:scale-105 cursor-pointer active:scale-95 ${
                               isJourneyNotified(journey.id)
                                 ? 'bg-emerald-500 text-slate-950'
                                 : 'bg-amber-400 text-slate-950 hover:bg-amber-300'

@@ -239,13 +239,13 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                         key={opt.id}
                         type="button"
                         onClick={() => setSelectedIntention(opt.id)}
-                        className={`py-2 px-2 rounded-lg text-xs font-bold border transition-all text-center ${
+                        className={`py-2.5 px-1 sm:px-2 rounded-xl text-xs font-bold border transition-all text-center flex items-center justify-center min-h-[38px] cursor-pointer ${
                           selectedIntention === opt.id
                             ? 'bg-[#FF7F5B]/20 text-[#FF7F5B] border-[#FF7F5B]/50 shadow-sm'
                             : 'bg-[#101B1E] text-slate-400 border-white/10 hover:text-white'
                         }`}
                       >
-                        <span className="truncate">{opt.label}</span>
+                        <span>{opt.label}</span>
                       </button>
                     ))}
                   </div>
@@ -381,23 +381,23 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           </div>
 
           {/* Clean Footer Actions */}
-          <div className="pt-3 border-t border-white/10 flex items-center justify-between">
-            <div className="text-[11px] font-semibold text-slate-400">
+          <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="text-[11px] font-semibold text-slate-400 hidden sm:block">
               Sua segurança importa.
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:bg-white/5 transition-colors cursor-pointer"
+                className="flex-1 sm:flex-none px-4 py-3 sm:py-2.5 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:bg-white/5 transition-colors cursor-pointer min-h-[44px] text-center"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`flex items-center justify-center bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all ${
+                className={`flex-1 sm:flex-none flex items-center justify-center bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 px-5 py-3 sm:py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all min-h-[44px] text-center ${
                   isSubmitting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer transform hover:scale-105 active:scale-95'
                 }`}
               >

@@ -317,13 +317,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070D0F] flex flex-col items-center justify-between p-4 sm:p-6 relative overflow-hidden select-none">
+    <div className="min-h-[100dvh] bg-[#070D0F] flex flex-col items-center justify-between p-4 sm:p-6 relative overflow-y-auto">
       
       {/* Background Decorative Radial Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-[#E66795]/20 via-[#FF7F5B]/20 to-[#FFD166]/10 rounded-full blur-[140px] pointer-events-none" />
 
       {/* Top Bar with Elana Logo */}
-      <header className="w-full max-w-6xl flex items-center justify-between z-10 pt-2">
+      <header className="w-full max-w-6xl flex items-center justify-between z-10 pt-2 shrink-0">
         <div className="flex items-center gap-3">
           <img src={logoElana} alt="Elana Logo" className="h-10 sm:h-12 w-auto object-contain" />
           <span className="text-xl sm:text-2xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -333,7 +333,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
       </header>
 
       {/* CENTERED LOGIN / REGISTRATION CARD */}
-      <div className="w-full max-w-[440px] bg-black/80 backdrop-blur-2xl border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl my-auto space-y-5 text-white z-10">
+      <div className="w-full max-w-[440px] bg-black/80 backdrop-blur-2xl border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl my-4 sm:my-auto space-y-5 text-white z-10">
         
         {/* Title */}
         <div className="space-y-1">
@@ -419,6 +419,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
               </label>
               <input
                 type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
                 required
                 maxLength={8}
                 value={inputCode}
@@ -440,7 +442,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             <button
               type="button"
               onClick={() => { setMode('register'); resetFormFields(); }}
-              className="w-full text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1 py-1 cursor-pointer"
+              className="w-full text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1.5 py-2.5 min-h-[44px] cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Voltar</span>
@@ -448,14 +450,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           </form>
         ) : (
           /* REGULAR AUTH FORM */
-          <form onSubmit={handleAuthSubmit} autoComplete="off" className="space-y-3.5">
+          <form onSubmit={handleAuthSubmit} className="space-y-3.5">
             {mode === 'register' && (
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">Seu Nome Completo</label>
                 <input
                   type="text"
                   required
-                  autoComplete="off"
+                  autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Seu nome completo"
@@ -472,7 +474,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
               <input
                 type={ENABLE_PHONE_LOGIN && loginMethod === 'phone' ? 'tel' : 'email'}
                 required
-                autoComplete="off"
+                autoComplete={ENABLE_PHONE_LOGIN && loginMethod === 'phone' ? 'tel' : 'email'}
                 value={identifier}
                 onChange={handleIdentifierChange}
                 placeholder={ENABLE_PHONE_LOGIN && loginMethod === 'phone' ? '(00) 00000-0000' : 'seu@email.com'}
@@ -488,7 +490,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 <input
                   type="email"
                   required
-                  autoComplete="off"
+                  autoComplete="email"
                   value={confirmEmail}
                   onChange={(e) => setConfirmEmail(e.target.value)}
                   placeholder="Redigite seu e-mail para confirmação"
@@ -510,7 +512,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                         setConfirmPassword('');
                         resetStates();
                       }}
-                      className="text-[11px] text-[#FF7F5B] hover:underline cursor-pointer"
+                      className="text-xs text-[#FF7F5B] hover:underline cursor-pointer py-1 px-1 -my-1 inline-block"
                     >
                       Esqueceu a senha?
                     </button>
@@ -520,16 +522,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
-                    autoComplete="new-password"
+                    autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 pr-11 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                    className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 pr-12 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(p => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer p-1"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer w-11 h-11 flex items-center justify-center"
                     tabIndex={-1}
                     aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                   >
@@ -551,12 +553,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Redigite sua senha para confirmação"
-                    className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 pr-11 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
+                    className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 pr-12 text-base sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] transition-colors"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(p => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer p-1"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer w-11 h-11 flex items-center justify-center"
                     tabIndex={-1}
                     aria-label={showConfirmPassword ? 'Ocultar confirmação de senha' : 'Mostrar confirmação de senha'}
                   >

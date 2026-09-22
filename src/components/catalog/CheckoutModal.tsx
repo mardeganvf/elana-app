@@ -36,8 +36,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
-      <div className="bg-[#101B1E] rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-white/10 my-8 relative text-white">
+    <div 
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-[#101B1E] rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-white/10 my-auto relative text-white"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Top Header Banner */}
         <div 
@@ -47,7 +53,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 transition-colors"
+            className="absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white rounded-full p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -56,7 +62,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
             Adquirir esta Jornada
           </span>
           <h2 
-            className="text-3xl font-bold mt-2 tracking-tight"
+            className="text-2xl sm:text-3xl font-bold mt-2 tracking-tight"
             style={{ fontFamily: 'var(--font-heading)' }}
           >
             {journey.title}
@@ -64,7 +70,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
           <p className="text-xs opacity-90 italic mt-1">"{journey.tagline}"</p>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-5 sm:p-6 space-y-5 sm:space-y-6">
           
           {/* Whats included */}
           <div className="space-y-3">
@@ -73,19 +79,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
             </h4>
             <div className="space-y-2 bg-[#070D0F] p-4 rounded-2xl border border-white/10 text-xs text-slate-300">
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400 font-bold" />
+                <Check className="w-4 h-4 text-emerald-400 font-bold shrink-0" />
                 <span>Acesso completo aos <strong>{journey.modules.reduce((s, m) => s + m.lessons.length, 0)} conteúdos</strong> em vídeo e áudio.</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400 font-bold" />
+                <Check className="w-4 h-4 text-emerald-400 font-bold shrink-0" />
                 <span>Espaço de notas pessoais e PDFs de apoio para download.</span>
               </div>
               <div className="flex items-start gap-2 bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-xl text-emerald-300">
-                <Sparkles className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <span><strong>BÔNUS EXCLUSIVO:</strong> Ganhe <strong>90 dias gratuitos</strong> na Comunidade Elana e salas de acolhimento parental.</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400 font-bold" />
+                <Check className="w-4 h-4 text-emerald-400 font-bold shrink-0" />
                 <span>Pontos de Evolução e Certificado Digital de Conclusão.</span>
               </div>
             </div>
@@ -94,7 +100,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
           {/* Checkout Info Box */}
           <div className="p-4 rounded-2xl bg-[#070D0F] border border-white/10 space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-white">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>Pagamento Seguro via Stripe</span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
@@ -104,16 +110,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
 
           {/* Summary & Guarantee */}
           <div className="border-t border-white/10 pt-4 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <span className="text-xs text-slate-400 block">Investimento:</span>
                 <span className="text-2xl font-extrabold text-white">
                   R$ {journey.price},90
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full">
-                <ShieldCheck className="w-4 h-4" />
-                Garantia incondicional de 7 dias
+              <div className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full self-start sm:self-auto">
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <span>Garantia incondicional de 7 dias</span>
               </div>
             </div>
 

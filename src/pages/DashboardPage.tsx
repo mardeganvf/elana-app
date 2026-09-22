@@ -462,9 +462,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 }}
                 className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-[#FF7F5B] shadow-lg"
               />
-              {/* Camera Overlay Button to Change Profile Photo */}
+              {/* Camera Overlay Button to Change Profile Photo (Desktop hover + Mobile touch) */}
               <label 
-                className={`absolute inset-0 rounded-full bg-black/65 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-opacity text-[10px] font-extrabold z-10 ${isUploadingPhoto ? 'opacity-100' : ''}`}
+                className={`absolute inset-0 rounded-full bg-black/65 opacity-0 sm:group-hover:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-opacity text-[10px] font-extrabold z-10 ${isUploadingPhoto ? 'opacity-100' : ''}`}
                 title="Alterar Foto de Perfil"
               >
                 {isUploadingPhoto ? (
@@ -475,6 +475,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                     <span>Editar</span>
                   </>
                 )}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleProfileAvatarChange}
+                  disabled={isUploadingPhoto}
+                  className="hidden"
+                />
+              </label>
+
+              {/* Mobile Persistent Camera Badge */}
+              <label
+                className="sm:hidden absolute -bottom-1 -left-1 bg-[#101B1E] border-2 border-[#FF7F5B] p-2 rounded-full text-white shadow-lg cursor-pointer z-10 flex items-center justify-center active:scale-95 transition-transform"
+                title="Alterar Foto de Perfil"
+                aria-label="Alterar Foto de Perfil"
+              >
+                <Camera className="w-3.5 h-3.5 text-[#FF7F5B]" />
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -954,45 +970,49 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
 
       {/* Segmented Profile Navigation Tabs */}
-      <div className="flex items-center gap-1.5 p-1.5 bg-[#101B1E] rounded-2xl border border-white/10 shadow-lg overflow-x-auto no-scrollbar">
-        <button
-          type="button"
-          onClick={() => setActiveProfileTab('overview')}
-          className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
-            activeProfileTab === 'overview'
-              ? 'bg-[#FF7F5B] text-slate-950 shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
-          }`}
-        >
-          <LayoutDashboard className="w-4 h-4" />
-          <span>Visão Geral</span>
-        </button>
+      <div className="relative">
+        <div className="flex items-center gap-1.5 p-1.5 bg-[#101B1E] rounded-2xl border border-white/10 shadow-lg overflow-x-auto no-scrollbar scroll-smooth">
+          <button
+            type="button"
+            onClick={() => setActiveProfileTab('overview')}
+            className={`flex-1 min-w-[120px] sm:min-w-[140px] flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+              activeProfileTab === 'overview'
+                ? 'bg-[#FF7F5B] text-slate-950 shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            <span>Visão Geral</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveProfileTab('badges')}
-          className={`flex-1 min-w-[160px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
-            activeProfileTab === 'badges'
-              ? 'bg-[#FF7F5B] text-slate-950 shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
-          }`}
-        >
-          <Award className="w-4 h-4" />
-          <span>Conquistas ({getUnlockedBadgesCount(user.badges)}/{ALL_BADGES.length})</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveProfileTab('badges')}
+            className={`flex-1 min-w-[135px] sm:min-w-[160px] flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+              activeProfileTab === 'badges'
+                ? 'bg-[#FF7F5B] text-slate-950 shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Award className="w-4 h-4" />
+            <span>Conquistas ({getUnlockedBadgesCount(user.badges)}/{ALL_BADGES.length})</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveProfileTab('posts')}
-          className={`flex-1 min-w-[160px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
-            activeProfileTab === 'posts'
-              ? 'bg-[#FF7F5B] text-slate-950 shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
-          }`}
-        >
-          <MessageSquare className="w-4 h-4" />
-          <span>Minhas Publicações ({userPosts.length})</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveProfileTab('posts')}
+            className={`flex-1 min-w-[140px] sm:min-w-[160px] flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+              activeProfileTab === 'posts'
+                ? 'bg-[#FF7F5B] text-slate-950 shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Minhas Publicações ({userPosts.length})</span>
+          </button>
+        </div>
+        {/* Visual scroll cue on mobile */}
+        <div className="md:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#070D0F] to-transparent rounded-r-2xl" />
       </div>
 
       {/* Tab 1: Visão Geral */}
@@ -1327,7 +1347,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                             <select
                               value={editingChildEmoji}
                               onChange={(e) => setEditingChildEmoji(e.target.value)}
-                              className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer font-bold"
+                              className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white focus:outline-none cursor-pointer font-bold"
                             >
                               <option value="👦">Menino</option>
                               <option value="👧">Menina</option>
@@ -1338,13 +1358,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                               placeholder="Nome"
                               value={editingChildName}
                               onChange={(e) => setEditingChildName(e.target.value)}
-                              className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-bold"
+                              className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white focus:outline-none font-bold"
                             />
                             {editingChildEmoji === '🤰' ? (
                               <select
                                 value={editingPregnancyMonth}
                                 onChange={(e) => setEditingPregnancyMonth(e.target.value)}
-                                className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-purple-200 focus:outline-none cursor-pointer font-bold"
+                                className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2.5 text-base sm:text-xs text-purple-200 focus:outline-none cursor-pointer font-bold"
                               >
                                 <option value="1º mês">1º mês</option>
                                 <option value="2º mês">2º mês</option>
@@ -1362,7 +1382,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                                 placeholder="DD/MM/AAAA ou Idade"
                                 value={editingChildAgeOrBirthdate}
                                 onChange={(e) => setEditingChildAgeOrBirthdate(formatBirthdateMask(e.target.value))}
-                                className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-medium"
+                                className="bg-[#101B1E] border border-white/15 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white focus:outline-none font-medium"
                               />
                             )}
                           </div>
@@ -1374,7 +1394,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                               <button
                                 type="button"
                                 onClick={() => setEditingChildId(null)}
-                                className="px-3 py-1.5 rounded-xl border border-white/10 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                                className="px-3.5 py-2 rounded-xl border border-white/10 text-xs font-semibold text-slate-400 hover:text-white transition-colors min-h-[38px]"
                               >
                                 Cancelar
                               </button>
@@ -1409,7 +1429,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                                   setEditingChildId(null);
                                   if (updateUser) await updateUser({ children: updated });
                                 }}
-                                className="px-4 py-1.5 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                                className="px-4 py-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer min-h-[38px]"
                               >
                                 Salvar
                               </button>
@@ -1427,7 +1447,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <button
                               type="button"
                               onClick={() => {
@@ -1440,20 +1460,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                                 setEditingChildAgeOrBirthdate(displayBirth);
                                 setEditingPregnancyMonth(child.isPregnancy ? child.age : '1º mês');
                               }}
-                              className="text-slate-400 hover:text-[#FF7F5B] p-1.5 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                              className="text-slate-400 hover:text-[#FF7F5B] p-2 hover:bg-white/5 rounded-xl transition-colors cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
                               title="Editar idade ou dados"
                               aria-label="Editar filho(a)"
                             >
-                              <Edit3 className="w-3.5 h-3.5" />
+                              <Edit3 className="w-4 h-4" />
                             </button>
                             <button
                               type="button"
                               onClick={async () => {
+                                if (!window.confirm(`Deseja realmente remover ${child.name}?`)) return;
                                 const next = childrenList.filter(c => c.id !== child.id);
                                 setChildrenList(next);
                                 if (updateUser) await updateUser({ children: next });
                               }}
-                              className="text-rose-400 hover:text-rose-300 p-1.5 hover:bg-white/5 rounded-lg transition-colors shrink-0 cursor-pointer"
+                              className="text-rose-400 hover:text-rose-300 p-2 hover:bg-white/5 rounded-xl transition-colors shrink-0 cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
                               title="Remover"
                               aria-label="Remover filho(a)"
                             >
@@ -2231,8 +2252,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
 
       {/* Modal de Exclusão de Conta Definitiva (LGPD Art. 18) */}
       {isDeleteAccountModalOpen && createPortal(
-        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
-          <div className="bg-[#101B1E] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-red-500/40 text-white space-y-5 animate-scale-up text-center">
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="bg-[#101B1E] rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-red-500/40 text-white space-y-5 animate-scale-up text-center max-h-[90dvh] overflow-y-auto my-auto">
             <div className="w-14 h-14 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center mx-auto shadow-lg">
               <Trash2 className="w-7 h-7" />
             </div>
@@ -2255,7 +2276,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                 value={deleteConfirmationText}
                 onChange={(e) => setDeleteConfirmationText(e.target.value)}
                 placeholder="EXCLUIR"
-                className="w-full p-3 bg-[#070D0F] border border-red-500/30 rounded-xl text-xs text-white focus:outline-none focus:border-red-500 font-mono uppercase"
+                className="w-full p-3 bg-[#070D0F] border border-red-500/30 rounded-xl text-base sm:text-xs text-white focus:outline-none focus:border-red-500 font-mono uppercase"
               />
             </div>
 

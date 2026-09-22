@@ -1416,7 +1416,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
 
             {/* Sub-option pills for selected journey */}
             {mobilePillJourneyId && (
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in bg-white/5 p-1 rounded-xl">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in bg-white/5 p-1.5 rounded-xl pe-4">
                 {[
                   { id: 'ajuda' as const,   label: 'Preciso de Ajuda' },
                   { id: 'celebrar' as const, label: 'Celebrar' },
@@ -1428,7 +1428,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                     <button
                       key={sub.id}
                       onClick={() => setActiveSelection({ type: 'jornada', journeyId: mobilePillJourneyId, subOption: sub.id })}
-                      className={`shrink-0 snap-start px-3 py-1 rounded-lg text-[10px] font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
+                      className={`shrink-0 snap-start px-3.5 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer min-h-[38px] ${
                         isSelected
                           ? 'text-white border-transparent shadow-md'
                           : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
@@ -1739,7 +1739,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar por palavras-chave, assuntos ou autores nesta sala"
-                className="search-input-compact w-full pl-9 pr-14 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-[#101B1E] border border-white/10 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#FF7F5B] transition-colors shadow-md"
+                className="w-full pl-9 pr-14 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-[#101B1E] border border-white/10 text-base sm:text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#FF7F5B] transition-colors shadow-md"
               />
               {searchQuery && (
                 <button
@@ -1807,15 +1807,15 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                         {/* Left Column: Foto, Nome, data e horário do usuário */}
                         <div 
                           onClick={post.isAnonymous ? undefined : () => openAuthorProfile({ id: post.authorId, name: post.authorName, avatar: post.authorAvatar, role: post.authorRole, tag: post.authorTag, isAnonymous: post.isAnonymous })}
-                          className={`w-full sm:w-44 md:w-48 shrink-0 flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-3 sm:gap-2.5 sm:pr-4 sm:border-r sm:border-white/10 ${post.isAnonymous ? '' : 'cursor-pointer group'}`}
+                          className={`w-full sm:w-44 md:w-48 shrink-0 flex flex-wrap sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 sm:gap-2.5 sm:pr-4 sm:border-r sm:border-white/10 ${post.isAnonymous ? '' : 'cursor-pointer group'}`}
                         >
-                          <div className="flex sm:flex-col items-center sm:items-start gap-3 sm:gap-2.5 min-w-0">
+                          <div className="flex items-center sm:items-start gap-3 sm:gap-2.5 min-w-0 flex-1 sm:flex-none">
                             <img
                               src={post.authorAvatar}
                               alt={post.authorName}
                               className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border border-white/20 shrink-0 ${post.isAnonymous ? '' : 'group-hover:scale-105 transition-transform'}`}
                             />
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <span className={`font-bold text-xs sm:text-sm text-white truncate block ${post.isAnonymous ? '' : 'group-hover:text-[#FF7F5B] transition-colors'}`}>
                                 {post.authorName}
                               </span>
@@ -1833,7 +1833,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                                   setActiveSelection(roomDetails.selectionTarget);
                                 }
                               }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all border shadow-sm max-w-[150px] truncate"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all border shadow-sm max-w-[130px] truncate"
                               style={{
                                 backgroundColor: roomDetails.badgeBg,
                                 borderColor: roomDetails.badgeBorder,
@@ -1996,30 +1996,40 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
 
                                   {/* Floating Reaction Picker Popover */}
                                   {openReactionPickerPostId === post.id && (
-                                    <div className="absolute left-0 bottom-full mb-2 z-50 bg-[#101B1E] border border-white/20 p-1.5 rounded-2xl shadow-2xl flex items-center gap-1 animate-scale-up backdrop-blur-xl">
-                                      {BRAND_REACTIONS.map(reaction => {
-                                        const isReacted = !!(post.userReactions && post.userReactions[reaction.id]);
-                                        return (
-                                          <button
-                                            key={reaction.id}
-                                            type="button"
-                                            onClick={() => {
-                                              toggleReaction(post.id, reaction.id);
-                                              setOpenReactionPickerPostId(null);
-                                            }}
-                                            className={`p-2 rounded-xl transition-all flex flex-col items-center gap-1 hover:bg-white/10 active:scale-95 cursor-pointer ${
-                                              isReacted ? 'bg-white/15 ring-1 ring-white/30' : ''
-                                            }`}
-                                            title={`${reaction.label}: ${reaction.useCase}`}
-                                          >
-                                            {renderReactionIcon(reaction.iconName, reaction.color)}
-                                            <span className="text-[9px] font-bold text-slate-300 whitespace-nowrap hidden sm:inline">
-                                              {reaction.label}
-                                            </span>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
+                                    <>
+                                      {/* Backdrop transparent click outside */}
+                                      <div 
+                                        className="fixed inset-0 z-40" 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setOpenReactionPickerPostId(null);
+                                        }} 
+                                      />
+                                      <div className="absolute left-0 bottom-full mb-2 z-50 bg-[#101B1E] border border-white/20 p-1.5 rounded-2xl shadow-2xl flex items-center gap-1 animate-scale-up backdrop-blur-xl max-w-[calc(100vw-32px)] overflow-x-auto">
+                                        {BRAND_REACTIONS.map(reaction => {
+                                          const isReacted = !!(post.userReactions && post.userReactions[reaction.id]);
+                                          return (
+                                            <button
+                                              key={reaction.id}
+                                              type="button"
+                                              onClick={() => {
+                                                toggleReaction(post.id, reaction.id);
+                                                setOpenReactionPickerPostId(null);
+                                              }}
+                                              className={`p-2 rounded-xl transition-all flex flex-col items-center gap-1 hover:bg-white/10 active:scale-95 cursor-pointer shrink-0 ${
+                                                isReacted ? 'bg-white/15 ring-1 ring-white/30' : ''
+                                              }`}
+                                              title={`${reaction.label}: ${reaction.useCase}`}
+                                            >
+                                              {renderReactionIcon(reaction.iconName, reaction.color)}
+                                              <span className="text-[9px] font-bold text-slate-300 whitespace-nowrap hidden sm:inline">
+                                                {reaction.label}
+                                              </span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </>
                                   )}
                                 </div>
                               </div>
@@ -2172,6 +2182,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                                         placeholder="Escreva uma resposta com empatia e respeito..."
                                         value={commentInputs[post.id] || ''}
                                         onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
+                                        onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                                         className="flex-1 p-3 rounded-xl border border-white/10 text-base sm:text-xs bg-[#101B1E] text-white focus:outline-none focus:border-[#FF7F5B]"
                                       />
                                       <button

@@ -594,7 +594,7 @@ export const QuizPage: React.FC<QuizPageProps> = ({
         <div className="flex items-center justify-between gap-4 mb-4">
           <button
             onClick={currentQuestionIdx === 0 ? () => setStage('intro') : handlePrevQuestion}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer p-1"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer py-2 px-2.5 -ml-2 rounded-xl min-h-[44px]"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Voltar</span>
@@ -778,16 +778,16 @@ export const QuizPage: React.FC<QuizPageProps> = ({
 
         {/* 📑 DOSSIÊ DETALHADO: ABAS (Luz, Sombra, Dicas Práticas) */}
         <div className="rounded-3xl bg-[#101B1E] border border-white/10 p-5 sm:p-8 space-y-6 shadow-xl">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
             <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
               Dossiê do seu Jeito de Educar
             </h3>
 
             {/* Abas */}
-            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10 w-full sm:w-auto overflow-x-auto">
               <button
                 onClick={() => setActiveTabDossie('luz')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-none text-center px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer min-h-[38px] flex items-center justify-center ${
                   activeTabDossie === 'luz' ? 'bg-[#FF7F5B] text-white shadow-md' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -795,7 +795,7 @@ export const QuizPage: React.FC<QuizPageProps> = ({
               </button>
               <button
                 onClick={() => setActiveTabDossie('sombra')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-none text-center px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer min-h-[38px] flex items-center justify-center ${
                   activeTabDossie === 'sombra' ? 'bg-[#FF7F5B] text-white shadow-md' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -803,7 +803,7 @@ export const QuizPage: React.FC<QuizPageProps> = ({
               </button>
               <button
                 onClick={() => setActiveTabDossie('dicas')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-none text-center px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer min-h-[38px] flex items-center justify-center ${
                   activeTabDossie === 'dicas' ? 'bg-[#FF7F5B] text-white shadow-md' : 'text-slate-400 hover:text-white'
                 }`}
               >

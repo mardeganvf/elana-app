@@ -42,21 +42,21 @@ export const QuizCardBanner: React.FC<QuizCardBannerProps> = ({ onStartQuiz, use
       <button
         onClick={handleDismiss}
         aria-label="Lembrar mais tarde"
-        className="absolute top-3.5 right-3.5 p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors z-10 cursor-pointer"
+        className="absolute top-2.5 right-2.5 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors z-10 cursor-pointer"
         title="Lembrar mais tarde"
       >
         <X className="w-4 h-4" />
       </button>
 
-      <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-        <div className="flex items-start gap-4 max-w-2xl">
+      <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-5">
+        <div className="flex items-start gap-3.5 sm:gap-4 max-w-2xl">
           {/* Badge de Ícone */}
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#FFD166] to-[#FF7F5B] text-slate-950 flex items-center justify-center shrink-0 shadow-lg shadow-[#FF7F5B]/20 group-hover:scale-105 transition-transform">
-            <Zap className="w-6 h-6 sm:w-7 sm:h-7 fill-slate-950" />
+          <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#FFD166] to-[#FF7F5B] text-slate-950 flex items-center justify-center shrink-0 shadow-lg shadow-[#FF7F5B]/20 group-hover:scale-105 transition-transform">
+            <Zap className="w-5 h-5 sm:w-7 sm:h-7 fill-slate-950" />
           </div>
 
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="space-y-1 sm:space-y-1.5">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#FFD166] bg-[#FFD166]/10 border border-[#FFD166]/30 px-2.5 py-0.5 rounded-full">
                 <Sparkles className="w-3 h-3" />
                 Diagnóstico Exclusivo
@@ -67,10 +67,10 @@ export const QuizCardBanner: React.FC<QuizCardBannerProps> = ({ onStartQuiz, use
               </span>
             </div>
 
-            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
+            <h3 className="text-base sm:text-xl font-black text-white tracking-tight">
               Qual é o seu Superpoder Parental?
             </h3>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed line-clamp-2 sm:line-clamp-none">
               Toda mãe e todo pai têm uma força secreta na criação. Responda a 15 perguntas reflexivas e descubra a sua maior luz, seus pontos cegos e a trilha ideal para o seu momento em família.
             </p>
           </div>
