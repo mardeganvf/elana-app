@@ -53,7 +53,9 @@ export const QuizPage: React.FC<QuizPageProps> = ({
   const { user, updateUser, awardBadge } = useAuth();
 
   // Estados do fluxo: 'intro' | 'preliminary-status' | 'preliminary-ages' | 'questions' | 'calculating' | 'result'
-  const [stage, setStage] = useState<'intro' | 'preliminary-status' | 'preliminary-ages' | 'questions' | 'calculating' | 'result'>('intro');
+  const [stage, setStage] = useState<'intro' | 'preliminary-status' | 'preliminary-ages' | 'questions' | 'calculating' | 'result'>(() => {
+    return user?.parentalArchetype ? 'result' : 'intro';
+  });
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState<number>(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [calculationResult, setCalculationResult] = useState<QuizCalculationResult | null>(null);
@@ -124,6 +126,9 @@ export const QuizPage: React.FC<QuizPageProps> = ({
         secondaryPercentage: 35,
         allPercentages: { [dominant.id]: 65, [secondary.id]: 35 }
       });
+
+      // Se o usuário já possui diagnóstico gravado, exibe direto a tela de resultado
+      setStage(prev => (prev === 'intro' ? 'result' : prev));
     }
   }, [user?.parentalArchetype, user?.parentalSecondaryArchetype, user?.id, user?.email]);
 

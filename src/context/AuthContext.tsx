@@ -224,21 +224,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Re-hidratar dados atualizados do Supabase no carregamento inicial e em mudanças de sessão
   useEffect(() => {
-    // 1. Hidratar usuário atual se já houver sessão salva
-    if (user?.email && user?.id) {
-      fetchFullUserProfile(user.id, user.email, user.name)
-        .then(refreshed => {
-          if (refreshed) setUser(refreshed);
-        })
-        .catch(err => {
-          console.warn('Notice rehydrating user session:', err);
-        });
-    }
+    // 1. Verificar sessão ativa do Supabase Auth no carregamento da página (multi-dispositivo)
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user?.email) {
+        const refreshed = await fetchFullUserProfile(
+          session.user.id,
+          session.user.email,
+          session.user.user_metadata?.name
+        );
+        if (refreshed) {
+          setUser(refreshed);
+          try {
+            localStorage.setItem('elana_user_session', JSON.stringify(refreshed));
+          } catch (e) {}
+        }
+      } else if (userRef.current?.email && userRef.current?.id) {
+        fetchFullUserProfile(userRef.current.id, userRef.current.email, userRef.current.name)
+          .then(refreshed => {
+            if (refreshed) setUser(refreshed);
+          })
+          .catch(err => {
+            console.warn('Notice rehydrating user session:', err);
+          });
+      }
+    });
 
-    // 2. Escutar eventos de atualização de usuário e e-mail do Supabase Auth
+    // 2. Escutar TODOS os eventos de sessão e autenticação do Supabase Auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
-        if ((event === 'USER_UPDATED' || event === 'SIGNED_IN') && session?.user?.email) {
+        if (
+          (event === 'INITIAL_SESSION' ||
+           event === 'SIGNED_IN' ||
+           event === 'TOKEN_REFRESHED' ||
+           event === 'USER_UPDATED') &&
+          session?.user?.email
+        ) {
           const refreshed = await fetchFullUserProfile(
             session.user.id,
             session.user.email,
@@ -250,6 +270,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               localStorage.setItem('elana_user_session', JSON.stringify(refreshed));
             } catch (e) {}
           }
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          try {
+            localStorage.removeItem('elana_user_session');
+          } catch (e) {}
         }
       } catch (err) {
         console.warn('Notice in onAuthStateChange handler:', err);
@@ -619,6 +644,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
         } catch {}
+      }
+
+      // 🌿 Auto-sincronização Cloud: se o arquétipo existia no cache/backup local e não estava no Supabase, persiste agora!
+      if (finalArchetype && (!profile.parental_archetype || !profile.parental_quiz_completed_at)) {
+        supabase
+          .from('profiles')
+          .update({
+            parental_archetype: finalArchetype,
+            parental_secondary_archetype: finalSecondaryArchetype || null,
+            parental_quiz_completed_at: finalQuizCompletedAt || new Date().toISOString()
+          })
+          .eq('id', profileId)
+          .then();
       }
 
       // 2. Buscar Badges conquistadas
