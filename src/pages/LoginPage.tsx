@@ -178,26 +178,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           setLoading(false);
           return;
         } else {
-          // Phone Signup
-          const cleanPhone = inputVal.replace(/\D/g, '');
-          const formattedPhone = cleanPhone.startsWith('55') ? `+${cleanPhone}` : `+55${cleanPhone}`;
-          const { error } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
-          if (error) throw error;
-          const userEmail = `${cleanPhone}@elana.app`;
-          localStorage.removeItem(`elana_spotlight_done_${userEmail}`);
-          localStorage.removeItem('elana_user_session');
-          await login(userEmail, name.trim());
-          onSuccess(true);
+          // Phone Signup (Desativado temporariamente para segurança até integração de provedor SMS/OTP)
+          throw new Error('O cadastro por telefone está temporariamente desativado. Por favor, cadastre-se utilizando seu e-mail.');
         }
       } else if (mode === 'login') {
         if (loginMethod === 'phone') {
-          const cleanPhone = inputVal.replace(/\D/g, '');
-          const formattedPhone = cleanPhone.startsWith('55') ? `+${cleanPhone}` : `+55${cleanPhone}`;
-          const { error } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
-          if (error) throw error;
-          setSuccessMessage(`Código SMS enviado para ${formattedPhone}! Entrando...`);
-          await login(`${cleanPhone}@elana.app`, name.trim() || 'Membro');
-          onSuccess(false);
+          // Phone Login (Desativado temporariamente para segurança até integração de provedor SMS/OTP)
+          throw new Error('O login por telefone está temporariamente desativado. Por favor, acesse utilizando seu e-mail e senha.');
         } else {
           const cleanEmail = inputVal.trim().toLowerCase();
           const { data, error } = await supabase.auth.signInWithPassword({
