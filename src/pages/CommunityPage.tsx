@@ -667,6 +667,8 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
     let authorChildren: ChildInfo[] = [];
     let authorTestimonials: ProfileTestimonial[] = [];
 
+    if (author.id && !author.isAnonymous) {
+      try {
         const fetchProfile = async () => {
           const res = await supabase.from('public_profiles').select('*').eq('id', author.id).maybeSingle();
           if (res.error || !res.data) {
