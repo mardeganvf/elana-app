@@ -899,6 +899,9 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
             .eq('profile_id', user.id);
 
           const totalCheckins = count || 1;
+          if (totalCheckins > (user.streakDays || 0)) {
+            updateUser({ streakDays: totalCheckins });
+          }
           if (totalCheckins >= 90) await awardBadge('b20');
           else if (totalCheckins >= 60) await awardBadge('b19');
           else if (totalCheckins >= 30) await awardBadge('b18');

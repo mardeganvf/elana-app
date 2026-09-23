@@ -316,3 +316,30 @@ CREATE POLICY "storage_delete_auth"
 CREATE INDEX IF NOT EXISTS idx_community_posts_status_created ON public.community_posts(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_community_comments_status_created ON public.community_comments(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_community_reports_content_id ON public.community_reports(content_id);
+
+-- ------------------------------------------------------------------------------
+-- 10. SINCRONIZAÇÃO AUTOMÁTICA DE CHECK-INS EMOCIONAIS PARA VISITAS DIÁRIAS
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.sync_checkin_to_daily_visits()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.profile_id IS NOT NULL THEN
+    INSERT INTO public.user_daily_visits (profile_id, visit_date)
+    VALUES (NEW.profile_id, (NEW.created_at AT TIME ZONE 'America/Sao_Paulo')::date)
+    ON CONFLICT (profile_id, visit_date) DO NOTHING;
+    
+    UPDATE public.profiles
+    SET streak_days = (
+      SELECT count(*) FROM public.user_daily_visits WHERE profile_id = NEW.profile_id
+    )
+    WHERE id = NEW.profile_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_sync_checkin_to_daily_visits ON public.emotional_checkins;
+CREATE TRIGGER trg_sync_checkin_to_daily_visits
+  AFTER INSERT ON public.emotional_checkins
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_checkin_to_daily_visits();

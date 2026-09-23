@@ -868,6 +868,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (visitsCount && visitsCount > 0) {
           visitDaysCount = visitsCount;
         }
+
+        // Garante que o total de dias com check-in emocional seja considerado
+        const { count: checkinsCount } = await supabase
+          .from('emotional_checkins')
+          .select('id', { count: 'exact', head: true })
+          .eq('profile_id', profileId);
+
+        if (checkinsCount && checkinsCount > visitDaysCount) {
+          visitDaysCount = checkinsCount;
+        }
       } catch (err) {
         console.warn('Notice recording daily visit in Supabase:', err);
       }

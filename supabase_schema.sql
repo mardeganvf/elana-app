@@ -1426,6 +1426,31 @@ CREATE POLICY "visits_insert_all" ON public.user_daily_visits FOR INSERT WITH CH
 CREATE POLICY "visits_update_all" ON public.user_daily_visits FOR UPDATE USING (auth.uid() = profile_id OR public.is_admin());
 CREATE POLICY "visits_delete_all" ON public.user_daily_visits FOR DELETE USING (public.is_admin());
 
+-- Sincronização automática de Check-ins Emocionais para o Histórico de Visitas Diárias
+CREATE OR REPLACE FUNCTION public.sync_checkin_to_daily_visits()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.profile_id IS NOT NULL THEN
+    INSERT INTO public.user_daily_visits (profile_id, visit_date)
+    VALUES (NEW.profile_id, (NEW.created_at AT TIME ZONE 'America/Sao_Paulo')::date)
+    ON CONFLICT (profile_id, visit_date) DO NOTHING;
+    
+    UPDATE public.profiles
+    SET streak_days = (
+      SELECT count(*) FROM public.user_daily_visits WHERE profile_id = NEW.profile_id
+    )
+    WHERE id = NEW.profile_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_sync_checkin_to_daily_visits ON public.emotional_checkins;
+CREATE TRIGGER trg_sync_checkin_to_daily_visits
+  AFTER INSERT ON public.emotional_checkins
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_checkin_to_daily_visits();
+
 -- ========================================================
 -- 21. TABELA DE PEDIDOS E TRANSAÇÕES DE VENDAS (PUBLIC.ORDERS)
 -- Suporte completo para webhooks da Kiwify, Hotmart, Eduzz, Stripe.
