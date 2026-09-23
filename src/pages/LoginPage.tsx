@@ -600,6 +600,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                   </div>
                 </div>
               </div>
+            )}
+
             {/* TERMS AND PRIVACY CHECKBOX IN REGISTER MODE */}
             {mode === 'register' && (
               <div className="flex items-start gap-2.5 pt-1">
@@ -747,6 +749,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             onSuccess(false);
           }
         }}
+      />
+
       {/* LEGAL MODAL (TERMS & PRIVACY) */}
       <LegalModal
         type={legalModalType}
