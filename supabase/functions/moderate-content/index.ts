@@ -9,7 +9,7 @@ export interface ModerationResult {
   reason: string;
   matchedContext: string;
   suggestsCrisisSupport: boolean;
-  provider?: 'gemini' | 'groq' | 'vector' | 'regex-circuit-breaker';
+  provider?: 'gemini' | 'vector' | 'regex-circuit-breaker';
   fallbackApplied?: boolean;
   matchedByLearningBase?: boolean;
   _debug?: boolean;
@@ -391,96 +391,6 @@ export async function runGeminiModeration(
   };
 }
 
-// ── Caminho C: Groq (llama-3.3-70b-versatile) — Fallback de IA Secundário ────
-export async function runGroqModeration(
-  text: string,
-  groqApiKey: string
-): Promise<ModerationResult> {
-  const model = Deno.env.get('GROQ_MODEL')?.trim() || 'openai/gpt-oss-120b';
-
-  try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      signal: AbortSignal.timeout(60000),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${groqApiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.1,
-        max_tokens: 512,
-        messages: [
-          {
-            role: 'system',
-            content: SYSTEM_INSTRUCTION,
-          },
-          {
-            role: 'user',
-            content: `Avalie o seguinte relato postado por um membro da comunidade Elana:\n\n<user_post>\n${text.trim()}\n</user_post>`,
-          }
-        ]
-      })
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error(`[Groq Moderation] Erro na API Groq (${response.status}):`, errText.slice(0, 300));
-      return {
-        _debug: true,
-        _errors: [{ step: 'groq-api', status: response.status, payload: errText.slice(0, 200) }],
-        isFlagged: false,
-        category: 'livre',
-        reason: 'Groq indisponível.',
-        matchedContext: '',
-        suggestsCrisisSupport: false,
-      };
-    }
-
-    const data = await response.json();
-    const candidateText: string | undefined = data?.choices?.[0]?.message?.content;
-
-    if (!candidateText) {
-      return {
-        _debug: true,
-        _errors: [{ step: 'groq-empty-response' }],
-        isFlagged: false,
-        category: 'livre',
-        reason: 'Resposta vazia do Groq.',
-        matchedContext: '',
-        suggestsCrisisSupport: false,
-      };
-    }
-
-    // Sanitizador resiliente contra markdown fences (```json ... ```)
-    const sanitizedJson = candidateText
-      .replace(/^```(?:json)?\s*/i, '')
-      .replace(/\s*```$/i, '')
-      .trim();
-
-    const parsed = JSON.parse(sanitizedJson);
-    return {
-      isFlagged: Boolean(parsed.isFlagged),
-      category: (parsed.category as ModerationCategory) || 'livre',
-      reason: String(parsed.reason || ''),
-      matchedContext: String(parsed.matchedContext || ''),
-      suggestsCrisisSupport: Boolean(parsed.suggestsCrisisSupport),
-      provider: 'groq',
-    };
-  } catch (e: any) {
-    console.error('[Groq Moderation] Exceção ao chamar Groq:', e?.message || e);
-    return {
-      _debug: true,
-      _errors: [{ step: 'groq-exception', error: e?.message || String(e) }],
-      isFlagged: false,
-      category: 'livre',
-      reason: 'Groq indisponível.',
-      matchedContext: '',
-      suggestsCrisisSupport: false,
-    };
-  }
-}
-
 // ── Handler Principal da Edge Function ──────────────────────────────────────
 export async function handleRequest(req: Request): Promise<Response> {
   // Preflight CORS
@@ -698,25 +608,25 @@ export async function handleRequest(req: Request): Promise<Response> {
       );
     }
 
-    // Prioridade 3: Groq como fallback de IA secundário (Gemini falhou em todos os modelos)
-    const groqApiKey = Deno.env.get('GROQ_API_KEY');
-    if (groqApiKey) {
-      console.warn('[Moderation] Gemini indisponível — acionando Groq como fallback de IA secundário.');
-      const groqResult = await runGroqModeration(text.trim(), groqApiKey);
-      if (!groqResult._debug) {
+    // Prioridade 3: Segunda chave Gemini com billing (desbloqueia gemini-2.0-flash / gemini-2.5-flash)
+    const apiKey2 = Deno.env.get('GEMINI_API_KEY_2');
+    if (apiKey2) {
+      console.warn('[Moderation] Chave primária Gemini esgotou modelos — tentando chave secundária com billing.');
+      const geminiResult2 = await runGeminiModeration(text.trim(), apiKey2, undefined);
+      if (geminiResult2 && !geminiResult2._debug) {
         return new Response(
           JSON.stringify({
-            isFlagged: !!groqResult.isFlagged,
-            category: groqResult.category || 'livre',
-            reason: groqResult.reason || '',
-            matchedContext: groqResult.matchedContext || '',
-            suggestsCrisisSupport: !!groqResult.suggestsCrisisSupport,
-            provider: 'groq'
+            isFlagged: !!geminiResult2.isFlagged,
+            category: geminiResult2.category || 'livre',
+            reason: geminiResult2.reason || '',
+            matchedContext: geminiResult2.matchedContext || '',
+            suggestsCrisisSupport: !!geminiResult2.suggestsCrisisSupport,
+            provider: 'gemini'
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      console.warn('[Moderation] Groq também indisponível — ativando Circuit Breaker (regex).');
+      console.warn('[Moderation] Chave secundária Gemini também falhou — ativando Circuit Breaker (regex).');
     }
 
     // Prioridade 4: Circuit Breaker de Emergência (Fallback por Regex no Servidor)
