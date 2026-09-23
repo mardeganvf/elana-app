@@ -745,17 +745,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
       />
 
       {/* Footer copyright */}
-      <footer className="text-center text-[10px] text-slate-400 z-10 flex flex-col items-center gap-1.5">
-        <span>© 2026 Elana. Espaço de Acolhimento Parental e Autocuidado.</span>
-        <button
-          type="button"
-          onClick={() => {
-            throw new Error('This is your first error!');
-          }}
-          className="text-[9px] text-slate-600 hover:text-rose-400 transition-colors border border-white/5 hover:border-rose-500/30 px-2 py-0.5 rounded cursor-pointer"
-        >
-          Break the world (Sentry Test)
-        </button>
+      <footer className="text-center text-[10px] text-slate-400 z-10">
+        © 2026 Elana. Espaço de Acolhimento Parental e Autocuidado.
       </footer>
     </div>
   );

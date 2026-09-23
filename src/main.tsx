@@ -7,12 +7,6 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 initSentry();
 
-if (typeof window !== 'undefined') {
-  (window as any).triggerSentryTest = () => {
-    throw new Error('This is your first error!');
-  };
-}
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
