@@ -603,7 +603,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 profile_id: profileId,
                 badge_id: bId,
                 unlocked_at: new Date().toISOString()
-              }).then();
+              }, { onConflict: 'profile_id, badge_id' }).then();
             }
           });
         }
@@ -640,34 +640,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
 
-      // 6. Buscar Filhos / Membros da Família
+      // 6. Buscar Filhos / Membros da Família (prioridade para a tabela segura family_members)
       let children: any[] = [];
-      if (profile.family_tag && profile.family_tag.startsWith('JSON_CHILDREN:')) {
-        try {
-          children = JSON.parse(profile.family_tag.replace('JSON_CHILDREN:', ''));
-        } catch (e) {
-          console.warn('Error parsing children backup:', e);
-        }
-      } else {
-        try {
-          const { data: familyData } = await supabase
-            .from('family_members')
-            .select('*')
-            .eq('profile_id', profileId);
+      try {
+        const { data: familyData } = await supabase
+          .from('family_members')
+          .select('*')
+          .eq('profile_id', profileId);
 
-          if (familyData && familyData.length > 0) {
-            children = familyData.map(f => ({
-              id: f.id,
-              emoji: f.emoji || '👶',
-              name: f.name || '',
-              age: f.age || '',
-              birthdate: f.birthdate || undefined,
-              isPregnancy: !!f.is_pregnancy
-            }));
+        if (familyData && familyData.length > 0) {
+          children = familyData.map(f => ({
+            id: f.id,
+            emoji: f.emoji || '👶',
+            name: f.name || '',
+            age: f.age || '',
+            birthdate: f.birthdate || undefined,
+            isPregnancy: !!f.is_pregnancy
+          }));
+        } else if (profile.family_tag && profile.family_tag.startsWith('JSON_CHILDREN:')) {
+          // Fallback transitório para perfis legados
+          try {
+            children = JSON.parse(profile.family_tag.replace('JSON_CHILDREN:', ''));
+          } catch (e) {
+            console.warn('Error parsing legacy children backup:', e);
           }
-        } catch (err) {
-          console.warn('Error fetching family_members table:', err);
         }
+      } catch (err) {
+        console.warn('Error fetching family_members table:', err);
       }
 
       // 🔒 Isolamento Rigoroso de Dados:
@@ -1190,12 +1189,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (updatedUser.id && updatedUser.id.length > 10) {
         const levelInfo = getLevelFromXP(updatedUser.xp);
 
-        // 1. Atualizar Tabela profiles com colunas válidas
+        // 1. Atualizar Tabela profiles com colunas válidas (dados de filhos são salvos isoladamente em family_members)
         let familyTagPayload = updatedUser.familyTag || null;
-        if (updates.children !== undefined) {
-          familyTagPayload = `JSON_CHILDREN:${JSON.stringify(updates.children)}`;
-        } else if (updatedUser.children) {
-          familyTagPayload = `JSON_CHILDREN:${JSON.stringify(updatedUser.children)}`;
+        if (familyTagPayload && familyTagPayload.startsWith('JSON_CHILDREN:')) {
+          familyTagPayload = 'Mãe ou Pai de 1ª viagem';
         }
 
         const profilePayload: Record<string, any> = {
@@ -1311,8 +1308,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     userRef.current = null;
     setUser(null);
     setSosResponse(null);
-    localStorage.removeItem('elana_user_session');
-    localStorage.removeItem('elana_sos_ticket_response');
+    try {
+      // Purge all Elana-specific keys and user session data from localStorage
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('elana_') || key.startsWith('sb-') || key.includes('supabase'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    } catch (e) {
+      console.warn('Error clearing localStorage on logout:', e);
+      localStorage.removeItem('elana_user_session');
+      localStorage.removeItem('elana_sos_ticket_response');
+    }
     supabase.auth.signOut();
   };
 

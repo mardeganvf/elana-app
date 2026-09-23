@@ -51,6 +51,10 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS banned_reason TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS parental_archetype TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS parental_secondary_archetype TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS parental_quiz_completed_at TIMESTAMPTZ;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS community_subscription_status TEXT DEFAULT 'free';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS community_subscription_id TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS community_access_expires_at TIMESTAMPTZ;
 
 -- 2. TABELA DE MEMBROS DA FAMÍLIA (FILHOS / GESTAÇÃO)
 CREATE TABLE IF NOT EXISTS public.family_members (
@@ -307,7 +311,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 🛡️ BLINDAGEM DE SEGURANÇA: Impede auto-promoção a Administrador e auto-desbanimento
+-- 🛡️ BLINDAGEM DE SEGURANÇA: Impede auto-promoção a Administrador, auto-desbanimento e auto-ativação de assinatura
 CREATE OR REPLACE FUNCTION public.protect_profile_role()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -318,7 +322,13 @@ BEGIN
     IF (NEW.is_banned IS TRUE OR NEW.banned_at IS NOT NULL) AND NOT public.is_admin() THEN
       NEW.is_banned := false;
       NEW.banned_at := NULL;
-      NEW.ban_reason := NULL;
+      NEW.banned_reason := NULL;
+    END IF;
+    IF NOT public.is_admin() THEN
+      NEW.community_subscription_status := COALESCE(NEW.community_subscription_status, 'free');
+      NEW.community_access_expires_at := NULL;
+      NEW.stripe_customer_id := NULL;
+      NEW.community_subscription_id := NULL;
     END IF;
   ELSIF TG_OP = 'UPDATE' THEN
     IF NEW.role IS DISTINCT FROM OLD.role AND NOT public.is_admin() THEN
@@ -328,11 +338,23 @@ BEGIN
     IF (
       NEW.is_banned IS DISTINCT FROM OLD.is_banned 
       OR NEW.banned_at IS DISTINCT FROM OLD.banned_at 
-      OR NEW.ban_reason IS DISTINCT FROM OLD.ban_reason
+      OR NEW.banned_reason IS DISTINCT FROM OLD.banned_reason
     ) AND NOT public.is_admin() THEN
       NEW.is_banned := OLD.is_banned;
       NEW.banned_at := OLD.banned_at;
-      NEW.ban_reason := OLD.ban_reason;
+      NEW.banned_reason := OLD.banned_reason;
+    END IF;
+    -- 🛡️ BLINDAGEM FINANCEIRA: Usuários comuns não podem alterar status de assinatura diretamente
+    IF (
+      NEW.community_subscription_status IS DISTINCT FROM OLD.community_subscription_status
+      OR NEW.community_access_expires_at IS DISTINCT FROM OLD.community_access_expires_at
+      OR NEW.stripe_customer_id IS DISTINCT FROM OLD.stripe_customer_id
+      OR NEW.community_subscription_id IS DISTINCT FROM OLD.community_subscription_id
+    ) AND NOT public.is_admin() THEN
+      NEW.community_subscription_status := OLD.community_subscription_status;
+      NEW.community_access_expires_at := OLD.community_access_expires_at;
+      NEW.stripe_customer_id := OLD.stripe_customer_id;
+      NEW.community_subscription_id := OLD.community_subscription_id;
     END IF;
   END IF;
   RETURN NEW;
@@ -852,6 +874,7 @@ DROP POLICY IF EXISTS "Allow public update community_polls" ON public.community_
 DROP POLICY IF EXISTS "polls_select_auth" ON public.community_polls;
 DROP POLICY IF EXISTS "polls_insert_auth" ON public.community_polls;
 DROP POLICY IF EXISTS "polls_update_auth" ON public.community_polls;
+DROP POLICY IF EXISTS "polls_update_admin" ON public.community_polls;
 
 CREATE POLICY "polls_select_auth"
   ON public.community_polls FOR SELECT
@@ -859,11 +882,11 @@ CREATE POLICY "polls_select_auth"
 
 CREATE POLICY "polls_insert_auth"
   ON public.community_polls FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL);
+  WITH CHECK (public.is_admin());
 
-CREATE POLICY "polls_update_auth"
+CREATE POLICY "polls_update_admin"
   ON public.community_polls FOR UPDATE
-  USING (auth.uid() IS NOT NULL);
+  USING (public.is_admin());
 
 -- --------------------------------------------------------
 -- 13.1. TABELA DE VOTOS DE ENQUETES (PERSISTÊNCIA POR USUÁRIO)
@@ -910,41 +933,54 @@ CREATE INDEX IF NOT EXISTS idx_poll_votes_poll ON public.poll_votes(poll_id);
 CREATE OR REPLACE FUNCTION public.vote_on_poll(
   p_poll_id    UUID,
   p_option_id  TEXT,
-  p_profile_id UUID
+  p_profile_id UUID DEFAULT NULL
 )
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+  v_voter_id UUID := auth.uid();
 BEGIN
+  IF v_voter_id IS NULL THEN
+    RAISE EXCEPTION 'Usuário não autenticado';
+  END IF;
+
+  -- 🛡️ BLINDAGEM BOLA/IDOR: Garante que o voto é registrado pelo próprio usuário
+  IF p_profile_id IS NOT NULL AND p_profile_id <> v_voter_id AND NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Não autorizado a votar por outro usuário';
+  END IF;
+
   -- 1. Guard idempotente: ignora se o usuário já votou nesta enquete
   IF EXISTS (
     SELECT 1 FROM public.poll_votes
-    WHERE poll_id = p_poll_id AND profile_id = p_profile_id
+    WHERE poll_id = p_poll_id AND profile_id = v_voter_id
   ) THEN
     RETURN;
   END IF;
 
   -- 2. Registra o voto na tabela poll_votes (fonte da verdade do voto por usuário)
   INSERT INTO public.poll_votes (poll_id, profile_id, option_id, voted_at)
-  VALUES (p_poll_id, p_profile_id, p_option_id, NOW())
+  VALUES (p_poll_id, v_voter_id, p_option_id, NOW())
   ON CONFLICT (poll_id, profile_id) DO NOTHING;
 
-  -- 3. Incremento atômico no JSONB options e no total_votes de community_polls
-  UPDATE public.community_polls
-  SET
-    total_votes = total_votes + 1,
-    options = (
-      SELECT jsonb_agg(
-        CASE
-          WHEN (opt->>'id') = p_option_id
-          THEN jsonb_set(opt, '{votesCount}', to_jsonb(COALESCE((opt->>'votesCount')::int, 0) + 1))
-          ELSE opt
-        END
+  -- 3. Incremento atômico APENAS se o voto foi efetivamente inserido
+  IF FOUND THEN
+    UPDATE public.community_polls
+    SET
+      total_votes = total_votes + 1,
+      options = (
+        SELECT jsonb_agg(
+          CASE
+            WHEN (opt->>'id') = p_option_id
+            THEN jsonb_set(opt, '{votesCount}', to_jsonb(COALESCE((opt->>'votesCount')::int, 0) + 1))
+            ELSE opt
+          END
+        )
+        FROM jsonb_array_elements(options) AS opt
       )
-      FROM jsonb_array_elements(options) AS opt
-    )
-  WHERE id = p_poll_id;
+    WHERE id = p_poll_id;
+  END IF;
 END;
 $$;
 
@@ -966,6 +1002,7 @@ CREATE TABLE IF NOT EXISTS public.journeys (
   theme_color TEXT NOT NULL DEFAULT '#FF7F5B',
   bg_light TEXT NOT NULL DEFAULT '#fff0eb',
   icon_name TEXT NOT NULL DEFAULT 'Sun',
+  checkout_url TEXT,
   price NUMERIC NOT NULL DEFAULT 197,
   modules JSONB NOT NULL DEFAULT '[]'::jsonb,
   display_order INTEGER NOT NULL DEFAULT 0,
@@ -1224,12 +1261,15 @@ $$;
 ALTER TABLE public.moderation_rejected_examples ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow public read on moderation_rejected_examples" ON public.moderation_rejected_examples;
-CREATE POLICY "Allow public read on moderation_rejected_examples" ON public.moderation_rejected_examples
-  FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Allow all on moderation_rejected_examples" ON public.moderation_rejected_examples;
-CREATE POLICY "Allow all on moderation_rejected_examples" ON public.moderation_rejected_examples
-  FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "moderation_examples_select" ON public.moderation_rejected_examples;
+DROP POLICY IF EXISTS "moderation_examples_admin" ON public.moderation_rejected_examples;
+
+CREATE POLICY "moderation_examples_select" ON public.moderation_rejected_examples
+  FOR SELECT USING (public.is_admin());
+
+CREATE POLICY "moderation_examples_admin" ON public.moderation_rejected_examples
+  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- --------------------------------------------------------
 -- 35. PURGE DUMMY DATA & REAL EMOTIONAL THERMOMETER ACCESS
@@ -1446,7 +1486,7 @@ BEGIN
   END IF;
 
   -- 1. Excluir dados da comunidade
-  DELETE FROM public.community_reactions WHERE profile_id = current_user_id;
+  DELETE FROM public.community_reactions WHERE user_id = current_user_id;
   DELETE FROM public.community_reports WHERE reporter_id = current_user_id;
   DELETE FROM public.poll_votes WHERE profile_id = current_user_id;
   DELETE FROM public.community_comments WHERE author_id = current_user_id;
@@ -1461,9 +1501,10 @@ BEGIN
   DELETE FROM public.user_completed_lessons WHERE profile_id = current_user_id;
   DELETE FROM public.user_badges WHERE profile_id = current_user_id;
   DELETE FROM public.family_members WHERE profile_id = current_user_id;
-  DELETE FROM public.user_follows WHERE follower_id = current_user_id OR followed_id = current_user_id;
+  DELETE FROM public.user_follows WHERE follower_id = current_user_id::text OR followed_id = current_user_id::text;
   DELETE FROM public.push_subscriptions WHERE profile_id = current_user_id;
   DELETE FROM public.journey_interests WHERE user_id = current_user_id;
+  DELETE FROM public.user_purchased_journeys WHERE profile_id = current_user_id;
 
   -- 4. Excluir perfil público
   DELETE FROM public.profiles WHERE id = current_user_id;

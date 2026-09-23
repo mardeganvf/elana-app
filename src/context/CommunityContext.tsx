@@ -750,7 +750,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const { data, error } = await supabase
         .from('community_posts')
         .select('*, community_comments(*)')
-        .not('author_id', 'is', null)
+        .or('not.author_id.is.null,is_anonymous.eq.true')
         .order('created_at', { ascending: false })
         .range(0, PAGE_SIZE - 1);
 
@@ -827,7 +827,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       if (data) {
         const remotePosts: CommunityPost[] = data
-          .filter(p => p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-'))
+          .filter(p => p.is_anonymous || (p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-')))
           .map(mapPostFromDb)
           .filter(p => p.status !== 'removido_usuario');
 
@@ -932,19 +932,18 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       let query = supabase
         .from('community_posts')
         .select('*, community_comments(*)')
-        .not('author_id', 'is', null)
         .order('created_at', { ascending: false });
 
       let from = posts.length;
       if (target) {
         if (target.type === 'geral' && target.roomId) {
-          query = query.eq('transversal_room_id', target.roomId);
+          query = query.or('not.author_id.is.null,is_anonymous.eq.true').eq('transversal_room_id', target.roomId);
           from = posts.filter(p => p.transversalRoomId === target.roomId).length;
         } else if (target.type === 'jornada' && target.journeyId) {
-          query = query.eq('journey_id', target.journeyId);
+          query = query.or('not.author_id.is.null,is_anonymous.eq.true').eq('journey_id', target.journeyId);
           from = posts.filter(p => p.journeyId === target.journeyId).length;
         } else if (target.type === 'idade' && target.ageId) {
-          query = query.eq('age_bracket_id', target.ageId);
+          query = query.or('not.author_id.is.null,is_anonymous.eq.true').eq('age_bracket_id', target.ageId);
           from = posts.filter(p => p.ageBracketId === target.ageId).length;
         } else if (target.type === 'minhas-publicacoes') {
           if (!user?.id) {
@@ -954,6 +953,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           query = query.eq('author_id', user.id);
           from = posts.filter(p => p.authorId === user.id).length;
         }
+      } else {
+        query = query.or('not.author_id.is.null,is_anonymous.eq.true');
       }
 
       const to = from + PAGE_SIZE - 1;
@@ -968,7 +969,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const stored = getStoredReactionsData();
         const userKey = user?.id || 'anon';
         const newPosts: CommunityPost[] = data
-          .filter(p => p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-'))
+          .filter(p => p.is_anonymous || (p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-')))
           .map(mapPostFromDb)
           .filter(p => p.status !== 'removido_usuario')
           .map(p => ({
@@ -1033,22 +1034,23 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       let query = supabase
         .from('community_posts')
         .select('*, community_comments(*)')
-        .not('author_id', 'is', null)
         .order('created_at', { ascending: false })
         .limit(PAGE_SIZE);
 
       if (selection.type === 'geral' && selection.roomId) {
-        query = query.eq('transversal_room_id', selection.roomId);
+        query = query.or('not.author_id.is.null,is_anonymous.eq.true').eq('transversal_room_id', selection.roomId);
       } else if (selection.type === 'jornada' && selection.journeyId) {
-        query = query.eq('journey_id', selection.journeyId);
+        query = query.or('not.author_id.is.null,is_anonymous.eq.true').eq('journey_id', selection.journeyId);
       } else if (selection.type === 'idade' && selection.ageId) {
-        query = query.eq('age_bracket_id', selection.ageId);
+        query = query.or('not.author_id.is.null,is_anonymous.eq.true').eq('age_bracket_id', selection.ageId);
       } else if (selection.type === 'minhas-publicacoes') {
         if (!user?.id) {
           setIsRoomLoading(false);
           return;
         }
         query = query.eq('author_id', user.id);
+      } else {
+        query = query.or('not.author_id.is.null,is_anonymous.eq.true');
       }
 
       const { data, error } = await query;
@@ -1091,7 +1093,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         } catch {}
 
         const mappedPosts: CommunityPost[] = data
-          .filter(p => p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-'))
+          .filter(p => p.is_anonymous || (p.author_id && p.author_id.length > 20 && !p.author_id.startsWith('u-')))
           .map(mapPostFromDb)
           .filter(p => p.status !== 'removido_usuario')
           .map(p => ({

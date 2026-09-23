@@ -401,8 +401,8 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
             </div>
           </div>
 
-          {/* Grade 2 Colunas: Bio na esquerda, Minha Família na direita */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+          {/* Bio (e Minha Família apenas visível para o próprio usuário por privacidade infantil - LGPD Art. 14) */}
+          <div className={`grid grid-cols-1 ${isOwnProfile && childrenList.length > 0 ? 'md:grid-cols-2' : ''} gap-4 items-stretch`}>
             {/* 1. Um pouquinho sobre mim... (Bio) */}
             <div className="bg-[#070D0F] p-4 rounded-2xl border border-white/5 flex flex-col justify-between">
               <div>
@@ -415,29 +415,31 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
               </div>
             </div>
 
-            {/* 2. Minha Família */}
-            <div className="bg-[#070D0F] p-4 rounded-2xl border border-white/5 space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Baby className="w-4 h-4 text-[#FF7F5B]" />
-                  Minha Família
-                </h4>
-              </div>
+            {/* 2. Minha Família (Apenas para o próprio perfil - proteção de dados de menores) */}
+            {isOwnProfile && childrenList.length > 0 && (
+              <div className="bg-[#070D0F] p-4 rounded-2xl border border-white/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Baby className="w-4 h-4 text-[#FF7F5B]" />
+                    Minha Família <span className="text-[10px] text-slate-500 font-normal lowercase">(visível apenas para você)</span>
+                  </h4>
+                </div>
 
-              <div className="grid grid-cols-1 gap-2.5">
-                {childrenList.map((child, idx) => (
-                  <div key={child.id || idx} className="bg-[#101B1E] border border-white/10 p-2.5 rounded-xl flex items-center gap-3 shadow-sm">
-                    <div className="shrink-0 p-2 bg-[#FF7F5B]/10 border border-[#FF7F5B]/20 rounded-xl flex items-center justify-center text-[#FF7F5B]">
-                      <Baby className="w-4 h-4" />
+                <div className="grid grid-cols-1 gap-2.5">
+                  {childrenList.map((child, idx) => (
+                    <div key={child.id || idx} className="bg-[#101B1E] border border-white/10 p-2.5 rounded-xl flex items-center gap-3 shadow-sm">
+                      <div className="shrink-0 p-2 bg-[#FF7F5B]/10 border border-[#FF7F5B]/20 rounded-xl flex items-center justify-center text-[#FF7F5B]">
+                        <Baby className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-bold text-white truncate">{child.name || 'Filho(a)'}</h4>
+                        <span className="text-[11px] text-slate-300 font-semibold block">{child.age}</span>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-xs font-bold text-white truncate">{child.name || 'Filho(a)'}</h4>
-                      <span className="text-[11px] text-slate-300 font-semibold block">{child.age}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* 4. Minha Evolução (Sem o botão de 15 níveis) */}

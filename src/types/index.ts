@@ -140,10 +140,6 @@ export const getCommunityAccessInfo = (user?: UserProfile | null): CommunityAcce
       return { hasAccess: true, type: 'trial_bonus', daysRemaining: days };
     }
   }
-  // Se o usuário comprou qualquer jornada no passado, garante acesso como cortesia
-  if (user.purchasedJourneyIds && user.purchasedJourneyIds.length > 0) {
-    return { hasAccess: true, type: 'journey_courtesy', daysRemaining: null };
-  }
   return { hasAccess: false, type: 'none', daysRemaining: 0 };
 };
 

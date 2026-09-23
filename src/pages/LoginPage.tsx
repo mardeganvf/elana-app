@@ -3,6 +3,7 @@ import { useAuth, GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { validateStrongPassword } from '../utils/validators';
 import { ResetPasswordModal } from '../components/auth/ResetPasswordModal';
+import { LegalModal, LegalModalType } from '../components/legal/LegalModal';
 import { RefreshCw, CheckCircle2, AlertCircle, Mail, Phone, KeyRound, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import logoElana from '../assets/logo-elana.png';
 
@@ -28,6 +29,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [legalModalType, setLegalModalType] = useState<LegalModalType>(null);
 
   // 6-Digit Email Verification Code State
   const [inputCode, setInputCode] = useState('');
@@ -91,6 +94,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     setPassword('');
     setConfirmPassword('');
     setInputCode('');
+    setAcceptedTerms(false);
     resetStates();
   };
 
@@ -113,6 +117,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
       if (mode === 'register') {
         if (!name.trim()) {
           setErrorMessage('Por favor, informe seu nome completo.');
+          setLoading(false);
+          return;
+        }
+
+        if (!acceptedTerms) {
+          setErrorMessage('Você precisa concordar com os Termos de Uso e a Política de Privacidade para criar sua conta.');
           setLoading(false);
           return;
         }
@@ -590,6 +600,36 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                   </div>
                 </div>
               </div>
+            {/* TERMS AND PRIVACY CHECKBOX IN REGISTER MODE */}
+            {mode === 'register' && (
+              <div className="flex items-start gap-2.5 pt-1">
+                <input
+                  type="checkbox"
+                  id="terms-loginpage"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-white/20 bg-[#101B1E] text-[#FF7F5B] focus:ring-[#FF7F5B] cursor-pointer shrink-0"
+                />
+                <label htmlFor="terms-loginpage" className="text-xs text-slate-400 select-none cursor-pointer leading-tight">
+                  Li e concordo com os{' '}
+                  <button
+                    type="button"
+                    onClick={() => setLegalModalType('terms')}
+                    className="text-[#FF7F5B] hover:underline font-semibold cursor-pointer"
+                  >
+                    Termos de Uso
+                  </button>{' '}
+                  e com a{' '}
+                  <button
+                    type="button"
+                    onClick={() => setLegalModalType('privacy')}
+                    className="text-[#FF7F5B] hover:underline font-semibold cursor-pointer"
+                  >
+                    Política de Privacidade
+                  </button>
+                  .
+                </label>
+              </div>
             )}
 
             {/* SUBMIT BUTTON */}
@@ -707,6 +747,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             onSuccess(false);
           }
         }}
+      {/* LEGAL MODAL (TERMS & PRIVACY) */}
+      <LegalModal
+        type={legalModalType}
+        onClose={() => setLegalModalType(null)}
       />
 
       {/* Footer copyright */}

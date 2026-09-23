@@ -1,371 +1,753 @@
-# 🛡️ Diagnóstico de Pré-Lançamento — Elana Academy
-**Relatório Oficial de Auditoria Sênior 360º (Engenharia, AppSec, Dados, LGPD, UX & Produto)**  
-**Data da Auditoria:** 18 de Setembro de 2026 (Atualizado 17:50 BRT)  
+# 🛡️ Diagnóstico de Pré-Lançamento 360º — Elana Academy
+
+**Relatório Oficial de Auditoria Sênior Multidisciplinar**  
+**Data da Auditoria:** 22 de Setembro de 2026  
 **Status do Projeto:** Pré-Lançamento Comercial  
-**Escopo Auditado:** Aplicação Web/PWA (`05. App`), Banco de Dados Supabase (Schema & RLS), Edge Functions Deno, Políticas de Privacidade/LGPD e Documentação Institucional (`01. Institucional` a `04. Quizz`).
+**Perspectivas Integradas:** Arquitetura & Engenharia, Segurança (AppSec), Banco de Dados, Infraestrutura & DevOps, Qualidade & Testes, Produto & Monetização, UX & Acessibilidade, Privacidade & LGPD, Comunidade & Moderação, Analytics & Métricas.  
+**Escopo Auditado:** Aplicação Web/PWA (`/05. App`), Banco de Dados Supabase (Schema, RLS, Triggers e RPCs), Supabase Edge Functions (Deno), Configurações de Deploy (Vercel & Docker/Nginx), Integrações Externas (Stripe, Panda Video, Google Gemini AI) e Conformidade Legal.
 
 ---
 
 ## 1. 📊 Resumo Executivo
 
-A aplicação **Elana Academy** apresenta um trabalho de engenharia e produto de altíssimo nível no que tange à sua identidade de marca, acolhimento visual, arquitetura de componentes e sensibilidade no tratamento dos temas parentais. A experiência do usuário nas áreas de Comunidade, Diário Emocional, Gamificação e no recém-implementado **Quiz Diagnóstico Parental** reflete fidelidade aos valores pedagógicos da plataforma.
+### 1.1. Visão Geral da Maturidade do Sistema
+A plataforma **Elana Academy** apresenta uma proposta de valor de altíssima sensibilidade pedagógica e acolhimento humano. O design system, a paleta visual acolhedora, os fluxos da Comunidade (salas temáticas, confessionário anônimo, diário emocional) e o **Quiz Diagnóstico Parental** recém-integrado demonstram um produto com enorme apelo de engajamento para mães, pais e educadores.
 
-Houve uma evolução substancial em relação a versões anteriores: as falhas estruturais de auto-desbanimento, vazamento de check-ins emocionais, ausência de exclusão de conta (LGPD Art. 18) e brechas no Service Worker foram devidamente sanadas no código.
+Contudo, sob a ótica de engenharia, segurança e prontidão operacional para abertura comercial, **o sistema real diverge criticamente do que é necessário para operar com segurança financeira, jurídica e de dados**. 
 
-Com as correções técnicas aplicadas na Fase 2 (blindagem de RLS executada no Supabase, índices compostos de paginação aplicados, CSP aberto para Sentry e histórico de navegação com History API implementado), **toda a infraestrutura de engenharia, segurança e dados está pronta**. Os itens restantes dependem exclusivamente das definições comerciais e operacionais (links da plataforma de checkout, segredo do webhook e upload dos vídeos do Módulo 2).
+Foram identificados **48 achados técnicos**, distribuídos em 10 áreas, incluindo **8 vulnerabilidades/falhas bloqueadoras (🔴 Críticas)** e **15 de alta severidade (🟠 Altas)**. Os pilares de monetização, faturamento, privacidade infantil e segurança do backend possuem brechas ativas que inviabilizam a abertura imediata ao público pagante.
 
-### 🎯 Nota de Prontidão Atualizada: **8.2 / 10**
+---
 
-```mermaid
-pie title Distribuição dos Achados Restantes
-    "🔴 Bloqueador Operacional/Comercial" : 3
-    "🟠 Risco Alto Restante (PDFs)" : 1
-    "🟡 Médio (Pós-Lançamento)" : 4
-    "🟢 Baixo (Débito Técnico)" : 3
+### 1.2. Decisão do Launch Gate: **🔴 NÃO RECOMENDADO / BLOQUEADO**
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                      DECISÃO OFICIAL DE LANÇAMENTO                     │
+│                                                                        │
+│                🔴 BLOQUEADO PARA LANÇAMENTO COMERCIAL                  │
+│                                                                        │
+│ O sistema NÃO DEVE ser aberto para tráfego pago ou clientes reais      │
+│ até que os 8 bloqueadores de faturamento, segurança e LGPD             │
+│ sejam corrigidos e verificados.                                        │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### 🚨 Os 5 Maiores Riscos para o Lançamento Hoje
+### 1.3. Justificativa Clara da Decisão & Os 8 Maiores Bloqueadores (P0)
 
-1. **Funil de Monetização Interrompido (Ausência de `checkoutUrl`):**  
-   Nenhuma das 6 jornadas no catálogo possui URL de checkout configurada. O modal de vendas exibe apenas aviso de inscrições fechadas para alunos reais. Nenhum cliente consegue comprar de forma autônoma.
-2. **Conteúdo Incompleto Vendido como Disponível:**  
-   O Módulo 2 da jornada *"Pais Recém-Nascidos"* possui 12 aulas apontando para vídeos abertos de demonstração do Google (`ForBiggerJoylikes.mp4`, `Sintel.mp4`) com duração `'- min'`, mas a jornada está marcada como disponível (`isComingSoon: false`).
-3. **Risco de Falha Silenciosa em Pagamentos via Webhook:**  
-   A Edge Function `webhook-checkout` foi blindada para rejeitar com HTTP 500 caso a variável de ambiente `WEBHOOK_SECRET` não esteja configurada no Supabase. Se o segredo não for aplicado no dashboard de produção antes do tráfego, 100% dos pagamentos legítimos da Kiwify/Hotmart serão rejeitados.
-4. **Dependência de Aplicação Manual de Migrações de Segurança no Banco Remoto:**  
-   As correções críticas de RLS (`destaques`, `journey_interests`, `user-media`, `protect_profile_role`) constam no repositório de código, mas precisam de confirmação mandatória de execução na instância remota do Postgres no Supabase.
-5. **Bloqueio de Observabilidade e Error Tracking pelo CSP:**  
-   A Content Security Policy (CSP) configurada em `vercel.json` e `nginx.conf` bloqueia o envio de relatórios para o Sentry (`*.sentry.io`), tornando o time cego para erros em tempo real no navegador dos usuários durante o lançamento.
-
----
-
-## 2. 🗺️ Mapa do Sistema
-
-### 2.1. Stack Tecnológica Real vs. Esperada
-* **Frontend:** React 18.3 + TypeScript + Vite 5 + TailwindCSS.
-* **Estado Global:** React Context API modular (`AuthContext`, `CommunityContext`, `JourneysContext`, `DestaquesContext`, `FontSizeContext`, `ToastContext`).
-* **Backend as a Service:** Supabase (PostgreSQL 15, Row Level Security, pgvector, GoTrue Auth, Realtime, Storage).
-* **Serverless Backend:** Supabase Edge Functions (Deno / TypeScript):
-  * `webhook-checkout`: Processamento transacional de vendas (Kiwify/Hotmart) com auto-provisionamento de alunos.
-  * `moderate-content`: Moderação de conteúdo com Google Gemini 1.5 Flash + pgvector (embeddings) + regex de contingência.
-  * `send-push-notification`: Notificações Web Push via padrão VAPID.
-  * `update-user-email`: Atualização segura de e-mail com verificação de senha.
-* **Streaming de Vídeo:** Panda Video (Player embed responsivo via iframe seguro) + Fallback HTML5.
-* **PWA / Offline:** Service Worker com cache-first para estáticos e bypass total de requisições de API.
-
-### 2.2. Arquitetura de Dados e Persistência
-O banco de dados conta com mais de 20 tabelas relacionais com RLS estrito:
-* **Identidade & Gamificação:** `profiles`, `family_members`, `user_badges`, `user_points_history`.
-* **Pedagógico & Paywall:** `user_purchased_journeys`, `user_completed_lessons`, `user_lesson_notes`, `journey_interests`.
-* **Comunidade & Interação:** `community_posts`, `community_comments`, `community_reactions`, `community_comment_reactions`, `community_polls`, `community_poll_votes`, `community_reports`.
-* **Apoio Emocional & Moderação:** `emotional_checkins`, `sos_emergency_calls`, `moderation_rejected_examples` (pgvector).
-* **Comercial:** `orders`.
-
-### 2.3. Fluxos Críticos Auditados
-1. **Onboarding & Tour Guiado:** Funciona sem travas após o ajuste para `targetSelector: null`, integrando-se à gamificação com concessão automática de medalha.
-2. **Quiz Diagnóstico Parental:** Implementado com questionário preliminar de idade dos filhos, 15 perguntas de identificação arquetípica, cálculo balanceado de poder dominante/secundário e dossiê parental detalhado.
-3. **Reprodução de Aulas:** Player do Panda Video funcional no Módulo 1 de PRN, com caderno de notas persistente no Supabase e auto-conclusão de aula ao término do vídeo.
-4. **Moderação Comunitária:** Pipeline híbrido (IA Gemini + Memória Semântica pgvector + Regex emergencial) protegendo contra discursos nocivos e sinalizando ideações para suporte prioritário/CVV.
-5. **Exclusão de Conta (LGPD):** Função `delete_own_account()` com `SECURITY DEFINER` exposta no menu de configurações do perfil com modal de confirmação.
+1. **Bypass Criptográfico Total no Webhook da Stripe ([SEC-01]):**  
+   A Edge Function `webhook-checkout` **não valida a assinatura criptográfica da Stripe** (`stripe.webhooks.constructEvent` inexiste). Qualquer pessoa com conhecimento básico de HTTP pode enviar um POST falsificado de `checkout.session.completed` e liberar acesso vitalício a cursos e à comunidade para qualquer usuário sem pagar nada.
+2. **Segredo de Webhook Stripe Hardcoded no Repositório ([SEC-02]):**  
+   O arquivo `supabase/functions/webhook-checkout/index.ts:10` contém um segredo de webhook em texto claro (`whsec_***`) exposto no repositório Git.
+3. **Fraude de Assinatura via RLS no Próprio Perfil ([SEC-03]):**  
+   A política de RLS em `profiles` permite que qualquer usuário autenticado altere seu próprio `community_subscription_status` para `'active'` e seu `community_access_expires_at` para `'2099-12-31'` via console do navegador, contornando a mensalidade de R$ 9,90/mês.
+4. **Vazamento de PII e Dados de Crianças / Violação Grave LGPD ([PRIV-01] / [SEC-05]):**  
+   A política `profiles_select_auth` permite que qualquer usuário registrado leia toda a tabela `profiles`. Além disso, o app salva nomes completos e idades dos filhos em `profiles.family_tag` e o `PublicProfileModal` exibe publicamente essas informações na comunidade, violando diretamente o Art. 14 da LGPD.
+5. **Função de Exclusão de Conta Quebrada no Banco / Risco Legal ([PRIV-03] / [DB-02]):**  
+   A RPC `delete_own_account()` falha com erro SQL (`column "profile_id" of relation "community_reactions" does not exist`), impedindo que qualquer usuário exerça seu direito de exclusão (Art. 18 da LGPD e Guideline 5.1.1 da Apple App Store).
+6. **Links de Venda em Modo de Teste da Stripe ([PROD-01]):**  
+   Todos os links de checkout em `src/data/journeysData.ts` apontam para o ambiente Sandbox da Stripe (`buy.stripe.com/test_***`), tornando impossível o faturamento real.
+7. **Conteúdo Incompleto Vendido como Disponível ([PROD-02]):**  
+   O Módulo 2 da jornada *"Pais Recém-Nascidos"* (a única jornada aberta para venda) possui 17 aulas com vídeos de teste públicos do Google (`ForBiggerJoylikes.mp4`, `Sintel.mp4`) com duração `'- min'`. Além disso, o modal de checkout promete "PDFs de apoio para download", mas existem **zero** materiais anexados nas aulas.
+8. **Bug Estrutural no Confessionário Anônimo ([PRIV-02] / [DB-04]):**  
+   O trigger do banco define `author_id = NULL` para posts anônimos, mas a query do frontend filtra `.not('author_id', 'is', null)`. Resultado: 100% dos desabafos anônimos desaparecem do feed logo após o envio ou recarga da página.
 
 ---
 
-## 3. 📋 Divergências entre Escopo e Implementação
+### 1.4. Resumo Quantitativo dos Achados por Severidade
 
-Comparativo detalhado entre a documentação de planejamento institucional (`01. Institucional` a `04. Quizz`) e o código real em produção:
+```mermaid
+pie title Distribuição de Severidade dos Achados (Total: 48)
+    "🔴 Crítica / Bloqueador (8)" : 8
+    "🟠 Alta (15)" : 15
+    "🟡 Média (18)" : 18
+    "🟢 Baixa / Débito Técnico (7)" : 7
+```
 
-| Item do Escopo | O que foi Especificado / Planejado | O que está Implementado no Código | Status | Impacto no Lançamento |
-| :--- | :--- | :--- | :---: | :--- |
-| **Quiz Diagnóstico Parental** | Questionário de 15 perguntas mapeando arquétipos parentais e indicando jornadas. | Totalmente implementado em [`src/pages/QuizPage.tsx`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/QuizPage.tsx), com perguntas prévias de filhos/idades, dossiê equilibrado e salvamento no perfil. | ✅ Concluído | **Positivo:** Grande valor agregado para topo de funil e retenção. |
-| **Catálogo de 6 Jornadas** | 6 Jornadas temáticas gravadas e prontas para comercialização. | Apenas o Módulo 1 de PRN tem vídeos finais do Panda Video. Módulo 2 de PRN e jornadas 2 a 6 usam vídeos open-source de demonstração. | ⚠️ Parcial | **Crítico:** Usuários pagantes encontrarão vídeos de teste caso acessem o Módulo 2. |
-| **Checkout & Paywall** | Venda automatizada integrada com plataformas de pagamento. | A Edge Function processa o webhook, mas nenhuma jornada possui `checkoutUrl` no front-end. Botão simula turmas fechadas para clientes. | ⚠️ Parcial | **Bloqueador:** Nenhuma venda pode ser iniciada pelo site. |
-| **Materiais Complementares (PDFs)** | E-books, resumos e checklists diagramados para download nas aulas. | PDFs de alta qualidade existem no repositório institucional (`PRN - e-Book_Checklist.pdf`), mas nenhuma aula tem o array `resources` preenchido. | ⚠️ Parcial | **Médio:** Aba de materiais exibe estado vazio para os alunos. |
-| **Comunidade & Interações** | Salas temáticas, salas de jornada, enquetes, confessionário e respeito mútuo. | Sistema completo de posts, comentários, reações e enquetes com paginação de 15 em 15 tópicos e ordenação cronológica. | ✅ Concluído | **Positivo:** Espaço social pronto para uso. |
-| **Termos de Uso e LGPD** | Conformidade com a Lei Geral de Proteção de Dados e consentimento formal. | Modais de Termos e Privacidade criados, checkbox de aceite obrigatório ativo no cadastro e exclusão de conta funcional. | ✅ Concluído | **Positivo:** Conformidade legal estabelecida. |
+---
+
+## 2. 🗺️ Mapa do Sistema Real
+
+### 2.1. Arquitetura Implementada de Fato
+
+```mermaid
+graph TD
+    User([Usuário / Mobile & Desktop]) -->|HTTPS / WSS| Vercel[Vercel CDN / Edge]
+    Vercel --> SPA[React 18.2 SPA + Vite 5 + TailwindCSS]
+    
+    subgraph Cliente Browser
+        SPA --> AuthCtx[AuthContext - Sessão & Cache Local]
+        SPA --> CommCtx[CommunityContext - Feed & Moderação]
+        SPA --> JourneysCtx[JourneysContext - Aulas & Progresso]
+        SPA --> LocalStorage[localStorage: elana_user_session]
+    end
+
+    subgraph Supabase BaaS (us-east-2)
+        AuthCtx -->|GoTrue Auth| SupaAuth[Supabase Auth / auth.users]
+        AuthCtx -->|REST / PostgREST| SupaDB[(PostgreSQL 15 - public)]
+        CommCtx -->|Realtime WebSockets| SupaRealtime[Supabase Realtime]
+        JourneysCtx -->|PostgREST| SupaDB
+    end
+
+    subgraph Supabase Edge Functions (Deno)
+        CommCtx -->|invoke| FnMod[moderate-content]
+        AuthCtx -->|invoke| FnEmail[update-user-email]
+        Browser -->|PWA Push| FnPush[send-push-notification]
+        StripeCheckout -->|Webhook HTTP POST| FnHook[webhook-checkout]
+    end
+
+    subgraph Provedores Externos
+        FnHook -->|Eventos de Pagamento| Stripe[Stripe Checkout & Billing]
+        FnMod -->|Embeddings & Análise| Gemini[Google Gemini 1.5 Flash API]
+        FnMod -->|Vetores 768d| PgVector[(pgvector - moderation_rejected_examples)]
+        SPA -->|Iframe Player v2| Panda[Panda Video CDN]
+        SPA -->|Error Tracking| Sentry[Sentry React SDK - Desativado por DSN ausente]
+    end
+```
+
+---
+
+### 2.2. Componentes Críticos e Dependências
+* **Frontend Web & PWA:** React 18.2 + Vite 5.1 + TailwindCSS 3.4. Roteamento via estado (`activeTab`) com History API (`pushState` e `popstate`).
+* **Autenticação:** Supabase GoTrue Auth (e-mail/senha, OTP, Google OAuth). Armazena token JWT sob a chave `sb-mixedzmkjfzumeimfkfz-auth-token`.
+* **Banco de Dados Relacional:** Supabase PostgreSQL 15 com extensão `pgvector`. RLS ativo em todas as 16 tabelas principais.
+* **Serverless Backend:** 4 Edge Functions Deno em execução:
+  - `webhook-checkout`: Provisionamento automático pós-venda.
+  - `moderate-content`: Pipeline híbrido (Gemini AI + pgvector) de moderação.
+  - `send-push-notification`: WebPush com VAPID.
+  - `update-user-email`: Atualização administrativa de e-mail de usuário.
+* **Mídia & Streaming:** Panda Video (`player.pandavideo.com.br`) integrado via `<iframe>` e comunicação bidirecional por `postMessage`.
+
+---
+
+### 2.3. Fluxo dos Dados Mais Sensíveis
+
+#### A. Autenticação & Troca de E-mail
+* **Login/Registro:** Submete credenciais via `@supabase/supabase-js`. O `AuthContext` hidrata o perfil executando 7 queries sequenciais (`profiles`, `user_badges`, `emotional_checkins`, `user_purchased_journeys`, `user_completed_lessons`, `user_lesson_notes`, `family_members`).
+* **Troca de E-mail:** Inicia verificação OTP no cliente e em seguida invoca `update-user-email`. **Vulnerabilidade:** A Edge Function atualiza `auth.users` com `email_confirm: true` confiando apenas no JWT da sessão, sem validar se o e-mail novo foi de fato comprovado no servidor.
+
+#### B. Pagamentos & Provisionamento
+* O usuário clica no botão "Começar Jornada" e é redirecionado via `window.open` para um Payment Link da Stripe.
+* A Stripe dispara `checkout.session.completed` para a Edge Function `webhook-checkout`.
+* **Risco Máximo:** A Edge Function não valida a assinatura criptográfica, permitindo forjamento de compras.
+
+#### C. Dados de Filhos e Menores (LGPD Art. 14)
+* Cadastrados em `DashboardPage.tsx` e armazenados em `public.family_members` e replicados como string JSON em `profiles.family_tag`.
+* **Vazamento:** Como qualquer usuário autenticado pode ler a tabela `profiles`, os dados de filhos de toda a base de usuários estão acessíveis.
+
+#### D. Desabafos e Diário Emocional
+* `emotional_checkins` possui RLS restrito a `profile_id = auth.uid()`.
+* Confessionário Anônimo: O banco apaga o `author_id` via trigger, mas o front-end filtra posts com `author_id = null`, fazendo os posts sumirem da listagem.
+
+---
+
+## 3. 📋 Matriz de Escopo x Implementação
+
+| Módulo / Funcionalidade | Status da Implementação | Evidência no Código | Impacto no Lançamento |
+| :--- | :---: | :--- | :--- |
+| **Catálogo de Jornadas (6 Cursos)** | ⚠️ **DIVERGENTE** | `src/data/journeysData.ts:28-374` | Apenas Módulo 1 de 1 curso tem vídeos reais. Restante são vídeos de teste do Google. |
+| **Checkout de Jornadas (Stripe)** | 🔴 **DIVERGENTE** | `src/data/journeysData.ts:40, 102, 164` | URLs configuradas apontam para `buy.stripe.com/test_***`. Nenhuma venda real é processada. |
+| **Assinatura da Comunidade (R$ 9,90)** | 🔴 **DIVERGENTE** | `src/data/journeysData.ts:16` e `types/index.ts:143` | URL de assinatura em modo de teste; regra de 90 dias no frontend concede cortesia vitalícia (`journey_courtesy`). |
+| **Webhook de Provisionamento** | 🔴 **BLOQUEADOR** | `supabase/functions/webhook-checkout/index.ts:66-83` | Assinatura Stripe ignorada. Qualquer um pode forjar compras e liberar cursos grátis. |
+| **Confessionário Anônimo** | 🔴 **DIVERGENTE** | `CommunityContext.tsx:753, 935` | Posts anônimos desaparecem do feed logo após a publicação. |
+| **Exclusão de Conta (LGPD Art. 18)** | 🔴 **DIVERGENTE** | `supabase_schema.sql:1449` | Erro SQL `column "profile_id" does not exist`. Exclusão falha 100% das vezes. |
+| **Moderação Automática (Gemini + pgvector)** | 🟡 **PARCIAL** | `supabase/functions/moderate-content/index.ts` | Funciona, mas rota pública permite abuso de cota e tabela de exemplos tem RLS aberto para wipe total. |
+| **Diário Emocional / Termômetro** | 🟢 **COMPLETO** | `supabase_schema.sql:401`, `CommunityPage.tsx` | RLS blindado (`profile_id = auth.uid()`), histórico persistente e visual acolhedor. |
+| **Gamificação, Níveis e Badges** | 🟡 **PARCIAL** | `AuthContext.tsx:1140-1160` | Interface completa, mas XP e Nível são calculados no client e salvos sem validação server-side. |
+| **Suporte Emocional / SOS** | 🟠 **DIVERGENTE** | `supabase_schema.sql:677` | RLS permite que o próprio usuário edite `admin_reply` e status do chamado SOS. |
+| **Observabilidade e Sentry** | 🔴 **AUSENTE** | `src/lib/sentry.ts:3`, `.env` | `VITE_SENTRY_DSN` não configurada. Zero rastreamento de erros em produção. |
+| **Analytics (GA4 / Pixel / UTMs)** | 🔴 **AUSENTE** | `index.html`, `src/App.tsx` | Zero scripts de Google Analytics, Meta Pixel ou persistência de UTMs. Cegueira de marketing. |
+| **Testes Automatizados** | 🔴 **AUSENTE** | `package.json:6-11` | 0 testes unitários, 0 testes de integração, 0 testes E2E configurados no projeto. |
 
 ---
 
 ## 4. 🔍 Achados Detalhados por Área
 
-### 4.1. 🔴 Nível Crítico (P0) — Bloqueadores de Lançamento
+### 4.1. Arquitetura e Engenharia de Software
 
-#### [P0-1] Inexistência de URLs de Checkout Comercial (`checkoutUrl`) em Todas as Jornadas
-* **Severidade:** Crítica (P0)
-* **Área:** Produto / Comercial / Arquitetura
-* **Localização:** [`src/data/journeysData.ts:3-366`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/data/journeysData.ts#L3-L366) e [`src/components/catalog/CheckoutModal.tsx:121-157`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/catalog/CheckoutModal.tsx#L121-L157)
-* **Evidência:**
-  ```typescript
-  // Em CheckoutModal.tsx:
-  {journey.checkoutUrl ? (
-    <button onClick={handleGoToCheckout} ...>
-      Ir para o Pagamento Seguro
-    </button>
-  ) : (
-    <div className="text-center p-3 rounded-xl bg-amber-500/10 ...">
-      As inscrições para esta turma serão abertas em breve.
-    </div>
-  )}
-  ```
-* **Comportamento Atual:** Nenhuma das 6 jornadas possui o campo `checkoutUrl` definido. Ao clicar em "Quero Participar", usuários regulares veem a mensagem de inscrições fechadas e não possuem link ou botão para comprar.
-* **Impacto:** O funil de conversão comercial está 100% inoperante. Investimentos em tráfego ou campanhas de lançamento serão desperdiçados.
-* **Risco:** Perda total de faturamento no dia do lançamento.
-* **Correção Recomendada:** Inserir as URLs de checkout da Kiwify ou Hotmart no objeto de cada jornada ativa em `src/data/journeysData.ts` (especialmente `pais-recem-nascidos`).
-* **Esforço:** P (30 minutos)
-* **Dependências:** Obtenção dos links reais dos produtos cadastrados na Kiwify/Hotmart.
-* **Como Validar:** Clicar no botão de compra com um usuário deslogado ou comum e verificar o redirecionamento com passagem correta de `email` e `name` para o checkout externo.
+#### [ENG-01] Paywall e Aulas Expostas Diretamente no Bundle do Cliente
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`src/data/journeysData.ts:28-374`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/data/journeysData.ts#L28-L374) e [`src/pages/ClassroomPage.tsx:425-427`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/ClassroomPage.tsx#L425-L427)
+- **Impacto:** Todas as URLs de streaming do Panda Video e do Google Storage de todas as 6 jornadas estão em texto claro no JavaScript compilado. Qualquer usuário inspecionando o código ou modificando `purchasedJourneyIds` no `localStorage` tem acesso irrestrito às aulas sem pagar.
+- **Causa-Raiz:** Falta de proteção de conteúdo por DRM ou URLs assinadas de expiração curta (`One-Time Tokens`) no backend.
+- **Recomendação:** Implementar geração de embed tokens autenticados via Edge Function que valida se o usuário possui registro em `user_purchased_journeys`.
+- **Complexidade:** Média (3 a 4 horas).
+
+#### [ENG-02] Encadeamento Sequencial Excessivo na Hidratação de Sessão
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`src/context/AuthContext.tsx:472-680`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/context/AuthContext.tsx#L472-L680)
+- **Impacto:** A função `fetchFullUserProfile` executa 7 requisições `await` lineares ao Supabase (`profiles`, `user_badges`, `emotional_checkins`, `user_purchased_journeys`, `user_completed_lessons`, `user_lesson_notes`, `family_members`). Em conexões 3G/4G, isso acrescenta 2 a 3 segundos de espera no login.
+- **Causa-Raiz:** Ausência de paralelização ou de uma RPC Postgres consolidada.
+- **Recomendação:** Substituir por `Promise.allSettled` ou criar uma função RPC `get_my_full_profile()` que retorna todo o agregado em um único roundtrip.
+- **Complexidade:** Baixa (1 hora).
+
+#### [ENG-03] Falta de Fallback no Player Panda Video
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`src/pages/ClassroomPage.tsx:590-605`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/ClassroomPage.tsx#L590-L605)
+- **Impacto:** Se o aluno estiver em rede restrita, usando adblocker ou o CDN do Panda oscilar, o player vira um retângulo preto sem aviso ou botão de recarregar.
+- **Causa-Raiz:** O iframe não possui monitoramento de handshake via `postMessage` nem timeout de carga.
+- **Recomendação:** Adicionar timeout de 6 segundos: se nenhum evento `panda_play` ou handshake responder, renderizar aviso amigável com botão "Recarregar aula".
+- **Complexidade:** Baixa (45 min).
 
 ---
 
-#### [P0-2] Módulo 2 da Jornada Ativa com Vídeos Placeholder Open-Source
-* **Severidade:** Crítica (P0)
-* **Área:** Conteúdo / QA / Reputação
-* **Localização:** [`src/data/journeysData.ts:48-65`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/data/journeysData.ts#L48-L65)
-* **Evidência:**
+### 4.2. Segurança da Informação e AppSec
+
+#### [SEC-01] Forjamento Irrestrito de Compras via Webhook Stripe sem Validação de Assinatura
+- **Severidade:** 🔴 Crítica | **Status:** CONFIRMADO
+- **Evidência:** [`supabase/functions/webhook-checkout/index.ts:66-83`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase/functions/webhook-checkout/index.ts#L66-L83)
   ```typescript
-  { 
-    id: 'prn-2-1', 
-    title: 'Desenvolvimento de zero a três: o que esperar de cada fase', 
-    duration: '- min', 
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4', 
-    ...
+  const isStripe = Boolean(stripeSignature || body.object === 'event' || body.type?.startsWith('checkout.') ...);
+  if (!isStripe) {
+    // Validação de token ocorre APENAS se NÃO for Stripe!
   }
+  // Se isStripe === true, o bloco é pulado e a compra é aprovada sem verificar criptografia!
   ```
-* **Comportamento Atual:** A jornada `pais-recem-nascidos` está com `isComingSoon: false`. As aulas do Módulo 1 estão completas no Panda Video, mas as 12 aulas do Módulo 2 apontam para animações 3D abertas do Blender Foundation (`ForBiggerJoylikes`, `Sintel`, `TearsOfSteel`).
-* **Impacto:** Alunos que avançarem para o Módulo 2 assistirão vídeos de teste sem relação com o conteúdo pedagógico de acolhimento parental.
-* **Risco:** Danos severos à credibilidade da marca, pedidos em massa de reembolso e contestações no suporte.
-* **Correção Recomendada:** Se as gravações do Módulo 2 ainda não estiverem prontas no Panda Video, ocultar temporariamente o Módulo 2 ou marcá-lo explicitamente como *"Módulo em Liberação Semanal"* com card de aviso amigável, impedindo a reprodução de vídeos placeholder.
-* **Esforço:** P (1 hora)
-* **Dependências:** Definição com o time de conteúdo sobre a data de liberação das gravações do Módulo 2.
-* **Como Validar:** Entrar na Sala de Aula como aluno e verificar se nenhum vídeo de teste do Google pode ser reproduzido.
+- **Impacto:** Qualquer pessoa pode emitir requisições HTTP POST simulando compras bem-sucedidas e desbloquear jornadas ou assinaturas ativas para qualquer endereço de e-mail.
+- **Causa-Raiz:** Ausência de `stripe.webhooks.constructEvent` com o `STRIPE_WEBHOOK_SECRET`.
+- **Recomendação:** Importar o SDK oficial do Stripe e validar rigorosamente o cabeçalho `stripe-signature` contra o raw body da requisição antes de processar qualquer dado.
+- **Complexidade:** Baixa (30 min).
 
----
-
-#### [P0-3] Risco de Rejeição Geral de Pagamentos por Ausência do Segredo `WEBHOOK_SECRET`
-* **Severidade:** Crítica (P0)
-* **Área:** Infraestrutura / Segurança / Faturamento
-* **Localização:** [`supabase/functions/webhook-checkout/index.ts:73-82`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase/functions/webhook-checkout/index.ts#L73-L82)
-* **Evidência:**
+#### [SEC-02] Segredo de Webhook Stripe Hardcoded em Código Fonte
+- **Severidade:** 🔴 Crítica | **Status:** CONFIRMADO
+- **Evidência:** [`supabase/functions/webhook-checkout/index.ts:10`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase/functions/webhook-checkout/index.ts#L10)
   ```typescript
-  if (!webhookSecret) {
-    console.error('❌ WEBHOOK_SECRET não configurado nos segredos do Supabase.');
-    return new Response(JSON.stringify({ 
-      error: 'SERVER_CONFIGURATION_ERROR',
-      message: 'WEBHOOK_SECRET is not configured on Supabase secrets.'
-    }), { status: 500, ... });
-  }
+  const webhookSecret = Deno.env.get('WEBHOOK_SECRET') || Deno.env.get('STRIPE_WEBHOOK_SECRET') || 'whsec_***';
   ```
-* **Comportamento Atual:** A Edge Function foi corretamente protegida contra bypass anônimo. No entanto, se o segredo `WEBHOOK_SECRET` não tiver sido gravado no Supabase via CLI (`supabase secrets set WEBHOOK_SECRET=...`), a função responderá com erro HTTP 500 a qualquer chamada da Kiwify/Hotmart.
-* **Impacto:** O cliente passa o cartão na plataforma de checkout, a compra é aprovada, mas o webhook falha e a conta do aluno não é provisionada nem liberada no app.
-* **Risco:** Reclamações imediatas no Reclame Aqui, sensação de golpe pelo consumidor e necessidade de liberação manual de cada aluno.
-* **Correção Recomendada:** Gerar uma chave criptográfica forte (ex: `openssl rand -hex 24`), cadastrá-la no Supabase (`supabase secrets set WEBHOOK_SECRET="sua_chave"`) e inserir essa mesma chave na configuração de webhook da Kiwify/Hotmart.
-* **Esforço:** P (15 minutos)
-* **Dependências:** Acesso ao terminal com Supabase CLI autenticado ou ao Dashboard do projeto.
-* **Como Validar:** Executar um `curl -X POST` simulado enviando o header `x-webhook-token` correto e verificar o retorno HTTP 200.
+- **Impacto:** A chave privada de webhook está exposta no histórico do repositório.
+- **Causa-Raiz:** Configuração de valor de fallback indevida durante testes locais.
+- **Recomendação:** Rotacionar imediatamente o segredo no Stripe Dashboard e remover a string do código-fonte, exigindo a variável de ambiente.
+- **Complexidade:** Imediata (10 min).
+
+#### [SEC-03] Fraude de Assinatura da Comunidade via Update Direto em `profiles`
+- **Severidade:** 🔴 Crítica | **Status:** CONFIRMADO
+- **Evidência:** [`supabase_schema.sql:349-352`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L349-L352) e [`p1_stripe_subscription_schema.sql:7-11`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/p1_stripe_subscription_schema.sql#L7-L11)
+- **Impacto:** Um usuário autenticado pode executar `supabase.from('profiles').update({ community_subscription_status: 'active', community_access_expires_at: '2099-12-31' })` diretamente e obter gratuidade perpétua na assinatura de R$ 9,90/mês.
+- **Causa-Raiz:** O trigger `protect_profile_role` monitora apenas a coluna `role`, deixando os campos de faturamento expostos para atualização pelo titular da conta.
+- **Recomendação:** Bloquear a alteração de `community_subscription_status`, `community_access_expires_at` e `stripe_customer_id` no trigger `protect_profile_role` para usuários sem papel de admin.
+- **Complexidade:** Baixa (20 min).
+
+#### [SEC-04] BOLA / IDOR na Função RPC `vote_on_poll` e RLS Aberto em `community_polls`
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`supabase_schema.sql:864-866, 910-948`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L864-L866)
+- **Impacto:** A RPC `vote_on_poll` aceita `p_profile_id` arbitrário sem validar `auth.uid() = p_profile_id`, permitindo votar em nome de qualquer usuário. Além disso, a tabela `community_polls` tem política de UPDATE permitindo que qualquer usuário autenticado edite as opções e perguntas da enquete.
+- **Causa-Raiz:** Confiança em parâmetros do cliente em função `SECURITY DEFINER` e política permissiva de UPDATE.
+- **Recomendação:** Substituir `p_profile_id` por `auth.uid()` na RPC e restringir UPDATE em `community_polls` para administradores.
+- **Complexidade:** Baixa (20 min).
+
+#### [SEC-05] RLS Totalmente Aberto em `moderation_rejected_examples` (Risco de Wipe e Poisoning)
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`supabase_schema.sql:1230-1232`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L1230-L1232)
+  ```sql
+  CREATE POLICY "Allow all on moderation_rejected_examples" ON public.moderation_rejected_examples
+    FOR ALL USING (true) WITH CHECK (true);
+  ```
+- **Impacto:** Qualquer usuário (inclusive anônimo) pode deletar toda a base de aprendizado da moderação ou injetar termos falsos, sabotando o classificador por IA da comunidade.
+- **Causa-Raiz:** Criação de política aberta durante testes de integração.
+- **Recomendação:** Restringir operações na tabela exclusivamente para `public.is_admin()`.
+- **Complexidade:** Imediata (5 min).
+
+#### [SEC-06] Bypass de Autenticação / Logins Forjados por Telefone em `LoginPage.tsx`
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`src/pages/LoginPage.tsx:171-191`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/LoginPage.tsx#L171-L191)
+- **Impacto:** Ao entrar via telefone, o sistema dispara o SMS pelo Supabase, mas nunca requisita nem valida o código OTP, chamando imediatamente a função `login(`${cleanPhone}@elana.app`)`. Qualquer usuário sabendo o telefone de outro consegue se passar visualmente por ele.
+- **Causa-Raiz:** Fluxo incompleto de OTP para o método SMS na interface.
+- **Recomendação:** Exigir o passo de digitação e validação de OTP via `supabase.auth.verifyOtp` antes de autenticar a sessão.
+- **Complexidade:** Média (45 min).
+
+#### [SEC-07] Adulteração de Respostas de Suporte em `sos_tickets`
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`supabase_schema.sql:677-679`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L677-L679)
+- **Impacto:** Usuários comuns podem atualizar o campo `admin_reply` de seus próprios tickets SOS, forjando mensagens e fingindo terem sido atendidos pela equipe clínica da Elana.
+- **Causa-Raiz:** Política de UPDATE permite alterar qualquer coluna do ticket desde que `auth.uid() = profile_id`.
+- **Recomendação:** Impedir alteração de `admin_reply` e `status` por usuários sem papel de admin.
+- **Complexidade:** Baixa (15 min).
+
+#### [SEC-08] Atualização de E-mail Sem Confirmação no Servidor
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`supabase/functions/update-user-email/index.ts:65-69`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase/functions/update-user-email/index.ts#L65-L69)
+- **Impacto:** A função serverless atualiza o e-mail em `auth.users` com `email_confirm: true` baseando-se unicamente no token JWT da sessão, sem exigir confirmação enviada ao novo endereço.
+- **Causa-Raiz:** Criação de atalho administrativo para simplificar a troca de e-mail.
+- **Recomendação:** Utilizar o fluxo nativo `supabase.auth.updateUser({ email })` que envia confirmação dupla para ambos os endereços.
+- **Complexidade:** Baixa (30 min).
+
+#### [SEC-09] Spoofing de Autoria em Posts e Comentários da Comunidade
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`supabase_schema.sql:438-445, 471-478, 1294-1302`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L438-L445)
+- **Impacto:** As políticas de INSERT apenas checam se `auth.uid() IS NOT NULL`, sem validar `WITH CHECK (auth.uid() = author_id)`. Um usuário malicioso pode enviar publicações ou comentários assinados em nome de outro membro ou de um administrador.
+- **Causa-Raiz:** Omissão da cláusula de equivalência de autor nas políticas de INSERT.
+- **Recomendação:** Adicionar `auth.uid() = author_id` (para posts não anônimos) e `auth.uid() = user_id` (para reações).
+- **Complexidade:** Baixa (20 min).
+
+#### [SEC-10] Falhas de Defesa em Profundidade no Content Security Policy (CSP)
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`vercel.json:19, 32`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/vercel.json#L19-L32) e [`nginx.conf:16, 19`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/nginx.conf#L16-L19)
+- **Impacto:** O CSP permite `'unsafe-inline'` e `'unsafe-eval'` em `script-src` e libera `https://*.supabase.co`, permitindo carregar scripts de buckets públicos. Além disso, `Permissions-Policy: payment=()` desabilita APIs nativas de pagamento do navegador.
+- **Causa-Raiz:** Diretivas excessivamente amplas para contornar restrições de build do Vite.
+- **Recomendação:** Remover `https://*.supabase.co` de `script-src`, ajustar `payment=(self "https://js.stripe.com")` e adicionar `https://js.stripe.com` nas origens permitidas.
+- **Complexidade:** Baixa (15 min).
+
+#### [SEC-11] Consumo Excessivo / Risco de Exaustão de Cota na Edge Function de Moderação
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`supabase/functions/moderate-content/index.ts:223, 359-387`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase/functions/moderate-content/index.ts#L223)
+- **Impacto:** A ação de moderação pode ser chamada sem cabeçalho `Authorization`, permitindo que bots externos disparem requisições em massa e esgotem a cota da Google Gemini API (Denial of Wallet).
+- **Causa-Raiz:** Rota aberta para permitir moderação pré-cadastro ou desabafos sem sessão.
+- **Recomendação:** Exigir Bearer Token JWT de usuário autenticado ou implementar rate-limiting rigoroso por IP na Edge Function.
+- **Complexidade:** Baixa (20 min).
 
 ---
 
-#### [P0-4] Scripts de Migração de Segurança Pendentes de Execução no Banco Remoto
-* **Severidade:** Crítica (P0)
-* **Área:** Banco de Dados / Segurança / LGPD
-* **Localização:** [`supabase_schema.sql`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql), [`p0_security_and_fixes.sql`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/p0_security_and_fixes.sql)
-* **Evidência:** O código local possui a blindagem das tabelas `destaques`, `journey_interests` e do bucket `user-media`. Entretanto, em bancos serverless gerenciados, alterações locais no arquivo `.sql` não têm efeito enquanto não forem executadas no SQL Editor do Supabase remoto.
-* **Comportamento Atual:** Se a instância remota estiver rodando o schema original sem os patches, `journey_interests` ainda permite leitura pública de leads (`SELECT USING (true)`) e `destaques` permite exclusão arbitrária de stories (`FOR ALL USING (true)`).
-* **Impacto:** Violação de dados pessoais sob a LGPD e vulnerabilidade de vandalismo na página inicial.
-* **Risco:** Notificação pela ANPD e desconfiguração da interface da Home por agentes maliciosos.
-* **Correção Recomendada:** Executar integralmente o script consolidado `p0_security_and_fixes.sql` no SQL Editor do Dashboard do Supabase e validar o sucesso no log de execução.
-* **Esforço:** P (15 minutos)
-* **Dependências:** Acesso ao painel administrativo do Supabase.
-* **Como Validar:** Testar via cliente HTTP anônimo um `SELECT` em `journey_interests` e constatar retorno vazio ou erro de permissão negada.
+### 4.3. Banco de Dados e Dados
+
+#### [DB-01] Erro de Sintaxe em Trigger de Proteção (`ban_reason` vs `banned_reason`)
+- **Severidade:** 🔴 Crítica | **Status:** CONFIRMADO
+- **Evidência:** [`supabase_schema.sql:320-330`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L320-L330)
+- **Impacto:** A função do trigger faz referência a `NEW.ban_reason`, mas a coluna real na tabela `profiles` chama-se `banned_reason`. Qualquer tentativa de banir um usuário ou atualizar o perfil de um usuário banido quebra com erro 500 no Postgres.
+- **Causa-Raiz:** Divergência de nomenclatura na evolução do schema.
+- **Recomendação:** Corrigir para `NEW.banned_reason := OLD.banned_reason;` na definição da função.
+- **Complexidade:** Imediata (5 min).
+
+#### [DB-02] Inconsistência de Coluna na Exclusão de Conta (`delete_own_account`)
+- **Severidade:** 🔴 Crítica | **Status:** CONFIRMADO
+- **Evidência:** [`supabase_schema.sql:1449`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L1449)
+- **Impacto:** A função tenta executar `DELETE FROM public.community_reactions WHERE profile_id = current_user_id;`, mas a coluna chama-se `user_id`. A exclusão falha sistematicamente com erro SQL.
+- **Causa-Raiz:** Mudança no nome da coluna de chave estrangeira não refletida na stored procedure.
+- **Recomendação:** Atualizar a query para `WHERE user_id = current_user_id;`.
+- **Complexidade:** Imediata (5 min).
+
+#### [DB-03] Colunas de Assinatura Stripe Ausentes do Schema Mestre
+- **Severidade:** 🔴 Crítica | **Status:** CONFIRMADO
+- **Evidência:** [`p1_stripe_subscription_schema.sql:7-11`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/p1_stripe_subscription_schema.sql#L7-L11) vs [`supabase_schema.sql`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql)
+- **Impacto:** As colunas `stripe_customer_id`, `community_subscription_status`, `community_subscription_id` e `community_access_expires_at` existem apenas no arquivo de migração parcial `p1_stripe_subscription_schema.sql` e foram omitidas de `supabase_schema.sql`. Caso um novo banco seja instanciado, o webhook quebrará imediatamente.
+- **Causa-Raiz:** Falta de consolidação das migrações incrementais no schema unificado.
+- **Recomendação:** Incorporar as colunas e índices de assinatura diretamente no `supabase_schema.sql`.
+- **Complexidade:** Imediata (10 min).
+
+#### [DB-04] Omissão de `onConflict` no Upsert de Badges
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`src/context/AuthContext.tsx:602`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/context/AuthContext.tsx#L602)
+- **Impacto:** O upsert em `user_badges` omite `onConflict: 'profile_id, badge_id'`, disparando erros `duplicate key value violates unique constraint "user_badges_profile_id_badge_id_key"` no console do Supabase quando o usuário revalida conquistas.
+- **Causa-Raiz:** Parâmetro `onConflict` esquecido na chamada do Supabase client.
+- **Recomendação:** Adicionar `{ onConflict: 'profile_id, badge_id' }` na chamada do método `.upsert()`.
+- **Complexidade:** Imediata (5 min).
+
+#### [DB-05] Race Condition no Contador de Votos de Enquetes (`vote_on_poll`)
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`supabase_schema.sql:920-940`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L920-L940)
+- **Impacto:** Em votos simultâneos ou cliques múltiplos, o `INSERT ... ON CONFLICT DO NOTHING` ignora o voto duplicado, mas a query de `UPDATE community_polls SET total_votes = total_votes + 1` roda incondicionalmente fora de transação atômica, inflando a contagem total de votos além da quantidade real de votantes.
+- **Causa-Raiz:** Atualização incondicional de contador agregado sem verificação do sucesso do insert individual.
+- **Recomendação:** Recontar a partir de `COUNT(*)` em `poll_votes` ou executar o update apenas se o `INSERT` de fato inseriu uma linha (`IF FOUND THEN ...`).
+- **Complexidade:** Baixa (15 min).
+
+#### [DB-06] Manipulação Livre de XP e Níveis pelo Cliente
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`src/context/AuthContext.tsx:1140-1160`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/context/AuthContext.tsx#L1140-L1160)
+- **Impacto:** Qualquer usuário pode abrir o DevTools e rodar `supabase.from('profiles').update({ xp: 999999, level_number: 10 })` e atingir o nível máximo sem nunca ter completado uma lição.
+- **Causa-Raiz:** Cálculo e persistência de regras de gamificação atribuídos inteiramente ao frontend.
+- **Recomendação:** Criar uma RPC `award_xp(amount, reason)` que valida os limites e recalcula o nível no banco.
+- **Complexidade:** Média (1 hora).
+
+#### [DB-07] Migrações Não Sincronizadas no Supabase CLI
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** Execução de `supabase migration list` retornou `{"migrations":[]}`.
+- **Impacto:** As alterações de banco foram aplicadas via SQL Editor sem controle de versão pelo CLI. Isso impede rollbacks automáticos e gera risco de deriva de ambiente entre staging e produção.
+- **Causa-Raiz:** Processo de deploy de banco manual via dashboard web.
+- **Recomendação:** Criar migração versionada única contendo o estado consolidado da produção.
+- **Complexidade:** Baixa (30 min).
 
 ---
 
-### 4.2. 🟠 Nível Alto (P1) — Riscos Sérios em Produção
+### 4.4. Infraestrutura, DevOps e Observabilidade
 
-#### [P1-1] Content Security Policy (CSP) Bloqueia Ingestão do Sentry
-* **Severidade:** Alta (P1)
-* **Área:** Observabilidade / DevOps / AppSec
-* **Localização:** [`vercel.json:32`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/vercel.json#L32) e [`nginx.conf:19`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/nginx.conf#L19)
-* **Evidência:**
+#### [INF-01] Build em Docker Quebra por Ausência de `ARG` para Variáveis Vite
+- **Severidade:** 🔴 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`Dockerfile:1-13`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/Dockerfile#L1-L13) e [`.gitignore:17`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/.gitignore#L17)
+- **Impacto:** O build do Docker falha ou compila uma versão do app onde as variáveis do Supabase são `undefined`, impossibilitando deploys fora da Vercel (em VPS, AWS ou Kubernetes).
+- **Causa-Raiz:** Variáveis `VITE_*` precisam estar disponíveis no momento da compilação estática (`npm run build`).
+- **Recomendação:** Declarar `ARG` e `ENV` correspondentes no `Dockerfile`.
+- **Complexidade:** Imediata (10 min).
+
+#### [INF-02] Perda Total de Security Headers em Arquivos Estáticos no Nginx
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`nginx.conf:12-29`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/nginx.conf#L12-L29)
+- **Impacto:** No Nginx, a presença de `add_header Cache-Control` dentro de `location ~* \.(js|css|...)` anula todos os cabeçalhos de segurança herdados do bloco `server`. Scripts e assets perdem proteções de HSTS, X-Content-Type-Options e CSP quando hospedados em container Nginx.
+- **Causa-Raiz:** Comportamento nativo de sobrescrita de herança do Nginx.
+- **Recomendação:** Repetir os cabeçalhos essenciais com `always` ou utilizar `include security-headers.conf;`.
+- **Complexidade:** Imediata (10 min).
+
+#### [INF-03] Sentry Totalmente Desativado em Produção por Ausência de DSN
+- **Severidade:** 🔴 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`src/lib/sentry.ts:3-11`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/lib/sentry.ts#L3-L11) e [`.env:1-4`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/.env#L1-L4)
+- **Impacto:** A variável `VITE_SENTRY_DSN` não está configurada. O SDK desliga-se silenciosamente e nenhuma exceção ou erro de usuário real é reportado ao time de engenharia.
+- **Causa-Raiz:** DSN omitida nas variáveis de ambiente da Vercel.
+- **Recomendação:** Configurar `VITE_SENTRY_DSN` no painel da Vercel para Production e Preview.
+- **Complexidade:** Imediata (5 min).
+
+#### [INF-04] Inexistência de Rota de Health Check
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`vercel.json`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/vercel.json) e [`nginx.conf`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/nginx.conf)
+- **Impacto:** Probes de uptime e monitoramento (Better Uptime, Pingdom) precisam requisitar a SPA completa, gastando banda e sem checar a saúde das conexões com o Supabase.
+- **Causa-Raiz:** Ausência de endpoint leve dedicado.
+- **Recomendação:** Adicionar rota `/health` com retorno HTTP 200 rápido e teste de ping no Supabase.
+- **Complexidade:** Baixa (20 min).
+
+---
+
+### 4.5. Qualidade de Software e Testes
+
+#### [QA-01] Cobertura de Testes Automatizados é 0% (Zero Testes no Repositório)
+- **Severidade:** 🔴 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`package.json:6-11`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/package.json#L6-L11)
   ```json
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in https://images.unsplash.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.pandavideo.com.br https://*.b-cdn.net;"
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  }
   ```
-* **Comportamento Atual:** O pacote `@sentry/react` foi instalado e inicializado em `src/main.tsx`. Porém, o cabeçalho CSP de produção (`connect-src`) omite as origens `https://*.sentry.io` e `https://*.ingest.sentry.io`. Além disso, o arquivo `.env` não possui a variável `VITE_SENTRY_DSN`.
-* **Impacto:** O navegador bloqueia os disparos de relatórios de erro com violação de CSP (`Refused to connect to https://...sentry.io because it violates the document's Content Security Policy`).
-* **Risco:** Erros críticos em produção permanecerão invisíveis para a equipe de engenharia.
-* **Correção Recomendada:** Adicionar `https://*.sentry.io https://*.ingest.sentry.io` à diretiva `connect-src` em `vercel.json` e `nginx.conf`, e configurar `VITE_SENTRY_DSN` nas variáveis de ambiente da Vercel/produção.
-* **Esforço:** P (20 minutos)
-* **Dependências:** Criação de projeto no Sentry para obtenção do DSN.
-* **Como Validar:** Forçar um `throw new Error('Test Sentry')` no console do navegador e verificar se o evento chega ao painel do Sentry sem bloqueio no console.
+- **Impacto:** Não há `vitest`, `jest`, `playwright` nem `cypress` instalados. Toda regressão de layout, falha em regras de negócio ou erros em webhooks dependem de testes manuais. Qualquer deploy pode quebrar fluxos críticos silenciosamente.
+- **Causa-Raiz:** Projeto desenvolvido focado exclusivamente em prototipação e entrega de features visuais.
+- **Recomendação:** Instalar `vitest` e implementar suíte mínima de testes de fumaça (Smoke Tests) cobrindo cálculo de permissões, webhook Stripe e formulários de autenticação.
+- **Complexidade:** Média (2 a 3 horas).
+
+#### [QA-02] React Error Boundary Deixa Modais e Providers Desprotegidos
+- **Severidade:** 🟠 Média | **Status:** CONFIRMADO
+- **Evidência:** [`src/App.tsx:329-339, 447-553`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/App.tsx#L329-L339)
+- **Impacto:** O `<ErrorBoundary>` envolve apenas o conteúdo dentro de `<main>`. Se um erro ocorrer nos Providers (`AuthProvider`, `CommunityProvider`) ou dentro de modais críticos (`CheckoutModal`, `AuthModal`), a tela inteira quebra em branco (White Screen of Death).
+- **Causa-Raiz:** Posicionamento interno do ErrorBoundary na árvore de componentes.
+- **Recomendação:** Envolver o componente `<App />` raiz com um ErrorBoundary de nível superior em `src/main.tsx`.
+- **Complexidade:** Baixa (15 min).
+
+#### [QA-03] Falta de Teste Automatizado de Regressão nos Triggers do Banco
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** Erros de sintaxe em triggers (`ban_reason`) passaram despercebidos até a auditoria estática.
+- **Impacto:** Falhas em triggers PostgreSQL só são descobertas em tempo de execução quando um usuário real aciona o evento.
+- **Causa-Raiz:** Ausência de suíte de testes de integração SQL (como `pgTAP`).
+- **Recomendação:** Criar script Node/TypeScript que executa operações ponta a ponta contra uma base de homologação antes de deploys em produção.
+- **Complexidade:** Média (2 horas).
 
 ---
 
-#### [P1-2] Roteamento Baseado Exclusivamente em Estado React Local (Sem Histórico do Navegador)
-* **Severidade:** Alta (P1)
-* **Área:** Arquitetura Frontend / UX / Confiabilidade
-* **Localização:** [`src/App.tsx:51-61, 143-175`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/App.tsx#L51-L61)
-* **Evidência:**
+### 4.6. Produto, Conteúdo e Negócio
+
+#### [PROD-01] Links de Checkout da Stripe Apontam para Ambiente de Teste
+- **Severidade:** 🔴 Crítica | **Status:** CONFIRMADO
+- **Evidência:** [`src/data/journeysData.ts:16, 40, 102, 164, 226, 288, 350`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/data/journeysData.ts#L16)
   ```typescript
-  const [activeTab, setActiveTab] = useState<string>(() => { ... return 'home'; });
+  export const STRIPE_COMMUNITY_CHECKOUT_URL = 'https://buy.stripe.com/test_5kAeWk1rO1q35G0eUU';
+  checkoutUrl: 'https://buy.stripe.com/test_cN28wW0nK6Kn1pKdQR'
   ```
-* **Comportamento Atual:** As telas da aplicação (`home`, `classroom`, `community`, `dashboard`, `admin`) são controladas por um `useState` isolado. A URL no navegador permanece estática em `/` (exceto para `?tab=quiz`).
-* **Impacto:** 
-  1. Ao pressionar o botão "Voltar" do navegador ou o gesto de voltar no smartphone, o usuário sai do app em vez de retornar à tela anterior.
-  2. Ao recarregar a página (F5) enquanto estuda uma aula ou lê um post, o usuário é resetado para a Home.
-  3. Não é possível enviar links diretos para aulas específicas ou tópicos da comunidade no WhatsApp.
-* **Risco:** Frustração de navegabilidade, abandono de sessões de estudo e aumento de suporte.
-* **Correção Recomendada:** Implementar sincronização com a History API (`window.history.pushState` e escuta ao evento `popstate`) ou adotar um micro-roteamento leve que sincronize `activeTab` com a URL.
-* **Esforço:** M (2 a 3 horas)
-* **Dependências:** Nenhuma.
-* **Como Validar:** Navegar para a Comunidade, clicar em Voltar no navegador e constatar o retorno suave para a Home.
+- **Impacto:** Nenhuma transação financeira real pode ser completada. Alunos que tentarem comprar verão mensagens de ambiente de teste ou terão cartões reais recusados.
+- **Causa-Raiz:** Configuração mantida em modo sandbox durante o desenvolvimento.
+- **Recomendação:** Criar os produtos e preços no modo Live do Stripe Dashboard, gerar os Payment Links de produção e atualizar as constantes.
+- **Complexidade:** Imediata (15 min).
+
+#### [PROD-02] Conteúdo Incompleto Vendido como Disponível ("Pais Recém-Nascidos")
+- **Severidade:** 🔴 Crítica | **Status:** CONFIRMADO
+- **Evidência:** [`src/data/journeysData.ts:58-96`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/data/journeysData.ts#L58-L96)
+- **Impacto:** O Módulo 2 possui 17 aulas com vídeos de teste públicos do Google (`ForBiggerJoylikes.mp4`, `Sintel.mp4`) com duração `'- min'`. A jornada está com `isComingSoon: false`. Clientes que pagarem por esse curso se depararão com vídeos aleatórios de código aberto, gerando alto índice de chargebacks, reclamações no ReclameAqui e pedidos de reembolso imediato.
+- **Causa-Raiz:** Aulas liberadas para venda na interface antes do upload dos vídeos finais da Elana no Panda Video.
+- **Recomendação:** Subir os vídeos reais do Módulo 2 no Panda Video ou marcar temporariamente o Módulo 2 como "Em Breve" com data estimada de liberação.
+- **Complexidade:** Externa / Depende de Conteúdo.
+
+#### [PROD-03] Ausência Total dos PDFs de Apoio Prometidos na Venda
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`src/components/journeys/CheckoutModal.tsx:327`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/journeys/CheckoutModal.tsx#L327) vs [`src/data/journeysData.ts`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/data/journeysData.ts)
+- **Impacto:** O modal de vendas promete explicitamente: *"PDFs de apoio para download"*. Contudo, das 134 aulas cadastradas no sistema, **100% delas possuem o array `resources: []` completamente vazio**. Configura propaganda enganosa (Art. 37 do Código de Defesa do Consumidor).
+- **Causa-Raiz:** Materiais complementares ainda não foram diagramados nem hospedados.
+- **Recomendação:** Remover temporariamente a promessa de PDFs do copy do checkout até que pelo menos 3 guias em PDF estejam prontos para download.
+- **Complexidade:** Imediata (10 min).
+
+#### [PROD-04] Quebra da Regra de MRR dos 90 Dias de Comunidade Grátis no Frontend
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`src/types/index.ts:143-146`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/types/index.ts#L143-L146)
+  ```typescript
+  const hasPurchasedJourney = (user.purchasedJourneyIds?.length || 0) > 0;
+  if (hasPurchasedJourney) return 'journey_courtesy'; // 🚨 Concede acesso ilimitado sem checar data!
+  ```
+- **Impacto:** A regra comercial acordada era: *"Quem compra uma jornada ganha 90 dias de comunidade grátis, passando a pagar R$ 9,90/mês depois"*. O frontend concede acesso eterno como `'journey_courtesy'` para qualquer comprador de jornada, anulando a cobrança recorrente da mensalidade e destruindo a conversão de MRR.
+- **Causa-Raiz:** Implementação simplificada que não compara `user.communityAccessExpiresAt` com a data atual.
+- **Recomendação:** Corrigir a função helper para validar se `new Date(user.communityAccessExpiresAt).getTime() > Date.now()`.
+- **Complexidade:** Baixa (20 min).
+
+#### [PROD-05] Webhook Vincula Compras Exclusivamente por E-mail (Risco de Contas Divididas)
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`supabase/functions/webhook-checkout/index.ts:109, 318`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase/functions/webhook-checkout/index.ts#L109)
+- **Impacto:** Se o usuário logado com `maria@gmail.com` pagar na Stripe com Apple Pay usando `maria.trabalho@empresa.com`, o webhook provisiona o curso em uma conta nova criada para o e-mail da Stripe. A usuária logada no app continua com a jornada bloqueada e abre chamado de suporte.
+- **Causa-Raiz:** O webhook não utiliza `client_reference_id` para amarrar o pagamento ao `user.id` do aluno autenticado.
+- **Recomendação:** Passar `client_reference_id = user.id` nas URLs de checkout e priorizar a busca por ID antes de buscar por e-mail.
+- **Complexidade:** Baixa (30 min).
+
+#### [PROD-06] Inexistência de URLs de Checkout no Supabase (`journeys.checkout_url`)
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`supabase_schema.sql:505-525`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L505-L525)
+- **Impacto:** A tabela `public.journeys` no banco não possui a coluna `checkout_url`. Quando os cursos são carregados do banco, `checkoutUrl` fica `undefined` e o modal de vendas desabilita a compra com a mensagem *"Inscrições encerradas"*.
+- **Causa-Raiz:** Coluna omitida na criação do schema relacional de jornadas.
+- **Recomendação:** Adicionar coluna `checkout_url text` na tabela `journeys`.
+- **Complexidade:** Imediata (5 min).
 
 ---
 
-#### [P1-3] Ausência de Materiais Complementares Reais Vinculados às Aulas
-* **Severidade:** Alta (P1)
-* **Área:** Produto / Conteúdo / Percepção de Valor
-* **Localização:** [`src/pages/ClassroomPage.tsx:948-965`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/ClassroomPage.tsx#L948-L965) e [`src/data/journeysData.ts`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/data/journeysData.ts)
-* **Evidência:** A interface da Sala de Aula possui a aba "Materiais & Apoio", mas nenhuma aula da jornada PRN possui a propriedade `resources` preenchida com URLs reais.
-* **Comportamento Atual:** Ao clicar na aba de materiais complementares, o aluno recebe o aviso de que nenhum material está disponível para aquela aula ou que o conteúdo está em diagramação. No entanto, o arquivo `PRN - e-Book_Checklist.pdf` já se encontra pronto no repositório.
-* **Impacto:** Subutilização de um material riquíssimo que justifica o ticket de venda da jornada.
-* **Risco:** Redução do valor percebido pelo aluno após a compra.
-* **Correção Recomendada:** Fazer upload do PDF no bucket público do Supabase Storage (`user-media/materials/`) e cadastrar o objeto `{ id, title, type: 'pdf', url, size }` nas aulas correspondentes do Módulo 1.
-* **Esforço:** P (45 minutos)
-* **Dependências:** Upload do arquivo no bucket do Supabase.
-* **Como Validar:** Acessar a Aula 1 da jornada PRN, abrir a aba Materiais e clicar para baixar o PDF completo.
+### 4.7. UX e Acessibilidade
+
+#### [ACC-01] Falta de Atributos `alt` em Avatares Dinâmicos e Conquistas
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`src/components/community/PublicProfileModal.tsx:730`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/community/PublicProfileModal.tsx#L730) e [`src/components/gamification/BadgeGallery.tsx:48`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/gamification/BadgeGallery.tsx#L48)
+- **Impacto:** Leitores de tela anunciam imagens sem descrição, degradando a acessibilidade para mães e pais com deficiência visual.
+- **Causa-Raiz:** Omissão de `alt` descritivo em tags `<img>`.
+- **Recomendação:** Adicionar `alt={profile.name ? `Foto de perfil de ${profile.name}` : 'Avatar do membro'}` em todos os elementos visuais.
+- **Complexidade:** Baixa (30 min).
+
+#### [ACC-02] Alvos de Toque (Tap Targets) Inferiores a 44x44px no Mobile
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** Botões de ordenação de feed em `CommunityPage.tsx` e botões de velocidade de vídeo em `ClassroomPage.tsx:635` possuem alvos de 28x28px ou 32x32px.
+- **Impacto:** Dificuldade de toque para pais segurando bebês no colo ou usando o celular com apenas uma das mãos (violação da WCAG 2.1 Target Size).
+- **Causa-Raiz:** Classes Tailwind com dimensões pequenas (`w-7 h-7`, `p-1.5`).
+- **Recomendação:** Definir área mínima de clique de `min-h-[44px] min-w-[44px]` em todos os controles interativos touch.
+- **Complexidade:** Baixa (45 min).
+
+#### [ACC-03] Contraste Insuficiente em Textos Secundários Slate
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** `text-slate-500` sobre fundo `#101B1E` resulta em contraste de ~3.2:1 (abaixo do limiar de 4.5:1 exigido pela WCAG AA).
+- **Impacto:** Textos de datas, contadores e legendas tornam-se ilegíveis em ambientes com claridade ou telas com brilho reduzido.
+- **Causa-Raiz:** Uso de escala de cinza muito escura para textos secundários no tema escuro.
+- **Recomendação:** Substituir `text-slate-500` por `text-slate-400` em textos informativos importantes.
+- **Complexidade:** Baixa (30 min).
+
+#### [ACC-04] Falta de Indicador Visual de Foco (Focus Rings) em Componentes Customizados
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** Seletores customizados de emoji e abas de navegação possuem `outline-none` sem `focus-visible:ring-2`.
+- **Impacto:** Navegação por teclado (Tab) torna-se cega em áreas de formulários e interação comunitária.
+- **Causa-Raiz:** Reset agressivo de foco para estilização visual.
+- **Recomendação:** Garantir `focus-visible:ring-2 focus-visible:ring-[#FF7F5B]` em todos os botões e links navegáveis por teclado.
+- **Complexidade:** Baixa (30 min).
 
 ---
 
-#### [P1-4] Índices Compostos de Paginação Pendentes de Confirmação em Produção
-* **Severidade:** Alta (P1)
-* **Área:** Banco de Dados / Performance / Escalabilidade
-* **Localização:** [`supabase_schema.sql:1014-1031`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L1014-L1031) e [`p2_optimizations_and_fixes.sql`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/p2_optimizations_and_fixes.sql)
-* **Evidência:** A comunidade agora carrega 15 posts por bloco com ordenação descendente (`ORDER BY created_at DESC`). Sem o índice composto `(status, created_at DESC)`, o banco executa `Seq Scan` em toda a tabela `community_posts` a cada requisição.
-* **Comportamento Atual:** A declaração dos índices existe nos arquivos de patch locais, mas não há garantia de que o DDL foi disparado no banco remoto.
-* **Impacto:** Sob tráfego simultâneo de lançamento, o tempo de resposta da aba Comunidade pode saltar de 50ms para mais de 1500ms, degradando a experiência móvel.
-* **Risco:** Gargalo de CPU no plano gratuito/pro do Supabase durante picos de acesso.
-* **Correção Recomendada:** Executar `CREATE INDEX IF NOT EXISTS idx_community_posts_status_created ON public.community_posts(status, created_at DESC);` e o índice para comentários no SQL Editor remoto.
-* **Esforço:** P (10 minutos)
-* **Dependências:** Acesso administrativo ao Supabase.
-* **Como Validar:** Executar `EXPLAIN ANALYZE` na query de busca de posts no Supabase SQL Editor e constatar uso de `Index Scan`.
+### 4.8. Privacidade e LGPD
+
+#### [PRIV-01] Vazamento Público de Dados de Menores via `profiles.family_tag`
+- **Severidade:** 🔴 Crítica | **Status:** CONFIRMADO
+- **Evidência:** [`src/context/AuthContext.tsx:1196`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/context/AuthContext.tsx#L1196), [`src/pages/CommunityPage.tsx:691-695`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/CommunityPage.tsx#L691-L695) e [`src/components/community/PublicProfileModal.tsx:418-440`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/community/PublicProfileModal.tsx#L418-L440)
+- **Impacto:** Nomes, idades e datas de nascimento de filhos e gestações cadastrados pelos pais são visíveis para qualquer outro membro na comunidade através do modal de perfil público. Infração direta e gravíssima ao Art. 14 da LGPD (Tratamento de Dados Pessoais de Crianças e Adolescentes).
+- **Causa-Raiz:** Reutilização de dados familiares privados para compor a interface pública comunitária.
+- **Recomendação:** Exibir a seção "Minha Família" exclusivamente para o próprio usuário (`isOwnProfile === true`). Para terceiros, exibir apenas os arquétipos e temas de interesse parental.
+- **Complexidade:** Baixa (30 min).
+
+#### [PRIV-02] Quebra do Art. 18 da LGPD por Falha na Função `delete_own_account`
+- **Severidade:** 🔴 Crítica | **Status:** CONFIRMADO
+- **Evidência:** [`supabase_schema.sql:1449`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase_schema.sql#L1449)
+- **Impacto:** Usuários não conseguem exercer seu direito legal de revogação de consentimento e eliminação de seus dados pessoais. Gera passivo de multas pela ANPD e risco de rejeição sumária nas lojas de aplicativos.
+- **Causa-Raiz:** Query SQL referenciando coluna inexistente `community_reactions.profile_id`.
+- **Recomendação:** Aplicar a correção da procedure com `user_id = current_user_id;`.
+- **Complexidade:** Imediata (5 min).
+
+#### [PRIV-03] Cadastro via `LoginPage.tsx` Sem Termos de Uso e Política de Privacidade
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`src/pages/LoginPage.tsx:140-170, 550-610`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/LoginPage.tsx#L140-L170) vs [`AuthModal.tsx:97-101`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/auth/AuthModal.tsx#L97-L101)
+- **Impacto:** Usuários que se cadastram pela página `/login` são registrados sem aceite de Termos de Uso e Política de Privacidade, gerando nulidade de consentimento contratual perante o Marco Civil da Internet e a LGPD.
+- **Causa-Raiz:** Divergência de implementação entre o modal flutuante e a página de login dedicada.
+- **Recomendação:** Incluir o checkbox obrigatório com links para os termos na página `LoginPage.tsx`.
+- **Complexidade:** Baixa (20 min).
+
+#### [PRIV-04] Ausência de Consentimento Destacado no Cadastro de Filhos (Art. 14 § 1º LGPD)
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`src/pages/DashboardPage.tsx:1510-1596`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/DashboardPage.tsx#L1510-L1596)
+- **Impacto:** A coleta de dados sensíveis de menores (nome, data de nascimento, idade gestacional) é realizada sem texto de consentimento específico e em destaque dado por pelo menos um dos pais.
+- **Causa-Raiz:** Formulário focado apenas em usabilidade sem consulta aos requisitos legais de proteção de menores.
+- **Recomendação:** Inserir termo informativo e consentimento explícito logo acima do botão "+ Adicionar Filho(a)".
+- **Complexidade:** Baixa (20 min).
+
+#### [PRIV-05] Limpeza Incompleta de Cache Sensível no Logout
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`src/context/AuthContext.tsx:1310-1317`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/context/AuthContext.tsx#L1310-L1317)
+- **Impacto:** O logout remove apenas `elana_user_session` e `elana_sos_ticket_response`. Chaves como `elana_community_posts_cache`, `elana_confession_count_*` e `elana_quiz_result_*` persistem no navegador, expondo desabafos e diagnósticos parentais em dispositivos compartilhados.
+- **Causa-Raiz:** Logout não limpa chaves auxiliares do `localStorage`.
+- **Recomendação:** Criar função utilitária `clearAllUserStorage()` que purga todas as chaves prefixadas com `elana_` (preservando apenas `elana_font_size` e `elana_pwa_dismissed`).
+- **Complexidade:** Baixa (15 min).
 
 ---
 
-### 4.3. 🟡 Nível Médio (P2) — Pós-Lançamento / Primeira Semana
+### 4.9. Comunidade e Moderação
 
-#### [P2-1] Inexistência de Pipeline Automatizado de CI/CD (GitHub Actions)
-* **Severidade:** Média (P2)
-* **Área:** DevOps / SRE / Confiabilidade
-* **Localização:** Raiz do repositório (ausência do diretório `.github/workflows/`)
-* **Impacto:** Mudanças enviadas diretamente para a branch `main` não passam por build e lint automatizados antes do deploy. Erros de tipagem do TypeScript podem quebrar a aplicação em produção sem aviso prévio.
-* **Correção Recomendada:** Criar `.github/workflows/ci.yml` executando `npm run build` e verificação de tipos a cada Pull Request.
-* **Esforço:** P (30 minutos)
+#### [COM-01] Posts do Confessionário Anônimo Desaparecem Após Reload
+- **Severidade:** 🔴 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`src/context/CommunityContext.tsx:750-755, 830, 935`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/context/CommunityContext.tsx#L750-L755)
+- **Impacto:** O confessionário anônimo é a ferramenta mais sensível e atraente da comunidade. Como a query no PostgREST exige `.not('author_id', 'is', null)`, todo post anônimo enviado some do feed na próxima listagem, transmitindo sensação de defeito grave ou censura.
+- **Causa-Raiz:** Conflito arquitetural entre a sanitização de segurança do banco (que limpa o `author_id`) e a query do cliente (que supõe que todo post válido possui um `author_id`).
+- **Recomendação:** Alterar a query para `.or('not.author_id.is.null,is_anonymous.eq.true')` e ajustar o filtro em memória.
+- **Complexidade:** Baixa (20 min).
 
-#### [P2-2] Lacunas de Acessibilidade (A11y) em Botões de Ícones e Formulários
-* **Severidade:** Média (P2)
-* **Área:** Acessibilidade / QA / Frontend
-* **Localização:** [`src/components/layout/Navbar.tsx`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/layout/Navbar.tsx) e modais diversos.
-* **Impacto:** Alguns botões interativos contêm apenas ícones Lucide (como botões de fechar e de menu) sem o atributo `aria-label`, prejudicando usuários que dependem de leitores de tela (VoiceOver / TalkBack).
-* **Correção Recomendada:** Adicionar `aria-label` descritivo em todos os botões que não possuem texto visível direto.
-* **Esforço:** P (1 hora)
+#### [COM-02] Timeout Curto na Moderação Gemini Causa Queda Frequente para Análise Local
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`src/context/CommunityContext.tsx:323-332`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/context/CommunityContext.tsx#L323-L332)
+- **Impacto:** O cliente possui timeout de 10s via `Promise.race`. Se a chamada paralela do Gemini + embeddings na Edge Function demorar mais de 10s (frequente em cold starts do Deno), o app descarta a análise por IA e recorre apenas à regex local de palavras-chave, deixando passar mom-shaming sutil ou sarcasmos velados.
+- **Causa-Raiz:** Cold start de Edge Functions combinado com latência de embedding da Google API.
+- **Recomendação:** Manter warm-up na Edge Function e otimizar o prompt de instrução do Gemini para reduzir tokens gerados.
+- **Complexidade:** Média (1 hora).
 
-#### [P2-3] Certificados e Rotina de Notificações Web Push Pendentes de Teste Real
-* **Severidade:** Média (P2)
-* **Área:** Infraestrutura / Engajamento / DevOps
-* **Localização:** [`supabase/functions/send-push-notification/index.ts:16-17`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/supabase/functions/send-push-notification/index.ts#L16-L17)
-* **Impacto:** As chaves VAPID (`VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY`) precisam estar configuradas nos segredos do Supabase. Caso contrário, o disparo de notificações push falhará silenciosamente com código 500.
-* **Correção Recomendada:** Realizar teste de envio pontual para um dispositivo de homologação cadastrado no banco.
-* **Esforço:** P (30 minutos)
+#### [COM-03] Falta de Notificação para Autores Quando Conteúdo é Enviado para Moderação Humana
+- **Severidade:** 🟡 Média | **Status:** CONFIRMADO
+- **Evidência:** [`src/context/CommunityContext.tsx:340-350`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/context/CommunityContext.tsx#L340-L350)
+- **Impacto:** Quando uma mensagem é retida por alerta de sensibilidade ou denúncia, o usuário não recebe uma explicação clara com prazo de resposta da curadoria, gerando ansiedade e frustração.
+- **Causa-Raiz:** Fluxo de feedback pós-retenção limitado a um toast temporário.
+- **Recomendação:** Renderizar aviso persistente na timeline do autor indicando status "Em análise pela curadoria da Elana".
+- **Complexidade:** Baixa (40 min).
 
-#### [P2-4] Ausência de Ambiente Node.js no PATH do Terminal Local de Manutenção
-* **Severidade:** Média (P2)
-* **Área:** Ambiente de Desenvolvimento / DevOps
-* **Localização:** Sistema Operacional / Shell do Agente
-* **Impacto:** Não é possível rodar `npm run build` ou `tsc` diretamente pelo terminal sem especificar o caminho absoluto do binário do Node.
-* **Correção Recomendada:** Mapear o caminho do runtime Node/NPM nas variáveis de ambiente do shell.
-* **Esforço:** P (10 minutos)
-
----
-
-### 4.4. 🟢 Nível Baixo (P3) — Débitos Técnicos e Refatorações
-
-#### [P3-1] Tipagens Redundantes de Usuário e Perfis
-* **Severidade:** Baixa (P3)
-* **Área:** Arquitetura de Código / TypeScript
-* **Localização:** [`src/types/index.ts`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/types/index.ts) vs interfaces locais em componentes de administração.
-* **Impacto:** Alterações no perfil de usuário demandam manutenção manual em mais de um arquivo.
-* **Correção Recomendada:** Unificar todas as tipagens derivadas do banco de dados em um módulo central.
-* **Esforço:** P (1 hora)
-
-#### [P3-2] Dispersão de `console.log` e `console.warn`
-* **Severidade:** Baixa (P3)
-* **Área:** Qualidade de Código / Frontend
-* **Localização:** Contextos de autenticação e comunidade.
-* **Impacto:** Poluição do console do desenvolvedor em ambiente de homologação. O build do Vite já remove boa parte em produção via esbuild drop.
-* **Correção Recomendada:** Adicionar uma camada de logging condicional simples (`logger.ts`).
-* **Esforço:** P (45 minutos)
-
-#### [P3-3] Fallback Visual da Imagem de Capa do Panda Video
-* **Severidade:** Baixa (P3)
-* **Área:** UI / Frontend
-* **Localização:** Componentes de listagem de módulos em [`src/pages/ClassroomPage.tsx`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/ClassroomPage.tsx)
-* **Impacto:** Caso a CDN da Panda passe por instabilidade na entrega de miniaturas, a imagem exibe o ícone de imagem quebrada do navegador.
-* **Correção Recomendada:** Inserir manipulador `onError` que substitui a imagem pela capa padrão da jornada.
-* **Esforço:** P (20 minutos)
+#### [COM-04] Risco de Envenenamento de Moderação por Injeção de Exemplos Falsos
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** Relacionado ao achado `[SEC-05]`.
+- **Impacto:** A tabela `moderation_rejected_examples` aceita inserts diretos com qualquer vetor, permitindo criar "falsos positivos" que bloqueiam postagens legítimas de membros da comunidade.
+- **Causa-Raiz:** Ausência de controle de permissão por RLS.
+- **Recomendação:** Bloquear inserts diretos via PostgREST e permitir apenas através da ação administrativa autenticada na Edge Function `moderate-content`.
+- **Complexidade:** Imediata (5 min).
 
 ---
 
-## 5. 💡 Oportunidades de Melhoria que Agregam Valor Rápido
+### 4.10. Analytics, Rastreamento e Métricas
 
-Estas melhorias não constituem defeitos técnicos, mas aumentam sensivelmente a conversão, a retenção e o encantamento dos pais:
+#### [ANA-01] Ausência de Google Analytics 4 (GA4) / PostHog
+- **Severidade:** 🔴 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`index.html:1-85`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/index.html#L1-L85) e busca em todo o diretório `src/`.
+- **Impacto:** Nenhum evento de tráfego, visualização de página, retenção de usuários ou funil de navegação é registrado. O time não saberá quantos visitantes chegaram à página inicial, quantos tentaram comprar ou onde abandonaram o fluxo.
+- **Causa-Raiz:** Tags de medição omitidas durante a construção.
+- **Recomendação:** Adicionar script do GA4 (ou PostHog com consentimento LGPD) no `index.html` com suporte a PageViews da SPA.
+- **Complexidade:** Baixa (30 min).
 
-1. **Página de Boas-Vindas Pós-Compra (`/boas-vindas?session=...`):**  
-   Ao concluir a compra na Kiwify, o comprador é redirecionado para uma tela acolhedora da Elana Academy que já reconhece seu e-mail, permite a definição imediata de sua senha e exibe uma mensagem em vídeo de boas-vindas da mentora.
-2. **Degustação em Áudio Aberta no Catálogo (Lead Magnet):**  
-   Permitir que visitantes não cadastrados escutem os primeiros 3 minutos do áudio da Aula 1 da jornada PRN diretamente pelo card da jornada, aquecendo o lead frio antes da decisão de compra.
-3. **Exportação do Caderno de Anotações em PDF Formatado:**  
-   Possibilitar que a mãe ou o pai exporte todas as suas reflexões e anotações gravadas na Sala de Aula em um PDF elegante com a identidade visual da Elana Academy para consulta offline ou impressão.
-4. **Mensagens Acolhedoras de Encerramento do Dia via Web Push:**  
-   Agendar um disparo suave diário às 20h30 com mensagens empáticas curtas (ex.: *"O dia foi intenso, mas você fez o melhor que pôde hoje. Descanse com carinho."*), criando um ritual afetivo diário com a marca.
+#### [ANA-02] Ausência de Meta Pixel (Facebook Ads) e Conversions API
+- **Severidade:** 🔴 Alta | **Status:** CONFIRMADO
+- **Evidência:** Nenhuma menção a `fbq` ou Pixel ID encontrada em todo o código.
+- **Impacto:** Campanhas de tráfego pago no Instagram/Facebook rodarão cegas, impossibilitando otimização por conversão (Purchase / InitiateCheckout) e encarecendo drasticamente o custo por aquisição (CAC).
+- **Causa-Raiz:** Integração de marketing adiada para a fase de lançamento.
+- **Recomendação:** Integrar o Meta Pixel no `index.html` e disparar eventos `InitiateCheckout` ao abrir os links de compra.
+- **Complexidade:** Baixa (30 min).
 
----
-
-## 6. 🔒 Itens Não Verificáveis Nesta Auditoria
-
-Por limitações de escopo estrito de leitura do código-fonte local e isolamento de runtime:
-
-1. **Validação das Variáveis de Ambiente no Supabase Remoto:**  
-   Não foi possível verificar diretamente se `WEBHOOK_SECRET`, `GEMINI_API_KEY` e as chaves VAPID estão ativas no ambiente de produção do Supabase. A ausência de qualquer uma delas gerará falhas em runtime.
-2. **Configuração de Domínio e Certificado SSL:**  
-   O apontamento DNS de `elana.app.br` e os certificados emitidos na Vercel/Cloudflare requerem inspeção no painel da registradora e do provedor de hospedagem.
-3. **Chaves da Conta Panda Video:**  
-   O tráfego de streaming depende da validade da assinatura e dos limites de largura de banda contratados junto ao Panda Video.
-
----
-
-## 7. 🚀 Checklist de Lançamento
-
-### 🔴 Obrigatório Antes do Lançamento Comercial (Go / No-Go)
-- [ ] **Configurar URLs Reais de Checkout:** Adicionar as URLs de pagamento da Kiwify/Hotmart em `src/data/journeysData.ts` para a jornada *Pais Recém-Nascidos* (Aguardando definição do canal comercial).
-- [ ] **Tratar Módulo 2 de PRN:** Fazer o upload dos vídeos definitivos no Panda Video para substituir os placeholders.
-- [ ] **Configurar `WEBHOOK_SECRET` no Supabase:** Executar `supabase secrets set WEBHOOK_SECRET="..."` assim que fechar a plataforma de checkout.
-- [x] **Confirmar Aplicação de `p0_security_and_fixes.sql`:** Executado com sucesso no SQL Editor do Supabase remoto. Blindagem de RLS em `journey_interests`, `destaques` e Storage `user-media` ativa!
-- [x] **Corrigir `supabase_schema.sql`:** Adicionados `DROP POLICY IF EXISTS` para todas as 5 políticas faltantes (`users_can_report`, update/delete de posts e comentários), tornando o schema 100% idempotente.
-- [x] **Configurar Sentry e Ajustar CSP:** Adicionado `https://*.sentry.io https://*.ingest.sentry.io` ao `connect-src` de `vercel.json` e `nginx.conf`.
-- [x] **Roteamento e Histórico do Navegador:** Implementada sincronização com History API (`pushState` e `popstate`) no `src/App.tsx`, garantindo que o botão "Voltar" do navegador e smartphones navegue suavemente entre as telas sem fechar a aplicação.
-- [x] **Aplicar Índices no Banco Remoto:** Executado com sucesso via `p1_performance_indexes.sql` no Postgres remoto. Indexação composta ativa para posts, comentários e denúncias!
-
-### 🟠 Recomendado para a Primeira Semana
-- [ ] Subir o PDF complementar oficial (`PRN - e-Book_Checklist.pdf`) no Storage e vincular às aulas da jornada quando for o momento.
-- [ ] Adicionar `aria-label` nos botões de ícones isolados para conformidade A11y.
-- [ ] Criar workflow de CI no GitHub Actions (`.github/workflows/ci.yml`).
-
-### 🟢 Próximos Ciclos de Desenvolvimento
-- [ ] Desenvolver fluxo de boas-vindas pós-checkout personalizado.
-- [ ] Implementar player de áudio preview público no catálogo.
-- [ ] Unificar tipagens repetidas de usuário e perfil.
+#### [ANA-03] Falta de Captura e Persistência de Parâmetros UTM no Fluxo de Compra
+- **Severidade:** 🟠 Alta | **Status:** CONFIRMADO
+- **Evidência:** [`src/pages/DashboardPage.tsx:440-446`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/pages/DashboardPage.tsx#L440-L446) e [`src/components/journeys/CheckoutModal.tsx:48-58`](file:///Users/vitormardegan/Desktop/Elana/05.%20App/src/components/journeys/CheckoutModal.tsx#L48-L58)
+- **Impacto:** Se o usuário acessa o app via link patrocinado com `utm_source=instagram&utm_campaign=lancamento`, esses parâmetros são perdidos na navegação interna e **não são repassados aos links de checkout da Stripe**. O painel de anúncios não registrará qual anúncio ou criativo gerou a venda.
+- **Causa-Raiz:** Os links da Stripe são instanciados como strings estáticas sem anexar a query string da URL corrente.
+- **Recomendação:** Capturar UTMs no carregamento da página, salvar em `sessionStorage` e concatenar automaticamente nos links de checkout da Stripe.
+- **Complexidade:** Baixa (30 min).
 
 ---
 
-*Fase 2 de correções em andamento com sucesso.*
+## 5. ⚠️ Riscos e Incertezas Não Verificáveis
+
+| Item | Risco / Incerteza | Por que não é verificável estaticamente? | Ação Necessária para Validação |
+| :--- | :--- | :--- | :--- |
+| **Secrets da Stripe em Produção** | Se `STRIPE_WEBHOOK_SECRET` e `STRIPE_SECRET_KEY` de produção estão cadastrados corretamente no Supabase. | Secrets das Edge Functions residem no cofre seguro do Supabase e não são retornados pelo CLI. | O administrador deve verificar via `supabase secrets list` no terminal local ou painel web. |
+| **Limites de Cota da Gemini API** | Se a chave configurada no Supabase possui limite de requisições ou cobrança ativa na Google Cloud. | Acesso somente via console do Google Cloud Platform. | Validar no console GCP se a API Gemini 1.5 Flash está com faturamento ativo e sem bloqueio de cota. |
+| **Taxa de Entrega de WebPush (VAPID)** | Se o par de chaves VAPID configurado no Supabase corresponde à chave pública VITE do cliente. | A chave privada VAPID não está no repositório. | Testar o envio de uma notificação push real para um dispositivo móvel no painel administrativo. |
+| **Configuração de Domínio e DNS da Stripe** | Se o webhook da Stripe em produção está cadastrado e ativo para escutar a URL do Supabase. | Requer acesso com login ao Stripe Dashboard do cliente. | Acessar `dashboard.stripe.com -> Desenvolvedores -> Webhooks` e confirmar o endpoint `https://mixedzmkjfzumeimfkfz.supabase.co/functions/v1/webhook-checkout`. |
+
+---
+
+## 6. 💡 Oportunidades de Melhoria (Roadmap Pós-Lançamento)
+
+1. **DRM & Streaming Protegido no Panda Video:**  
+   Substituir iframes com URLs públicas por tokens assinados de sessão única (`Signed URLs` / `One-Time Tokens`) com expiração de 15 minutos, impedindo o download ou compartilhamento indevido das aulas gravadas.
+2. **Arquitetura Modular de Estado com Zustand ou Jotai:**  
+   O `CommunityContext.tsx` e o `AuthContext.tsx` atingiram tamanhos expressivos (>1.800 linhas), re-renderizando árvores inteiras de componentes a cada batimento de coração ou check-in. Uma migração gradual para store atômica reduzirá drasticamente o consumo de bateria no celular.
+3. **PWA Offline Mode para Áudios das Aulas:**  
+   Como a plataforma oferece o recurso "Ouvir aula como áudio", permitir o download offline de áudios dentro da cota do PWA para mães ouvirem durante deslocamentos ou amamentação sem internet.
+4. **Gamificação com Recompensas Práticas na Comunidade:**  
+   Conectar os níveis de XP (ex: Raiz, Florescer) a benefícios práticos, como selos de mentora, acesso a encontros ao vivo exclusivos ou prioridade de resposta nas salas de acolhimento.
+
+---
+
+## 7. 🚦 Checklist de Lançamento (Launch Gates)
+
+### 🔴 7.1. Obrigatórios Antes de Abrir para Usuários Reais (Go / No-Go)
+- [ ] **[SEC-01 / SEC-02]** Corrigir Edge Function `webhook-checkout`: implementar validação de assinatura `stripe.webhooks.constructEvent`, remover segredo hardcoded e rotacionar chave no Stripe Dashboard.
+- [ ] **[SEC-03]** Blindar trigger `protect_profile_role` no PostgreSQL para impedir que usuários alterem `community_subscription_status` e `community_access_expires_at`.
+- [ ] **[PRIV-01]** Desativar exibição pública de nomes e dados de crianças no `PublicProfileModal.tsx` e remover `profiles.family_tag` legível por terceiros.
+- [ ] **[PRIV-02 / COM-01]** Corrigir query de posts em `CommunityContext.tsx` para recuperar posts do Confessionário Anônimo (`is_anonymous = true`).
+- [ ] **[PRIV-03 / DB-02]** Corrigir bug SQL na procedure `delete_own_account()` (`WHERE user_id = current_user_id`).
+- [ ] **[DB-01]** Corrigir erro de digitação `ban_reason` para `banned_reason` no trigger `protect_profile_role`.
+- [ ] **[SEC-05]** Fechar RLS da tabela `moderation_rejected_examples` para `public.is_admin()`.
+- [ ] **[SEC-04]** Blindar RPC `vote_on_poll` para usar `auth.uid()` e fechar UPDATE em `community_polls`.
+- [ ] **[PROD-01]** Substituir Payment Links da Stripe de teste (`buy.stripe.com/test_***`) pelos links reais de Produção em `src/data/journeysData.ts`.
+- [ ] **[PROD-02]** Definir estratégia de conteúdo para o Módulo 2 de "Pais Recém-Nascidos" (subir vídeos reais no Panda Video ou marcar temporariamente como "Em Breve").
+- [ ] **[PROD-03]** Ajustar o texto do checkout retirando a promessa de "PDFs de apoio" até que os arquivos estejam produzidos e anexados.
+- [ ] **[PROD-04]** Corrigir a verificação dos 90 dias de comunidade grátis em `types/index.ts` para respeitar a data de expiração.
+- [ ] **[PRIV-03]** Adicionar checkbox de aceite de Termos de Uso e Política de Privacidade em `LoginPage.tsx`.
+- [ ] **[PRIV-04]** Adicionar termo de consentimento parental (Art. 14 LGPD) no cadastro de filhos em `DashboardPage.tsx`.
+
+---
+
+### 🟠 7.2. Fortemente Recomendados (Primeiras 24-48h de Operação)
+- [ ] **[OBS-01]** Configurar `VITE_SENTRY_DSN` no painel da Vercel para monitoramento em tempo real de erros de runtime.
+- [ ] **[ANA-01 / ANA-02 / ANA-03]** Injetar scripts do Google Analytics 4, Meta Pixel e script de persistência de parâmetros UTM.
+- [ ] **[SEC-06]** Corrigir fluxo de login por telefone para exigir validação de OTP antes de autenticar a sessão.
+- [ ] **[SEC-07]** Proteger o campo `admin_reply` na tabela `sos_tickets`.
+- [ ] **[SEC-08]** Migrar a troca de e-mail para o fluxo padrão de confirmação nativa do Supabase Auth.
+- [ ] **[INF-01]** Atualizar o `Dockerfile` com argumentos `ARG` para variáveis Vite.
+- [ ] **[INF-02]** Corrigir herança de security headers no `nginx.conf`.
+- [ ] **[QA-02]** Posicionar `<ErrorBoundary>` de nível global em volta da aplicação inteira.
+
+---
+
+### 🟡 7.3. Pós-Lançamento Imediato (Primeiras 72h a 1ª Semana)
+- [ ] **[QA-01]** Configurar `vitest` e criar testes de fumaça essenciais para autenticação e webhooks.
+- [ ] **[SEC-14]** Implementar One-Time Tokens no Panda Video para proteção contra download das vídeo-aulas.
+- [ ] **[DB-06]** Migrar o cálculo de XP e níveis para uma RPC server-side atômica.
+- [ ] **[ACC-01 / ACC-02 / ACC-03]** Aplicar melhorias de acessibilidade mobile (tap targets 44px, alt em imagens e contraste).
+- [ ] **[ENG-02]** Consolidar a hidratação de perfil em chamada paralela ou RPC unificada.
+
+---
+
+## 8. 🎯 Plano de Ação Priorizado de Remediação (Fase 2)
+
+O plano de ação está dividido em 3 ondas de execução para maximizar o impacto com segurança e agilidade:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ ONDA 1: BLINDAGEM DE SEGURANÇA, FATURAMENTO E BANCO (Tempo: ~2 horas)  │
+│ 1. Patch SQL no Supabase: RLS, Triggers de faturamento, delete_own_    │
+│    account, vote_on_poll, moderation_examples e índice Stripe.         │
+│ 2. Atualizar Edge Function webhook-checkout com assinatura Stripe.     │
+│ 3. Trocar links de teste da Stripe para Produção em journeysData.ts.   │
+│ 4. Corrigir cálculo de 90 dias e checagem de compra no frontend.       │
+└────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ ONDA 2: LGPD, PRIVACIDADE INFANTIL E COMUNIDADE (Tempo: ~1.5 horas)    │
+│ 1. Ocultar dados de filhos de terceiros no PublicProfileModal.         │
+│ 2. Corrigir query de posts anônimos no CommunityContext.               │
+│ 3. Adicionar checkbox de Termos de Uso em LoginPage.tsx.               │
+│ 4. Adicionar aviso de consentimento Art. 14 no cadastro de filhos.     │
+│ 5. Ajustar promessa de PDFs no CheckoutModal e copy de aulas.          │
+└────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ ONDA 3: INFRA, OBSERVABILIDADE E MARKETING (Tempo: ~1 hora)            │
+│ 1. Ativar Sentry DSN na Vercel e ErrorBoundary global.                 │
+│ 2. Injetar scripts de GA4, Meta Pixel e rastreador de UTMs.            │
+│ 3. Corrigir Dockerfile e cabeçalhos Nginx.                             │
+│ 4. Teste de fumaça ponta a ponta e verificação final de deploy.        │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 9. ❓ Itens Pendentes e Decisões em Aberto com o Usuário
+
+Antes de avançar para a execução da Fase 2 (Correções e Fixes), as seguintes definições comerciais e de infraestrutura precisam ser alinhadas:
+
+1. **Definição dos Vídeos do Módulo 2 ("Pais Recém-Nascidos"):**  
+   Os vídeos reais do Módulo 2 já estão prontos para envio ao Panda Video, ou você prefere que marquemos temporariamente o Módulo 2 como *"Em Breve (Liberação em 7 dias)"* enquanto o Módulo 1 funciona como degustação completa?
+2. **Links de Produção da Stripe:**  
+   Você já gerou os Payment Links em modo **Live** (produção) no seu painel da Stripe para as jornadas e para a Comunidade (R$ 9,90/mês)? Se sim, podemos inseri-los no arquivo de dados.
+3. **Segredo do Webhook na Stripe:**  
+   No painel da Stripe (modo Live), já foi cadastrado o endpoint `https://mixedzmkjfzumeimfkfz.supabase.co/functions/v1/webhook-checkout` escutando os eventos `checkout.session.completed`, `invoice.payment_succeeded` e `customer.subscription.deleted`? O segredo de assinatura gerado (`whsec_***`) precisará ser configurado no Supabase Secrets.
+4. **Copy do Checkout vs. PDFs de Apoio:**  
+   Como ainda não há PDFs diagramados para download imediato, você autoriza removermos a menção de *"PDFs de apoio para download"* do modal de checkout para manter total transparência com os compradores?
+
+---
+*Relatório concluído com base estrita na inspeção dos arquivos locais do projeto, schemas do banco Supabase e logs de execução. Nenhuma alteração foi gravada no código fonte ou banco de dados nesta etapa.*

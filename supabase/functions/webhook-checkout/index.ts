@@ -7,7 +7,63 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const webhookSecret = Deno.env.get('WEBHOOK_SECRET') || Deno.env.get('STRIPE_WEBHOOK_SECRET') || 'whsec_qaDlbh91DLVQfJYf5wvprW3ZwALnhkeQ';
+const webhookSecret = Deno.env.get('WEBHOOK_SECRET') || Deno.env.get('STRIPE_WEBHOOK_SECRET') || '';
+
+/**
+ * Validação de Assinatura Webhook Stripe usando Web Crypto API nativa do Deno.
+ * Formato do header stripe-signature: t=timestamp,v1=signature[,v0=...]
+ */
+async function verifyStripeSignature(rawBody: string, signatureHeader: string | null, secret: string): Promise<boolean> {
+  if (!signatureHeader || !secret) return false;
+
+  const parts = signatureHeader.split(',');
+  let timestamp = '';
+  const signatures: string[] = [];
+
+  for (const part of parts) {
+    const [key, value] = part.trim().split('=');
+    if (key === 't') timestamp = value;
+    if (key === 'v1') signatures.push(value);
+  }
+
+  if (!timestamp || signatures.length === 0) return false;
+
+  // Tolerância de 5 minutos (300 segundos) contra ataques de replay
+  const currentTime = Math.floor(Date.now() / 1000);
+  const eventTime = parseInt(timestamp, 10);
+  if (isNaN(eventTime) || Math.abs(currentTime - eventTime) > 300) {
+    console.warn(`[Stripe Webhook] Timestamp fora da tolerância: ${eventTime} vs ${currentTime}`);
+    return false;
+  }
+
+  try {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    const payload = `${timestamp}.${rawBody}`;
+    const signedBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+    const signedArray = Array.from(new Uint8Array(signedBuffer));
+    const computedSignature = signedArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // Comparação em tempo constante para mitigar timing attacks
+    return signatures.some(sig => {
+      if (sig.length !== computedSignature.length) return false;
+      let diff = 0;
+      for (let i = 0; i < sig.length; i++) {
+        diff |= sig.charCodeAt(i) ^ computedSignature.charCodeAt(i);
+      }
+      return diff === 0;
+    });
+  } catch (err) {
+    console.error('[Stripe Webhook] Falha ao verificar assinatura:', err);
+    return false;
+  }
+}
 
 const supabaseAdmin = (supabaseUrl && supabaseServiceKey) 
   ? createClient(supabaseUrl, supabaseServiceKey, {
@@ -70,7 +126,20 @@ Deno.serve(async (req) => {
     const bodyToken = body.token || body.signature || body.hottok;
     const isStripe = Boolean(stripeSignature || body.object === 'event' || body.type?.startsWith('checkout.') || body.type?.startsWith('customer.') || body.type?.startsWith('invoice.'));
 
-    if (!isStripe) {
+    if (isStripe) {
+      if (webhookSecret) {
+        const isValid = await verifyStripeSignature(rawBody, stripeSignature, webhookSecret);
+        if (!isValid) {
+          console.warn('⚠️ Stripe Webhook rejeitado: Assinatura stripe-signature inválida ou expirada.');
+          return new Response(JSON.stringify({ error: 'INVALID_STRIPE_SIGNATURE', message: 'Assinatura Stripe inválida' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      } else {
+        console.warn('⚠️ AVISO DE SEGURANÇA: STRIPE_WEBHOOK_SECRET não configurado no ambiente Supabase Edge Functions.');
+      }
+    } else {
       const providedToken = queryToken || headerToken || bodyToken;
       if (webhookSecret && (!providedToken || providedToken !== webhookSecret)) {
         console.warn('⚠️ Webhook rejeitado: Token inválido ou ausente.');
@@ -94,6 +163,7 @@ Deno.serve(async (req) => {
     let isCommunitySubscription = false;
     let stripeCustomerId = '';
     let stripeSubscriptionId = '';
+    let clientReferenceId = '';
 
     // 🔹 DETECÇÃO STRIPE
     if (isStripe) {
@@ -101,8 +171,9 @@ Deno.serve(async (req) => {
       const eventType = String(body.type || '');
       const dataObj = body.data?.object || {};
       externalId = String(dataObj.id || body.id || '');
+      clientReferenceId = String(dataObj.client_reference_id || dataObj.metadata?.user_id || '');
 
-      console.log(`⚡ [STRIPE EVENT] ${eventType} (ID: ${externalId})`);
+      console.log(`⚡ [STRIPE EVENT] ${eventType} (ID: ${externalId}) | Ref: ${clientReferenceId || 'N/A'}`);
 
       if (eventType === 'checkout.session.completed') {
         status = 'approved';
@@ -270,18 +341,37 @@ Deno.serve(async (req) => {
     // ── 4. Processamento de Status: Aprovação vs Cancelamento ──
     let autoProvisioned = false;
     let userId: string | null = null;
+    let existingProfile: any = null;
 
     if (status === 'approved') {
-      // 4.1. Localizar perfil existente por e-mail
-      const { data: existingProfile } = await supabaseAdmin
-        .from('profiles')
-        .select('id, name, community_access_expires_at, community_subscription_status')
-        .ilike('email', buyerEmail)
-        .maybeSingle();
+      // 4.1. Localizar perfil existente por client_reference_id (se enviado) ou e-mail
+      if (clientReferenceId) {
+        const { data: profileById } = await supabaseAdmin
+          .from('profiles')
+          .select('id, name, community_access_expires_at, community_subscription_status')
+          .eq('id', clientReferenceId)
+          .maybeSingle();
 
-      if (existingProfile?.id) {
-        userId = existingProfile.id;
-      } else {
+        if (profileById?.id) {
+          existingProfile = profileById;
+          userId = profileById.id;
+        }
+      }
+
+      if (!userId && buyerEmail) {
+        const { data: profileByEmail } = await supabaseAdmin
+          .from('profiles')
+          .select('id, name, community_access_expires_at, community_subscription_status')
+          .ilike('email', buyerEmail)
+          .maybeSingle();
+
+        if (profileByEmail?.id) {
+          existingProfile = profileByEmail;
+          userId = profileByEmail.id;
+        }
+      }
+
+      if (!userId) {
         // 4.2. AUTO-PROVISIONAMENTO DE NOVO ALUNO
         const { data: newAuthUser, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
           email: buyerEmail,

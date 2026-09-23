@@ -1548,6 +1548,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                       Dica: Digite a data de nascimento completa (DD/MM/AAAA) para atualizar a idade automaticamente a cada aniversário.
                     </p>
 
+                    <p className="text-[11px] text-slate-400 leading-snug px-1 text-center bg-white/5 p-2 rounded-xl border border-white/5">
+                      🔒 <strong>Privacidade (LGPD Art. 14):</strong> Os dados de seus filhos são confidenciais, protegidos em banco seguro e nunca são exibidos para outros usuários ou comercializados.
+                    </p>
+
                     <button
                       onClick={async () => {
                         const isPregnancy = newChildEmoji === '🤰';

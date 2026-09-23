@@ -84,7 +84,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-400 font-bold shrink-0" />
-                <span>Espaço de notas pessoais e PDFs de apoio para download.</span>
+                <span>Espaço de notas pessoais integradas a cada aula.</span>
               </div>
               <div className="flex items-start gap-2 bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-xl text-emerald-300">
                 <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
