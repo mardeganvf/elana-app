@@ -219,12 +219,23 @@ export async function syncFollowedMembersFromSupabase(userId?: string): Promise<
     // Se já existem registros no Supabase, busca os perfis correspondentes
     if (followRows && followRows.length > 0) {
       const followedIds = followRows.map(r => r.followed_id).filter(Boolean);
-      const { data: profileRows, error: profileError } = await supabase
-        .from('profiles')
+      let profileRows: any[] | null = null;
+      const { data: pubRows, error: pubErr } = await supabase
+        .from('public_profiles')
         .select('*')
         .in('id', followedIds);
 
-      if (!profileError && profileRows) {
+      if (!pubErr && pubRows) {
+        profileRows = pubRows;
+      } else {
+        const { data: fallbackRows } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', followedIds);
+        profileRows = fallbackRows;
+      }
+
+      if (profileRows) {
         const profileMap = new Map(profileRows.map(p => [p.id, p]));
         const localList = getFollowedMembers(userId);
         const localMap = new Map(localList.map(m => [m.id, m]));

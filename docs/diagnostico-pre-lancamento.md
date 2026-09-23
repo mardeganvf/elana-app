@@ -40,24 +40,20 @@ Contudo, sob a ótica estrita de prontidão para abertura comercial e tráfego p
 ```
 
 #### Contagem Oficial por Nível de Severidade
-* 🔴 **Críticos (Bloqueadores de Lançamento):** **2**
-* 🟠 **Altos (Riscos de Segurança e Dados):** **2**
-* 🟡 **Médios (Qualidade, Analytics e Storage):** **3**
-* 🟢 **Baixos (Polimento e Débito Técnico):** **4**
-* ⚪ **Não Verificáveis (Credenciais Externas e Backup):** **2**
+* 🔴 **Críticos (Bloqueadores Comerciais/Conteúdo):** **2** (Ajuste agendado antes do lançamento)
+* 🟠 **Altos (Riscos de Segurança e Dados):** **0** (Todos os 4 mitigados)
+* 🟡 **Médios (Analytics de Marketing):** **1** (`[INF-04]` agendado antes do lançamento)
+* 🟢 **Baixos (Polimento e Débito Técnico):** **0** (Todos solucionados)
+* ⚪ **Não Verificáveis (Configurações Externas):** **0** (`[ENV-01]` e `[INF-05]` alinhados)
 
 ---
 
-### 1.3. Justificativa da Decisão & Bloqueadores Ativos (P0)
+### 1.3. Justificativa da Decisão & Bloqueadores Agendados (P0)
 
 1. **🔴 Links de Checkout da Stripe em Modo Sandbox / Test Mode ([PROD-01]):**  
-   Os links de pagamento configurados tanto no banco de dados quanto no catálogo estático (`src/data/journeysData.ts:3, 20, 88...`) apontam para URLs de teste da Stripe (`buy.stripe.com/test_***`). Clientes reais não conseguem efetuar pagamentos com cartões de crédito ou PIX de produção.
+   Os links de pagamento configurados tanto no banco de dados quanto no catálogo estático (`src/data/journeysData.ts:3, 20, 88...`) apontam para URLs de teste da Stripe (`buy.stripe.com/test_***`). Alinhado com o cliente para inserção dos links Live antes da abertura comercial.
 2. **🔴 Conteúdo Incompleto Vendido na Jornada Aberta ("Pais Recém-Nascidos") ([PROD-02]):**  
-   A jornada *"Pais Recém-Nascidos"* é a única aberta para comercialização imediata (`isComingSoon: false`), porém o Módulo 2 completo (17 aulas) possui vídeos mock do Google (`ForBiggerJoylikes.mp4`, `Sintel.mp4`) com duração indicada como `'- min'`. Alunos pagantes receberão vídeos de teste de código aberto no lugar das aulas da Elana, gerando alto volume de chargebacks, reclamações e cancelamentos.
-3. **🟠 Exposição de PII (E-mail, Telefone e IDs Stripe) via RLS Permissivo de `profiles` ([SEC-08] / [PRIV-04]):**  
-   A política de leitura `profiles_select_auth` permite que qualquer usuário cadastrado execute uma consulta direta via API Supabase e extraia a lista completa de e-mails, telefones e IDs de clientes Stripe de todos os demais membros da plataforma (risco LGPD Art. 14 / Art. 46).
-4. **🟠 Inserção de Posts/Comentários Sem Restrição de Assinatura no RLS ([SEC-09]):**  
-   A política de INSERT em `community_posts` e `community_comments` valida apenas se o usuário está logado e não banido, deixando a checagem da assinatura de R$ 9,90/mês exclusivamente no frontend React. Um usuário gratuito pode contornar a interface e postar livremente no PostgREST.
+   O Módulo 2 da jornada aberta possui vídeos mock do Google (`ForBiggerJoylikes.mp4`, `Sintel.mp4`) com duração indicada como `'- min'`. Alinhado com o cliente para inserção dos vídeos finais ou status de liberação pré-lançamento.
 
 ---
 
@@ -72,9 +68,16 @@ Contudo, sob a ótica estrita de prontidão para abertura comercial e tráfego p
 | **[SEC-05]** | RLS Aberto em `moderation_rejected_examples` | 🟢 **RESOLVIDO** | Política atualizada exigindo função `is_admin()`. |
 | **[SEC-06]** | Bypass de Autenticação por Telefone | 🟢 **MITIGADO** | Handlers de cadastro e login por telefone bloqueados com mensagem instrutiva até integração SMS definitiva. |
 | **[SEC-07]** | Adulteração de Resposta Clínica em `sos_tickets` | 🟢 **RESOLVIDO** | Trigger `trg_protect_sos_ticket_update` impede alteração de `admin_reply`, `status` e `replied_at` por não-administradores. |
+| **[SEC-08]** | Exposição de E-mail/Telefone no RLS de `profiles` | 🟢 **RESOLVIDO** | Política `profiles_select_own_or_admin` restringe dados sensíveis; View `public.public_profiles` criada para listagens da comunidade. |
+| **[SEC-09]** | Paywall da Comunidade no RLS de Posts | 🟢 **RESOLVIDO** | Função `public.can_post_in_community()` e RLS em `community_posts` e `community_comments` validam assinatura/cortesia ativa. |
+| **[SEC-10]** | Limite do Bucket `user-media` (Storage) | 🟢 **RESOLVIDO** | Limite estrito de 10 MB (`file_size_limit: 10485760`) e restrição de tipos MIME seguros aplicados. |
 | **[PRIV-01]** | Vazamento de Dados de Menores no Perfil Público | 🟢 **RESOLVIDO** | `PublicProfileModal.tsx:418-442` isola dados de filhos estritamente para `isOwnProfile === true`. RLS de `family_members` isola por pai/mãe. |
 | **[PRIV-02]** | Posts Anônimos Desaparecendo do Feed | 🟢 **RESOLVIDO** | Query no `CommunityContext.tsx:753` atualizada para `.or('not.author_id.is.null,is_anonymous.eq.true')`. |
 | **[PRIV-03]** | Falha na Exclusão de Conta (LGPD Art. 18) | 🟢 **RESOLVIDO** | RPC `delete_own_account()` corrigida para referenciar `community_reactions.user_id` e validada ponta a ponta. |
+| **[PRIV-05]** | Limpeza de Chaves de Cache no Logout | 🟢 **RESOLVIDO** | `AuthContext.tsx:1381` purga todos os dados transitórios preservando apenas preferências estéticas do usuário. |
+| **[QA-01]** | Pipeline de Testes Automatizados (CI/CD) | 🟢 **RESOLVIDO** | `vitest` configurado no `package.json`, suíte de testes em `src/test/access_rules.test.ts` e pipeline GitHub Actions `.github/workflows/ci.yml`. |
+| **[ENG-04]** | Console Logs Residuais no Bundle | 🟢 **RESOLVIDO** | `vite.config.ts` configurado para remover `console` e `debugger` automaticamente em builds de produção. |
+| **[ACC-02]** | Alvos de Toque (Tap Targets) < 44px | 🟢 **RESOLVIDO** | Dimensões de clique de botões de sub-opções, salas e ações ajustadas para `min-h-[44px]` (WCAG 2.1). |
 | **[INF-03]** | Observabilidade e Rastreamento de Erros | 🟢 **RESOLVIDO** | Sentry configurado em `src/main.tsx`, DSN injetado na Vercel e verificado com disparo de erro controlado em produção. |
 | **[SYNC-01]** | Sincronização Multi-Dispositivo (Arquétipos/Aulas) | 🟢 **RESOLVIDO** | Reidratação reativa de sessão no `AuthContext.tsx` e `QuizPage.tsx` disparada em `INITIAL_SESSION`, `TOKEN_REFRESHED` e `getSession()`. |
 

@@ -1383,12 +1383,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setSosResponse(null);
     try {
-      // Purge all Elana-specific keys and user session data from localStorage
+      // Purge all user session data, community caches, and quiz data from localStorage
+      // Keep only general non-sensitive UI preferences (theme, font size, PWA prompt state)
+      const preservedKeys = new Set(['elana_font_size', 'elana_theme', 'elana_pwa_dismissed']);
       const keysToRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('elana_') || key.startsWith('sb-') || key.includes('supabase'))) {
-          keysToRemove.push(key);
+        if (key && !preservedKeys.has(key)) {
+          if (key.startsWith('elana_') || key.startsWith('sb-') || key.includes('supabase')) {
+            keysToRemove.push(key);
+          }
         }
       }
       keysToRemove.forEach(k => localStorage.removeItem(k));

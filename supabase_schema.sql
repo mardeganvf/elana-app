@@ -291,9 +291,34 @@ DROP POLICY IF EXISTS "profiles_update_all" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_update_admin_or_own" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_delete_own" ON public.profiles;
 
-CREATE POLICY "profiles_select_auth"
+DROP POLICY IF EXISTS "profiles_select_auth" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_select_own_or_admin" ON public.profiles;
+
+CREATE POLICY "profiles_select_own_or_admin"
   ON public.profiles FOR SELECT
-  USING (auth.uid() IS NOT NULL);
+  USING (auth.uid() = id OR public.is_admin());
+
+-- View segura para consulta de perfis da comunidade sem expor e-mail, telefone ou stripe_customer_id
+CREATE OR REPLACE VIEW public.public_profiles WITH (security_invoker = false) AS
+SELECT 
+  id,
+  name,
+  avatar_url,
+  role,
+  bio,
+  parental_archetype,
+  parental_secondary_archetype,
+  parental_quiz_completed_at,
+  xp_points,
+  level_number,
+  level_name,
+  badges_count,
+  streak_days,
+  is_banned,
+  created_at
+FROM public.profiles;
+
+GRANT SELECT ON public.public_profiles TO authenticated, anon;
 
 CREATE POLICY "profiles_insert_own"
   ON public.profiles FOR INSERT
@@ -472,13 +497,28 @@ CREATE POLICY "Allow public read community_posts" ON public.community_posts FOR 
     OR (auth.uid() IS NOT NULL AND auth.uid() = author_id)
     OR public.is_admin()
   );
+-- Função para validação de permissão de postagem (Paywall da comunidade)
+CREATE OR REPLACE FUNCTION public.can_post_in_community(p_user_id uuid)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = p_user_id
+    AND (
+      p.role IN ('admin', 'curadoria', 'guia')
+      OR p.community_subscription_status = 'active'
+      OR (p.community_access_expires_at IS NOT NULL AND p.community_access_expires_at > now())
+    )
+    AND p.is_banned = false
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
 CREATE POLICY "Allow public insert community_posts" ON public.community_posts
   FOR INSERT WITH CHECK (
     auth.uid() IS NOT NULL
-    AND NOT EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND is_banned = true
-    )
+    AND (is_anonymous = true OR author_id = auth.uid())
+    AND public.can_post_in_community(auth.uid())
   );
 DROP POLICY IF EXISTS "Allow author or admin update community_posts" ON public.community_posts;
 CREATE POLICY "Allow author or admin update community_posts" ON public.community_posts FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
@@ -508,10 +548,8 @@ CREATE POLICY "Allow public read community_comments" ON public.community_comment
 CREATE POLICY "Allow public insert community_comments" ON public.community_comments
   FOR INSERT WITH CHECK (
     auth.uid() IS NOT NULL
-    AND NOT EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND is_banned = true
-    )
+    AND (is_anonymous = true OR author_id = auth.uid())
+    AND public.can_post_in_community(auth.uid())
   );
 DROP POLICY IF EXISTS "Allow author or admin update community_comments" ON public.community_comments;
 CREATE POLICY "Allow author or admin update community_comments" ON public.community_comments FOR UPDATE USING (auth.uid() = author_id OR public.is_admin());
@@ -724,9 +762,17 @@ CREATE POLICY "sos_delete_auth"
 -- STORAGE: BUCKET user-media — uploads apenas autenticados,
 -- leitura pública (as URLs são públicas por design)
 -- ========================================================
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('user-media', 'user-media', true)
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'user-media', 
+  'user-media', 
+  true, 
+  10485760, -- 10MB em bytes
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
+)
+ON CONFLICT (id) DO UPDATE SET
+  file_size_limit = 10485760,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
 
 DROP POLICY IF EXISTS "Allow public uploads to user-media" ON storage.objects;
 DROP POLICY IF EXISTS "Allow public reads from user-media" ON storage.objects;

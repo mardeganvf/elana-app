@@ -667,10 +667,16 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
     let authorChildren: ChildInfo[] = [];
     let authorTestimonials: ProfileTestimonial[] = [];
 
-    if (author.id && author.id.includes('-') && author.id.length > 20) {
-      try {
+        const fetchProfile = async () => {
+          const res = await supabase.from('public_profiles').select('*').eq('id', author.id).maybeSingle();
+          if (res.error || !res.data) {
+            return supabase.from('profiles').select('*').eq('id', author.id).maybeSingle();
+          }
+          return res;
+        };
+
         const [profileRes, familyRes, testRes] = await Promise.all([
-          supabase.from('profiles').select('*').eq('id', author.id).maybeSingle(),
+          fetchProfile(),
           supabase.from('family_members').select('*').eq('profile_id', author.id),
           supabase.from('profile_testimonials').select('*').eq('recipient_profile_id', author.id).order('created_at', { ascending: false })
         ]);
@@ -1582,7 +1588,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                         <div className="pl-2 space-y-1 border-l-2 border-[#FF7F5B]/30 ml-2.5 animate-fade-in pt-0.5">
                           <button
                             onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'ajuda' })}
-                            className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                            className={`w-full min-h-[44px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
                               isSelectedJourney && activeSelection.subOption === 'ajuda'
                                 ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -1593,7 +1599,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
 
                           <button
                             onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'celebrar' })}
-                            className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                            className={`w-full min-h-[44px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
                               isSelectedJourney && activeSelection.subOption === 'celebrar'
                                 ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -1604,7 +1610,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
 
                           <button
                             onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'desabafar' })}
-                            className={`w-full flex items-center justify-between p-2 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                            className={`w-full min-h-[44px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
                               isSelectedJourney && activeSelection.subOption === 'desabafar'
                                 ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -1633,7 +1639,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                     <button
                       key={a.id}
                       onClick={() => setActiveSelection({ type: 'idade', ageId: a.id })}
-                      className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${
+                      className={`w-full min-h-[44px] flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${
                         isSelected
                           ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B] shadow-md font-black'
                           : 'bg-[#070D0F] text-slate-300 border-white/5 hover:bg-white/5'
@@ -2042,7 +2048,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                                 <button
                                   type="button"
                                   onClick={() => toggleCommentsExpansion(post.id)}
-                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm border cursor-pointer ${
+                                  className={`flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl text-xs font-bold transition-all shadow-sm border cursor-pointer ${
                                     isInlineExpanded
                                       ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B]'
                                       : 'bg-[#070D0F] text-slate-300 border-white/10 hover:bg-white/10 hover:text-white'
@@ -2060,9 +2066,9 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                                     type="button"
                                     title="Denunciar publicação"
                                     onClick={() => setReportTarget({ contentType: 'post', contentId: post.id, postId: null })}
-                                    className="flex items-center gap-1 px-2 py-1.5 rounded-xl text-[10px] font-bold text-slate-500 border border-transparent hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer"
+                                    className="flex items-center gap-1 px-2.5 py-2 min-h-[44px] rounded-xl text-[10px] font-bold text-slate-500 border border-transparent hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer"
                                   >
-                                    <Flag className="w-3 h-3" />
+                                    <Flag className="w-3.5 h-3.5" />
                                     <span>Denunciar</span>
                                   </button>
                                 )}
@@ -2073,7 +2079,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                                     type="button"
                                     title="Excluir minha publicação"
                                     onClick={() => setPostToDelete(post)}
-                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-400 border border-white/10 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer"
+                                    className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl text-[11px] font-bold text-slate-400 border border-white/10 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                     <span>Excluir</span>

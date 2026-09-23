@@ -107,6 +107,37 @@ CREATE TRIGGER trg_protect_profile_role
   EXECUTE FUNCTION public.protect_profile_role();
 
 -- ------------------------------------------------------------------------------
+-- 2.1. BLINDAGEM DE PRIVACIDADE: RLS EM PROFILES E VIEW DE PERFIS PÚBLICOS
+-- ------------------------------------------------------------------------------
+DROP POLICY IF EXISTS "profiles_select_auth" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_select_own_or_admin" ON public.profiles;
+
+CREATE POLICY "profiles_select_own_or_admin" ON public.profiles
+  FOR SELECT
+  USING (auth.uid() = id OR public.is_admin());
+
+CREATE OR REPLACE VIEW public.public_profiles WITH (security_invoker = false) AS
+SELECT 
+  id,
+  name,
+  avatar_url,
+  role,
+  bio,
+  parental_archetype,
+  parental_secondary_archetype,
+  parental_quiz_completed_at,
+  xp_points,
+  level_number,
+  level_name,
+  badges_count,
+  streak_days,
+  is_banned,
+  created_at
+FROM public.profiles;
+
+GRANT SELECT ON public.public_profiles TO authenticated, anon;
+
+-- ------------------------------------------------------------------------------
 -- 3. DIREITO AO ESQUECIMENTO / EXCLUSÃO DE CONTA (LGPD ART. 18 / APPLE 5.1.1)
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.delete_own_account()
@@ -208,26 +239,40 @@ CREATE POLICY "moderation_examples_admin" ON public.moderation_rejected_examples
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- ------------------------------------------------------------------------------
--- 6. BLINDAGEM CONTRA SPOOFING NA COMUNIDADE (POSTS, COMENTÁRIOS, REAÇÕES)
+-- 6. BLINDAGEM CONTRA SPOOFING E PAYWALL NA COMUNIDADE (POSTS, COMENTÁRIOS, REAÇÕES)
 -- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.can_post_in_community(p_user_id uuid)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = p_user_id
+    AND (
+      p.role IN ('admin', 'curadoria', 'guia')
+      OR p.community_subscription_status = 'active'
+      OR (p.community_access_expires_at IS NOT NULL AND p.community_access_expires_at > now())
+    )
+    AND p.is_banned = false
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
 DROP POLICY IF EXISTS "Allow public insert community_posts" ON public.community_posts;
+DROP POLICY IF EXISTS "community_posts_insert_auth" ON public.community_posts;
 CREATE POLICY "community_posts_insert_auth" ON public.community_posts
   FOR INSERT WITH CHECK (
     auth.uid() IS NOT NULL
     AND (is_anonymous = true OR author_id = auth.uid())
-    AND NOT EXISTS (
-      SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_banned = true
-    )
+    AND public.can_post_in_community(auth.uid())
   );
 
 DROP POLICY IF EXISTS "Allow public insert community_comments" ON public.community_comments;
+DROP POLICY IF EXISTS "community_comments_insert_auth" ON public.community_comments;
 CREATE POLICY "community_comments_insert_auth" ON public.community_comments
   FOR INSERT WITH CHECK (
     auth.uid() IS NOT NULL
     AND (is_anonymous = true OR author_id = auth.uid())
-    AND NOT EXISTS (
-      SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_banned = true
-    )
+    AND public.can_post_in_community(auth.uid())
   );
 
 DROP POLICY IF EXISTS "community_reactions_insert_own" ON public.community_reactions;
@@ -309,6 +354,12 @@ CREATE POLICY "storage_delete_auth"
       OR public.is_admin()
     )
   );
+
+-- Limite de 10MB e restrição de tipos MIME permitidos no bucket user-media
+UPDATE storage.buckets
+SET file_size_limit = 10485760, -- 10 MB em bytes
+    allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
+WHERE id = 'user-media';
 
 -- ------------------------------------------------------------------------------
 -- 9. ÍNDICES DE PERFORMANCE PARA A COMUNIDADE
