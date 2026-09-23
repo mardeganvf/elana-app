@@ -318,28 +318,71 @@ CREATE INDEX IF NOT EXISTS idx_community_comments_status_created ON public.commu
 CREATE INDEX IF NOT EXISTS idx_community_reports_content_id ON public.community_reports(content_id);
 
 -- ------------------------------------------------------------------------------
--- 10. SINCRONIZAÇÃO AUTOMÁTICA DE CHECK-INS EMOCIONAIS PARA VISITAS DIÁRIAS
+-- 10. SINCRONIZAÇÃO AUTOMÁTICA DE ATIVIDADES PARA VISITAS DIÁRIAS (DIAS CONOSCO)
 -- ------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.sync_checkin_to_daily_visits()
+CREATE OR REPLACE FUNCTION public.sync_activity_to_daily_visits()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_profile_id uuid;
+  v_date date;
 BEGIN
-  IF NEW.profile_id IS NOT NULL THEN
+  IF TG_TABLE_NAME IN ('community_posts', 'community_comments') THEN
+    v_profile_id := NEW.author_id;
+  ELSE
+    v_profile_id := NEW.profile_id;
+  END IF;
+
+  IF v_profile_id IS NOT NULL THEN
+    v_date := (COALESCE(
+      CASE WHEN TG_TABLE_NAME = 'user_completed_lessons' THEN NEW.completed_at END,
+      CASE WHEN TG_TABLE_NAME = 'user_lesson_notes' THEN NEW.updated_at END,
+      CASE WHEN TG_TABLE_NAME = 'emotional_checkins' THEN NEW.created_at END,
+      CASE WHEN TG_TABLE_NAME IN ('community_posts', 'community_comments') THEN NEW.created_at END,
+      NOW()
+    ) AT TIME ZONE 'America/Sao_Paulo')::date;
+
     INSERT INTO public.user_daily_visits (profile_id, visit_date)
-    VALUES (NEW.profile_id, (NEW.created_at AT TIME ZONE 'America/Sao_Paulo')::date)
+    VALUES (v_profile_id, v_date)
     ON CONFLICT (profile_id, visit_date) DO NOTHING;
     
     UPDATE public.profiles
     SET streak_days = (
-      SELECT count(*) FROM public.user_daily_visits WHERE profile_id = NEW.profile_id
+      SELECT count(*) FROM public.user_daily_visits WHERE profile_id = v_profile_id
     )
-    WHERE id = NEW.profile_id;
+    WHERE id = v_profile_id;
   END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Triggers para registrar presença diária e atualizar contador de dias conosco
 DROP TRIGGER IF EXISTS trg_sync_checkin_to_daily_visits ON public.emotional_checkins;
 CREATE TRIGGER trg_sync_checkin_to_daily_visits
   AFTER INSERT ON public.emotional_checkins
   FOR EACH ROW
-  EXECUTE FUNCTION public.sync_checkin_to_daily_visits();
+  EXECUTE FUNCTION public.sync_activity_to_daily_visits();
+
+DROP TRIGGER IF EXISTS trg_sync_completed_lessons_to_daily_visits ON public.user_completed_lessons;
+CREATE TRIGGER trg_sync_completed_lessons_to_daily_visits
+  AFTER INSERT OR UPDATE ON public.user_completed_lessons
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_activity_to_daily_visits();
+
+DROP TRIGGER IF EXISTS trg_sync_lesson_notes_to_daily_visits ON public.user_lesson_notes;
+CREATE TRIGGER trg_sync_lesson_notes_to_daily_visits
+  AFTER INSERT OR UPDATE ON public.user_lesson_notes
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_activity_to_daily_visits();
+
+DROP TRIGGER IF EXISTS trg_sync_community_posts_to_daily_visits ON public.community_posts;
+CREATE TRIGGER trg_sync_community_posts_to_daily_visits
+  AFTER INSERT ON public.community_posts
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_activity_to_daily_visits();
+
+DROP TRIGGER IF EXISTS trg_sync_community_comments_to_daily_visits ON public.community_comments;
+CREATE TRIGGER trg_sync_community_comments_to_daily_visits
+  AFTER INSERT ON public.community_comments
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_activity_to_daily_visits();
+

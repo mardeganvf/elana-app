@@ -126,6 +126,7 @@ interface AuthContextType {
   markSosResponseRead: () => void;
   refreshSosTicket: () => Promise<void>;
   refreshUserFromBackend: () => Promise<void>;
+  recordDailyVisit: (targetProfileId?: string) => Promise<number>;
   adminPendingCounts: AdminPendingCounts;
   setAdminPendingCounts: React.Dispatch<React.SetStateAction<AdminPendingCounts>>;
   refreshAdminPendingCounts: () => Promise<void>;
@@ -463,6 +464,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } else {
       localStorage.removeItem('elana_user_session');
+    }
+  }, [user]);
+
+  /**
+   * REGISTRO DE PRESENÇA DIÁRIA:
+   * Grava o dia civil atual (fuso de Brasília) em user_daily_visits e recalcula o streak_days.
+   */
+  const recordDailyVisit = useCallback(async (targetProfileId?: string): Promise<number> => {
+    const pId = targetProfileId || userRef.current?.id || user?.id;
+    if (!pId) return 1;
+
+    try {
+      // Data civil no fuso de Brasília (America/Sao_Paulo)
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      const todayDateStr = formatter.format(new Date());
+
+      // Grava a presença do dia de hoje (UNIQUE garante no máximo 1 registro por dia civil)
+      await supabase.from('user_daily_visits').upsert({
+        profile_id: pId,
+        visit_date: todayDateStr
+      }, { onConflict: 'profile_id, visit_date' });
+
+      // Consulta a contagem total de dias distintos de acesso registrados
+      const { count: visitsCount } = await supabase
+        .from('user_daily_visits')
+        .select('id', { count: 'exact', head: true })
+        .eq('profile_id', pId);
+
+      let count = visitsCount || 1;
+
+      // Garante que o total de dias com check-in emocional seja considerado
+      const { count: checkinsCount } = await supabase
+        .from('emotional_checkins')
+        .select('id', { count: 'exact', head: true })
+        .eq('profile_id', pId);
+
+      if (checkinsCount && checkinsCount > count) {
+        count = checkinsCount;
+      }
+
+      const currentStreak = userRef.current?.streakDays || user?.streakDays || 1;
+      const newStreak = Math.max(currentStreak, count);
+
+      if (userRef.current && newStreak !== userRef.current.streakDays) {
+        setUser(prev => prev ? { ...prev, streakDays: newStreak } : null);
+        await supabase.from('profiles').update({ streak_days: newStreak }).eq('id', pId);
+      }
+
+      return newStreak;
+    } catch (err) {
+      console.warn('Notice recording daily visit in Supabase:', err);
+      return userRef.current?.streakDays || user?.streakDays || 1;
     }
   }, [user]);
 
@@ -848,39 +906,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (noteCount >= 15) checkAndAddBadge('b61'); // Livro da Minha Vida (15)
 
       // 🌿 Registro de Presença e Dias de Caminhada Conosco (Dias Únicos de Acesso Ativo)
-      const now = new Date();
-      const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      
-      let visitDaysCount = 1;
-      try {
-        // Grava a presença do dia de hoje (UNIQUE garante no máximo 1 registro por dia civil)
-        await supabase.from('user_daily_visits').upsert({
-          profile_id: profileId,
-          visit_date: todayDateStr
-        }, { onConflict: 'profile_id, visit_date' });
-
-        // Consulta a contagem total de dias distintos de acesso registrados
-        const { count: visitsCount } = await supabase
-          .from('user_daily_visits')
-          .select('id', { count: 'exact', head: true })
-          .eq('profile_id', profileId);
-
-        if (visitsCount && visitsCount > 0) {
-          visitDaysCount = visitsCount;
-        }
-
-        // Garante que o total de dias com check-in emocional seja considerado
-        const { count: checkinsCount } = await supabase
-          .from('emotional_checkins')
-          .select('id', { count: 'exact', head: true })
-          .eq('profile_id', profileId);
-
-        if (checkinsCount && checkinsCount > visitDaysCount) {
-          visitDaysCount = checkinsCount;
-        }
-      } catch (err) {
-        console.warn('Notice recording daily visit in Supabase:', err);
-      }
+      const visitDaysCount = await recordDailyVisit(profileId);
 
       // Transição suave: preserva o maior valor entre o histórico acumulado (profile.streak_days) e a contagem real de visitas
       const calculatedStreak = Math.max(profile.streak_days || 1, visitDaysCount);
@@ -1385,7 +1411,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error recording completed lesson to Supabase:', e);
     }
 
-    // 2. Atualizar estado local de aulas concluídas (sem somar XP solto por vídeo)
+    // 2. Gravar presença diária caso o usuário tenha mantido a aba aberta
+    await recordDailyVisit(currentUser.id);
+
+    // 3. Atualizar estado local de aulas concluídas (sem somar XP solto por vídeo)
     await updateUser({
       completedLessonIds: nextCompletedLessonIds
     });
@@ -1531,6 +1560,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.error('Error saving lesson note to Supabase:', e);
     }
+
+    // Gravar presença diária ao interagir com as notas
+    await recordDailyVisit(currentUser.id);
   };
 
   const sendSosTicket = async (userMessage: string, subject?: string) => {
@@ -1817,6 +1849,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         markSosResponseRead,
         refreshSosTicket,
         refreshUserFromBackend,
+        recordDailyVisit,
         adminPendingCounts,
         setAdminPendingCounts,
         refreshAdminPendingCounts

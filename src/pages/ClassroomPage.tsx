@@ -37,9 +37,16 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   onBack
 }) => {
   const handleBack = onBackToHome || onBack || (() => {});
-  const { user, completeLesson, toggleCompleteLesson, saveLessonNote, awardBadge } = useAuth();
+  const { user, completeLesson, toggleCompleteLesson, saveLessonNote, awardBadge, recordDailyVisit } = useAuth();
   const { showToast } = useToast();
   const { journeys } = useJourneys();
+
+  // 🌿 Registra presença diária ao abrir a sala de aula (mesmo se o usuário apenas assistir e sair)
+  useEffect(() => {
+    if (recordDailyVisit) {
+      recordDailyVisit();
+    }
+  }, [recordDailyVisit]);
 
   // Garante que a jornada usada na sala seja a versão mais atualizada e sincronizada
   const currentJourney = journeys.find(j => j.id === journey.id) || journey;
