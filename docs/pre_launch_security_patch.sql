@@ -116,21 +116,28 @@ CREATE POLICY "profiles_select_own_or_admin" ON public.profiles
   FOR SELECT
   USING (auth.uid() = id OR public.is_admin());
 
+DROP VIEW IF EXISTS public.public_profiles CASCADE;
+
 CREATE OR REPLACE VIEW public.public_profiles WITH (security_invoker = false) AS
 SELECT 
   id,
   name,
-  avatar_url,
+  avatar,
+  avatar AS avatar_url,
   role,
   bio,
+  tag,
+  family_tag,
   parental_archetype,
   parental_secondary_archetype,
   parental_quiz_completed_at,
-  xp_points,
+  xp,
+  xp AS xp_points,
   level_number,
   level_name,
-  badges_count,
+  level_icon,
   streak_days,
+  joined_date,
   is_banned,
   created_at
 FROM public.profiles;
@@ -166,8 +173,15 @@ BEGIN
   DELETE FROM public.user_badges WHERE profile_id = current_user_id;
   DELETE FROM public.family_members WHERE profile_id = current_user_id;
   DELETE FROM public.user_follows WHERE follower_id = current_user_id::text OR followed_id = current_user_id::text;
-  DELETE FROM public.push_subscriptions WHERE profile_id = current_user_id;
-  DELETE FROM public.journey_interests WHERE user_id = current_user_id;
+  IF to_regclass('public.push_subscriptions') IS NOT NULL THEN
+    EXECUTE 'DELETE FROM public.push_subscriptions WHERE profile_id = $1' USING current_user_id;
+  END IF;
+  IF to_regclass('public.journey_interests') IS NOT NULL THEN
+    EXECUTE 'DELETE FROM public.journey_interests WHERE user_id = $1' USING current_user_id;
+  END IF;
+  IF to_regclass('public.user_daily_visits') IS NOT NULL THEN
+    EXECUTE 'DELETE FROM public.user_daily_visits WHERE profile_id = $1' USING current_user_id;
+  END IF;
 
   -- 4. Excluir compras de jornadas
   DELETE FROM public.user_purchased_journeys WHERE profile_id = current_user_id;
@@ -371,6 +385,17 @@ CREATE INDEX IF NOT EXISTS idx_community_reports_content_id ON public.community_
 -- ------------------------------------------------------------------------------
 -- 10. SINCRONIZAÇÃO AUTOMÁTICA DE ATIVIDADES PARA VISITAS DIÁRIAS (DIAS CONOSCO)
 -- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.user_daily_visits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  visit_date DATE NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(profile_id, visit_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_daily_visits_profile ON public.user_daily_visits(profile_id);
+CREATE INDEX IF NOT EXISTS idx_user_daily_visits_date ON public.user_daily_visits(visit_date DESC);
+
 CREATE OR REPLACE FUNCTION public.sync_activity_to_daily_visits()
 RETURNS TRIGGER AS $$
 DECLARE

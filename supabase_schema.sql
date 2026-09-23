@@ -299,21 +299,28 @@ CREATE POLICY "profiles_select_own_or_admin"
   USING (auth.uid() = id OR public.is_admin());
 
 -- View segura para consulta de perfis da comunidade sem expor e-mail, telefone ou stripe_customer_id
+DROP VIEW IF EXISTS public.public_profiles CASCADE;
+
 CREATE OR REPLACE VIEW public.public_profiles WITH (security_invoker = false) AS
 SELECT 
   id,
   name,
-  avatar_url,
+  avatar,
+  avatar AS avatar_url,
   role,
   bio,
+  tag,
+  family_tag,
   parental_archetype,
   parental_secondary_archetype,
   parental_quiz_completed_at,
-  xp_points,
+  xp,
+  xp AS xp_points,
   level_number,
   level_name,
-  badges_count,
+  level_icon,
   streak_days,
+  joined_date,
   is_banned,
   created_at
 FROM public.profiles;
