@@ -12,17 +12,12 @@ describe('Community Access Rules (Paywall & 90 Days Courtesy)', () => {
     badges: [],
     streakDays: 5,
     xp: 120,
-    level: {
-      number: 1,
-      name: 'Raiz',
-      minXp: 0,
-      maxXp: 200,
-      color: '#FF7F5B',
-      description: 'Início da jornada'
-    },
+    level: 1,
+    levelTitle: 'Raiz',
+    lessonNotes: {},
+    lastActiveDate: new Date().toISOString(),
     purchasedJourneyIds: [],
     completedLessonIds: [],
-    notes: {},
     children: []
   };
 
