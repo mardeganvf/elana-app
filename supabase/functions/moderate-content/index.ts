@@ -246,10 +246,11 @@ export async function runGeminiModeration(
   }
 
   // 2. Resolução da Lista de Modelos Oficiais Suportados
-  const defaultModel = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-1.5-flash';
+  const defaultModel = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-3.6-flash';
   const candidateModels = [
     modelOverride || defaultModel,
-    ...(modelOverride !== 'gemini-1.5-flash' && defaultModel !== 'gemini-1.5-flash' ? ['gemini-1.5-flash'] : []),
+    'gemini-3.6-flash',
+    'gemini-1.5-flash',
     'gemini-1.5-flash-8b',
     'gemini-2.0-flash'
   ];
@@ -260,7 +261,7 @@ export async function runGeminiModeration(
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const geminiResponse = await fetch(geminiUrl, {
         method: 'POST',
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(10000),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -277,7 +278,10 @@ export async function runGeminiModeration(
             responseMimeType: 'application/json',
             response_mime_type: 'application/json',
             temperature: 0.1,
-            maxOutputTokens: 1024
+            maxOutputTokens: 1024,
+            thinkingConfig: {
+              thinkingBudget: 0
+            }
           }
         })
       });
