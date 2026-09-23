@@ -299,15 +299,30 @@ CREATE POLICY "profiles_insert_own"
   ON public.profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
--- Função de segurança no Postgres para validação de papel Administrador
+-- Função de segurança no Postgres para validação de papel Administrador e Backend (service_role)
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid()
-    AND (role = 'admin' OR role = 'Administrador')
-  );
+  -- 1. Service role (Edge Functions / Webhooks)
+  IF COALESCE(auth.role(), auth.jwt() ->> 'role') = 'service_role' THEN
+    RETURN TRUE;
+  END IF;
+
+  -- 2. Sessão direta CLI / Migrações Postgres (quando não há requisição HTTP/JWT)
+  IF session_user = 'postgres' AND (auth.role() IS NULL OR auth.role() = '') THEN
+    RETURN TRUE;
+  END IF;
+
+  -- 3. Usuários autenticados com role 'admin' ou 'Administrador'
+  IF auth.uid() IS NOT NULL THEN
+    RETURN EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid()
+      AND (role = 'admin' OR role = 'Administrador')
+    );
+  END IF;
+
+  RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

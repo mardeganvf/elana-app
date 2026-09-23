@@ -20,6 +20,35 @@ CREATE INDEX IF NOT EXISTS idx_profiles_community_status
   ON public.profiles(community_subscription_status);
 
 -- ------------------------------------------------------------------------------
+-- 1.1. FUNÇÃO DE CHECAGEM DE ADMIN E SERVICE_ROLE
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  -- 1. Service role (Edge Functions / Webhooks)
+  IF COALESCE(auth.role(), auth.jwt() ->> 'role') = 'service_role' THEN
+    RETURN TRUE;
+  END IF;
+
+  -- 2. Sessão direta CLI / Migrações Postgres (quando não há requisição HTTP/JWT)
+  IF session_user = 'postgres' AND (auth.role() IS NULL OR auth.role() = '') THEN
+    RETURN TRUE;
+  END IF;
+
+  -- 3. Usuários autenticados com role 'admin' ou 'Administrador'
+  IF auth.uid() IS NOT NULL THEN
+    RETURN EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid()
+      AND (role = 'admin' OR role = 'Administrador')
+    );
+  END IF;
+
+  RETURN FALSE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ------------------------------------------------------------------------------
 -- 2. BLINDAGEM DE ROLE, BANIMENTO E ASSINATURA: TRIGGER protect_profile_role
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.protect_profile_role()
