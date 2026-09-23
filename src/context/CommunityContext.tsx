@@ -717,6 +717,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       };
     });
 
+    const effectiveFlagType = item.flag_type || localSensitivity.type;
+    const effectiveFlagReason = item.flag_reason || localSensitivity.flagReason;
+    const effectiveCrisis = item.suggests_crisis_support !== undefined ? !!item.suggests_crisis_support : (localSensitivity.suggestsCrisisSupport || false);
+
     return {
       id: item.id,
       journeyId: item.journey_id,
@@ -728,10 +732,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       authorAvatar: item.author_avatar || '',
       authorRole: 'membro',
       isAnonymous: !!item.is_anonymous,
-      sensitivityLevel: localSensitivity.type === 'vulnerabilidade' || item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
+      sensitivityLevel: effectiveFlagType === 'vulnerabilidade' || item.journey_id === 'depois-do-silencio' || item.transversal_room_id === 'confessionario' ? 'critico' : 'padrao',
       status: postStatus,
-      flagReason: localSensitivity.flagReason,
-      flagType: localSensitivity.type,
+      flagReason: effectiveFlagReason,
+      flagType: effectiveFlagType,
+      suggestsCrisisSupport: effectiveCrisis,
       title: item.title || '',
       content: item.content || '',
       createdAt: item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora',
@@ -1494,7 +1499,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         transversal_room_id: payload.transversalRoomId || null,
         age_bracket_id: payload.ageBracketId || null,
         emotional_intention: payload.emotionalIntention || null,
-        is_anonymous: isAnonymous
+        is_anonymous: isAnonymous,
+        flag_reason: sensitivityCheck.flagReason || null,
+        flag_type: sensitivityCheck.type || null,
+        suggests_crisis_support: !!sensitivityCheck.suggestsCrisisSupport
       }])
       .select('id')
       .single()
@@ -1815,7 +1823,9 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         author_avatar: authorAvatar,
         content: content,
         is_anonymous: isAnon,
-        status: commentStatus
+        status: commentStatus,
+        flag_reason: sensitivity.flagReason || null,
+        flag_type: sensitivity.type || null
       }])
       .select('id')
       .single()
@@ -2185,7 +2195,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return { success: false };
       }
 
-      // 2. Incrementar report_count (read-modify-write)
+      // 2. Incrementar estado local e delegar segurança ao banco (trigger trg_on_community_report_insert)
       const table = contentType === 'post' ? 'community_posts' : 'community_comments';
 
       const { data: current } = await supabase
@@ -2194,19 +2204,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .eq('id', contentId)
         .single();
 
-      if (current) {
-        const newCount = (current.report_count || 0) + 1;
-        const shouldFlag = newCount >= REPORT_THRESHOLD && current.status !== 'sob_moderacao';
+      const newCount = (current?.report_count || 0) + 1;
+      const shouldFlag = newCount >= REPORT_THRESHOLD && current?.status !== 'sob_moderacao';
 
-        await supabase
-          .from(table)
-          .update({
-            report_count: newCount,
-            ...(shouldFlag ? { status: 'sob_moderacao' } : {})
-          })
-          .eq('id', contentId);
-
-        // 3. Atualizar estado local imediatamente
+      // 3. Atualizar estado local imediatamente para feedback ágil na interface
         if (contentType === 'post') {
           setPosts(prev => prev.map(p => {
             if (p.id !== contentId) return p;

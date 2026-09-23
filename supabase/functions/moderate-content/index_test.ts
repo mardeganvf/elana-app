@@ -258,3 +258,65 @@ Deno.test('moderate-content: deve tratar payloads vazios com status livre sem er
   assertEquals(body.isFlagged, false);
   assertEquals(body.category, 'livre');
 });
+
+// ── TESTE 7: Sanitização de Resposta com Markdown Fences (```json) ───────────
+Deno.test('moderate-content: deve parsear com sucesso JSON retornado com markdown fences', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url: string | URL | Request) => {
+      const urlStr = url.toString();
+      if (urlStr.includes('generateContent')) {
+        return new Response(JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: '```json\n{\n  "isFlagged": false,\n  "category": "livre",\n  "reason": "Dúvida comum de amamentação",\n  "matchedContext": "",\n  "suggestsCrisisSupport": false\n}\n```'
+                  }
+                ]
+              }
+            }
+          ]
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response('{}', { status: 200 });
+    };
+
+    Deno.env.set('GEMINI_API_KEY', 'test-fake-key');
+
+    const req = new Request('http://localhost:8000', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: 'Como aliviar a apojadura nos primeiros dias?' })
+    });
+
+    const res = await handleRequest(req);
+    assertEquals(res.status, 200);
+
+    const body: ModerationResult = await res.json();
+    assertEquals(body.isFlagged, false);
+    assertEquals(body.category, 'livre');
+    assertEquals(body.provider, 'gemini');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+// ── TESTE 8: Detecção de Risco Pediátrico e Violência Infantil ───────────────
+Deno.test('moderate-content: circuit breaker deve sinalizar risco de botulismo por ingestão de mel em bebês', async () => {
+  const pediatricRiskText = 'Minha avó disse para dar mel pro bebê de 2 meses para acalmar a tosse.';
+  const localResult = evaluateRegexFallback(pediatricRiskText);
+  assertEquals(localResult.isFlagged, true);
+  assertEquals(localResult.category, 'antijulgamento');
+  assertExists(localResult.matchedContext);
+});
+
+Deno.test('moderate-content: circuit breaker deve sinalizar agressão física contra bebê', async () => {
+  const infantViolenceText = 'Perdi o controle e dei um soco no bebê.';
+  const localResult = evaluateRegexFallback(infantViolenceText);
+  assertEquals(localResult.isFlagged, true);
+  assertEquals(localResult.category, 'antijulgamento');
+  assertExists(localResult.matchedContext);
+});
+

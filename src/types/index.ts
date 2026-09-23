@@ -192,6 +192,7 @@ export interface CommunityPost {
   status?: 'aprovado' | 'sob_moderacao' | 'removido_usuario' | 'rejeitado';
   flagReason?: string;
   flagType?: 'vulnerabilidade' | 'antijulgamento';
+  suggestsCrisisSupport?: boolean;
   title: string;
   content: string;
   createdAt: string;

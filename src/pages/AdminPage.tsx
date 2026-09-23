@@ -371,6 +371,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           flagReason = 'Aprovado pela curadoria';
         } else if (postReports && postReports.count > 0) {
           flagReason = `🚩 ${postReports.count} denúncia${postReports.count > 1 ? 's' : ''} de usuários: ${postReports.reasons.join(', ')}`;
+        } else if (p.flag_reason) {
+          flagReason = p.flag_reason;
         } else if (sensitivityCheck.isFlagged) {
           flagReason = sensitivityCheck.flagReason || `Termo sensível: "${sensitivityCheck.matchedWord}"`;
         } else if (isExplicitlyFlagged) {
@@ -424,6 +426,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
           flagReason = 'Aprovado pela curadoria';
         } else if (commentReports && commentReports.count > 0) {
           flagReason = `🚩 ${commentReports.count} denúncia${commentReports.count > 1 ? 's' : ''} de usuários: ${commentReports.reasons.join(', ')}`;
+        } else if (c.flag_reason) {
+          flagReason = c.flag_reason;
         } else if (sensitivityCheck.isFlagged) {
           flagReason = sensitivityCheck.flagReason || `Termo sensível: "${sensitivityCheck.matchedWord}"`;
         } else if (isExplicitlyFlagged) {
