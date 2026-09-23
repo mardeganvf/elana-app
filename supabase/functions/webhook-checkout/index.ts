@@ -81,6 +81,7 @@ const PRODUCT_JOURNEY_MAP: Record<string, string> = {
   'singular': 'singular',
   'amor-escolhido': 'amor-escolhido',
   'novos-caminhos': 'novos-caminhos',
+  'novos-horizontes': 'novos-caminhos',
   'depois-do-silencio': 'depois-do-silencio'
 };
 

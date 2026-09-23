@@ -1,6 +1,6 @@
 import { Journey } from '../types';
 
-export const STRIPE_COMMUNITY_CHECKOUT_URL = 'https://buy.stripe.com/test_bJeaEQ6SF70E5y91UQ77O00';
+export const STRIPE_COMMUNITY_CHECKOUT_URL = 'https://buy.stripe.com/test_cNi3co6SF1Gkf8J57277O07';
 
 export const JOURNEYS_DATA: Journey[] = [
   {
@@ -17,7 +17,7 @@ export const JOURNEYS_DATA: Journey[] = [
     bgLight: '#fff0eb',
     iconName: 'Sun',
     price: 49,
-    checkoutUrl: 'https://buy.stripe.com/test_9B69AM5OB5WAe4Fczu77O01',
+    checkoutUrl: 'https://buy.stripe.com/test_9B68wI0uhgBe9Op9ni77O08',
     isComingSoon: false,
         modules: [
       {
@@ -85,7 +85,7 @@ export const JOURNEYS_DATA: Journey[] = [
     bgLight: '#f3f6ec',
     iconName: 'Users',
     price: 49,
-    checkoutUrl: 'https://buy.stripe.com/test_14AbIUel7et6aSt6b677O02',
+    checkoutUrl: 'https://buy.stripe.com/test_cNi6oA1yl5WA2lX6b677O09',
     isComingSoon: true,
         modules: [
       {
@@ -152,7 +152,7 @@ export const JOURNEYS_DATA: Journey[] = [
     bgLight: '#e6f1f3',
     iconName: 'Palette',
     price: 39,
-    checkoutUrl: 'https://buy.stripe.com/test_bJe7sE5OB84If8J9ni77O03',
+    checkoutUrl: 'https://buy.stripe.com/test_fZu6oA5OB1Gkd0Bbvq77O0a',
     isComingSoon: true,
         modules: [
       {
@@ -213,7 +213,7 @@ export const JOURNEYS_DATA: Journey[] = [
     bgLight: '#fcebf2',
     iconName: 'HeartHandshake',
     price: 39,
-    checkoutUrl: 'https://buy.stripe.com/test_8x2dR25OB4Sw4u50QM77O04',
+    checkoutUrl: 'https://buy.stripe.com/test_9B628kel71Gk4u52YU77O0b',
     isComingSoon: true,
         modules: [
       {
@@ -271,7 +271,7 @@ export const JOURNEYS_DATA: Journey[] = [
     bgLight: '#f8efe9',
     iconName: 'Compass',
     price: 29,
-    checkoutUrl: 'https://buy.stripe.com/test_fZu00cel7ckYe4Fczu77O05',
+    checkoutUrl: 'https://buy.stripe.com/test_dRm4gs6SFfxa7GheHC77O0c',
     isComingSoon: true,
         modules: [
       {
