@@ -84,25 +84,29 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       if (data && data.length > 0) {
-        const mapped: Journey[] = data.map((row: any) => ({
-          id: row.id,
-          title: row.title,
-          subtitle: row.subtitle || '',
-          tagline: row.tagline || '',
-          description: row.description || '',
-          pillar: row.pillar || 'movimento',
-          pillarAttribute: row.pillar_attribute || '',
-          category: row.category || 'comecam',
-          targetAudience: row.target_audience || '',
-          themeColor: row.theme_color || '#FF7F5B',
-          bgLight: row.bg_light || '#fff0eb',
-          iconName: row.icon_name || 'Sun',
-          price: Number(row.price) || 197,
-          modules: Array.isArray(row.modules) ? row.modules : [],
-          isComingSoon: Boolean(row.is_coming_soon),
-          coverImageUrl: row.cover_image_url || '',
-          isEnabled: row.is_enabled !== undefined && row.is_enabled !== null ? Boolean(row.is_enabled) : true
-        }));
+        const mapped: Journey[] = data.map((row: any) => {
+          const staticJourney = JOURNEYS_DATA.find(j => j.id === row.id);
+          return {
+            id: row.id,
+            title: row.title,
+            subtitle: row.subtitle || staticJourney?.subtitle || '',
+            tagline: row.tagline || staticJourney?.tagline || '',
+            description: row.description || staticJourney?.description || '',
+            pillar: row.pillar || staticJourney?.pillar || 'movimento',
+            pillarAttribute: row.pillar_attribute || staticJourney?.pillarAttribute || '',
+            category: row.category || staticJourney?.category || 'comecam',
+            targetAudience: row.target_audience || staticJourney?.targetAudience || '',
+            themeColor: row.theme_color || staticJourney?.themeColor || '#FF7F5B',
+            bgLight: row.bg_light || staticJourney?.bgLight || '#fff0eb',
+            iconName: row.icon_name || staticJourney?.iconName || 'Sun',
+            price: Number(row.price) || staticJourney?.price || 49,
+            checkoutUrl: row.checkout_url || staticJourney?.checkoutUrl,
+            modules: Array.isArray(row.modules) && row.modules.length > 0 ? row.modules : (staticJourney?.modules || []),
+            isComingSoon: row.is_coming_soon !== undefined && row.is_coming_soon !== null ? Boolean(row.is_coming_soon) : Boolean(staticJourney?.isComingSoon),
+            coverImageUrl: row.cover_image_url || staticJourney?.coverImageUrl || '',
+            isEnabled: row.is_enabled !== undefined && row.is_enabled !== null ? Boolean(row.is_enabled) : true
+          };
+        });
 
         setJourneys(mapped);
         try {
@@ -136,7 +140,8 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             theme_color: j.themeColor || '#FF7F5B',
             bg_light: j.bgLight || '#fff0eb',
             icon_name: j.iconName || 'Sun',
-            price: Number(j.price) || 197,
+            price: Number(j.price) || 49,
+            checkout_url: j.checkoutUrl || null,
             modules: j.modules || [],
             is_coming_soon: Boolean(j.isComingSoon ?? false),
             cover_image_url: j.coverImageUrl || '',
@@ -186,7 +191,8 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         theme_color: journey.themeColor || '#FF7F5B',
         bg_light: journey.bgLight || '#fff0eb',
         icon_name: journey.iconName || 'Sun',
-        price: journey.price || 197,
+        price: journey.price || 49,
+        checkout_url: journey.checkoutUrl || null,
         modules: journey.modules || [],
         is_coming_soon: Boolean(journey.isComingSoon ?? false),
         is_enabled: journey.isEnabled !== false,
@@ -490,7 +496,8 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           theme_color: j.themeColor || '#FF7F5B',
           bg_light: j.bgLight || '#fff0eb',
           icon_name: j.iconName || 'Sun',
-          price: Number(j.price) || 197,
+          price: Number(j.price) || 49,
+          checkout_url: j.checkoutUrl || null,
           modules: j.modules || [],
           display_order: i,
           updated_at: new Date().toISOString()
