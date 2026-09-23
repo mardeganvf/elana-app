@@ -2208,31 +2208,30 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const shouldFlag = newCount >= REPORT_THRESHOLD && current?.status !== 'sob_moderacao';
 
       // 3. Atualizar estado local imediatamente para feedback ágil na interface
-        if (contentType === 'post') {
-          setPosts(prev => prev.map(p => {
-            if (p.id !== contentId) return p;
-            return {
-              ...p,
-              reportCount: newCount,
-              status: shouldFlag ? 'sob_moderacao' : p.status
-            };
-          }));
-        } else if (contentType === 'comment' && postId) {
-          setPosts(prev => prev.map(p => {
-            if (p.id !== postId) return p;
-            return {
-              ...p,
-              comments: p.comments.map(c => {
-                if (c.id !== contentId) return c;
-                return {
-                  ...c,
-                  reportCount: newCount,
-                  status: shouldFlag ? 'sob_moderacao' : c.status
-                };
-              })
-            };
-          }));
-        }
+      if (contentType === 'post') {
+        setPosts(prev => prev.map(p => {
+          if (p.id !== contentId) return p;
+          return {
+            ...p,
+            reportCount: newCount,
+            status: shouldFlag ? 'sob_moderacao' : p.status
+          };
+        }));
+      } else if (contentType === 'comment' && postId) {
+        setPosts(prev => prev.map(p => {
+          if (p.id !== postId) return p;
+          return {
+            ...p,
+            comments: p.comments.map(c => {
+              if (c.id !== contentId) return c;
+              return {
+                ...c,
+                reportCount: newCount,
+                status: shouldFlag ? 'sob_moderacao' : c.status
+              };
+            })
+          };
+        }));
       }
 
       return { success: true };
