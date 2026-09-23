@@ -88,9 +88,21 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
 
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
             <p>© {new Date().getFullYear()} Elana Academy. Todos os direitos reservados.</p>
-            <p className="flex items-center gap-1">
-              Feito com afeto para o futuro das famílias.
-            </p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  throw new Error('This is your first error!');
+                }}
+                className="text-[10px] text-slate-600 hover:text-rose-400 transition-colors border border-white/5 hover:border-rose-500/30 px-2 py-0.5 rounded cursor-pointer"
+                title="Teste de monitoramento Sentry"
+              >
+                Break the world (Sentry Test)
+              </button>
+              <p className="flex items-center gap-1">
+                Feito com afeto para o futuro das famílias.
+              </p>
+            </div>
           </div>
         </div>
       </footer>
