@@ -381,8 +381,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     total: 0
   });
 
+  const isUserAdmin = Boolean(user && isAdminUser(user));
+
   const refreshAdminPendingCounts = useCallback(async () => {
-    if (!user || !isAdminUser(user)) {
+    const currentUser = userRef.current;
+    if (!currentUser || !isAdminUser(currentUser)) {
       setAdminPendingCounts({ sos: 0, moderation: 0, total: 0 });
       return;
     }
@@ -449,35 +452,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.warn('Notice fetching admin pending notifications:', err);
     }
-  }, [user]);
+  }, []);
 
+  // Inscrição Realtime estável para notificações do sino de Admin [RT-CHURN-01]
   useEffect(() => {
-    if (!user || !isAdminUser(user)) return;
+    if (!isUserAdmin) return;
 
     refreshAdminPendingCounts();
-    const interval = setInterval(refreshAdminPendingCounts, 12000);
+    // Polling de segurança a cada 30 segundos (em vez de 12s, já que eventos Realtime atualizam na hora)
+    const interval = setInterval(refreshAdminPendingCounts, 30000);
+
+    // Debounce de 500ms para evitar rajadas de requisições repetidas em cascata
+    let debounceTimer: any = null;
+    const debouncedRefresh = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        refreshAdminPendingCounts();
+      }, 500);
+    };
 
     const channel = supabase
       .channel('admin_realtime_bell_notifications')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sos_tickets' }, () => {
-        refreshAdminPendingCounts();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, () => {
-        refreshAdminPendingCounts();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_reports' }, () => {
-        refreshAdminPendingCounts();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_comments' }, () => {
-        refreshAdminPendingCounts();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sos_tickets' }, debouncedRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, debouncedRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_reports' }, debouncedRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_comments' }, debouncedRefresh)
       .subscribe();
 
     return () => {
       clearInterval(interval);
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [user, refreshAdminPendingCounts]);
+  }, [isUserAdmin, refreshAdminPendingCounts]);
 
   // Salvar no localStorage sempre que o estado user mudar
   useEffect(() => {

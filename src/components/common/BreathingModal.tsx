@@ -22,6 +22,25 @@ export const BreathingModal: React.FC<BreathingModalProps> = ({
     }
   }, [isOpen]);
 
+  // Acessibilidade: fechar com tecla ESC e travar scroll de fundo [A11Y-MOD-01]
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen, onClose]);
+
   // Contagem regressiva de 60 segundos
   useEffect(() => {
     if (!isOpen) return;

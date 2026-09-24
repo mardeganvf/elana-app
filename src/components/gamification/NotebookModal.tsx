@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { JOURNEYS_DATA } from '../../data/journeysData';
@@ -17,6 +17,23 @@ interface NotebookModalProps {
 
 export const NotebookModal: React.FC<NotebookModalProps> = ({ initialJourneyId, onClose }) => {
   const { user, saveLessonNote } = useAuth();
+
+  // Acessibilidade: fechar com tecla ESC e travar scroll de fundo [A11Y-MOD-01]
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [onClose]);
   
   // Available journeys user has notes or access for
   const [selectedJourneyId, setSelectedJourneyId] = useState<string>(
@@ -162,7 +179,7 @@ export const NotebookModal: React.FC<NotebookModalProps> = ({ initialJourneyId, 
                           value={editingText}
                           onChange={(e) => setEditingText(e.target.value)}
                           placeholder="Escreva sua anotação sobre este conteúdo..."
-                          className="w-full p-3 bg-[#101B1E] border border-[#FF7F5B]/50 rounded-xl text-xs text-white focus:outline-none"
+                          className="w-full p-3 bg-[#101B1E] border border-[#FF7F5B]/50 rounded-xl text-base sm:text-xs text-white focus:outline-none focus:border-[#FF7F5B] transition-colors"
                         />
                         <div className="flex justify-end gap-2">
                           <button

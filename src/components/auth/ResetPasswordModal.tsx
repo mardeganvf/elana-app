@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { validateStrongPassword } from '../../utils/validators';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, RefreshCw, X } from 'lucide-react';
@@ -18,6 +18,25 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Acessibilidade: fechar com tecla ESC e travar scroll de fundo [A11Y-MOD-01]
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -93,7 +112,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] pr-10"
+                className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B] pr-10"
               />
               <button
                 type="button"
@@ -134,7 +153,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, 
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B]"
+              className="w-full bg-[#101B1E] border border-white/15 rounded-xl px-4 py-3 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FF7F5B]"
             />
           </div>
 

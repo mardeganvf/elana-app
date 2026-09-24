@@ -35,14 +35,37 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   const nextLevelObj = levelInfo ? USER_LEVELS.find(l => l.level === levelInfo.level + 1) : null;
   const firstName = user?.name.split(' ')[0] || 'Membro';
 
+  // Acessibilidade: fechar com tecla ESC e travar scroll de fundo [A11Y-MOD-01]
   useEffect(() => {
     if (!levelInfo) return;
 
-    // 1. Tocar acorde cristalino de celebração (Web Audio API)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [levelInfo, onClose]);
+
+  useEffect(() => {
+    if (!levelInfo) return;
+
+    // 1. Tocar acorde cristalino de celebração (Web Audio API com fechamento garantido) [ENG-LEAK-01]
+    let audioCtxToCleanup: AudioContext | null = null;
+    let audioCloseTimer: any = null;
+
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx) {
         const ctx = new AudioCtx();
+        audioCtxToCleanup = ctx;
         const notes = [440, 554.37, 659.25, 880, 1108.73, 1318.51];
         const now = ctx.currentTime;
         notes.forEach((freq, idx) => {
@@ -58,6 +81,13 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
           osc.start(now + idx * 0.09);
           osc.stop(now + idx * 0.09 + 0.75);
         });
+
+        // Agenda o fechamento do AudioContext após o fim das notas para liberar o hardware de áudio
+        audioCloseTimer = setTimeout(() => {
+          if (ctx.state !== 'closed') {
+            ctx.close().catch(() => {});
+          }
+        }, 1500);
       }
     } catch {
       // Autoplay safe fallback
@@ -110,6 +140,10 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
     return () => {
       clearInterval(interval);
       clearTimeout(timer);
+      clearTimeout(audioCloseTimer);
+      if (audioCtxToCleanup && audioCtxToCleanup.state !== 'closed') {
+        audioCtxToCleanup.close().catch(() => {});
+      }
     };
   }, [levelInfo]);
 
