@@ -538,11 +538,11 @@ export function App() {
       <AuthProvider>
         <JourneysProvider>
           <DestaquesProvider>
-            <CommunityProvider>
-              <ToastProvider>
+            <ToastProvider>
+              <CommunityProvider>
                 <AppContent />
-              </ToastProvider>
-            </CommunityProvider>
+              </CommunityProvider>
+            </ToastProvider>
           </DestaquesProvider>
         </JourneysProvider>
       </AuthProvider>

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { CommunityPost, CommunityComment, EmotionalIntention, SensitivityLevel, CommunityPoll, NewPollPayload } from '../types';
 
 import { useAuth } from './AuthContext';
+import { ToastContext } from './ToastContext';
 import { supabase } from '../lib/supabase';
 
 interface CreatePostPayload {
@@ -597,6 +598,14 @@ const PAGE_SIZE = 15;
 
 export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, awardBadge } = useAuth();
+  const toast = useContext(ToastContext);
+  const notify = (type: 'success' | 'error' | 'info' | 'warning', msg: string) => {
+    if (toast?.showToast) {
+      toast.showToast(type, msg);
+    } else {
+      console.warn(`[Toast ${type}] ${msg}`);
+    }
+  };
   const [posts, setPosts] = useState<CommunityPost[]>(() => {
     try {
       localStorage.removeItem('elana_community_posts'); // Limpar chave legada
@@ -1562,6 +1571,17 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return updated;
     });
 
+    const rollbackCreatePost = () => {
+      setPosts(prev => {
+        const rolledBack = prev.filter(p => p.id !== postId);
+        try {
+          localStorage.setItem('elana_community_posts_cache', JSON.stringify(rolledBack));
+        } catch {}
+        return rolledBack;
+      });
+      notify('error', 'Não foi possível publicar sua mensagem. Verifique sua conexão e tente novamente.');
+    };
+
     // Persist asynchronously into Supabase database with deterministic UUID
     supabase
       .from('community_posts')
@@ -1588,6 +1608,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       .then(({ data, error }) => {
         if (error) {
           console.error('Supabase community_posts insert error:', error.message, error);
+          rollbackCreatePost();
         } else if (data?.id) {
           console.log('✅ Post salvo com sucesso no Supabase com ID:', data.id);
           setPosts(prev => {
@@ -1638,6 +1659,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             }).catch(() => {});
           }
         }
+      })
+      .catch((err) => {
+        console.error('Supabase community_posts insert exception:', err);
+        rollbackCreatePost();
       });
 
     // 🏆 Conquistas de Postagem na Comunidade:
@@ -1693,6 +1718,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     awardBadge('b35');
 
     const targetPost = posts.find(p => p.id === postId);
+    const prevPostReactions = targetPost ? { ...(targetPost.reactions || {}) } : {};
+    const prevUserReactions = targetPost ? { ...(targetPost.userReactions || {}) } : {};
     if (targetPost?.transversalRoomId) {
       const room = targetPost.transversalRoomId;
       if (room === 'confessionario') awardBadge('b30');
@@ -1752,6 +1779,27 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const userKey = user?.id || 'anon';
     persistPostReaction(postId, reactionKey, isNowActive, userKey, nextPostReactions);
 
+    const rollbackPostReaction = () => {
+      setPosts(prev => prev.map(p => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            reactions: prevPostReactions,
+            userReactions: prevUserReactions
+          };
+        }
+        return p;
+      }));
+      const store = getStoredReactionsData();
+      store.posts[postId] = prevPostReactions;
+      if (!store.userReactions[userKey]) {
+        store.userReactions[userKey] = {};
+      }
+      store.userReactions[userKey][postId] = prevUserReactions;
+      saveStoredReactionsData(store);
+      notify('error', 'Não foi possível registrar seu acolhimento. Verifique sua conexão.');
+    };
+
     // Sincronizar com o Supabase de forma assíncrona
     if (postId.length > 20) {
       // 1. Atualizar o contador total de acolhimentos no post (likes_count)
@@ -1766,33 +1814,43 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       // 2. Sincronizar na tabela individual de reações se houver usuário
       if (user?.id) {
-        if (isNowActive) {
-          supabase
-            .from('community_reactions')
-            .upsert({
-              post_id: postId,
-              user_id: user.id,
-              reaction_key: reactionKey
-            }, { onConflict: 'post_id,user_id' })
-            .then(({ error }) => {
-              if (error) console.warn('Supabase reaction notice:', error.message);
-            });
-        } else {
-          supabase
-            .from('community_reactions')
-            .delete()
-            .eq('post_id', postId)
-            .eq('user_id', user.id)
-            .then(({ error }) => {
-              if (error) console.warn('Supabase reaction notice:', error.message);
-            });
-        }
+        const reactionPromise = isNowActive
+          ? supabase
+              .from('community_reactions')
+              .upsert({
+                post_id: postId,
+                user_id: user.id,
+                reaction_key: reactionKey
+              }, { onConflict: 'post_id,user_id' })
+          : supabase
+              .from('community_reactions')
+              .delete()
+              .eq('post_id', postId)
+              .eq('user_id', user.id);
+
+        reactionPromise
+          .then(({ error }) => {
+            if (error) {
+              console.error('Supabase reaction error, rolling back:', error.message);
+              rollbackPostReaction();
+            }
+          })
+          .catch((err) => {
+            console.error('Supabase reaction exception, rolling back:', err);
+            rollbackPostReaction();
+          });
       }
     }
   };
 
   const toggleCommentReaction = (postId: string, commentId: string, reactionKey: string) => {
     if (!user || user.isBanned) return;
+
+    // Snapshot anterior do comentário para rollback seguro
+    const parentPost = posts.find(p => p.id === postId);
+    const targetComment = parentPost?.comments?.find(c => c.id === commentId);
+    const prevCommentReactions = targetComment ? { ...(targetComment.reactions || {}) } : {};
+    const prevUserReactions = targetComment ? { ...(targetComment.userReactions || {}) } : {};
 
     let isNowActive = false;
     let nextCommentReactions: Record<string, number> = {};
@@ -1844,6 +1902,30 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const userKey = user?.id || 'anon';
     persistCommentReaction(commentId, reactionKey, isNowActive, userKey, nextCommentReactions);
 
+    const rollbackCommentReaction = () => {
+      setPosts(prev => prev.map(p => {
+        if (p.id === postId && p.comments) {
+          return {
+            ...p,
+            comments: p.comments.map(c => c.id === commentId ? {
+              ...c,
+              reactions: prevCommentReactions,
+              userReactions: prevUserReactions
+            } : c)
+          };
+        }
+        return p;
+      }));
+      const store = getStoredReactionsData();
+      store.comments[commentId] = prevCommentReactions;
+      if (!store.userCommentReactions[userKey]) {
+        store.userCommentReactions[userKey] = {};
+      }
+      store.userCommentReactions[userKey][commentId] = prevUserReactions;
+      saveStoredReactionsData(store);
+      notify('error', 'Não foi possível registrar sua reação no comentário. Verifique sua conexão.');
+    };
+
     // Sincronizar contador de likes no comentário no Supabase se UUID válido
     if (commentId.length > 20) {
       const totalCount = Object.values(nextCommentReactions).reduce((a, b) => a + b, 0);
@@ -1857,27 +1939,31 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       // Sincronizar na tabela individual de reações (community_reactions) se houver usuário
       if (user?.id) {
-        if (isNowActive) {
-          supabase
-            .from('community_reactions')
-            .upsert({
-              comment_id: commentId,
-              user_id: user.id,
-              reaction_key: reactionKey
-            }, { onConflict: 'comment_id,user_id' })
-            .then(({ error }) => {
-              if (error) console.warn('Supabase comment reaction notice:', error.message);
-            });
-        } else {
-          supabase
-            .from('community_reactions')
-            .delete()
-            .eq('comment_id', commentId)
-            .eq('user_id', user.id)
-            .then(({ error }) => {
-              if (error) console.warn('Supabase comment reaction notice:', error.message);
-            });
-        }
+        const reactionPromise = isNowActive
+          ? supabase
+              .from('community_reactions')
+              .upsert({
+                comment_id: commentId,
+                user_id: user.id,
+                reaction_key: reactionKey
+              }, { onConflict: 'comment_id,user_id' })
+          : supabase
+              .from('community_reactions')
+              .delete()
+              .eq('comment_id', commentId)
+              .eq('user_id', user.id);
+
+        reactionPromise
+          .then(({ error }) => {
+            if (error) {
+              console.error('Supabase comment reaction error, rolling back:', error.message);
+              rollbackCommentReaction();
+            }
+          })
+          .catch((err) => {
+            console.error('Supabase comment reaction exception, rolling back:', err);
+            rollbackCommentReaction();
+          });
       }
     }
   };
@@ -1924,17 +2010,42 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       userReactions: {}
     };
 
-    setPosts(prev => prev.map(post => {
-      if (post.id === postId) {
-        const currentComments = post.comments || [];
-        if (currentComments.some(c => c.id === commentId)) return post;
-        return {
-          ...post,
-          comments: [...currentComments, newComment]
-        };
-      }
-      return post;
-    }));
+    setPosts(prev => {
+      const updated = prev.map(post => {
+        if (post.id === postId) {
+          const currentComments = post.comments || [];
+          if (currentComments.some(c => c.id === commentId)) return post;
+          return {
+            ...post,
+            comments: [...currentComments, newComment]
+          };
+        }
+        return post;
+      });
+      try {
+        localStorage.setItem('elana_community_posts_cache', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    const rollbackComment = () => {
+      setPosts(prev => {
+        const rolledBack = prev.map(p => {
+          if (p.id === postId && p.comments) {
+            return {
+              ...p,
+              comments: p.comments.filter(c => c.id !== commentId)
+            };
+          }
+          return p;
+        });
+        try {
+          localStorage.setItem('elana_community_posts_cache', JSON.stringify(rolledBack));
+        } catch {}
+        return rolledBack;
+      });
+      notify('error', 'Não foi possível enviar sua resposta. Verifique sua conexão e tente novamente.');
+    };
 
     // Persist comment asynchronously into Supabase with deterministic UUID
     supabase
@@ -1955,29 +2066,40 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       .single()
       .then(({ data, error }) => {
         if (error) {
-          console.warn('Supabase comment notice:', error.message);
+          console.error('Supabase community_comments insert error:', error.message);
+          rollbackComment();
         } else if (data?.id) {
           console.log('✅ Comentário salvo com sucesso no Supabase com ID:', data.id);
-          setPosts(prev => prev.map(p => {
-            if (p.id === postId && p.comments) {
-              const updated = p.comments.map(c => (c.id === commentId || c.id === data.id) ? { 
-                ...c, 
-                id: data.id,
-                status: (data.status as any) || c.status
-              } : c);
-              const seen = new Set<string>();
-              return {
-                ...p,
-                comments: updated.filter(c => {
-                  if (seen.has(c.id)) return false;
-                  seen.add(c.id);
-                  return true;
-                })
-              };
-            }
-            return p;
-          }));
+          setPosts(prev => {
+            const updated = prev.map(p => {
+              if (p.id === postId && p.comments) {
+                const updatedComments = p.comments.map(c => (c.id === commentId || c.id === data.id) ? { 
+                  ...c, 
+                  id: data.id,
+                  status: (data.status as any) || c.status
+                } : c);
+                const seen = new Set<string>();
+                return {
+                  ...p,
+                  comments: updatedComments.filter(c => {
+                    if (seen.has(c.id)) return false;
+                    seen.add(c.id);
+                    return true;
+                  })
+                };
+              }
+              return p;
+            });
+            try {
+              localStorage.setItem('elana_community_posts_cache', JSON.stringify(updated));
+            } catch {}
+            return updated;
+          });
         }
+      })
+      .catch((err) => {
+        console.error('Supabase comment exception:', err);
+        rollbackComment();
       });
 
     if (!isFlagged) {
@@ -2051,11 +2173,25 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const userKey = user?.id || 'anon';
     if (userVotedPollsMap[pollId]) return;
 
+    const prevVotedMap = { ...userVotedPollsMap };
+    const prevPolls = polls;
+    const prevActivePoll = activePoll;
+
     const nextVotedMap = { ...userVotedPollsMap, [pollId]: optionId };
     setUserVotedPollsMap(nextVotedMap);
     try {
       localStorage.setItem(`elana_poll_votes_${userKey}`, JSON.stringify(nextVotedMap));
     } catch {}
+
+    const rollbackPollVote = () => {
+      setUserVotedPollsMap(prevVotedMap);
+      try {
+        localStorage.setItem(`elana_poll_votes_${userKey}`, JSON.stringify(prevVotedMap));
+      } catch {}
+      setPolls(prevPolls);
+      setActivePoll(prevActivePoll);
+      notify('error', 'Não foi possível registrar seu voto na enquete. Tente novamente.');
+    };
 
     let updatedPollObj: CommunityPoll | null = null;
     setPolls(prev => prev.map(poll => {
@@ -2095,9 +2231,13 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
         if (rpcError) {
           console.warn('Supabase poll vote notice:', rpcError.message);
+          rollbackPollVote();
+          return;
         }
       } catch (err) {
         console.warn('Supabase poll vote notice:', err);
+        rollbackPollVote();
+        return;
       }
     } else if (updatedPollObj && pollId.length > 20 && !user?.id) {
       // Visitante anônimo: só atualiza a contagem (sem registrar voto pessoal)
@@ -2111,6 +2251,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           .eq('id', pollId);
       } catch (err) {
         console.warn('Supabase poll vote notice:', err);
+        rollbackPollVote();
+        return;
       }
     }
 
@@ -2191,7 +2333,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const deletePost = async (postId: string): Promise<void> => {
-    recordDeletedContentId(postId);
+    // Captura snapshot anterior para rollback caso a exclusão no backend falhe
+    const targetPost = posts.find(p => p.id === postId);
 
     // 1. Otimista: remove do estado local imediatamente e sincroniza o cache
     setPosts(prev => {
@@ -2209,17 +2352,37 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     // 2. Soft delete / exclusão no Supabase
     try {
-      await supabase
+      const { error } = await supabase
         .from('community_posts')
         .delete()
         .eq('id', postId);
+
+      if (error) {
+        throw error;
+      }
+      // Sucesso comprovado no banco: registrar ID excluído permanentemente
+      recordDeletedContentId(postId);
     } catch (err) {
-      console.warn('Exceção ao excluir post no Supabase:', err);
+      console.error('Exceção ao excluir post no Supabase, executando rollback:', err);
+      // Rollback: restaura post no estado local e no cache
+      if (targetPost) {
+        setPosts(prev => {
+          if (prev.some(p => p.id === postId)) return prev;
+          const restored = [targetPost, ...prev];
+          try {
+            localStorage.setItem('elana_community_posts_cache', JSON.stringify(restored));
+          } catch {}
+          return restored;
+        });
+      }
+      throw err;
     }
   };
 
   const deleteComment = async (postId: string, commentId: string): Promise<void> => {
-    recordDeletedContentId(commentId);
+    // Captura snapshot anterior do comentário para rollback caso a exclusão no backend falhe
+    const parentPost = posts.find(p => p.id === postId);
+    const targetComment = parentPost?.comments?.find(c => c.id === commentId);
 
     // 1. Otimista: remove do post local imediatamente e sincroniza o cache
     setPosts(prev => {
@@ -2238,7 +2401,46 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return updated;
     });
 
-    // 2. Limpar reações armazenadas desse comentário se houver
+    // 2. Excluir no Supabase
+    if (commentId && commentId.length > 20) {
+      try {
+        const { error } = await supabase
+          .from('community_comments')
+          .delete()
+          .eq('id', commentId);
+
+        if (error) {
+          throw error;
+        }
+      } catch (err) {
+        console.error('Erro ao excluir comentário no Supabase, executando rollback:', err);
+        // Rollback: restaura comentário se a exclusão no backend falhar
+        if (targetComment) {
+          setPosts(prev => {
+            const restored = prev.map(p => {
+              if (p.id === postId) {
+                const currentComments = p.comments || [];
+                if (currentComments.some(c => c.id === commentId)) return p;
+                return {
+                  ...p,
+                  comments: [...currentComments, targetComment]
+                };
+              }
+              return p;
+            });
+            try {
+              localStorage.setItem('elana_community_posts_cache', JSON.stringify(restored));
+            } catch {}
+            return restored;
+          });
+        }
+        throw err;
+      }
+    }
+
+    recordDeletedContentId(commentId);
+
+    // 3. Limpar reações armazenadas desse comentário se houver
     try {
       const store = getStoredReactionsData();
       if (store.comments && store.comments[commentId]) {
@@ -2246,18 +2448,6 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         saveStoredReactionsData(store);
       }
     } catch {}
-
-    // 3. Excluir no Supabase
-    try {
-      if (commentId && commentId.length > 20) {
-        await supabase
-          .from('community_comments')
-          .delete()
-          .eq('id', commentId);
-      }
-    } catch (err) {
-      console.warn('Erro ao excluir comentário no Supabase:', err);
-    }
   };
 
   const fetchUserPosts = async (userId: string): Promise<CommunityPost[]> => {
