@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Journey, UserProfile } from '../../types';
 import { X, Award, Download, Heart } from 'lucide-react';
 import logoElana from '../../assets/logo-elana.png';
@@ -10,6 +10,21 @@ interface CertificateModalProps {
 }
 
 export const CertificateModal: React.FC<CertificateModalProps> = ({ journey, user, onClose }) => {
+  // ♿ Acessibilidade e Trava de Scroll [A11Y-MOD-01]
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [onClose]);
+
   if (!journey || !user) return null;
 
   return (

@@ -21,7 +21,8 @@ import {
   ShoppingCart,
   ShieldAlert,
   RefreshCw,
-  X
+  X,
+  Award
 } from 'lucide-react';
 import { NotebookModal } from '../components/gamification/NotebookModal';
 import { CheckoutModal } from '../components/catalog/CheckoutModal';
@@ -545,6 +546,24 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     return () => clearInterval(interval);
   }, [autoplayTimer, nextLesson]);
 
+  // 🎓 Controle de Abertura Automática do Certificado Digital [CERT-AUTO-01]
+  const initialCompletedCountRef = useRef<number | null>(null);
+  const hasAutoOpenedCertRef = useRef<boolean>(false);
+
+  const checkAndTriggerCertificate = (targetLessonId?: string) => {
+    if (!onOpenCertificate) return;
+    const willBeAllCompleted = allLessons.length > 0 && allLessons.every(
+      l => (targetLessonId && l.id === targetLessonId) || (user?.completedLessonIds || []).includes(l.id)
+    );
+    if (willBeAllCompleted && !hasAutoOpenedCertRef.current) {
+      hasAutoOpenedCertRef.current = true;
+      showToast('success', 'Parabéns! Você concluiu 100% desta jornada! Seu certificado está pronto 🎓');
+      setTimeout(() => {
+        onOpenCertificate(currentJourney);
+      }, 700);
+    }
+  };
+
   const triggerAutoplayCountdown = () => {
     if (isCurrentLessonLocked) return;
     if (autoplayTimer !== null) return; // 🛡️ Trava anti-duplicação caso múltiplos eventos de término cheguem em paralelo
@@ -556,7 +575,15 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     if (completeLesson) {
       completeLesson(activeLesson.id);
     }
-    if (nextLesson) {
+
+    // Verifica se ao concluir esta aula, todas as aulas da jornada foram finalizadas [CERT-AUTO-01]
+    const willBeAllCompleted = allLessons.length > 0 && allLessons.every(
+      l => l.id === activeLesson.id || (user?.completedLessonIds || []).includes(l.id)
+    );
+
+    if (willBeAllCompleted) {
+      checkAndTriggerCertificate(activeLesson.id);
+    } else if (nextLesson) {
       setAutoplayTimer(5);
     }
   };
@@ -587,6 +614,30 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   // Compute progress percentage
   const completedCount = allLessons.filter(l => user?.completedLessonIds.includes(l.id)).length;
   const progressPercent = Math.round((completedCount / allLessons.length) * 100);
+
+  // Monitora transição para 100% de conclusão da jornada nesta sessão [CERT-AUTO-01]
+  useEffect(() => {
+    if (initialCompletedCountRef.current === null) {
+      initialCompletedCountRef.current = completedCount;
+      return;
+    }
+
+    if (
+      initialCompletedCountRef.current < allLessons.length &&
+      allLessons.length > 0 &&
+      completedCount === allLessons.length &&
+      !hasAutoOpenedCertRef.current
+    ) {
+      hasAutoOpenedCertRef.current = true;
+      showToast('success', 'Parabéns! Você concluiu 100% desta jornada! Seu certificado está pronto 🎓');
+      const timer = setTimeout(() => {
+        if (onOpenCertificate) {
+          onOpenCertificate(currentJourney);
+        }
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [completedCount, allLessons.length, currentJourney, onOpenCertificate, showToast]);
 
   // ── ACCESS GATE ────────────────────────────────────────────────────────────
   // A 1ª aula do 1º módulo é sempre a degustação gratuita.
@@ -858,6 +909,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                               onClick={() => {
                                 if (completeLesson) completeLesson(activeLesson.id);
                                 showToast('success', 'Aula concluída! Parabéns pelo seu avanço 🌱');
+                                checkAndTriggerCertificate(activeLesson.id);
                               }}
                               className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 flex items-center gap-1.5 shadow-md active:scale-95"
                             >
@@ -1033,6 +1085,36 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
             </div>
           )}
 
+          {/* Banner Celebratório de Conclusão da Jornada & Certificado Digital [CERT-AUTO-01] */}
+          {progressPercent === 100 && autoplayTimer === null && (
+            <div className="bg-gradient-to-r from-[#003B46] via-[#0A262C] to-[#101B1E] p-4 sm:p-5 rounded-3xl text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in border border-[#FFD166]/40">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-[#FFD166]/20 font-black text-xl flex items-center justify-center shrink-0 border border-[#FFD166]/40 text-[#FFD166]">
+                  <Award className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#FFD166] block">
+                    Jornada Concluída • 100% de Aproveitamento
+                  </span>
+                  <p className="text-xs sm:text-sm font-bold text-white">
+                    Parabéns pela dedicação! Seu Certificado Digital oficial está disponível.
+                  </p>
+                </div>
+              </div>
+
+              {onOpenCertificate && (
+                <button
+                  type="button"
+                  onClick={() => onOpenCertificate(currentJourney)}
+                  className="w-full sm:w-auto bg-[#FFD166] hover:bg-[#ffe082] text-slate-900 font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all text-center flex items-center justify-center gap-2 cursor-pointer active:scale-95 shrink-0"
+                >
+                  <Award className="w-4 h-4 fill-current" />
+                  <span>Ver Meu Certificado</span>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Lesson Overview & Title */}
           <div className="bg-[#101B1E] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-lg space-y-6">
             
@@ -1053,7 +1135,11 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                     showToast('warning', 'Esta aula é exclusiva. Adquira a jornada para concluir e registrar progresso.');
                     return;
                   }
+                  const isAlreadyCompleted = user?.completedLessonIds.includes(activeLesson.id);
                   toggleCompleteLesson(activeLesson.id);
+                  if (!isAlreadyCompleted) {
+                    checkAndTriggerCertificate(activeLesson.id);
+                  }
                 }}
                 className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-md shrink-0 border ${
                   isCurrentLessonLocked
@@ -1284,6 +1370,17 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
             <p className="text-xs text-slate-400 mt-1">
               {completedCount} de {allLessons.length} conteúdos concluídos
             </p>
+
+            {progressPercent === 100 && onOpenCertificate && (
+              <button
+                type="button"
+                onClick={() => onOpenCertificate(currentJourney)}
+                className="w-full mt-2 bg-[#FFD166] hover:bg-[#ffe082] text-slate-900 font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <Award className="w-4 h-4 fill-current" />
+                <span>Ver Certificado Digital</span>
+              </button>
+            )}
           </div>
 
           {/* Module Lessons Suspenso / Accordion Menu */}
