@@ -1018,8 +1018,16 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
   };
 
   // Filter Posts based on active selection, search query & emotional check-in
-  // useMemo evita recalcular em cada render (hover, reações, expansão de comentários, etc.)
-  const safePosts = useMemo(() => Array.isArray(posts) ? posts : [], [posts]);
+  // useMemo evita recalcular em cada render e blinda contra duplicação de chaves
+  const safePosts = useMemo(() => {
+    if (!Array.isArray(posts)) return [];
+    const seen = new Set<string>();
+    return posts.filter(p => {
+      if (!p || !p.id || seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+  }, [posts]);
 
   const filteredPosts = useMemo(() => safePosts.filter(post => {
     if (!post) return false;
@@ -2052,7 +2060,10 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
 
                       {/* Unified Post Action Bar: Reaction Counter Pills + Apoiar Trigger + Rede de Apoio + Excluir */}
                       {(() => {
+                        const seenCommentIds = new Set<string>();
                         const postComments = (Array.isArray(post.comments) ? post.comments : []).filter(c => {
+                          if (!c || !c.id || seenCommentIds.has(c.id)) return false;
+                          seenCommentIds.add(c.id);
                           if (c.status === 'removido_usuario' || c.status === 'rejeitado') return false;
                           if (c.status === 'sob_moderacao') {
                             const isAuthor = user && c.authorId === user.id;

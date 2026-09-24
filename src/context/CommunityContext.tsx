@@ -401,6 +401,17 @@ export const getRandomAnonymousName = () => {
   return `${animal} ${descriptor}`;
 };
 
+export const generateUUID = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
 export type RoomSelectionTarget = 
   | { type: 'jornada'; journeyId: string; subOption?: EmotionalIntention }
   | { type: 'geral'; roomId: string }
@@ -1295,7 +1306,33 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           const newPost = mapPostFromDb(item);
           if (newPost.status === 'removido_usuario') return;
           setPosts(prev => {
-            if (prev.some(p => p.id === newPost.id)) return prev;
+            // 1. Já existe com o mesmo ID? Atualiza campos do servidor sem duplicar
+            if (prev.some(p => p.id === newPost.id)) {
+              return prev.map(p => p.id === newPost.id ? { 
+                ...p, 
+                ...sanitizePost(newPost), 
+                comments: p.comments.length > 0 ? p.comments : newPost.comments 
+              } : p);
+            }
+
+            // 2. Reconciliação semântica com post otimista pendente (mesmo autor + mesmo título + mesmo conteúdo)
+            const optimisticIndex = prev.findIndex(p => 
+              (p.id.startsWith('post-') || !p.id.includes('-')) &&
+              p.title === newPost.title &&
+              p.content === newPost.content &&
+              (p.authorId === newPost.authorId || (p.isAnonymous && newPost.isAnonymous))
+            );
+
+            if (optimisticIndex !== -1) {
+              const updated = [...prev];
+              updated[optimisticIndex] = {
+                ...sanitizePost(newPost),
+                comments: updated[optimisticIndex].comments.length > 0 ? updated[optimisticIndex].comments : newPost.comments
+              };
+              return updated;
+            }
+
+            // 3. Post novo recebido de outro usuário: inclui no topo
             return [sanitizePost(newPost), ...prev];
           });
         }
@@ -1347,17 +1384,40 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             authorAvatar: item.author_avatar || '',
             authorRole: 'membro',
             content: item.content,
-            createdAt: new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            createdAt: item.created_at
+              ? new Date(item.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+              : 'Agora',
             isAnonymous: item.is_anonymous || false,
-            status: 'aprovado',
-            reactions: {},
-            userReactions: {}
+            status: (item.status as any) || 'aprovado',
+            reactions: item.reactions && typeof item.reactions === 'object' ? item.reactions : {},
+            userReactions: item.userReactions && typeof item.userReactions === 'object' ? item.userReactions : {}
           };
           setPosts(prev => prev.map(post => {
             if (post.id === item.post_id) {
-              // Avoid duplicate comments
-              if (post.comments.some(c => c.id === newComment.id)) return post;
-              return { ...post, comments: [...post.comments, newComment] };
+              const currentComments = post.comments || [];
+              // 1. Já existe comentário com o mesmo ID exato? Atualiza sem duplicar
+              if (currentComments.some(c => c.id === newComment.id)) {
+                return {
+                  ...post,
+                  comments: currentComments.map(c => c.id === newComment.id ? { ...c, ...newComment } : c)
+                };
+              }
+
+              // 2. Reconciliação semântica com comentário otimista pendente
+              const optimisticIdx = currentComments.findIndex(c => 
+                (c.id.startsWith('comment-') || !c.id.includes('-')) &&
+                c.content === newComment.content &&
+                (c.authorId === newComment.authorId || (c.isAnonymous && newComment.isAnonymous))
+              );
+
+              if (optimisticIdx !== -1) {
+                const updatedComments = [...currentComments];
+                updatedComments[optimisticIdx] = newComment;
+                return { ...post, comments: updatedComments };
+              }
+
+              // 3. Comentário novo recebido de outro usuário: adiciona
+              return { ...post, comments: [...currentComments, newComment] };
             }
             return post;
           }));
@@ -1467,8 +1527,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     const postStatus: 'sob_moderacao' | 'aprovado' = sensitivityCheck.isFlagged ? 'sob_moderacao' : 'aprovado';
 
+    const postId = generateUUID();
+
     const newPost: CommunityPost = {
-      id: `post-${Date.now()}`,
+      id: postId,
       journeyId: payload.journeyId,
       transversalRoomId: payload.transversalRoomId,
       ageBracketId: payload.ageBracketId,
@@ -1492,6 +1554,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
 
     setPosts(prev => {
+      if (prev.some(p => p.id === postId)) return prev;
       const updated = [newPost, ...prev];
       try {
         localStorage.setItem('elana_community_posts_cache', JSON.stringify(updated));
@@ -1499,10 +1562,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return updated;
     });
 
-    // Persist asynchronously into Supabase database
+    // Persist asynchronously into Supabase database with deterministic UUID
     supabase
       .from('community_posts')
       .insert([{
+        id: postId,
         author_id: isAnonymous ? null : (user?.id || null),
         title: payload.title,
         content: payload.content,
@@ -1527,17 +1591,23 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         } else if (data?.id) {
           console.log('✅ Post salvo com sucesso no Supabase com ID:', data.id);
           setPosts(prev => {
-            const updated = prev.map(p => p.id === newPost.id ? { 
+            const updated = prev.map(p => (p.id === postId || p.id === data.id) ? { 
               ...p, 
               id: data.id,
               status: (data.status as any) || p.status,
               flagType: (data.flag_type as any) || p.flagType,
               flagReason: data.flag_reason || p.flagReason
             } : p);
+            const seen = new Set<string>();
+            const deduplicated = updated.filter(p => {
+              if (seen.has(p.id)) return false;
+              seen.add(p.id);
+              return true;
+            });
             try {
-              localStorage.setItem('elana_community_posts_cache', JSON.stringify(updated));
+              localStorage.setItem('elana_community_posts_cache', JSON.stringify(deduplicated));
             } catch {}
-            return updated;
+            return deduplicated;
           });
 
           // Reconciliação pós-timeout: se IA estava ainda em processamento, aplica resultado ao post já criado
@@ -1838,8 +1908,10 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ? 'https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=150&auto=format&fit=crop&q=80' 
       : user.avatar;
 
+    const commentId = generateUUID();
+
     const newComment: CommunityComment = {
-      id: `comment-${Date.now()}`,
+      id: commentId,
       authorId: user.id,
       authorName,
       authorAvatar,
@@ -1854,18 +1926,21 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     setPosts(prev => prev.map(post => {
       if (post.id === postId) {
+        const currentComments = post.comments || [];
+        if (currentComments.some(c => c.id === commentId)) return post;
         return {
           ...post,
-          comments: [...post.comments, newComment]
+          comments: [...currentComments, newComment]
         };
       }
       return post;
     }));
 
-    // Persist comment asynchronously into Supabase with appropriate status
+    // Persist comment asynchronously into Supabase with deterministic UUID
     supabase
       .from('community_comments')
       .insert([{
+        id: commentId,
         post_id: (postId.includes('-') && postId.length > 20) ? postId : null,
         author_id: isAnon ? null : (user?.id || null),
         author_name: authorName,
@@ -1885,13 +1960,19 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           console.log('✅ Comentário salvo com sucesso no Supabase com ID:', data.id);
           setPosts(prev => prev.map(p => {
             if (p.id === postId && p.comments) {
+              const updated = p.comments.map(c => (c.id === commentId || c.id === data.id) ? { 
+                ...c, 
+                id: data.id,
+                status: (data.status as any) || c.status
+              } : c);
+              const seen = new Set<string>();
               return {
                 ...p,
-                comments: p.comments.map(c => c.id === newComment.id ? { 
-                  ...c, 
-                  id: data.id,
-                  status: (data.status as any) || c.status
-                } : c)
+                comments: updated.filter(c => {
+                  if (seen.has(c.id)) return false;
+                  seen.add(c.id);
+                  return true;
+                })
               };
             }
             return p;
