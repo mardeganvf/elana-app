@@ -18,7 +18,10 @@ import {
   Check,
   Pause,
   Lock,
-  ShoppingCart
+  ShoppingCart,
+  ShieldAlert,
+  RefreshCw,
+  X
 } from 'lucide-react';
 import { NotebookModal } from '../components/gamification/NotebookModal';
 import { CheckoutModal } from '../components/catalog/CheckoutModal';
@@ -111,6 +114,11 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
+
+  // Adblock & Privacy Shield Fallback State [MEDIA-ADBK-01]
+  const [adblockWarning, setAdblockWarning] = useState(false);
+  const [playerReloadKey, setPlayerReloadKey] = useState(0);
+  const hasReceivedVideoEventRef = useRef(false);
 
   // Helper para converter "14 min" ou "14:00" em segundos
   const parseDurationToSeconds = (durStr?: string) => {
@@ -227,6 +235,17 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data) {
+          const msg = data?.message || data?.type || data?.event;
+          if (
+            (typeof msg === 'string' && (msg.startsWith('panda') || msg === 'ready' || msg === 'timeupdate' || msg === 'play' || msg === 'pause')) ||
+            data === 'panda_ready' ||
+            data === 'panda_play'
+          ) {
+            hasReceivedVideoEventRef.current = true;
+            setAdblockWarning(false);
+          }
+        }
         if (data?.message === 'panda_play' || data?.type === 'panda_play' || data?.event === 'play') {
           setIsAudioPlaying(true);
         }
@@ -468,6 +487,38 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     setExpandedModuleId(currentMod ? currentMod.id : null);
     setAutoplayTimer(null);
   }, [activeLesson.id, journey.id]);
+
+  // Adblock & Privacy Shield Fallback Handler [MEDIA-ADBK-01]
+  const handleRetryVideo = () => {
+    setPlayerReloadKey(prev => prev + 1);
+    hasReceivedVideoEventRef.current = false;
+    setAdblockWarning(false);
+    showToast('info', 'Recarregando o reprodutor de vídeo...');
+  };
+
+  // Monitoramento de Adblock / Falha de Carregamento do Panda Video [MEDIA-ADBK-01]
+  useEffect(() => {
+    const embedUrl = getEmbedUrl(activeLesson.videoUrl);
+    if (isCurrentLessonLocked || !embedUrl) {
+      setAdblockWarning(false);
+      hasReceivedVideoEventRef.current = false;
+      return;
+    }
+
+    hasReceivedVideoEventRef.current = false;
+    setAdblockWarning(false);
+
+    // Timer de 8 segundos: se nenhum evento for recebido do player, exibe o aviso com fallback
+    const adblockTimer = setTimeout(() => {
+      if (!hasReceivedVideoEventRef.current) {
+        setAdblockWarning(true);
+      }
+    }, 8000);
+
+    return () => {
+      clearTimeout(adblockTimer);
+    };
+  }, [activeLesson.id, activeLesson.videoUrl, isCurrentLessonLocked, playerReloadKey]);
 
   // Carregar anotação existente da aula se houver
   useEffect(() => {
@@ -733,12 +784,45 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                   </div>
                 )}
 
+                {/* Floating Adblock / Privacy Shield Fallback Warning [MEDIA-ADBK-01] */}
+                {adblockWarning && !isCurrentLessonLocked && (
+                  <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-30 bg-[#070D0F]/95 backdrop-blur-md border border-[#FFD166]/50 p-3 sm:p-4 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs animate-fade-in pointer-events-auto">
+                    <div className="flex items-start sm:items-center gap-3 text-slate-200">
+                      <span className="w-9 h-9 rounded-xl bg-[#FFD166]/15 text-[#FFD166] border border-[#FFD166]/30 flex items-center justify-center shrink-0">
+                        <ShieldAlert className="w-4 h-4" />
+                      </span>
+                      <div>
+                        <span className="font-bold text-white block">O vídeo não carregou?</span>
+                        <span className="text-[11px] text-slate-300">
+                          Bloqueadores de anúncios ou extensões de privacidade (como Brave Shields ou uBlock Origin) podem impedir o carregamento do reprodutor. Desative-os para esta página ou clique para tentar novamente.
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
+                      <button
+                        onClick={handleRetryVideo}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-[#FFD166] hover:bg-[#ffc633] text-slate-950 font-black text-xs py-2 px-3.5 rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap cursor-pointer"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Tentar novamente</span>
+                      </button>
+                      <button
+                        onClick={() => setAdblockWarning(false)}
+                        className="bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white p-2 rounded-xl transition-all font-bold cursor-pointer shrink-0"
+                        title="Dispensar aviso"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Player Container: Iframe do Panda Video ou HTML5 Video */}
                 <div className={`w-full h-full ${mediaMode === 'audio' ? 'opacity-0 pointer-events-none absolute inset-0 -z-10' : 'relative group'}`}>
                   {getEmbedUrl(activeLesson.videoUrl) ? (
                     <iframe
                       id="panda-player"
-                      key={activeLesson.id + '-' + activeLesson.videoUrl}
+                      key={`${activeLesson.id}-${activeLesson.videoUrl}-${playerReloadKey}`}
                       src={getEmbedUrl(activeLesson.videoUrl)!}
                       title={activeLesson.title}
                       className="w-full h-full border-0 rounded-3xl"
@@ -790,9 +874,17 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                           playsInline
                           preload="metadata"
                           autoPlay={false}
-                          onTimeUpdate={handleVideoTimeUpdate}
+                          onTimeUpdate={() => {
+                            hasReceivedVideoEventRef.current = true;
+                            setAdblockWarning(false);
+                            handleVideoTimeUpdate();
+                          }}
                           onPause={handleVideoPause}
-                          onPlay={() => setIsAudioPlaying(true)}
+                          onPlay={() => {
+                            hasReceivedVideoEventRef.current = true;
+                            setAdblockWarning(false);
+                            setIsAudioPlaying(true);
+                          }}
                           onEnded={triggerAutoplayCountdown}
                           className="w-full h-full object-cover"
                           poster={activeLesson.thumbnailUrl || "https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=1000&auto=format&fit=crop&q=80"}
