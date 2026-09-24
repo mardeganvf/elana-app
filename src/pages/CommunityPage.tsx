@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useCommunity, checkContentSensitivity, checkContentSensitivityAI } from '../context/CommunityContext';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
 import { JOURNEYS_DATA, STRIPE_COMMUNITY_CHECKOUT_URL } from '../data/journeysData';
 import { useJourneys } from '../context/JourneysContext';
 import { supabase } from '../lib/supabase';
@@ -495,9 +495,10 @@ const splitTextIntoTwoLines = (text: string) => {
 
 interface CommunityPageProps {
   onExploreCatalog?: () => void;
+  onOpenAuthModal?: () => void;
 }
 
-export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }) => {
+export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, onOpenAuthModal }) => {
   const { 
     posts, 
     isLoading, 
@@ -537,6 +538,10 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
   }, [user]);
 
   const handleOpenCreateTopic = () => {
+    if (!user) {
+      onOpenAuthModal?.();
+      return;
+    }
     if (!canAccessCommunity) {
       setIsJoinCommunityModalOpen(true);
       return;
@@ -1026,6 +1031,10 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
 
   const handleInlineCommentSubmit = async (postId: string, e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      onOpenAuthModal?.();
+      return;
+    }
     if (!canAccessCommunity) {
       showToast('info', 'Assine a Comunidade por R$ 9,90/mês ou adquira uma jornada para poder interagir.');
       setIsJoinCommunityModalOpen(true);
@@ -1678,8 +1687,42 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
             </div>
           </div>
 
-          {/* Banner de Boas-Vindas / Conversão para Comunidade Elana (quando não tem acesso) */}
-          {!canAccessCommunity && (
+          {/* Banner de Boas-Vindas / Conversão para Comunidade Elana */}
+          {!user ? (
+            <div className="bg-gradient-to-r from-[#101B1E] via-[#16272C] to-[#101B1E] border border-[#FF7F5B]/30 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden space-y-3 animate-fade-in">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1.5 max-w-xl">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FF7F5B]/20 text-[#FF7F5B] text-[10px] font-extrabold uppercase tracking-wider">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Degustação da Comunidade</span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Espaço Seguro de Acolhimento & Escuta Real
+                  </h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Você pode ler os relatos de todas as salas. Para proteger os membros, as identidades estão veladas. <strong className="text-white">Crie sua conta gratuita</strong> para ler as respostas de acolhimento, enviar abraços e compartilhar sua história.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+                  <button
+                    onClick={onOpenAuthModal}
+                    className="flex-1 sm:flex-none text-center bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-3 px-5 rounded-2xl shadow-lg transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                  >
+                    Entrar ou Criar Conta
+                  </button>
+                  {onExploreCatalog && (
+                    <button
+                      onClick={onExploreCatalog}
+                      className="flex-1 sm:flex-none text-center bg-white/10 hover:bg-white/15 text-white font-bold text-xs py-3 px-4 rounded-2xl border border-white/15 transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      Ver Jornadas
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : !canAccessCommunity && (
             <div className="bg-gradient-to-r from-[#101B1E] via-[#16272C] to-[#101B1E] border border-[#FF7F5B]/30 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden space-y-3">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="space-y-1.5 max-w-xl">
@@ -1817,18 +1860,22 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                       <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
                         {/* Left Column: Foto, Nome, data e horário do usuário */}
                         <div 
-                          onClick={post.isAnonymous ? undefined : () => openAuthorProfile({ id: post.authorId, name: post.authorName, avatar: post.authorAvatar, role: post.authorRole, tag: post.authorTag, isAnonymous: post.isAnonymous })}
-                          className={`w-full sm:w-44 md:w-48 shrink-0 flex flex-wrap sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 sm:gap-2.5 sm:pr-4 sm:border-r sm:border-white/10 ${post.isAnonymous ? '' : 'cursor-pointer group'}`}
+                          onClick={!user || post.isAnonymous ? undefined : () => openAuthorProfile({ id: post.authorId, name: post.authorName, avatar: post.authorAvatar, role: post.authorRole, tag: post.authorTag, isAnonymous: post.isAnonymous })}
+                          className={`w-full sm:w-44 md:w-48 shrink-0 flex flex-wrap sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 sm:gap-2.5 sm:pr-4 sm:border-r sm:border-white/10 ${!user || post.isAnonymous ? '' : 'cursor-pointer group'}`}
                         >
                           <div className="flex items-center sm:items-start gap-3 sm:gap-2.5 min-w-0 flex-1 sm:flex-none">
                             <img
-                              src={post.authorAvatar}
-                              alt={post.authorName}
-                              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border border-white/20 shrink-0 ${post.isAnonymous ? '' : 'group-hover:scale-105 transition-transform'}`}
+                              src={!user ? GENERIC_DEFAULT_AVATAR : post.authorAvatar}
+                              alt={!user ? "Membro da Comunidade" : post.authorName}
+                              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border border-white/20 shrink-0 ${!user ? 'filter blur-[2px] opacity-75 select-none pointer-events-none' : (post.isAnonymous ? '' : 'group-hover:scale-105 transition-transform')}`}
                             />
                             <div className="min-w-0 flex-1">
-                              <span className={`font-bold text-xs sm:text-sm text-white truncate block ${post.isAnonymous ? '' : 'group-hover:text-[#FF7F5B] transition-colors'}`}>
-                                {post.authorName}
+                              <span className={`font-bold text-xs sm:text-sm text-white truncate block ${!user || post.isAnonymous ? '' : 'group-hover:text-[#FF7F5B] transition-colors'}`}>
+                                {!user ? (
+                                  <span className="filter blur-[3px] select-none text-slate-300 tracking-wide">Membro da Comunidade</span>
+                                ) : (
+                                  post.authorName
+                                )}
                               </span>
                               <span className="text-[11px] text-slate-400 block mt-0.5">{post.createdAt}</span>
                             </div>
@@ -1977,7 +2024,13 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                                   return (
                                     <button
                                       key={reaction.id}
-                                      onClick={() => toggleReaction(post.id, reaction.id)}
+                                      onClick={() => {
+                                        if (!user) {
+                                          onOpenAuthModal?.();
+                                          return;
+                                        }
+                                        toggleReaction(post.id, reaction.id);
+                                      }}
                                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                                         isReacted
                                           ? 'bg-white/15 text-white border-white/30 shadow-md scale-105'
@@ -1997,7 +2050,13 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                                 <div className="relative">
                                   <button
                                     type="button"
-                                    onClick={() => setOpenReactionPickerPostId(openReactionPickerPostId === post.id ? null : post.id)}
+                                    onClick={() => {
+                                      if (!user) {
+                                        onOpenAuthModal?.();
+                                        return;
+                                      }
+                                      setOpenReactionPickerPostId(openReactionPickerPostId === post.id ? null : post.id);
+                                    }}
                                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-400 border border-white/10 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
                                     title="Adicionar uma reação de apoio"
                                   >
@@ -2024,6 +2083,10 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                                               key={reaction.id}
                                               type="button"
                                               onClick={() => {
+                                                if (!user) {
+                                                  onOpenAuthModal?.();
+                                                  return;
+                                                }
                                                 toggleReaction(post.id, reaction.id);
                                                 setOpenReactionPickerPostId(null);
                                               }}
@@ -2049,7 +2112,13 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog }
                               <div className="flex items-center gap-2 ml-auto">
                                 <button
                                   type="button"
-                                  onClick={() => toggleCommentsExpansion(post.id)}
+                                  onClick={() => {
+                                    if (!user) {
+                                      onOpenAuthModal?.();
+                                      return;
+                                    }
+                                    toggleCommentsExpansion(post.id);
+                                  }}
                                   className={`flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl text-xs font-bold transition-all shadow-sm border cursor-pointer ${
                                     isInlineExpanded
                                       ? 'bg-[#FF7F5B] text-slate-950 border-[#FF7F5B]'

@@ -347,7 +347,7 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
   {
     key: 'community_create_posts',
     label: 'Publicar na Comunidade',
-    description: 'Criar novas postagens, desabafos e pedidos de apoio na Aldeia.',
+    description: 'Criar novas postagens, desabafos e pedidos de apoio na Comunidade.',
     category: 'community'
   },
   {

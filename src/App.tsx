@@ -302,61 +302,8 @@ const AppContent: React.FC = () => {
     }, 100);
   };
 
-  if (!user && activeTab === 'quiz') {
-    return (
-      <div className="min-h-screen flex flex-col justify-between bg-[#070D0F] text-slate-100">
-        <header className="border-b border-white/10 bg-[#070D0F]/90 backdrop-blur-md px-4 py-3.5 sticky top-0 z-30">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => {
-                navigateToTab('login');
-              }}
-            >
-              <span className="text-xl">🌿</span>
-              <span className="text-base font-black tracking-wider uppercase text-white">Elana Academy</span>
-            </div>
-            <button
-              onClick={() => setIsAuthModalOpen(true)}
-              className="text-xs font-bold text-[#FF7F5B] hover:text-[#ff987d] px-3.5 py-1.5 rounded-xl border border-[#FF7F5B]/30 hover:bg-[#FF7F5B]/10 transition-colors cursor-pointer"
-            >
-              Entrar / Criar Conta
-            </button>
-          </div>
-        </header>
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
-          <ErrorBoundary>
-            <Suspense fallback={<PageLoadingFallback />}>
-              <QuizPage
-                onBackToHome={() => {
-                  navigateToTab('login');
-                }}
-                onOpenAuthModal={() => setIsAuthModalOpen(true)}
-              />
-            </Suspense>
-          </ErrorBoundary>
-        </main>
-
-        <Footer />
-
-        {isAuthModalOpen && (
-          <Suspense fallback={null}>
-            <AuthModal
-              isOpen={isAuthModalOpen}
-              onClose={() => setIsAuthModalOpen(false)}
-              onSuccess={() => {
-                setIsAuthModalOpen(false);
-                navigateToTab('home');
-              }}
-            />
-          </Suspense>
-        )}
-      </div>
-    );
-  }
-
-  if (!user || activeTab === 'login') {
+  // Se a aba ativa for explicitamente 'login', exibe a LoginPage dedicada
+  if (activeTab === 'login') {
     return (
       <Suspense fallback={<PageLoadingFallback />}>
         <LoginPage
@@ -366,6 +313,24 @@ const AppContent: React.FC = () => {
               setIsSpotlightTourOpen(true);
             }
           }}
+          onBackToHome={() => navigateToTab('home')}
+        />
+      </Suspense>
+    );
+  }
+
+  // Abas estritamente protegidas que exigem login (dashboard pessoal, sala de aula/player, admin)
+  if (!user && (activeTab === 'dashboard' || activeTab === 'classroom' || activeTab === 'admin')) {
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <LoginPage
+          onSuccess={(isNewUser) => {
+            navigateToTab(activeTab || 'home');
+            if (isNewUser) {
+              setIsSpotlightTourOpen(true);
+            }
+          }}
+          onBackToHome={() => navigateToTab('home')}
         />
       </Suspense>
     );
@@ -377,7 +342,7 @@ const AppContent: React.FC = () => {
         <Navbar
           activeTab={activeTab}
           setActiveTab={(tab) => navigateToTab(tab)}
-          onOpenAuthModal={() => navigateToTab('login')}
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
           onRestartTutorial={handleRestartTutorial}
         />
 
@@ -402,7 +367,10 @@ const AppContent: React.FC = () => {
               )}
 
               {activeTab === 'community' && (
-                <CommunityPage onExploreCatalog={() => navigateToTab('home')} />
+                <CommunityPage 
+                  onExploreCatalog={() => navigateToTab('home')} 
+                  onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                />
               )}
 
               {activeTab === 'dashboard' && (

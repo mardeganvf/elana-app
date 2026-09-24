@@ -887,6 +887,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
         {/* Tab 3: Emoções */}
         <button
           onClick={() => {
+            if (!isAuthenticated) {
+              onOpenAuthModal();
+              return;
+            }
             setIsEmotionalHistoryOpen(true);
             awardBadge('b21'); // Olhar Para Dentro
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
