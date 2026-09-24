@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Journey } from '../../types';
 import { useAuth, isAdminUser } from '../../context/AuthContext';
+import { buildCheckoutUrl } from '../../utils/tracking';
 import { X, ShieldCheck, Check, Sparkles, CreditCard, QrCode } from 'lucide-react';
 
 interface CheckoutModalProps {
@@ -16,13 +17,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ journey, onClose, 
 
   if (!journey) return null;
 
-  // Checkout real Stripe
+  // Checkout real Stripe enriquecido com UTMs e identificadores
   const handleGoToCheckout = () => {
     if (journey.checkoutUrl) {
-      const url = new URL(journey.checkoutUrl);
-      if (user?.email) url.searchParams.set('prefilled_email', user.email);
-      if (user?.id) url.searchParams.set('client_reference_id', user.id);
-      window.open(url.toString(), '_blank', 'noopener,noreferrer');
+      const finalUrl = buildCheckoutUrl(journey.checkoutUrl, user);
+      window.open(finalUrl, '_blank', 'noopener,noreferrer');
       onClose();
     }
   };

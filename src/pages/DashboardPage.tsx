@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useJourneys } from '../context/JourneysContext';
 import { useCommunity } from '../context/CommunityContext';
 import { JOURNEYS_DATA as STATIC_JOURNEYS, STRIPE_COMMUNITY_CHECKOUT_URL } from '../data/journeysData';
+import { buildCheckoutUrl } from '../utils/tracking';
 import { Journey, CommunityPost, getCommunityAccessInfo } from '../types';
 import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle, HelpCircle, Trash2, ArrowRight, MessageSquare, ChevronDown, LayoutDashboard, Shield, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
@@ -451,12 +452,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const communityAccess = getCommunityAccessInfo(user);
 
   const communityCheckoutUrl = React.useMemo(() => {
-    if (!user) return STRIPE_COMMUNITY_CHECKOUT_URL;
-    const params = new URLSearchParams();
-    if (user.email) params.append('prefilled_email', user.email);
-    if (user.id) params.append('client_reference_id', user.id);
-    const qs = params.toString();
-    return qs ? `${STRIPE_COMMUNITY_CHECKOUT_URL}?${qs}` : STRIPE_COMMUNITY_CHECKOUT_URL;
+    return buildCheckoutUrl(STRIPE_COMMUNITY_CHECKOUT_URL, user);
   }, [user]);
 
   return (

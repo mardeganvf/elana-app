@@ -4,6 +4,7 @@ import { useCommunity, checkContentSensitivity, checkContentSensitivityAI } from
 import { useAuth, GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
 import { JOURNEYS_DATA, STRIPE_COMMUNITY_CHECKOUT_URL } from '../data/journeysData';
 import { useJourneys } from '../context/JourneysContext';
+import { buildCheckoutUrl } from '../utils/tracking';
 import { supabase } from '../lib/supabase';
 import { 
   BRAND_REACTIONS, 
@@ -529,12 +530,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
   const [isJoinCommunityModalOpen, setIsJoinCommunityModalOpen] = useState(false);
 
   const communityCheckoutUrl = useMemo(() => {
-    if (!user) return STRIPE_COMMUNITY_CHECKOUT_URL;
-    const params = new URLSearchParams();
-    if (user.email) params.append('prefilled_email', user.email);
-    if (user.id) params.append('client_reference_id', user.id);
-    const qs = params.toString();
-    return qs ? `${STRIPE_COMMUNITY_CHECKOUT_URL}?${qs}` : STRIPE_COMMUNITY_CHECKOUT_URL;
+    return buildCheckoutUrl(STRIPE_COMMUNITY_CHECKOUT_URL, user);
   }, [user]);
 
   const handleOpenCreateTopic = () => {

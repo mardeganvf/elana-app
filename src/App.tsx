@@ -11,6 +11,7 @@ import { ToastProvider } from './context/ToastContext';
 import { Journey } from './types';
 import { supabase } from './lib/supabase';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { captureTrackingParams } from './utils/tracking';
 
 import { HomePage } from './pages/HomePage';
 
@@ -108,6 +109,11 @@ const AppContent: React.FC = () => {
     return () => {
       subscription.unsubscribe();
     };
+  }, []);
+
+  // 🏷️ Captura de parâmetros de atribuição de tráfego (UTMs, fbclid, gclid, etc.)
+  useEffect(() => {
+    captureTrackingParams();
   }, []);
 
   // 🗳️ Disparo da Enquete no 1º Acesso Geral do Dia (Aba Conteúdos / Home)
