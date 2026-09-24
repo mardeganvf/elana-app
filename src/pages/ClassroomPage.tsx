@@ -21,6 +21,7 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import { NotebookModal } from '../components/gamification/NotebookModal';
+import { CheckoutModal } from '../components/catalog/CheckoutModal';
 
 interface ClassroomPageProps {
   journey: Journey;
@@ -40,11 +41,13 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   onOpenCheckout
 }) => {
   const handleBack = onBackToHome || onBack || (() => {});
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+
   const handleUnlock = () => {
     if (onOpenCheckout) {
       onOpenCheckout(currentJourney);
     } else {
-      handleBack();
+      setIsCheckoutModalOpen(true);
     }
   };
   const { user, completeLesson, toggleCompleteLesson, saveLessonNote, awardBadge, recordDailyVisit } = useAuth();
@@ -1303,6 +1306,18 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
         <NotebookModal
           initialJourneyId={journey.id}
           onClose={() => setIsNotebookModalOpen(false)}
+        />
+      )}
+
+      {/* Checkout Modal Direto na Sala de Aula */}
+      {isCheckoutModalOpen && (
+        <CheckoutModal
+          journey={currentJourney}
+          onClose={() => setIsCheckoutModalOpen(false)}
+          onSuccess={(j) => {
+            setIsCheckoutModalOpen(false);
+            showToast('success', `Acesso liberado com sucesso à jornada ${j.title}!`);
+          }}
         />
       )}
 
