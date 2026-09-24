@@ -294,6 +294,9 @@ export const checkAntiShaming = (text: string): { isFlagged: boolean; matchedWor
   };
 };
 
+// Referência ao check de IA em andamento — usada para reconciliação pós-timeout em createPost
+let _pendingAICheck: Promise<ContentSensitivityResult | null> | null = null;
+
 // Moderação Contextual Avançada com IA Gemini (via Supabase Edge Function) + Fallback Seguro
 export const checkContentSensitivityAI = async (
   text: string, 
@@ -305,56 +308,68 @@ export const checkContentSensitivityAI = async (
   // 1. Verificação local instantânea de alta prioridade (título isolado, corpo isolado e texto completo)
   if (title && title.trim()) {
     const titleCheck = checkContentSensitivity(title.trim());
-    if (titleCheck.isFlagged) return titleCheck;
+    if (titleCheck.isFlagged) { _pendingAICheck = null; return titleCheck; }
   }
 
   if (content && content.trim()) {
     const contentCheck = checkContentSensitivity(content.trim());
-    if (contentCheck.isFlagged) return contentCheck;
+    if (contentCheck.isFlagged) { _pendingAICheck = null; return contentCheck; }
   }
 
   const fullLocalCheck = checkContentSensitivity(text.trim());
   if (fullLocalCheck.isFlagged) {
+    _pendingAICheck = null;
     return fullLocalCheck;
   }
 
-  // 2. Análise contextual avançada via Supabase Edge Function com IA Gemini
-  try {
-    const timeoutPromise = new Promise<{ error: string }>((resolve) =>
-      setTimeout(() => resolve({ error: 'TIMEOUT' }), 10000)
-    );
+  // Mapeador unificado: aceita resultado de IA real E de circuit breaker do servidor
+  const mapEdgeResult = (data: any): ContentSensitivityResult | null => {
+    if (!data) return null;
+    if (data.isFlagged) {
+      const flagType: SensitivityFlagType = data.category === 'vulnerabilidade' ? 'vulnerabilidade' : 'antijulgamento';
+      const prefix = flagType === 'vulnerabilidade' ? 'Alerta de Acolhimento' : 'Alerta Antijulgamento';
+      return {
+        isFlagged: true,
+        type: flagType,
+        matchedWord: data.matchedContext || 'análise contextual de IA',
+        flagReason: `${prefix}: "${data.matchedContext || 'análise de IA'}" (${data.reason || 'Sinalizado pelas diretrizes da comunidade'})`,
+        suggestsCrisisSupport: !!data.suggestsCrisisSupport
+      };
+    }
+    if (data.category === 'livre' || data.isFlagged === false) {
+      return { isFlagged: false };
+    }
+    return null;
+  };
 
+  // 2. Análise contextual avançada via Edge Function (timeout de 5s para UX responsiva)
+  try {
+    // Mantém a promise viva para reconciliação pós-timeout em createPost
     const invokePromise = supabase.functions.invoke('moderate-content', {
       body: { text: text.trim() }
-    });
+    }).then(res => res?.data || null);
 
-    const result: any = await Promise.race([invokePromise, timeoutPromise]);
+    _pendingAICheck = invokePromise.then(mapEdgeResult).catch(() => null);
 
-    if (result?.error) {
-      console.warn('AI moderation notice:', result.error);
-    }
+    const timeoutResult = await Promise.race([
+      invokePromise,
+      new Promise<null>(resolve => setTimeout(() => resolve(null), 5000))
+    ]);
 
-    if (result && !result.error && result.data && !result.data.fallbackRequired) {
-      const data = result.data;
-      if (data.isFlagged) {
-        const flagType: SensitivityFlagType = data.category === 'vulnerabilidade' ? 'vulnerabilidade' : 'antijulgamento';
-        const prefix = flagType === 'vulnerabilidade' ? 'Alerta de Acolhimento' : 'Alerta Antijulgamento';
-        return {
-          isFlagged: true,
-          type: flagType,
-          matchedWord: data.matchedContext || 'análise contextual de IA',
-          flagReason: `${prefix}: "${data.matchedContext || 'análise de IA'}" (${data.reason || 'Sinalizado pelas diretrizes da comunidade'})`,
-          suggestsCrisisSupport: !!data.suggestsCrisisSupport
-        };
-      } else if (data.category === 'livre' || data.isFlagged === false) {
-        return { isFlagged: false };
-      }
+    if (timeoutResult !== null) {
+      // IA respondeu dentro do prazo de 5s
+      _pendingAICheck = null;
+      const mapped = mapEdgeResult(timeoutResult);
+      if (mapped !== null) return mapped;
+    } else {
+      console.warn('[AI Moderation] Timeout de 5s — retornando regex local. Reconciliação pós-criação pendente.');
     }
   } catch (err) {
     console.warn('IA moderation fallback notice:', err);
+    _pendingAICheck = null;
   }
 
-  // 3. Fallback de contingência
+  // 3. Fallback de contingência (regex local)
   return fullLocalCheck;
 };
 
@@ -1518,6 +1533,34 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             } catch {}
             return updated;
           });
+
+          // Reconciliação pós-timeout: se IA estava ainda em processamento, aplica resultado ao post já criado
+          if (_pendingAICheck) {
+            const pendingRef = _pendingAICheck;
+            _pendingAICheck = null;
+            Promise.race([
+              pendingRef,
+              new Promise<null>(resolve => setTimeout(() => resolve(null), 12000))
+            ]).then(async (aiResult: ContentSensitivityResult | null) => {
+              if (aiResult?.isFlagged && !sensitivityCheck.isFlagged) {
+                console.warn('[AI Reconciliation] IA flagou post após timeout — atualizando status no DB:', data.id);
+                await supabase
+                  .from('community_posts')
+                  .update({
+                    status: 'sob_moderacao',
+                    flag_reason: aiResult.flagReason || null,
+                    flag_type: aiResult.type || null,
+                    suggests_crisis_support: !!aiResult.suggestsCrisisSupport
+                  })
+                  .eq('id', data.id);
+                setPosts(prev => prev.map(p =>
+                  p.id === data.id
+                    ? { ...p, status: 'sob_moderacao', flagReason: aiResult.flagReason, flagType: aiResult.type, suggestsCrisisSupport: aiResult.suggestsCrisisSupport }
+                    : p
+                ));
+              }
+            }).catch(() => {});
+          }
         }
       });
 

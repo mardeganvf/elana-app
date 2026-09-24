@@ -108,6 +108,25 @@ const OFFENSIVE_PATTERNS = [
   { pattern: /\b(?:sacudir|chacoalhar)\b.*?\b(?:bebe|nenem|recem\s+nascido)\b/i, reason: 'Risco pediátrico crítico: síndrome do bebê sacudido' },
   { pattern: /\b(?:dar\s+(?:clonazepam|rivotril|sedativo|calmante|antialergico)\s+(?:pro|para\s+o)?\s*(?:bebe|nenem|dormir))\b/i, reason: 'Risco pediátrico grave: sedação inadequada de bebê' },
   { pattern: /\b(?:bater|espancar|soco|bofete|surra)\s+(?:no|na|pro|em)\s+(?:bebe|recem\s+nascido|nenem|crianca)\b/i, reason: 'Maus-tratos e violência física contra criança' },
+
+  // Discriminação racial e xenofobia
+  { pattern: /\b(?:macaco|macacada)\b.*?\b(?:negr[ao]|pret[ao])\b/i, reason: 'Racismo / Injúria racial' },
+  { pattern: /\b(?:negr[ao])\b.*?\b(?:fedid[ao]|sujo|imundo|ladr[ao]|bandid[ao]|macaco)\b/i, reason: 'Racismo / Injúria racial grave' },
+  { pattern: /\b(?:volta\s+pra|vai\s+pra)\s+(?:africa|seu\s+pais|sua\s+terra)\b/i, reason: 'Xenofobia / Discurso de expulsão racista' },
+  { pattern: /\b(?:nordestino|baiano|cearense|paraibano)\s+(?:burr[ao]|ladr[ao]|ignorante|fed[eo]r)\b/i, reason: 'Preconceito regional / Xenofobia interna' },
+
+  // Homofobia e transfobia
+  { pattern: /\b(?:viado|viadinho|bicha|sapatao|sapatona|traveco)\b/i, reason: 'Homofobia / Transfobia — injúria por identidade de gênero ou orientação sexual' },
+  { pattern: /\b(?:nao\s+aceito|nao\s+quero|nao\s+admito)\b.*?\b(?:filho|filha)\b.*?\b(?:gay|homossexual|trans|virad[ao])\b/i, reason: 'Rejeição familiar por orientação sexual — discriminação grave' },
+
+  // Capacitismo
+  { pattern: /\b(?:retardado|mongoloid[ae]|debil\s+mental|deficient[ae]\s+(?:mental|cognitiv))\b/i, reason: 'Capacitismo — ofensa a pessoa com deficiência' },
+  { pattern: /\b(?:crianca|filho|filha)\b.*?\b(?:autista|down|deficiente)\b.*?\b(?:insuportavel|impossivel|um\s+fardo|lixo|peso)\b/i, reason: 'Capacitismo — desumanização de criança com deficiência' },
+
+  // Fraudes e golpes financeiros
+  { pattern: /\b(?:lucro|retorno|ganho)\s+garantido\b/i, reason: 'Fraude financeira — promessa de retorno garantido' },
+  { pattern: /\b(?:ganhe|fature|lucre)\s+(?:\d+\s*(?:mil|reais))\b.*?\b(?:em\s+casa|sem\s+sair|trabalhando\s+em\s+casa|por\s+dia)\b/i, reason: 'Pirâmide / Golpe de renda fácil' },
+  { pattern: /\b(?:pix|deposito|transferencia)\b.*?\b(?:urgente|agora|rapido|antes\s+que\s+expire)\b/i, reason: 'Golpe financeiro — pressão para pagamento imediato' },
 ];
 
 export function evaluateRegexFallback(text: string): ModerationResult {
@@ -165,7 +184,7 @@ async function getEmbedding(text: string, apiKey: string): Promise<number[] | nu
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:embedContent?key=${apiKey}`;
       const res = await fetch(geminiUrl, {
         method: 'POST',
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(5000),
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: `models/${model}`,
@@ -257,23 +276,19 @@ export async function runGeminiModeration(
     }
   }
 
-  // 2. Resolução da Lista de Modelos Suportados (Padrão: gemini-3.6-flash conforme API v1beta)
+  // 2. Modelo suportado (gemini-3.6-flash — único disponível nessa conta via v1beta)
   const defaultModel = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-3.6-flash';
-  const candidateModels = [
+  const models = Array.from(new Set([
     modelOverride || defaultModel,
-    'gemini-3.6-flash',
-    'gemini-2.5-flash',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash'
-  ];
-  const models = Array.from(new Set(candidateModels));
+    'gemini-3.6-flash'
+  ]));
 
   for (const model of models) {
     try {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const geminiResponse = await fetch(geminiUrl, {
         method: 'POST',
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(5000),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -292,7 +307,6 @@ export async function runGeminiModeration(
           ],
           generationConfig: {
             responseMimeType: 'application/json',
-            response_mime_type: 'application/json',
             temperature: 0.1,
             maxOutputTokens: 1024,
             thinkingConfig: {
