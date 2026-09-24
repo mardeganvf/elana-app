@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth, isAdminUser, deduplicateSosMessages } from '../../context/AuthContext';
 import { useFontSize } from '../../context/FontSizeContext';
 import { supabase } from '../../lib/supabase';
+import { getCommunityAccessInfo } from '../../types';
 import { 
   Flame, 
   Sparkles, 
@@ -70,6 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
   const { showToast } = useToast();
   const isAdmin = isAdminUser(user);
   const isStaff = isAdmin || (user?.role || '').toLowerCase().includes('guia');
+  const communityAccess = useMemo(() => getCommunityAccessInfo(user), [user]);
   const { fontSize, setFontSize } = useFontSize();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMamadaMode, setIsMamadaMode] = useState(() => {
@@ -445,12 +447,28 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
             <button
               onClick={() => setActiveTab('community')}
               data-tour="community-nav"
-              className={`flex items-center gap-2 transition-all px-3.5 py-2 rounded-full ${
+              className={`flex items-center gap-2 transition-all px-3.5 py-2 rounded-full relative ${
                 activeTab === 'community' ? 'text-white font-extrabold bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5'
               }`}
             >
               <MessageSquare className="w-4 h-4 text-[#8A9A5B]" />
               <span>Comunidade</span>
+              {communityAccess.type === 'trial_bonus' && communityAccess.isExpiringSoon && (
+                <span
+                  className={`text-[10px] font-black px-1.5 py-0.5 rounded-full tracking-tight shrink-0 flex items-center gap-1 ${
+                    communityAccess.isCriticalExpiration
+                      ? 'bg-[#FF7F5B] text-slate-950 animate-pulse ring-1 ring-[#FF7F5B]'
+                      : 'bg-[#FFD166] text-slate-950'
+                  }`}
+                  title={
+                    communityAccess.isCriticalExpiration
+                      ? `Cortesia da comunidade expira em ${communityAccess.hoursRemaining}h - assine por R$ 9,90/mês`
+                      : `Cortesia da comunidade expira em ${communityAccess.daysRemaining} dias`
+                  }
+                >
+                  {communityAccess.isCriticalExpiration ? `${communityAccess.hoursRemaining}h` : `${communityAccess.daysRemaining}d`}
+                </span>
+              )}
             </button>
           </nav>
 
@@ -606,6 +624,34 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
                         </span>
                       </div>
                     </div>
+
+                    {/* Alerta de Expiração de Cortesia da Comunidade no Dropdown */}
+                    {communityAccess.type === 'trial_bonus' && communityAccess.isExpiringSoon && (
+                      <div 
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          setActiveTab('community');
+                        }}
+                        className={`mx-1 p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
+                          communityAccess.isCriticalExpiration
+                            ? 'bg-[#251310] border-[#FF7F5B]/60 hover:border-[#FF7F5B]'
+                            : 'bg-[#1c180e] border-[#FFD166]/40 hover:border-[#FFD166]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 text-xs">
+                          <Clock className={`w-3.5 h-3.5 shrink-0 ${communityAccess.isCriticalExpiration ? 'text-[#FF7F5B] animate-pulse' : 'text-[#FFD166]'}`} />
+                          <div className="leading-tight">
+                            <span className="font-bold text-white block text-[11px]">
+                              {communityAccess.isCriticalExpiration 
+                                ? `Cortesia: ${communityAccess.hoursRemaining}h restantes` 
+                                : `Cortesia: ${communityAccess.daysRemaining} dias restantes`}
+                            </span>
+                            <span className="text-[10px] text-slate-300">Garantir continuidade por R$ 9,90/mês</span>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-3 h-3 text-slate-400 shrink-0" />
+                      </div>
+                    )}
 
                     <div className="h-px bg-white/10" />
 
@@ -872,10 +918,23 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenA
           data-tour="community-nav"
           className="flex flex-col items-center gap-1 py-1 min-h-[50px] justify-center active:scale-95 transition-transform"
         >
-          <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all ${
+          <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all relative ${
             activeTab === 'community' ? 'bg-[#8A9A5B]/15 border border-[#8A9A5B]/30' : 'hover:bg-white/5'
           }`}>
-            <MessageSquare className={`w-5 h-5 transition-colors ${activeTab === 'community' ? 'text-[#8A9A5B]' : 'text-slate-200'}`} />
+            <div className="relative">
+              <MessageSquare className={`w-5 h-5 transition-colors ${activeTab === 'community' ? 'text-[#8A9A5B]' : 'text-slate-200'}`} />
+              {communityAccess.type === 'trial_bonus' && communityAccess.isExpiringSoon && (
+                <span
+                  className={`absolute -top-1 -right-2.5 px-1 text-[8px] font-black rounded-full leading-tight shadow-sm ${
+                    communityAccess.isCriticalExpiration
+                      ? 'bg-[#FF7F5B] text-slate-950 animate-pulse ring-2 ring-[#070D0F]'
+                      : 'bg-[#FFD166] text-slate-950 ring-2 ring-[#070D0F]'
+                  }`}
+                >
+                  {communityAccess.isCriticalExpiration ? `${communityAccess.hoursRemaining}h` : `${communityAccess.daysRemaining}d`}
+                </span>
+              )}
+            </div>
             <span className={`text-[10px] tracking-wide transition-all ${
               activeTab === 'community' ? 'text-[#8A9A5B] font-black' : 'text-slate-200 font-semibold'
             }`}>

@@ -121,26 +121,37 @@ export interface CommunityAccessInfo {
   hasAccess: boolean;
   type: CommunityAccessType;
   daysRemaining: number | null;
+  hoursRemaining: number | null;
+  isExpiringSoon: boolean;
+  isCriticalExpiration: boolean;
 }
 
 export const getCommunityAccessInfo = (user?: UserProfile | null): CommunityAccessInfo => {
   if (!user) {
-    return { hasAccess: false, type: 'none', daysRemaining: 0 };
+    return { hasAccess: false, type: 'none', daysRemaining: 0, hoursRemaining: 0, isExpiringSoon: false, isCriticalExpiration: false };
   }
   if (user.role === 'admin' || user.role === 'Administrador') {
-    return { hasAccess: true, type: 'admin', daysRemaining: null };
+    return { hasAccess: true, type: 'admin', daysRemaining: null, hoursRemaining: null, isExpiringSoon: false, isCriticalExpiration: false };
   }
   if (user.communitySubscriptionStatus === 'active') {
-    return { hasAccess: true, type: 'active_subscription', daysRemaining: null };
+    return { hasAccess: true, type: 'active_subscription', daysRemaining: null, hoursRemaining: null, isExpiringSoon: false, isCriticalExpiration: false };
   }
   if (user.communityAccessExpiresAt) {
     const msRemaining = new Date(user.communityAccessExpiresAt).getTime() - Date.now();
-    const days = Math.ceil(msRemaining / (1000 * 60 * 60 * 24));
-    if (days > 0) {
-      return { hasAccess: true, type: 'trial_bonus', daysRemaining: days };
+    if (msRemaining > 0) {
+      const days = Math.ceil(msRemaining / (1000 * 60 * 60 * 24));
+      const hours = Math.max(1, Math.ceil(msRemaining / (1000 * 60 * 60)));
+      return {
+        hasAccess: true,
+        type: 'trial_bonus',
+        daysRemaining: days,
+        hoursRemaining: hours,
+        isExpiringSoon: days <= 7,
+        isCriticalExpiration: hours <= 48
+      };
     }
   }
-  return { hasAccess: false, type: 'none', daysRemaining: 0 };
+  return { hasAccess: false, type: 'none', daysRemaining: 0, hoursRemaining: 0, isExpiringSoon: false, isCriticalExpiration: false };
 };
 
 export const hasCommunityAccess = (user?: UserProfile | null): boolean => {

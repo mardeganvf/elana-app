@@ -70,6 +70,44 @@ describe('Community Access Rules (Paywall & 90 Days Courtesy)', () => {
     expect(info.type).toBe('trial_bonus');
     expect(info.daysRemaining).toBeGreaterThanOrEqual(29);
     expect(info.daysRemaining).toBeLessThanOrEqual(31);
+    expect(info.isExpiringSoon).toBe(false);
+    expect(info.isCriticalExpiration).toBe(false);
+  });
+
+  it('deve acionar isExpiringSoon quando restarem 7 dias ou menos da cortesia', () => {
+    // 5 dias no futuro
+    const futureDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+    const expiringUser: UserProfile = {
+      ...baseUser,
+      communitySubscriptionStatus: 'free',
+      communityAccessExpiresAt: futureDate
+    };
+
+    const info = getCommunityAccessInfo(expiringUser);
+    expect(info.hasAccess).toBe(true);
+    expect(info.type).toBe('trial_bonus');
+    expect(info.daysRemaining).toBe(5);
+    expect(info.isExpiringSoon).toBe(true);
+    expect(info.isCriticalExpiration).toBe(false);
+  });
+
+  it('deve acionar isCriticalExpiration quando restarem 48 horas ou menos da cortesia', () => {
+    // 24 horas no futuro
+    const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const criticalUser: UserProfile = {
+      ...baseUser,
+      communitySubscriptionStatus: 'free',
+      communityAccessExpiresAt: futureDate
+    };
+
+    const info = getCommunityAccessInfo(criticalUser);
+    expect(info.hasAccess).toBe(true);
+    expect(info.type).toBe('trial_bonus');
+    expect(info.daysRemaining).toBe(1);
+    expect(info.hoursRemaining).toBeGreaterThanOrEqual(23);
+    expect(info.hoursRemaining).toBeLessThanOrEqual(24);
+    expect(info.isExpiringSoon).toBe(true);
+    expect(info.isCriticalExpiration).toBe(true);
   });
 
   it('deve bloquear acesso quando a cortesia de 90 dias expirar', () => {
