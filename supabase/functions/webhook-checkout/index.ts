@@ -389,19 +389,35 @@ Deno.serve(async (req) => {
           autoProvisioned = true;
           console.log(`👤 Novo aluno provisionado automaticamente: ID ${userId} (${buyerEmail})`);
         } else {
-          // Busca paginando se o usuário já existia no Auth
-          let page = 1;
-          let foundUser = false;
-          while (!foundUser && page <= 10) {
-            const { data: paged } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 100 });
-            const match = paged?.users?.find(u => u.email?.toLowerCase() === buyerEmail.toLowerCase());
-            if (match?.id) {
-              userId = match.id;
-              foundUser = true;
-              break;
+          // Usuário já existia no Supabase Auth.
+          // 1. Busca direta via RPC get_user_id_by_email (O(1) no índice B-Tree de auth.users, sem limite de paginação)
+          try {
+            const { data: rpcUserId, error: rpcError } = await supabaseAdmin.rpc('get_user_id_by_email', {
+              lookup_email: buyerEmail
+            });
+            if (rpcUserId && !rpcError) {
+              userId = rpcUserId;
+              console.log(`👤 Usuário existente localizado via RPC get_user_id_by_email: ID ${userId} (${buyerEmail})`);
             }
-            if (!paged?.users || paged.users.length < 100) break;
-            page++;
+          } catch (rpcErr) {
+            console.warn('⚠️ Erro ao consultar RPC get_user_id_by_email, acionando fallback de listagem:', rpcErr);
+          }
+
+          // 2. Fallback de segurança: caso a RPC não retorne, pagina a lista de usuários sem o teto cego de 10 páginas
+          if (!userId) {
+            let page = 1;
+            const maxPages = 500; // Limite de proteção amplo (até 50.000 usuários)
+            while (page <= maxPages) {
+              const { data: paged } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 100 });
+              const match = paged?.users?.find(u => u.email?.toLowerCase() === buyerEmail.toLowerCase());
+              if (match?.id) {
+                userId = match.id;
+                console.log(`👤 Usuário localizado via fallback de listUsers na página ${page}: ID ${userId}`);
+                break;
+              }
+              if (!paged?.users || paged.users.length < 100) break;
+              page++;
+            }
           }
         }
 

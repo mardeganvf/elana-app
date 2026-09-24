@@ -1566,4 +1566,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- ========================================================
+-- [BUG-EDGE-02] OTIMIZAÇÃO DE BUSCA DE USUÁRIO PARA WEBHOOKS:
+-- Permite lookup O(1) direto em auth.users por e-mail pelo service_role,
+-- eliminando paginação no Admin SDK e ultrapassando limites de escala.
+-- ========================================================
+CREATE OR REPLACE FUNCTION public.get_user_id_by_email(lookup_email text)
+RETURNS uuid
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = auth, public
+AS $$
+  SELECT id FROM auth.users WHERE LOWER(email) = LOWER(TRIM(lookup_email)) LIMIT 1;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_user_id_by_email(text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_user_id_by_email(text) TO service_role;
+
 
