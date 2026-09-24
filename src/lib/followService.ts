@@ -285,19 +285,14 @@ export async function syncFollowedMembersFromSupabase(userId?: string): Promise<
         return synced;
       }
     } else {
-      // Se não há registros no Supabase mas há dados no cache local, migra os locais para o Supabase
-      const localList = getFollowedMembers(userId);
-      if (localList.length > 0) {
-        for (const m of localList) {
-          if (m.id && !m.id.startsWith('member-')) {
-            await supabase.from('user_follows').upsert({
-              follower_id: userId,
-              followed_id: m.id,
-              created_at: new Date().toISOString()
-            });
-          }
-        }
-      }
+      // Se a consulta no Supabase retornou vazia com sucesso, o banco é a fonte da verdade:
+      // O usuário não segue ninguém. Limpa o cache local e emite evento sem re-injetar dados no banco.
+      try {
+        localStorage.setItem(getFollowStorageKey(userId), JSON.stringify([]));
+      } catch (_) {}
+
+      window.dispatchEvent(new CustomEvent(FOLLOWED_MEMBERS_CHANGED_EVENT, { detail: [] }));
+      return [];
     }
   } catch (err) {
     console.warn('Erro ao sincronizar rede de apoio com Supabase:', err);

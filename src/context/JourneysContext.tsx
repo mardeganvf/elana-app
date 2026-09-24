@@ -113,43 +113,19 @@ export const JourneysProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
         } catch (e) {}
       } else {
-        // Se a tabela estiver vazia, sincroniza as jornadas do cache local (com os 15 conteúdos) ou padrão
+        // Se a tabela remota estiver vazia, usa apenas os dados estáticos / cache local em memória
+        // NUNCA faz auto-seed no banco pelo frontend
         const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
-        let listToSeed = JOURNEYS_DATA;
         if (cached) {
           try {
             const parsed = JSON.parse(cached);
             if (Array.isArray(parsed) && parsed.length > 0) {
-              listToSeed = parsed;
               setJourneys(parsed);
+              return;
             }
           } catch (e) {}
         }
-        for (let i = 0; i < listToSeed.length; i++) {
-          const j = listToSeed[i];
-          await supabase.from('journeys').upsert({
-            id: j.id,
-            title: j.title,
-            subtitle: j.subtitle || '',
-            tagline: j.tagline || '',
-            description: j.description || '',
-            pillar: j.pillar || 'movimento',
-            pillar_attribute: j.pillarAttribute || '',
-            category: j.category || 'comecam',
-            target_audience: j.targetAudience || '',
-            theme_color: j.themeColor || '#FF7F5B',
-            bg_light: j.bgLight || '#fff0eb',
-            icon_name: j.iconName || 'Sun',
-            price: Number(j.price) || 49,
-            checkout_url: j.checkoutUrl || null,
-            modules: j.modules || [],
-            is_coming_soon: Boolean(j.isComingSoon ?? false),
-            cover_image_url: j.coverImageUrl || '',
-            is_enabled: j.isEnabled !== false,
-            display_order: i,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'id' }).then();
-        }
+        setJourneys(JOURNEYS_DATA);
       }
     } catch (err) {
       console.warn('Error fetching journeys:', err);

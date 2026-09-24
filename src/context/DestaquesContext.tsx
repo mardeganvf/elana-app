@@ -72,28 +72,9 @@ export const DestaquesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setDestaques(mapped);
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
       } else {
-        // Se a tabela estiver vazia, tenta fazer o seed inicial dos dados
-        try {
-          const toInsert = STORIES_DATA.map((d, index) => ({
-            id: d.id,
-            title: d.title,
-            category: d.category,
-            journey_ids: d.journeyIds || [],
-            author_name: d.authorName,
-            author_handle: d.authorHandle,
-            author_avatar: d.authorAvatar,
-            video_url: d.videoUrl,
-            poster_url: d.posterUrl,
-            duration: d.duration,
-            date: d.date,
-            display_order: d.displayOrder ?? (index + 1),
-            is_archived: Boolean(d.isArchived ?? false)
-          }));
-
-          await supabase.from('destaques').upsert(toInsert, { onConflict: 'id' });
-        } catch (seedErr) {
-          console.warn('Erro ao inicializar destaques no Supabase:', seedErr);
-        }
+        // Se a tabela remota estiver vazia, usa apenas os dados locais em memória
+        // NUNCA faz auto-seed no banco pelo frontend
+        setDestaques(STORIES_DATA);
       }
     } catch (e) {
       console.error('Erro na sincronização de destaques com Supabase:', e);
