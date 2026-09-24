@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { CommunityPost, CommunityComment, EmotionalIntention, SensitivityLevel, CommunityPoll, NewPollPayload } from '../types';
 
 import { useAuth } from './AuthContext';
-import { ToastContext } from './ToastContext';
+import { ToastContext, ToastType } from './ToastContext';
 import { supabase } from '../lib/supabase';
 
 interface CreatePostPayload {
@@ -599,7 +599,7 @@ const PAGE_SIZE = 15;
 export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, awardBadge } = useAuth();
   const toast = useContext(ToastContext);
-  const notify = (type: 'success' | 'error' | 'info' | 'warning', msg: string) => {
+  const notify = (type: ToastType, msg: string) => {
     if (toast?.showToast) {
       toast.showToast(type, msg);
     } else {
@@ -1583,33 +1583,38 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
 
     // Persist asynchronously into Supabase database with deterministic UUID
-    supabase
-      .from('community_posts')
-      .insert([{
-        id: postId,
-        author_id: isAnonymous ? null : (user?.id || null),
-        title: payload.title,
-        content: payload.content,
-        status: postStatus,
-        category: postStatus,
-        author_name: authorName,
-        author_avatar: authorAvatar,
-        journey_id: payload.journeyId || null,
-        transversal_room_id: payload.transversalRoomId || null,
-        age_bracket_id: payload.ageBracketId || null,
-        emotional_intention: payload.emotionalIntention || null,
-        is_anonymous: isAnonymous,
-        flag_reason: sensitivityCheck.flagReason || null,
-        flag_type: sensitivityCheck.type || null,
-        suggests_crisis_support: !!sensitivityCheck.suggestsCrisisSupport
-      }])
-      .select('id, status, category, flag_type, flag_reason')
-      .single()
-      .then(({ data, error }) => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('community_posts')
+          .insert([{
+            id: postId,
+            author_id: isAnonymous ? null : (user?.id || null),
+            title: payload.title,
+            content: payload.content,
+            status: postStatus,
+            category: postStatus,
+            author_name: authorName,
+            author_avatar: authorAvatar,
+            journey_id: payload.journeyId || null,
+            transversal_room_id: payload.transversalRoomId || null,
+            age_bracket_id: payload.ageBracketId || null,
+            emotional_intention: payload.emotionalIntention || null,
+            is_anonymous: isAnonymous,
+            flag_reason: sensitivityCheck.flagReason || null,
+            flag_type: sensitivityCheck.type || null,
+            suggests_crisis_support: !!sensitivityCheck.suggestsCrisisSupport
+          }])
+          .select('id, status, category, flag_type, flag_reason')
+          .single();
+
         if (error) {
           console.error('Supabase community_posts insert error:', error.message, error);
           rollbackCreatePost();
-        } else if (data?.id) {
+          return;
+        }
+
+        if (data?.id) {
           console.log('✅ Post salvo com sucesso no Supabase com ID:', data.id);
           setPosts(prev => {
             const updated = prev.map(p => (p.id === postId || p.id === data.id) ? { 
@@ -1659,11 +1664,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             }).catch(() => {});
           }
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Supabase community_posts insert exception:', err);
         rollbackCreatePost();
-      });
+      }
+    })();
 
     // 🏆 Conquistas de Postagem na Comunidade:
     awardBadge('b29'); // Voz de Coragem (1º post)
@@ -1814,31 +1819,31 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       // 2. Sincronizar na tabela individual de reações se houver usuário
       if (user?.id) {
-        const reactionPromise = isNowActive
-          ? supabase
-              .from('community_reactions')
-              .upsert({
-                post_id: postId,
-                user_id: user.id,
-                reaction_key: reactionKey
-              }, { onConflict: 'post_id,user_id' })
-          : supabase
-              .from('community_reactions')
-              .delete()
-              .eq('post_id', postId)
-              .eq('user_id', user.id);
+        (async () => {
+          try {
+            const { error } = isNowActive
+              ? await supabase
+                  .from('community_reactions')
+                  .upsert({
+                    post_id: postId,
+                    user_id: user.id,
+                    reaction_key: reactionKey
+                  }, { onConflict: 'post_id,user_id' })
+              : await supabase
+                  .from('community_reactions')
+                  .delete()
+                  .eq('post_id', postId)
+                  .eq('user_id', user.id);
 
-        reactionPromise
-          .then(({ error }) => {
             if (error) {
               console.error('Supabase reaction error, rolling back:', error.message);
               rollbackPostReaction();
             }
-          })
-          .catch((err) => {
+          } catch (err) {
             console.error('Supabase reaction exception, rolling back:', err);
             rollbackPostReaction();
-          });
+          }
+        })();
       }
     }
   };
@@ -1939,31 +1944,31 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       // Sincronizar na tabela individual de reações (community_reactions) se houver usuário
       if (user?.id) {
-        const reactionPromise = isNowActive
-          ? supabase
-              .from('community_reactions')
-              .upsert({
-                comment_id: commentId,
-                user_id: user.id,
-                reaction_key: reactionKey
-              }, { onConflict: 'comment_id,user_id' })
-          : supabase
-              .from('community_reactions')
-              .delete()
-              .eq('comment_id', commentId)
-              .eq('user_id', user.id);
+        (async () => {
+          try {
+            const { error } = isNowActive
+              ? await supabase
+                  .from('community_reactions')
+                  .upsert({
+                    comment_id: commentId,
+                    user_id: user.id,
+                    reaction_key: reactionKey
+                  }, { onConflict: 'comment_id,user_id' })
+              : await supabase
+                  .from('community_reactions')
+                  .delete()
+                  .eq('comment_id', commentId)
+                  .eq('user_id', user.id);
 
-        reactionPromise
-          .then(({ error }) => {
             if (error) {
               console.error('Supabase comment reaction error, rolling back:', error.message);
               rollbackCommentReaction();
             }
-          })
-          .catch((err) => {
+          } catch (err) {
             console.error('Supabase comment reaction exception, rolling back:', err);
             rollbackCommentReaction();
-          });
+          }
+        })();
       }
     }
   };
@@ -2048,27 +2053,32 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
 
     // Persist comment asynchronously into Supabase with deterministic UUID
-    supabase
-      .from('community_comments')
-      .insert([{
-        id: commentId,
-        post_id: (postId.includes('-') && postId.length > 20) ? postId : null,
-        author_id: isAnon ? null : (user?.id || null),
-        author_name: authorName,
-        author_avatar: authorAvatar,
-        content: content,
-        is_anonymous: isAnon,
-        status: commentStatus,
-        flag_reason: sensitivity.flagReason || null,
-        flag_type: sensitivity.type || null
-      }])
-      .select('id, status, flag_type, flag_reason')
-      .single()
-      .then(({ data, error }) => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('community_comments')
+          .insert([{
+            id: commentId,
+            post_id: (postId.includes('-') && postId.length > 20) ? postId : null,
+            author_id: isAnon ? null : (user?.id || null),
+            author_name: authorName,
+            author_avatar: authorAvatar,
+            content: content,
+            is_anonymous: isAnon,
+            status: commentStatus,
+            flag_reason: sensitivity.flagReason || null,
+            flag_type: sensitivity.type || null
+          }])
+          .select('id, status, flag_type, flag_reason')
+          .single();
+
         if (error) {
           console.error('Supabase community_comments insert error:', error.message);
           rollbackComment();
-        } else if (data?.id) {
+          return;
+        }
+
+        if (data?.id) {
           console.log('✅ Comentário salvo com sucesso no Supabase com ID:', data.id);
           setPosts(prev => {
             const updated = prev.map(p => {
@@ -2096,11 +2106,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             return updated;
           });
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Supabase comment exception:', err);
         rollbackComment();
-      });
+      }
+    })();
 
     if (!isFlagged) {
       // 🏆 Conquistas de Comentários / Rede de Apoio:

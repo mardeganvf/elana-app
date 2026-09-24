@@ -9,11 +9,11 @@ interface Toast {
   message: string;
 }
 
-interface ToastContextType {
+export interface ToastContextType {
   showToast: (type: ToastType, message: string) => void;
 }
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
+export const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 const TOAST_DURATION = 3500;
 
