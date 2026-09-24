@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elana-v5';
+const CACHE_NAME = 'elana-v6';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html'
@@ -41,6 +41,31 @@ self.addEventListener('fetch', (event) => {
   if (url.origin.includes('supabase.co')) {
     return; // Passa direto para a rede nativa do navegador
   }
+
+  // 🌐 SPA Navigation: App Shell Fallback para rotas internas (/comunidade, /aula, /quiz, etc.)
+  // Quando offline, entrega /index.html já cacheado para o React inicializar sem tela de erro do navegador
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clonedResponse = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put('/index.html', clonedResponse);
+            }).catch(() => {});
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cachedIndex = await caches.match('/index.html');
+          if (cachedIndex) {
+            return cachedIndex;
+          }
+          return caches.match('/');
+        })
+    );
+    return;
+  }
   
   // Cache-first for static assets
   if (
@@ -68,7 +93,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Default to network-first for other requests (like HTML)
+  // Default to network-first for other requests
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
