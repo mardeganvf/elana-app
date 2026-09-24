@@ -608,10 +608,10 @@ export async function handleRequest(req: Request): Promise<Response> {
       );
     }
 
-    // Prioridade 3: Segunda chave Gemini com billing (desbloqueia gemini-2.0-flash / gemini-2.5-flash)
+    // Prioridade 3: Segunda chave Gemini (fallback de quota/rate-limit — ambas usam gemini-3.6-flash)
     const apiKey2 = Deno.env.get('GEMINI_API_KEY_2');
     if (apiKey2) {
-      console.warn('[Moderation] Chave primária Gemini esgotou modelos — tentando chave secundária com billing.');
+      console.warn('[Moderation] Chave primária Gemini indisponível (quota/rate-limit?) — tentando chave secundária.');
       const geminiResult2 = await runGeminiModeration(text.trim(), apiKey2, undefined);
       if (geminiResult2 && !geminiResult2._debug) {
         return new Response(
