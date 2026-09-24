@@ -153,20 +153,104 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   // Trava anti-duplicação para autoplay do próximo episódio
   const triggerAutoplayRef = useRef<() => void>();
 
+  // Timestamp Resume State & Refs (compatível com Panda Video, YouTube e HTML5 Video)
+  const [resumePromptTime, setResumePromptTime] = useState<number | null>(null);
+  const lastSaveTimeRef = useRef<number>(0);
+  const activeLessonIdRef = useRef<string>(activeLesson.id);
+  const userIdRef = useRef<string | undefined>(user?.id);
+  const saveVideoTimestampRef = useRef<(currentTime: number, duration: number) => void>();
+  const clearVideoTimestampRef = useRef<() => void>();
+
+  useEffect(() => {
+    activeLessonIdRef.current = activeLesson.id;
+  }, [activeLesson.id]);
+
+  useEffect(() => {
+    userIdRef.current = user?.id;
+  }, [user?.id]);
+
+  const saveVideoTimestamp = (currentTime: number, duration: number) => {
+    if (currentTime < 3) return;
+    const currentId = activeLessonIdRef.current || activeLesson.id;
+    const userKey = userIdRef.current || user?.id || 'anon';
+    // Se o vídeo estiver nos últimos 8 segundos, descarta para não salvar no encerramento da aula
+    if (duration && duration > 10 && currentTime >= duration - 8) {
+      try {
+        localStorage.removeItem(`elana_video_resume_${userKey}_${currentId}`);
+      } catch {}
+      return;
+    }
+    try {
+      localStorage.setItem(
+        `elana_video_resume_${userKey}_${currentId}`,
+        JSON.stringify({ time: Math.floor(currentTime), duration: Math.floor(duration || 0) })
+      );
+    } catch {}
+  };
+  saveVideoTimestampRef.current = saveVideoTimestamp;
+
+  const clearVideoTimestamp = () => {
+    const currentId = activeLessonIdRef.current || activeLesson.id;
+    const userKey = userIdRef.current || user?.id || 'anon';
+    try {
+      localStorage.removeItem(`elana_video_resume_${userKey}_${currentId}`);
+    } catch {}
+    setResumePromptTime(null);
+  };
+  clearVideoTimestampRef.current = clearVideoTimestamp;
+
+  // Carregar ponto de parada salvo do vídeo (executado na troca de aula ou login)
+  useEffect(() => {
+    const userKey = user?.id || 'anon';
+    const saved = localStorage.getItem(`elana_video_resume_${userKey}_${activeLesson.id}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.time && parsed.time > 5 && (!parsed.duration || parsed.time < parsed.duration - 8)) {
+          setResumePromptTime(parsed.time);
+        } else {
+          setResumePromptTime(null);
+        }
+      } catch {
+        setResumePromptTime(null);
+      }
+    } else {
+      setResumePromptTime(null);
+    }
+  }, [activeLesson.id, user?.id]);
+
   // Listener único para eventos do Panda Video (Play, Pause, TimeUpdate, Ended)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data?.message === 'panda_play' || data?.type === 'panda_play') {
+        if (data?.message === 'panda_play' || data?.type === 'panda_play' || data?.event === 'play') {
           setIsAudioPlaying(true);
         }
-        if (data?.message === 'panda_pause' || data?.type === 'panda_pause') {
+        if (data?.message === 'panda_pause' || data?.type === 'panda_pause' || data?.event === 'pause') {
           setIsAudioPlaying(false);
+          const currentTime = typeof data.currentTime === 'number' ? data.currentTime : (typeof data.time === 'number' ? data.time : null);
+          const duration = typeof data.duration === 'number' ? data.duration : null;
+          if (currentTime !== null) {
+            saveVideoTimestampRef.current?.(currentTime, duration || 0);
+          }
         }
-        if (data?.message === 'panda_timeupdate' || data?.type === 'panda_timeupdate') {
-          if (typeof data.currentTime === 'number') setAudioCurrentTime(data.currentTime);
-          if (typeof data.duration === 'number') setAudioDuration(data.duration);
+        if (data?.message === 'panda_timeupdate' || data?.type === 'panda_timeupdate' || data?.event === 'timeupdate') {
+          const currentTime = typeof data.currentTime === 'number' ? data.currentTime : (typeof data.time === 'number' ? data.time : null);
+          const duration = typeof data.duration === 'number' ? data.duration : null;
+
+          if (currentTime !== null) {
+            setAudioCurrentTime(currentTime);
+            // Salva o ponto de parada a cada 3 segundos
+            const now = Date.now();
+            if (now - lastSaveTimeRef.current > 3000) {
+              lastSaveTimeRef.current = now;
+              saveVideoTimestampRef.current?.(currentTime, duration || 0);
+            }
+          }
+          if (duration !== null) {
+            setAudioDuration(duration);
+          }
         }
         if (
           data?.message === 'panda_ended' ||
@@ -177,6 +261,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
           data === 'panda_ended'
         ) {
           setIsAudioPlaying(false);
+          clearVideoTimestampRef.current?.();
           triggerAutoplayRef.current?.();
         }
       } catch (e) {}
@@ -232,6 +317,58 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     }
   };
 
+  const resumeToTimestamp = (seconds: number) => {
+    const isPanda = Boolean(getEmbedUrl(activeLesson.videoUrl));
+    const target = Math.max(0, seconds);
+
+    const sendPandaSeekAndPlay = () => {
+      try {
+        if ((window as any).PandaPlayer) {
+          const panda = new (window as any).PandaPlayer('panda-player');
+          if (panda) {
+            if (typeof panda.setCurrentTime === 'function') panda.setCurrentTime(target);
+            if (typeof panda.play === 'function') panda.play();
+          }
+        }
+      } catch (e) {}
+
+      try {
+        const iframe = document.getElementById('panda-player') as HTMLIFrameElement;
+        if (iframe?.contentWindow) {
+          iframe.contentWindow.postMessage({ message: 'setCurrentTime', value: target }, '*');
+          iframe.contentWindow.postMessage({ message: 'play' }, '*');
+          iframe.contentWindow.postMessage({ type: 'panda_setCurrentTime', currentTime: target }, '*');
+          iframe.contentWindow.postMessage({ type: 'panda_play' }, '*');
+          iframe.contentWindow.postMessage(JSON.stringify({ event: 'setCurrentTime', value: target }), '*');
+          iframe.contentWindow.postMessage(JSON.stringify({ event: 'play' }), '*');
+        }
+      } catch (e) {}
+    };
+
+    if (isPanda) {
+      sendPandaSeekAndPlay();
+      setTimeout(sendPandaSeekAndPlay, 400);
+      setAudioCurrentTime(target);
+      setIsAudioPlaying(true);
+    } else if (videoRef.current) {
+      videoRef.current.currentTime = target;
+      videoRef.current.play().catch(() => {});
+      setAudioCurrentTime(target);
+      setIsAudioPlaying(true);
+    }
+  };
+
+  const handleResumeVideo = (timeToResume: number) => {
+    resumeToTimestamp(timeToResume);
+    setResumePromptTime(null);
+    showToast('info', `Vídeo continuado aos ${formatSecondsToTime(timeToResume)} 🎬`);
+  };
+
+  const handleDismissResume = () => {
+    clearVideoTimestamp();
+    showToast('info', 'Assistindo aula do início ↺');
+  };
+
   const handleSeekToTime = (targetSeconds: number) => {
     const isPanda = Boolean(getEmbedUrl(activeLesson.videoUrl));
     const target = Math.max(0, targetSeconds);
@@ -250,41 +387,6 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
       videoRef.current.currentTime = target;
       setAudioCurrentTime(target);
     }
-  };
-
-  // Timestamp Resume State
-  const [resumePromptTime, setResumePromptTime] = useState<number | null>(null);
-  const lastSaveTimeRef = useRef<number>(0);
-
-  // Carregar ponto de parada salvo do vídeo
-  useEffect(() => {
-    const userKey = user?.id || 'anon';
-    const saved = localStorage.getItem(`elana_video_resume_${userKey}_${activeLesson.id}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.time && parsed.time > 5 && (!parsed.duration || parsed.time < parsed.duration - 8)) {
-          setResumePromptTime(parsed.time);
-        } else {
-          setResumePromptTime(null);
-        }
-      } catch {
-        setResumePromptTime(null);
-      }
-    } else {
-      setResumePromptTime(null);
-    }
-  }, [activeLesson.id, user?.id]);
-
-  const saveVideoTimestamp = (currentTime: number, duration: number) => {
-    if (currentTime < 3) return;
-    const userKey = user?.id || 'anon';
-    try {
-      localStorage.setItem(
-        `elana_video_resume_${userKey}_${activeLesson.id}`,
-        JSON.stringify({ time: Math.floor(currentTime), duration: Math.floor(duration || 0) })
-      );
-    } catch {}
   };
 
   const handleVideoTimeUpdate = () => {
@@ -394,11 +496,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     if (autoplayTimer !== null) return; // 🛡️ Trava anti-duplicação caso múltiplos eventos de término cheguem em paralelo
 
     // Limpar ponto salvo pois a aula foi concluída
-    const userKey = user?.id || 'anon';
-    try {
-      localStorage.removeItem(`elana_video_resume_${userKey}_${activeLesson.id}`);
-    } catch {}
-    setResumePromptTime(null);
+    clearVideoTimestamp();
 
     // Marcar aula como concluída no Supabase
     if (completeLesson) {
@@ -602,6 +700,36 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
               </div>
             ) : (
               <>
+                {/* Floating Timestamp Resume Prompt (Válido para Panda Video, YouTube e HTML5 Video) */}
+                {resumePromptTime !== null && (
+                  <div className="absolute top-3 left-3 right-3 z-30 bg-[#070D0F]/95 backdrop-blur-md border border-[#FF7F5B]/40 p-3 rounded-2xl flex items-center justify-between shadow-2xl animate-fade-in text-xs pointer-events-auto">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-[#FF7F5B]/20 text-[#FF7F5B] flex items-center justify-center font-bold text-sm shrink-0">
+                        ⏱️
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-white block">Continuar de onde parou?</span>
+                        <span className="text-[11px] text-slate-300">Você estava aos {formatSecondsToTime(resumePromptTime)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleResumeVideo(resumePromptTime)}
+                        className="bg-[#FF7F5B] hover:bg-[#e06847] text-white px-3.5 py-1.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Continuar</span>
+                      </button>
+                      <button
+                        onClick={handleDismissResume}
+                        className="bg-white/10 hover:bg-white/20 text-slate-300 px-2.5 py-1.5 rounded-xl transition-all font-bold text-xs cursor-pointer"
+                        title="Assistir do início e descartar ponto salvo"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Player Container: Iframe do Panda Video ou HTML5 Video */}
                 <div className={`w-full h-full ${mediaMode === 'audio' ? 'opacity-0 pointer-events-none absolute inset-0 -z-10' : 'relative group'}`}>
                   {getEmbedUrl(activeLesson.videoUrl) ? (
@@ -622,42 +750,6 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                     />
                   ) : (
                     <>
-                      {/* Floating Timestamp Resume Prompt */}
-                      {resumePromptTime !== null && (
-                        <div className="absolute top-3 left-3 right-3 z-30 bg-[#070D0F]/95 backdrop-blur-md border border-[#FF7F5B]/40 p-3 rounded-2xl flex items-center justify-between shadow-2xl animate-fade-in text-xs">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-[#FF7F5B]/20 text-[#FF7F5B] flex items-center justify-center font-bold text-sm shrink-0">
-                              ⏱️
-                            </div>
-                            <div>
-                              <span className="font-extrabold text-white block">Continuar de onde parou?</span>
-                              <span className="text-[11px] text-slate-300">Você estava aos {formatSecondsToTime(resumePromptTime)}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                if (videoRef.current) {
-                                  videoRef.current.currentTime = resumePromptTime;
-                                  videoRef.current.play().catch(() => {});
-                                }
-                                setResumePromptTime(null);
-                                showToast('info', `Vídeo continuado aos ${formatSecondsToTime(resumePromptTime)} 🎬`);
-                              }}
-                              className="bg-[#FF7F5B] hover:bg-[#e06847] text-white px-3.5 py-1.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-95 flex items-center gap-1.5"
-                            >
-                              <span>Continuar</span>
-                            </button>
-                            <button
-                              onClick={() => setResumePromptTime(null)}
-                              className="bg-white/10 hover:bg-white/20 text-slate-300 px-2.5 py-1.5 rounded-xl transition-all font-bold text-xs"
-                              title="Fechar e assistir do início"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
 
                       {!activeLesson.videoUrl || activeLesson.videoUrl === '#' ? (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#101B1E] via-[#0A1215] to-[#070D0F] p-6 text-center space-y-3 relative overflow-hidden">
