@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useCommunity, checkContentSensitivity, checkContentSensitivityAI } from '../context/CommunityContext';
 import { useAuth, GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
@@ -494,6 +494,77 @@ const splitTextIntoTwoLines = (text: string) => {
   return { line1, line2 };
 };
 
+// ⚡ PERFORMANCE (PERF-COM-01): Componente de formulário de resposta isolado e memoizado
+// Isola completamente o estado de digitação por post, eliminando a tempestade de re-renders
+// no componente raiz da página e em todos os outros posts do feed a cada tecla digitada.
+interface InlineCommentFormProps {
+  postId: string;
+  isConfessionario: boolean;
+  onSubmit: (postId: string, content: string, isAnon: boolean) => Promise<void>;
+}
+
+const InlineCommentForm: React.FC<InlineCommentFormProps> = React.memo(({
+  postId,
+  isConfessionario,
+  onSubmit
+}) => {
+  const [text, setText] = useState('');
+  const [isAnon, setIsAnon] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!text.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit(postId, text.trim(), isAnon);
+      setText('');
+      setIsAnon(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2 pt-2">
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          placeholder="Escreva uma resposta com empatia e respeito..."
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+          className="flex-1 p-3 rounded-xl border border-white/10 text-base sm:text-xs bg-[#101B1E] text-white focus:outline-none focus:border-[#FF7F5B]"
+        />
+        <button
+          type="submit"
+          disabled={isSubmitting || !text.trim()}
+          className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 p-3 rounded-xl transition-all shadow-md shrink-0 disabled:opacity-50 cursor-pointer"
+        >
+          {isSubmitting ? (
+            <RefreshCw className="w-4 h-4 animate-spin" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+        </button>
+      </div>
+
+      {isConfessionario && (
+        <label className="flex items-center gap-2 text-[11px] text-purple-300 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={isAnon}
+            onChange={(e) => setIsAnon(e.target.checked)}
+            className="rounded border-purple-500 bg-[#101B1E] text-purple-500 focus:ring-0"
+          />
+          <span>Responder anonimamente como "Luz em Aprendizado"</span>
+        </label>
+      )}
+    </form>
+  );
+});
+
 interface CommunityPageProps {
   onExploreCatalog?: () => void;
   onOpenAuthModal?: () => void;
@@ -632,8 +703,6 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
   // Modals & Inline Comments State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [expandedCommentsMap, setExpandedCommentsMap] = useState<Record<string, boolean>>({});
-  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
-  const [commentAnonMap, setCommentAnonMap] = useState<Record<string, boolean>>({});
 
   // IA Antijulgamento & Acolhimento Modal State
   const [flaggedCommentInfo, setFlaggedCommentInfo] = useState<{ isOpen: boolean; matchedWord?: string; flagType?: 'vulnerabilidade' | 'antijulgamento' } | null>(null);
@@ -645,7 +714,6 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
   // Exclusão de Comentário Próprio
   const [commentToDelete, setCommentToDelete] = useState<{ postId: string; commentId: string; authorName: string; content: string } | null>(null);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
-  const [isSubmittingCommentMap, setIsSubmittingCommentMap] = useState<Record<string, boolean>>({});
 
   // Feed Pagination State (Initial 15 topics, +15 on "Carregar Mais")
   const [visibleCount, setVisibleCount] = useState(15);
@@ -1025,8 +1093,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
     setExpandedCommentsMap(prev => ({ ...prev, [postId]: !prev[postId] }));
   };
 
-  const handleInlineCommentSubmit = async (postId: string, e: React.FormEvent) => {
-    e.preventDefault();
+  const handleInlineCommentSubmit = useCallback(async (postId: string, content: string, isAnon: boolean) => {
     if (!user) {
       onOpenAuthModal?.();
       return;
@@ -1036,25 +1103,20 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
       setIsJoinCommunityModalOpen(true);
       return;
     }
-    const content = commentInputs[postId];
-    if (!content || !content.trim() || isSubmittingCommentMap[postId]) return;
+    if (!content || !content.trim()) return;
 
-    setIsSubmittingCommentMap(prev => ({ ...prev, [postId]: true }));
     try {
-      const isAnon = commentAnonMap[postId] || false;
       const sensitivity = await checkContentSensitivityAI(content.trim());
       const result = addComment(postId, content.trim(), isAnon, sensitivity);
 
       if (result && result.isFlagged) {
         setFlaggedCommentInfo({ isOpen: true, matchedWord: result.matchedWord, flagType: result.flagType });
       }
-
-      // Reset input
-      setCommentInputs(prev => ({ ...prev, [postId]: '' }));
-    } finally {
-      setIsSubmittingCommentMap(prev => ({ ...prev, [postId]: false }));
+    } catch (err) {
+      console.error('Erro ao adicionar comentário:', err);
+      showToast('error', 'Não foi possível enviar seu comentário.');
     }
-  };
+  }, [user, canAccessCommunity, addComment, checkContentSensitivityAI, onOpenAuthModal, showToast]);
 
   // Active header title computation
   const getHeaderDetails = () => {
@@ -2249,43 +2311,13 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
                                   )}
                                 </div>
 
-                                {/* Add Inline Comment Form */}
+                                {/* Add Inline Comment Form (Isolado em componente memoizado para evitar re-render do feed) */}
                                 {isAuthenticated && (
-                                  <form onSubmit={(e) => handleInlineCommentSubmit(post.id, e)} className="space-y-2 pt-2">
-                                    <div className="flex items-center gap-2">
-                                      <input
-                                        type="text"
-                                        placeholder="Escreva uma resposta com empatia e respeito..."
-                                        value={commentInputs[post.id] || ''}
-                                        onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
-                                        onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                                        className="flex-1 p-3 rounded-xl border border-white/10 text-base sm:text-xs bg-[#101B1E] text-white focus:outline-none focus:border-[#FF7F5B]"
-                                      />
-                                      <button
-                                        type="submit"
-                                        disabled={isSubmittingCommentMap[post.id]}
-                                        className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 p-3 rounded-xl transition-all shadow-md shrink-0 disabled:opacity-50 cursor-pointer"
-                                      >
-                                        {isSubmittingCommentMap[post.id] ? (
-                                          <RefreshCw className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                          <Send className="w-4 h-4" />
-                                        )}
-                                      </button>
-                                    </div>
-
-                                    {post.transversalRoomId === 'confessionario' && (
-                                      <label className="flex items-center gap-2 text-[11px] text-purple-300 cursor-pointer select-none">
-                                        <input
-                                          type="checkbox"
-                                          checked={commentAnonMap[post.id] || false}
-                                          onChange={(e) => setCommentAnonMap({ ...commentAnonMap, [post.id]: e.target.checked })}
-                                          className="rounded border-purple-500 bg-[#101B1E] text-purple-500 focus:ring-0"
-                                        />
-                                        <span>Responder anonimamente como "Luz em Aprendizado"</span>
-                                      </label>
-                                    )}
-                                  </form>
+                                  <InlineCommentForm
+                                    postId={post.id}
+                                    isConfessionario={post.transversalRoomId === 'confessionario'}
+                                    onSubmit={handleInlineCommentSubmit}
+                                  />
                                 )}
                               </div>
                             )}
