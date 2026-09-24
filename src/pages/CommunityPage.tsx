@@ -1828,26 +1828,22 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
             </div>
           )}
 
-          {/* Banner de Cortesia Ativa (90 Dias de Jornada) com Alertas Pró-Ativos */}
-          {accessInfo.type === 'trial_bonus' && accessInfo.daysRemaining !== null && (
+          {/* Banner de Cortesia Ativa (Exibido apenas nos últimos 7 dias ou 48 horas) */}
+          {accessInfo.type === 'trial_bonus' && accessInfo.daysRemaining !== null && accessInfo.isExpiringSoon && (
             accessInfo.isCriticalExpiration ? (
-              // Urgência Crítica: <= 48 horas restantes
-              <div className="bg-gradient-to-r from-[#251310] via-[#1c1416] to-[#101b1e] border-2 border-[#FF7F5B] rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
+              // Urgência Crítica: <= 48 horas restantes (Layout unificado, cor laranja #FF7F5B)
+              <div className="bg-gradient-to-r from-[#251310] via-[#141b1d] to-[#101b1e] border border-[#FF7F5B]/60 rounded-2xl p-3.5 sm:p-4 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-start sm:items-center gap-3 text-slate-200">
-                  <span className="w-10 h-10 rounded-xl bg-[#FF7F5B]/20 text-[#FF7F5B] border border-[#FF7F5B]/40 flex items-center justify-center shrink-0">
-                    <Clock className="w-5 h-5 animate-pulse" />
+                  <span className="w-9 h-9 rounded-xl bg-[#FF7F5B]/15 text-[#FF7F5B] border border-[#FF7F5B]/30 flex items-center justify-center shrink-0">
+                    <Clock className="w-4 h-4 animate-pulse" />
                   </span>
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-black text-white text-sm">
-                        Sua cortesia da comunidade termina em {accessInfo.hoursRemaining}h!
-                      </span>
-                      <span className="bg-[#FF7F5B] text-slate-950 text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider animate-pulse">
-                        Últimas 48h
-                      </span>
+                      <span className="font-bold text-white">Cortesia da comunidade expira em breve:</span>
+                      <span className="text-[#FF7F5B] font-black">{accessInfo.hoursRemaining}h restantes</span>
                     </div>
-                    <p className="text-slate-300 text-xs mt-0.5">
-                      Mantenha seu acolhimento e trocas ativas sem interrupções por apenas <strong className="text-white">R$ 9,90/mês</strong>.
+                    <p className="text-slate-400 text-xs mt-0.5">
+                      Garanta sua permanência e apoio contínuo na rede sem interrupções.
                     </p>
                   </div>
                 </div>
@@ -1855,13 +1851,13 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
                   href={communityCheckoutUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full sm:w-auto text-center bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl shadow-lg transition-all active:scale-95 whitespace-nowrap cursor-pointer shrink-0"
+                  className="w-full sm:w-auto text-center bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs py-2 px-3.5 rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap cursor-pointer shrink-0"
                 >
-                  Garantir continuidade (R$ 9,90/mês) →
+                  Garantir R$ 9,90/mês →
                 </a>
               </div>
-            ) : accessInfo.isExpiringSoon ? (
-              // Alerta Pró-Ativo: <= 7 dias restantes
+            ) : (
+              // Alerta Pró-Ativo: <= 7 dias restantes (Âmbar #FFD166)
               <div className="bg-gradient-to-r from-[#1c180e] via-[#141b1d] to-[#101b1e] border border-[#FFD166]/60 rounded-2xl p-3.5 sm:p-4 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-start sm:items-center gap-3 text-slate-200">
                   <span className="w-9 h-9 rounded-xl bg-[#FFD166]/15 text-[#FFD166] border border-[#FFD166]/30 flex items-center justify-center shrink-0">
@@ -1871,12 +1867,9 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-bold text-white">Cortesia da comunidade expira em breve:</span>
                       <span className="text-[#FFD166] font-black">{accessInfo.daysRemaining} {accessInfo.daysRemaining === 1 ? 'dia restante' : 'dias restantes'}</span>
-                      <span className="bg-[#FFD166]/20 text-[#FFD166] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        R$ 9,90/mês
-                      </span>
                     </div>
                     <p className="text-slate-400 text-xs mt-0.5">
-                      Garanta sua permanência e apoio contínuo na rede por apenas <strong className="text-slate-200">R$ 9,90/mês</strong>.
+                      Garanta sua permanência e apoio contínuo na rede sem interrupções.
                     </p>
                   </div>
                 </div>
@@ -1885,28 +1878,6 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full sm:w-auto text-center bg-[#FFD166] hover:bg-[#ffc633] text-slate-950 font-black text-xs py-2 px-3.5 rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap cursor-pointer shrink-0"
-                >
-                  Garantir R$ 9,90/mês →
-                </a>
-              </div>
-            ) : (
-              // Cortesia Normal (> 7 dias restantes)
-              <div className="bg-[#101B1E] border border-[#FFD166]/30 rounded-2xl p-3.5 sm:p-4 shadow-md flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5 text-slate-200">
-                  <span className="w-8 h-8 rounded-xl bg-[#FFD166]/15 text-[#FFD166] flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4 h-4" />
-                  </span>
-                  <div>
-                    <span className="font-bold text-white">Cortesia da Jornada Ativa: </span>
-                    <span className="text-[#FFD166] font-extrabold">{accessInfo.daysRemaining} {accessInfo.daysRemaining === 1 ? 'dia restante' : 'dias restantes'}</span>
-                    <span className="text-slate-400 hidden sm:inline"> de acesso completo à comunidade.</span>
-                  </div>
-                </div>
-                <a
-                  href={communityCheckoutUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] font-bold text-[#FF7F5B] hover:underline whitespace-nowrap"
                 >
                   Garantir R$ 9,90/mês →
                 </a>
