@@ -95,6 +95,13 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     description: 'Comece respirando fundo. Aqui você não está só.'
   };
 
+  // ── ACCESS GATE ────────────────────────────────────────────────────────────
+  // A 1ª aula do 1º módulo é sempre a degustação gratuita.
+  // Todas as outras requerem que a jornada tenha sido adquirida.
+  const isPurchased = user?.purchasedJourneyIds?.includes(currentJourney.id) ?? false;
+  const freePreviewLessonId = currentJourney.modules[0]?.lessons[0]?.id;
+  const isCurrentLessonLocked = !isPurchased && activeLesson.id !== freePreviewLessonId;
+
   // Helper: Format seconds into MM:SS
   const formatSecondsToTime = (totalSeconds: number): string => {
     const mins = Math.floor(totalSeconds / 60);
@@ -638,13 +645,6 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
       return () => clearTimeout(timer);
     }
   }, [completedCount, allLessons.length, currentJourney, onOpenCertificate, showToast]);
-
-  // ── ACCESS GATE ────────────────────────────────────────────────────────────
-  // A 1ª aula do 1º módulo é sempre a degustação gratuita.
-  // Todas as outras requerem que a jornada tenha sido adquirida.
-  const isPurchased = user?.purchasedJourneyIds?.includes(currentJourney.id) ?? false;
-  const freePreviewLessonId = currentJourney.modules[0]?.lessons[0]?.id;
-  const isCurrentLessonLocked = !isPurchased && activeLesson.id !== freePreviewLessonId;
 
   return (
     <div className="space-y-6 lg:space-y-8 pb-20 animate-fade-in max-w-7xl mx-auto text-white -mt-4">
