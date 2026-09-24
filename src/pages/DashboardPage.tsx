@@ -5,7 +5,7 @@ import { useJourneys } from '../context/JourneysContext';
 import { useCommunity } from '../context/CommunityContext';
 import { JOURNEYS_DATA as STATIC_JOURNEYS, STRIPE_COMMUNITY_CHECKOUT_URL } from '../data/journeysData';
 import { Journey, CommunityPost, getCommunityAccessInfo } from '../types';
-import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle, HelpCircle, Trash2, ArrowRight, MessageSquare, ChevronDown, LayoutDashboard, Shield } from 'lucide-react';
+import { Flame, Sparkles, Award, Play, BookOpen, LogOut, Baby, Camera, Quote, Heart, CheckCircle2, Plus, Users, Clock, X, Edit3, Bell, Mail, RefreshCw, AlertCircle, HelpCircle, Trash2, ArrowRight, MessageSquare, ChevronDown, LayoutDashboard, Shield, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { PublicProfileModal, PublicUserProfile } from '../components/community/PublicProfileModal';
 import { getFollowedMembers, syncFollowedMembersFromSupabase, FOLLOWED_MEMBERS_CHANGED_EVENT } from '../lib/followService';
 import { BadgeGallery, getUnlockedBadgesCount } from '../components/gamification/BadgeGallery';
@@ -160,6 +160,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
   const [emailVerificationError, setEmailVerificationError] = useState('');
   const [emailVerificationSuccess, setEmailVerificationSuccess] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [isEmailProvider, setIsEmailProvider] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+      if (authUser) {
+        const hasEmail = authUser.app_metadata?.provider === 'email' ||
+          authUser.identities?.some((id: any) => id.provider === 'email') ||
+          !authUser.app_metadata?.provider;
+        setIsEmailProvider(hasEmail);
+      }
+    }).catch(() => {});
+  }, []);
 
   const { 
     isSupported: isPushSupported, 
@@ -650,6 +664,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           setPendingEmail(confirmedEmail);
                           setUserName(user?.name || '');
                           setUserPhone(formatPhoneMask(user?.phone || ''));
+                          setCurrentPassword('');
+                          setShowCurrentPassword(false);
                           setIsEditingProfile(false);
                           setIsVerifyingEmailCode(false);
                         }}
@@ -660,17 +676,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                     </div>
                   </div>
                 ) : (
-                  /* Step 2: Card de Digitação e Validação do Código (Token OTP) */
+                  /* Step 2: Card de Digitação e Validação do Código (Token OTP) + Confirmação de Senha */
                   <div className="flex flex-col gap-3.5 bg-[#070D0F] p-5 rounded-2xl border border-[#FF7F5B]/50 shadow-xl animate-fade-in">
                     <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                       <span className="text-xs font-black text-[#FF7F5B] uppercase tracking-wider flex items-center gap-1.5">
                         <Mail className="w-4 h-4 text-[#FF7F5B]" />
-                        <span>Digite o Código de Confirmação</span>
+                        <span>Confirmar Alteração de E-mail</span>
                       </span>
                       <button
                         onClick={() => {
                           setIsVerifyingEmailCode(false);
                           setEmailVerificationError('');
+                          setCurrentPassword('');
+                          setShowCurrentPassword(false);
                         }}
                         className="text-xs text-slate-400 hover:text-white underline cursor-pointer"
                       >
@@ -679,28 +697,69 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                     </div>
 
                     <p className="text-xs text-slate-300 leading-relaxed">
-                      Enviamos um código de segurança para <strong className="text-[#FF7F5B] font-bold">{pendingEmail}</strong>. Digite o código de 8 dígitos recebido no seu e-mail:
+                      Enviamos um código de segurança para <strong className="text-[#FF7F5B] font-bold">{pendingEmail}</strong>. Digite o código recebido no seu e-mail{isEmailProvider ? ' e sua senha atual para autorizar a alteração com segurança' : ''}:
                     </p>
 
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
-                      <input
-                        type="text"
-                        maxLength={8}
-                        value={inputEmailCode}
-                        onChange={(e) => {
-                          setInputEmailCode(e.target.value.replace(/\D/g, ''));
-                          if (emailVerificationError) setEmailVerificationError('');
-                        }}
-                        placeholder="00000000"
-                        className="px-4 py-3 bg-[#101B1E] border border-white/20 rounded-xl text-lg font-black text-center text-white tracking-widest focus:outline-none focus:border-[#FF7F5B] w-full sm:w-52 placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-600 shadow-inner"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-bold block mb-1">
+                          Código de Confirmação (8 dígitos)
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={8}
+                          value={inputEmailCode}
+                          onChange={(e) => {
+                            setInputEmailCode(e.target.value.replace(/\D/g, ''));
+                            if (emailVerificationError) setEmailVerificationError('');
+                          }}
+                          placeholder="00000000"
+                          className="px-4 py-2.5 bg-[#101B1E] border border-white/20 rounded-xl text-base font-black text-center text-white tracking-widest focus:outline-none focus:border-[#FF7F5B] w-full placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-600 shadow-inner"
+                        />
+                      </div>
 
+                      {isEmailProvider && (
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-bold block mb-1 flex items-center gap-1">
+                            <KeyRound className="w-3 h-3 text-[#FF7F5B]" />
+                            <span>Sua Senha Atual</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showCurrentPassword ? 'text' : 'password'}
+                              value={currentPassword}
+                              onChange={(e) => {
+                                setCurrentPassword(e.target.value);
+                                if (emailVerificationError) setEmailVerificationError('');
+                              }}
+                              placeholder="Digite sua senha atual"
+                              className="px-3.5 py-2.5 bg-[#101B1E] border border-white/20 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7F5B] w-full pr-10 shadow-inner placeholder:text-slate-600"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                              title={showCurrentPassword ? 'Ocultar senha' : 'Ver senha'}
+                            >
+                              {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
                       <button
-                        disabled={isVerifyingOtp || inputEmailCode.trim().length < 8}
+                        disabled={isVerifyingOtp || inputEmailCode.trim().length < 6 || (isEmailProvider && !currentPassword.trim())}
                         onClick={async () => {
                           const token = inputEmailCode.trim();
                           if (!token) {
                             setEmailVerificationError('Por favor, digite o código recebido no seu e-mail.');
+                            return;
+                          }
+
+                          if (isEmailProvider && !currentPassword.trim()) {
+                            setEmailVerificationError('Por favor, digite sua senha atual para autorizar a alteração.');
                             return;
                           }
 
@@ -709,36 +768,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                           try {
                             const newEmail = pendingEmail.trim().toLowerCase();
 
-                            // 1. Verificar o código OTP recebido no e-mail
-                            const { error: changeErr } = await supabase.auth.verifyOtp({
-                              email: newEmail,
-                              token,
-                              type: 'email_change'
-                            });
-
-                            if (changeErr) {
-                              const { error: emailErr } = await supabase.auth.verifyOtp({
-                                email: newEmail,
-                                token,
-                                type: 'email'
-                              });
-
-                              if (emailErr) {
-                                throw new Error('Código inválido ou expirado. Verifique os dígitos e tente novamente.');
-                              }
-                            }
-
-                            // 2. Chamar Edge Function com API Admin para garantir
-                            //    que auth.users.email é atualizado com a service role key
+                            // 1. Chamar Edge Function segura com API Admin que valida:
+                            //    - JWT do usuário autenticado
+                            //    - Re-autenticação com senha atual (defesa contra ATO)
+                            //    - Validação do código OTP emitido para o novo e-mail
                             const { data: fnData, error: fnErr } = await supabase.functions.invoke('update-user-email', {
-                              body: { new_email: newEmail }
+                              body: { 
+                                new_email: newEmail,
+                                current_password: isEmailProvider ? currentPassword : '',
+                                otp_code: token
+                              }
                             });
 
                             if (fnErr || fnData?.error) {
                               throw new Error(fnData?.error || fnErr?.message || 'Erro ao atualizar e-mail no servidor. Tente novamente.');
                             }
 
-                            // 3. Atualizar o AuthContext local
+                            // 2. Atualizar o AuthContext local
                             if (updateUser) {
                               await updateUser({
                                 name: userName.trim(),
@@ -753,11 +799,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                               await refreshUserFromBackend();
                             }
 
+                            setCurrentPassword('');
+                            setShowCurrentPassword(false);
                             setIsVerifyingEmailCode(false);
                             setIsEditingProfile(false);
                             showToast('success', 'E-mail atualizado com sucesso!');
                           } catch (err: any) {
-                            setEmailVerificationError(err.message || 'Código inválido. Tente novamente.');
+                            setEmailVerificationError(err.message || 'Código inválido ou senha incorreta. Tente novamente.');
                           } finally {
                             setIsVerifyingOtp(false);
                           }
@@ -767,12 +815,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
                         {isVerifyingOtp ? (
                           <>
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>Validando Código...</span>
+                            <span>Validando...</span>
                           </>
                         ) : (
                           <>
                             <CheckCircle2 className="w-4 h-4" />
-                            <span>Confirmar Código</span>
+                            <span>Confirmar e Atualizar E-mail</span>
                           </>
                         )}
                       </button>

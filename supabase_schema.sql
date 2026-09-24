@@ -872,52 +872,11 @@ CREATE TRIGGER on_auth_user_updated
   FOR EACH ROW EXECUTE PROCEDURE public.handle_user_email_updated();
 
 -- ========================================================
--- FUNÇÃO RPC SEGURA: TROCA DIRETA DE E-MAIL DO PRÓPRIO USUÁRIO
--- Chamada após OTP verificado. Usa auth.uid() internamente,
--- então um usuário só pode alterar o próprio e-mail.
+-- OBSERVAÇÃO DE SEGURANÇA [SEC-EDGE-01]:
+-- A troca de e-mail é realizada exclusivamente pela Edge Function 'update-user-email',
+-- que exige re-autenticação com senha atual e validação de token OTP para prevenir Account Takeover.
+-- A função RPC update_own_email foi descontinuada e removida.
 -- ========================================================
-CREATE OR REPLACE FUNCTION public.update_own_email(new_email TEXT)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  current_user_id UUID;
-BEGIN
-  current_user_id := auth.uid();
-
-  IF current_user_id IS NULL THEN
-    RAISE EXCEPTION 'Não autenticado.';
-  END IF;
-
-  -- Verificar se o novo e-mail já está em uso por outro usuário
-  IF EXISTS (
-    SELECT 1 FROM auth.users
-    WHERE email = new_email AND id <> current_user_id
-  ) THEN
-    RAISE EXCEPTION 'Este e-mail já está cadastrado em outra conta.';
-  END IF;
-
-  -- Atualizar diretamente em auth.users
-  UPDATE auth.users
-  SET
-    email = new_email,
-    email_confirmed_at = NOW(),
-    updated_at = NOW()
-  WHERE id = current_user_id;
-
-  -- Atualizar em public.profiles
-  UPDATE public.profiles
-  SET
-    email = new_email,
-    updated_at = NOW()
-  WHERE id = current_user_id;
-END;
-$$;
-
--- Permitir que usuários autenticados chamem essa função
-GRANT EXECUTE ON FUNCTION public.update_own_email(TEXT) TO authenticated;
 
 -- --------------------------------------------------------
 -- 13. TABELA DE ENQUETES DA COMUNIDADE (SUA VOZ IMPORTA)
