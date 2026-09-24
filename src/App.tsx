@@ -363,6 +363,7 @@ const AppContent: React.FC = () => {
                   initialLessonId={selectedLessonIdForClassroom}
                   onBack={() => navigateToTab('home')}
                   onOpenCertificate={(journey: Journey) => setCertificateJourney(journey)}
+                  onOpenCheckout={(journey: Journey) => setSelectedJourneyForCheckout(journey)}
                 />
               )}
 

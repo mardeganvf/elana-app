@@ -28,15 +28,25 @@ interface ClassroomPageProps {
   onBackToHome?: () => void;
   onBack?: () => void;
   onOpenCertificate?: (journey: Journey) => void;
+  onOpenCheckout?: (journey: Journey) => void;
 }
 
 export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   journey,
   initialLessonId,
   onBackToHome,
-  onBack
+  onBack,
+  onOpenCertificate,
+  onOpenCheckout
 }) => {
   const handleBack = onBackToHome || onBack || (() => {});
+  const handleUnlock = () => {
+    if (onOpenCheckout) {
+      onOpenCheckout(currentJourney);
+    } else {
+      handleBack();
+    }
+  };
   const { user, completeLesson, toggleCompleteLesson, saveLessonNote, awardBadge, recordDailyVisit } = useAuth();
   const { showToast } = useToast();
   const { journeys } = useJourneys();
@@ -577,7 +587,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                   </p>
                 </div>
                 <button
-                  onClick={handleBack}
+                  onClick={handleUnlock}
                   className="flex items-center gap-2 bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider px-6 py-3 rounded-xl shadow-lg transition-all active:scale-95 cursor-pointer"
                 >
                   <ShoppingCart className="w-4 h-4" />
@@ -906,13 +916,14 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                 {activeLesson.resources && activeLesson.resources.length > 0 && (
                   <button
                     onClick={() => setActiveTab('resources')}
-                    className={`pb-2 border-b-2 transition-all whitespace-nowrap ${
+                    className={`pb-2 border-b-2 transition-all whitespace-nowrap flex items-center gap-1.5 ${
                       activeTab === 'resources'
                         ? 'border-[#FF7F5B] text-white'
                         : 'border-transparent text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    Materiais ({activeLesson.resources.length})
+                    {isCurrentLessonLocked && <Lock className="w-3 h-3 text-[#FF7F5B]" />}
+                    <span>Materiais ({activeLesson.resources.length})</span>
                   </button>
                 )}
               </div>
@@ -927,67 +938,139 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
               {/* Tab 2: Notes */}
               {activeTab === 'notes' && (
                 <div className="space-y-4">
-                  <form onSubmit={handleSaveNote} className="space-y-3">
-                    <textarea
-                      rows={4}
-                      value={noteText}
-                      onChange={(e) => setNoteText(e.target.value)}
-                      placeholder="Escreva seus pensamentos, reflexões e aprendizados sobre este conteúdo..."
-                      className="w-full p-3.5 rounded-xl border border-white/10 text-base sm:text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B]"
-                    />
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <button
-                        type="submit"
-                        className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl transition-all shadow-md"
-                      >
-                        Salvar Anotação
-                      </button>
-
+                  {isCurrentLessonLocked ? (
+                    <div className="p-6 rounded-2xl border border-white/10 bg-[#070D0F] text-center space-y-3">
+                      <div className="w-10 h-10 rounded-full bg-[#FF7F5B]/15 border border-[#FF7F5B]/40 flex items-center justify-center mx-auto">
+                        <Lock className="w-5 h-5 text-[#FF7F5B]" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white">Caderno de Anotações Exclusivo</h4>
+                      <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                        Desbloqueie esta jornada para registrar seus aprendizados, reflexões e exportar seu caderno personalizado em PDF.
+                      </p>
                       <button
                         type="button"
-                        onClick={() => setIsNotebookModalOpen(true)}
-                        className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all flex items-center gap-1.5 border border-white/15"
+                        onClick={handleUnlock}
+                        className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer inline-flex items-center gap-2"
                       >
-                        <BookOpen className="w-4 h-4 text-[#FFD166]" />
-                        <span>Ver Minhas Anotações & Exportar PDF →</span>
+                        <ShoppingCart className="w-4 h-4" />
+                        <span>Desbloquear Jornada</span>
                       </button>
                     </div>
-                  </form>
+                  ) : (
+                    <form onSubmit={handleSaveNote} className="space-y-3">
+                      <textarea
+                        rows={4}
+                        value={noteText}
+                        onChange={(e) => setNoteText(e.target.value)}
+                        placeholder="Escreva seus pensamentos, reflexões e aprendizados sobre este conteúdo..."
+                        className="w-full p-3.5 rounded-xl border border-white/10 text-base sm:text-xs text-white bg-[#070D0F] focus:outline-none focus:border-[#FF7F5B]"
+                      />
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <button
+                          type="submit"
+                          className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl transition-all shadow-md"
+                        >
+                          Salvar Anotação
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIsNotebookModalOpen(true)}
+                          className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all flex items-center gap-1.5 border border-white/15"
+                        >
+                          <BookOpen className="w-4 h-4 text-[#FFD166]" />
+                          <span>Ver Minhas Anotações & Exportar PDF →</span>
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               )}
 
               {/* Tab 4: Materials */}
               {activeTab === 'resources' && activeLesson.resources && (
-                <div className="space-y-2">
-                  {activeLesson.resources.map((res, i) => {
-                    const isRealUrl = Boolean(res.url && res.url.trim() && res.url !== '#' && (res.url.startsWith('http://') || res.url.startsWith('https://') || res.url.startsWith('/')));
-                    return (
-                      <a
-                        key={i}
-                        href={isRealUrl ? res.url : undefined}
-                        target={isRealUrl ? "_blank" : undefined}
-                        rel={isRealUrl ? "noopener noreferrer" : undefined}
-                        download={isRealUrl ? true : undefined}
-                        onClick={(e) => {
-                          if (!isRealUrl) {
-                            e.preventDefault();
-                            showToast('info', 'Material complementar em fase de diagramação final. Em breve disponível para download!');
-                          } else {
-                            showToast('success', `Abrindo material: ${res.title}`);
-                          }
-                        }}
-                        className="flex items-center justify-between p-3.5 rounded-xl border border-white/10 bg-[#070D0F] hover:bg-white/5 transition-colors text-xs font-semibold text-white cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-[#FF7F5B]" />
-                          <span>{res.title}</span>
+                <div className="space-y-3">
+                  {/* Se a aula estiver bloqueada: proteção total contra vazamento de URL no DOM + teaser de conversão */}
+                  {isCurrentLessonLocked ? (
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-2xl border border-[#FF7F5B]/30 bg-gradient-to-r from-[#FF7F5B]/10 to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Lock className="w-4 h-4 text-[#FF7F5B]" />
+                            <span className="text-xs font-bold text-white uppercase tracking-wider">
+                              Materiais Exclusivos da Jornada
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300">
+                            Adquira a jornada para liberar o download imediato de todos os e-books, checklists e materiais em PDF.
+                          </p>
                         </div>
-                        <span className="text-[10px] text-[#FF7F5B] hover:text-[#ff9577] uppercase font-bold tracking-wider">
-                          Baixar PDF ↓
-                        </span>
-                      </a>
-                    );
-                  })}
+                        <button
+                          type="button"
+                          onClick={handleUnlock}
+                          className="bg-[#FF7F5B] hover:bg-[#e06847] text-slate-950 font-black text-xs uppercase tracking-wider py-2 px-3.5 rounded-xl transition-all shadow-md shrink-0 flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                        >
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                          <span>Desbloquear</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {activeLesson.resources.map((res, i) => (
+                          <div
+                            key={i}
+                            onClick={() => {
+                              showToast('warning', 'Este material é exclusivo para alunos da jornada. Adquira para fazer o download.');
+                              handleUnlock();
+                            }}
+                            className="flex items-center justify-between p-3.5 rounded-xl border border-white/10 bg-[#070D0F] hover:bg-white/5 transition-colors text-xs font-semibold text-white cursor-pointer group"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-[#FF7F5B]/50 transition-colors">
+                                <Lock className="w-3.5 h-3.5 text-[#FF7F5B]" />
+                              </div>
+                              <span className="text-slate-200 group-hover:text-white transition-colors">{res.title}</span>
+                            </div>
+                            <span className="text-[10px] text-[#FF7F5B] bg-[#FF7F5B]/10 px-2.5 py-1 rounded-lg uppercase font-bold tracking-wider group-hover:bg-[#FF7F5B] group-hover:text-slate-950 transition-all flex items-center gap-1">
+                              Exclusivo 🔒
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {activeLesson.resources.map((res, i) => {
+                        const isRealUrl = Boolean(res.url && res.url.trim() && res.url !== '#' && (res.url.startsWith('http://') || res.url.startsWith('https://') || res.url.startsWith('/')));
+                        return (
+                          <a
+                            key={i}
+                            href={isRealUrl ? res.url : undefined}
+                            target={isRealUrl ? "_blank" : undefined}
+                            rel={isRealUrl ? "noopener noreferrer" : undefined}
+                            download={isRealUrl ? true : undefined}
+                            onClick={(e) => {
+                              if (!isRealUrl) {
+                                e.preventDefault();
+                                showToast('info', 'Material complementar em fase de diagramação final. Em breve disponível para download!');
+                              } else {
+                                showToast('success', `Abrindo material: ${res.title}`);
+                              }
+                            }}
+                            className="flex items-center justify-between p-3.5 rounded-xl border border-white/10 bg-[#070D0F] hover:bg-white/5 transition-colors text-xs font-semibold text-white cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-[#FF7F5B]" />
+                              <span>{res.title}</span>
+                            </div>
+                            <span className="text-[10px] text-[#FF7F5B] hover:text-[#ff9577] uppercase font-bold tracking-wider">
+                              Baixar PDF ↓
+                            </span>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
