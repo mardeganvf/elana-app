@@ -401,21 +401,32 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_profile_id uuid;
   v_date date;
+  v_new jsonb;
+  v_ts text;
 BEGIN
+  v_new := to_jsonb(NEW);
   IF TG_TABLE_NAME IN ('community_posts', 'community_comments') THEN
-    v_profile_id := NEW.author_id;
+    IF (v_new ->> 'author_id') IS NOT NULL THEN
+      v_profile_id := (v_new ->> 'author_id')::uuid;
+    END IF;
   ELSE
-    v_profile_id := NEW.profile_id;
+    IF (v_new ->> 'profile_id') IS NOT NULL THEN
+      v_profile_id := (v_new ->> 'profile_id')::uuid;
+    END IF;
   END IF;
 
   IF v_profile_id IS NOT NULL THEN
-    v_date := (COALESCE(
-      CASE WHEN TG_TABLE_NAME = 'user_completed_lessons' THEN NEW.completed_at END,
-      CASE WHEN TG_TABLE_NAME = 'user_lesson_notes' THEN NEW.updated_at END,
-      CASE WHEN TG_TABLE_NAME = 'emotional_checkins' THEN NEW.created_at END,
-      CASE WHEN TG_TABLE_NAME IN ('community_posts', 'community_comments') THEN NEW.created_at END,
-      NOW()
-    ) AT TIME ZONE 'America/Sao_Paulo')::date;
+    v_ts := COALESCE(
+      v_new ->> 'completed_at',
+      v_new ->> 'updated_at',
+      v_new ->> 'created_at'
+    );
+
+    IF v_ts IS NOT NULL THEN
+      v_date := (v_ts::timestamptz AT TIME ZONE 'America/Sao_Paulo')::date;
+    ELSE
+      v_date := (NOW() AT TIME ZONE 'America/Sao_Paulo')::date;
+    END IF;
 
     INSERT INTO public.user_daily_visits (profile_id, visit_date)
     VALUES (v_profile_id, v_date)

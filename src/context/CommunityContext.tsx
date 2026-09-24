@@ -1519,7 +1519,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         flag_type: sensitivityCheck.type || null,
         suggests_crisis_support: !!sensitivityCheck.suggestsCrisisSupport
       }])
-      .select('id')
+      .select('id, status, category, flag_type, flag_reason')
       .single()
       .then(({ data, error }) => {
         if (error) {
@@ -1527,7 +1527,13 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         } else if (data?.id) {
           console.log('✅ Post salvo com sucesso no Supabase com ID:', data.id);
           setPosts(prev => {
-            const updated = prev.map(p => p.id === newPost.id ? { ...p, id: data.id } : p);
+            const updated = prev.map(p => p.id === newPost.id ? { 
+              ...p, 
+              id: data.id,
+              status: (data.status as any) || p.status,
+              flagType: (data.flag_type as any) || p.flagType,
+              flagReason: data.flag_reason || p.flagReason
+            } : p);
             try {
               localStorage.setItem('elana_community_posts_cache', JSON.stringify(updated));
             } catch {}
@@ -1870,7 +1876,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         flag_reason: sensitivity.flagReason || null,
         flag_type: sensitivity.type || null
       }])
-      .select('id')
+      .select('id, status, flag_type, flag_reason')
       .single()
       .then(({ data, error }) => {
         if (error) {
@@ -1881,7 +1887,11 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             if (p.id === postId && p.comments) {
               return {
                 ...p,
-                comments: p.comments.map(c => c.id === newComment.id ? { ...c, id: data.id } : c)
+                comments: p.comments.map(c => c.id === newComment.id ? { 
+                  ...c, 
+                  id: data.id,
+                  status: (data.status as any) || c.status
+                } : c)
               };
             }
             return p;

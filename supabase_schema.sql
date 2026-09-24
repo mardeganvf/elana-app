@@ -586,6 +586,141 @@ CREATE TRIGGER trg_sanitize_anonymous_comments
   FOR EACH ROW
   EXECUTE FUNCTION public.sanitize_anonymous_posts();
 
+-- 🛡️ [SEC-POST-01] BLINDAGEM DE POSTS: Impede aprovação arbitrária e manipulação de moderação por usuários comuns
+CREATE OR REPLACE FUNCTION public.protect_community_post_status()
+RETURNS TRIGGER AS $$
+DECLARE
+  is_privileged BOOLEAN;
+  combined_text TEXT;
+  risk_pattern TEXT;
+BEGIN
+  is_privileged := public.is_admin();
+
+  risk_pattern := '(suic[ií]d|me matar|sumir de vez|tirar minha vida|cortar os pulsos|enforcamento|quer[ao] morrer|acabar com tudo|' ||
+                  'abuso sexual|estupr|transar.*dormindo|sexo.*desacordad|sexo.*sem consentimento|manda nudes|foto pelada|vagabund[ao]|' ||
+                  'fodi |foder|fudid|putaria|caralho|boceta|buceta|penis|piroca|rola |punheta|siririca|arrombado|' ||
+                  'dar mel.*(beb[eê]|recem|meses)|sacudir.*(beb[eê]|nenem)|chacoalhar.*(beb[eê]|nenem)|dar (clonazepam|rivotril|sedativo).*(beb[eê]|nenem)|' ||
+                  '(bater|espancar|soco|bofete|surra).*(beb[eê]|nenem|crianca)|' ||
+                  'macac[ao].*(negr|pret)|negr[ao].*(suj|fedid|imund)|volta pra.*(africa)|viadinho|traveco|mongoloid[ae])';
+
+  IF TG_OP = 'UPDATE' THEN
+    IF NOT is_privileged THEN
+      -- Impede desmoderar (mudar de sob_moderacao / rejeitado para aprovado)
+      IF OLD.status IN ('sob_moderacao', 'rejeitado') AND NEW.status = 'aprovado' THEN
+        NEW.status := OLD.status;
+        NEW.category := OLD.category;
+      END IF;
+
+      -- Impede zerar ou manipular denúncias
+      IF NEW.report_count IS DISTINCT FROM OLD.report_count THEN
+        NEW.report_count := OLD.report_count;
+      END IF;
+
+      -- Se o autor alterar o texto e introduzir termos de risco, rebaixa para sob_moderacao
+      combined_text := LOWER(COALESCE(NEW.title, '') || ' ' || COALESCE(NEW.content, ''));
+      IF combined_text ~* risk_pattern THEN
+        NEW.status := 'sob_moderacao';
+        NEW.category := 'sob_moderacao';
+        NEW.flag_type := 'antijulgamento';
+        NEW.flag_reason := 'Conteúdo sensível detectado durante edição - enviado para moderação';
+      END IF;
+    END IF;
+
+  ELSIF TG_OP = 'INSERT' THEN
+    combined_text := LOWER(COALESCE(NEW.title, '') || ' ' || COALESCE(NEW.content, ''));
+
+    IF NOT is_privileged THEN
+      -- Se houver flag ou motivo de flag, nunca pode ser aprovado
+      IF NEW.flag_type IS NOT NULL OR NEW.flag_reason IS NOT NULL THEN
+        NEW.status := 'sob_moderacao';
+        NEW.category := 'sob_moderacao';
+      ELSIF combined_text ~* risk_pattern THEN
+        NEW.status := 'sob_moderacao';
+        NEW.category := 'sob_moderacao';
+        NEW.flag_type := COALESCE(NEW.flag_type, 'antijulgamento');
+        NEW.flag_reason := COALESCE(NEW.flag_reason, 'Conteúdo retido pela moderação preventiva de acolhimento');
+      ELSIF NEW.status IS NULL THEN
+        NEW.status := 'aprovado';
+        NEW.category := 'aprovado';
+      END IF;
+
+      NEW.report_count := 0;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_protect_community_post_status ON public.community_posts;
+CREATE TRIGGER trg_protect_community_post_status
+  BEFORE INSERT OR UPDATE ON public.community_posts
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_community_post_status();
+
+-- 🛡️ [SEC-POST-01] BLINDAGEM DE COMENTÁRIOS: Impede aprovação arbitrária de comentários por usuários comuns
+CREATE OR REPLACE FUNCTION public.protect_community_comment_status()
+RETURNS TRIGGER AS $$
+DECLARE
+  is_privileged BOOLEAN;
+  combined_text TEXT;
+  risk_pattern TEXT;
+BEGIN
+  is_privileged := public.is_admin();
+
+  risk_pattern := '(suic[ií]d|me matar|sumir de vez|tirar minha vida|cortar os pulsos|enforcamento|quer[ao] morrer|acabar com tudo|' ||
+                  'abuso sexual|estupr|transar.*dormindo|sexo.*desacordad|sexo.*sem consentimento|manda nudes|foto pelada|vagabund[ao]|' ||
+                  'fodi |foder|fudid|putaria|caralho|boceta|buceta|penis|piroca|rola |punheta|siririca|arrombado|' ||
+                  'dar mel.*(beb[eê]|recem|meses)|sacudir.*(beb[eê]|nenem)|chacoalhar.*(beb[eê]|nenem)|dar (clonazepam|rivotril|sedativo).*(beb[eê]|nenem)|' ||
+                  '(bater|espancar|soco|bofete|surra).*(beb[eê]|nenem|crianca)|' ||
+                  'macac[ao].*(negr|pret)|negr[ao].*(suj|fedid|imund)|volta pra.*(africa)|viadinho|traveco|mongoloid[ae])';
+
+  IF TG_OP = 'UPDATE' THEN
+    IF NOT is_privileged THEN
+      IF OLD.status IN ('sob_moderacao', 'rejeitado') AND NEW.status = 'aprovado' THEN
+        NEW.status := OLD.status;
+      END IF;
+
+      IF NEW.report_count IS DISTINCT FROM OLD.report_count THEN
+        NEW.report_count := OLD.report_count;
+      END IF;
+
+      combined_text := LOWER(COALESCE(NEW.content, ''));
+      IF combined_text ~* risk_pattern THEN
+        NEW.status := 'sob_moderacao';
+        NEW.flag_type := 'antijulgamento';
+        NEW.flag_reason := 'Conteúdo sensível detectado durante edição - enviado para moderação';
+      END IF;
+    END IF;
+
+  ELSIF TG_OP = 'INSERT' THEN
+    combined_text := LOWER(COALESCE(NEW.content, ''));
+
+    IF NOT is_privileged THEN
+      IF NEW.flag_type IS NOT NULL OR NEW.flag_reason IS NOT NULL THEN
+        NEW.status := 'sob_moderacao';
+      ELSIF combined_text ~* risk_pattern THEN
+        NEW.status := 'sob_moderacao';
+        NEW.flag_type := COALESCE(NEW.flag_type, 'antijulgamento');
+        NEW.flag_reason := COALESCE(NEW.flag_reason, 'Conteúdo retido pela moderação preventiva de acolhimento');
+      ELSIF NEW.status IS NULL THEN
+        NEW.status := 'aprovado';
+      END IF;
+
+      NEW.report_count := 0;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_protect_community_comment_status ON public.community_comments;
+CREATE TRIGGER trg_protect_community_comment_status
+  BEFORE INSERT OR UPDATE ON public.community_comments
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_community_comment_status();
+
 -- --------------------------------------------------------
 -- USER BADGES: somente o dono
 -- --------------------------------------------------------
