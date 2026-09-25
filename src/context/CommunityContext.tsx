@@ -790,7 +790,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const { data, error } = await supabase
         .from('community_posts')
         .select('*, community_comments(*)')
-        .or('not.author_id.is.null,is_anonymous.eq.true')
+        .or('author_id.not.is.null,is_anonymous.eq.true')
         .order('created_at', { ascending: false })
         .range(0, PAGE_SIZE - 1);
 
@@ -977,14 +977,24 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       let from = posts.length;
       if (target) {
         if (target.type === 'geral' && target.roomId) {
-          query = query.or('not.author_id.is.null,is_anonymous.eq.true').eq('transversal_room_id', target.roomId);
-          from = posts.filter(p => p.transversalRoomId === target.roomId).length;
+          const roomIds = target.roomId === 'cantinho-mel'
+            ? ['cantinho-mel', 'cantinho-da-mel', 'trocas-livres']
+            : target.roomId === 'cuidando-quem-cuida'
+            ? ['cuidando-quem-cuida', 'cuidando-de-quem-cuida']
+            : [target.roomId];
+          query = query.or('author_id.not.is.null,is_anonymous.eq.true').in('transversal_room_id', roomIds);
+          from = posts.filter(p => roomIds.includes(p.transversalRoomId || '')).length;
         } else if (target.type === 'jornada' && target.journeyId) {
-          query = query.or('not.author_id.is.null,is_anonymous.eq.true').eq('journey_id', target.journeyId);
+          query = query.or('author_id.not.is.null,is_anonymous.eq.true').eq('journey_id', target.journeyId);
           from = posts.filter(p => p.journeyId === target.journeyId).length;
         } else if (target.type === 'idade' && target.ageId) {
-          query = query.or('not.author_id.is.null,is_anonymous.eq.true').eq('age_bracket_id', target.ageId);
-          from = posts.filter(p => p.ageBracketId === target.ageId).length;
+          const ageIds = target.ageId === '14-19'
+            ? ['14-19', '15-18']
+            : target.ageId === '20-plus'
+            ? ['20-plus', '18-plus']
+            : [target.ageId];
+          query = query.or('author_id.not.is.null,is_anonymous.eq.true').in('age_bracket_id', ageIds);
+          from = posts.filter(p => ageIds.includes(p.ageBracketId || '')).length;
         } else if (target.type === 'minhas-publicacoes') {
           if (!user?.id) {
             setIsLoadingMore(false);
@@ -994,7 +1004,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           from = posts.filter(p => p.authorId === user.id).length;
         }
       } else {
-        query = query.or('not.author_id.is.null,is_anonymous.eq.true');
+        query = query.or('author_id.not.is.null,is_anonymous.eq.true');
       }
 
       const to = from + PAGE_SIZE - 1;
@@ -1067,7 +1077,6 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       'minhas-publicacoes';
 
     if (fetchedRoomsSet.current.has(roomKey)) return;
-    fetchedRoomsSet.current.add(roomKey);
 
     setIsRoomLoading(true);
     try {
@@ -1078,11 +1087,21 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .limit(PAGE_SIZE);
 
       if (selection.type === 'geral' && selection.roomId) {
-        query = query.or('not.author_id.is.null,is_anonymous.eq.true').eq('transversal_room_id', selection.roomId);
+        const roomIds = selection.roomId === 'cantinho-mel'
+          ? ['cantinho-mel', 'cantinho-da-mel', 'trocas-livres']
+          : selection.roomId === 'cuidando-quem-cuida'
+          ? ['cuidando-quem-cuida', 'cuidando-de-quem-cuida']
+          : [selection.roomId];
+        query = query.or('author_id.not.is.null,is_anonymous.eq.true').in('transversal_room_id', roomIds);
       } else if (selection.type === 'jornada' && selection.journeyId) {
-        query = query.or('not.author_id.is.null,is_anonymous.eq.true').eq('journey_id', selection.journeyId);
+        query = query.or('author_id.not.is.null,is_anonymous.eq.true').eq('journey_id', selection.journeyId);
       } else if (selection.type === 'idade' && selection.ageId) {
-        query = query.or('not.author_id.is.null,is_anonymous.eq.true').eq('age_bracket_id', selection.ageId);
+        const ageIds = selection.ageId === '14-19'
+          ? ['14-19', '15-18']
+          : selection.ageId === '20-plus'
+          ? ['20-plus', '18-plus']
+          : [selection.ageId];
+        query = query.or('author_id.not.is.null,is_anonymous.eq.true').in('age_bracket_id', ageIds);
       } else if (selection.type === 'minhas-publicacoes') {
         if (!user?.id) {
           setIsRoomLoading(false);
@@ -1090,7 +1109,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
         query = query.eq('author_id', user.id);
       } else {
-        query = query.or('not.author_id.is.null,is_anonymous.eq.true');
+        query = query.or('author_id.not.is.null,is_anonymous.eq.true');
       }
 
       const { data, error } = await query;
@@ -1099,6 +1118,8 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         console.warn('Supabase fetchPostsForRoom notice:', error.message);
         return;
       }
+
+      fetchedRoomsSet.current.add(roomKey);
 
       if (data && data.length > 0) {
         const postIds = data.map((p: any) => p.id).filter(Boolean);

@@ -64,7 +64,7 @@ import { renderRoomIcon } from '../components/community/CommunityIcons';
 export { renderRoomIcon };
 
 export type ActiveSelection = 
-  | { type: 'jornada'; journeyId: string; subOption: 'ajuda' | 'celebrar' | 'desabafar' }
+  | { type: 'jornada'; journeyId: string; subOption?: 'ajuda' | 'celebrar' | 'desabafar' | null }
   | { type: 'geral'; roomId: string }
   | { type: 'idade'; ageId: string }
   | { type: 'minhas-publicacoes' }
@@ -253,7 +253,7 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       subBadgeBg,
       subBadgeBorder,
       subBadgeText,
-      selectionTarget: { type: 'jornada', journeyId: post.journeyId, subOption }
+      selectionTarget: { type: 'jornada', journeyId: post.journeyId, subOption: (post.emotionalIntention as any) || null }
     };
   }
 
@@ -1051,19 +1051,38 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
       if (!isAuthor && !isAdminOrGuia) return false;
     }
 
+    // Normalização de ids de salas e idades para compatibilidade com variações de rotas
+    const normalizeRoom = (id?: string | null) => {
+      if (!id) return '';
+      const r = id.toLowerCase().trim();
+      if (r === 'cantinho-da-mel' || r === 'trocas-livres') return 'cantinho-mel';
+      if (r === 'cuidando-de-quem-cuida') return 'cuidando-quem-cuida';
+      return r;
+    };
+    const normalizeAge = (id?: string | null) => {
+      if (!id) return '';
+      const r = id.toLowerCase().trim();
+      if (r === '15-18') return '14-19';
+      if (r === '18-plus') return '20-plus';
+      return r;
+    };
+
     // Selection filter (if null, show all posts)
     if (activeSelection) {
       if (activeSelection.type === 'minhas-publicacoes') {
-        if (post.authorId !== user?.id) return false;
+        const postAuthorId = post.authorId || (post as any).author_id;
+        if (postAuthorId !== user?.id) return false;
       } else if (activeSelection.type === 'jornada') {
-        if (post.journeyId !== activeSelection.journeyId) return false;
-        if (activeSelection.subOption === 'ajuda' && post.emotionalIntention !== 'ajuda') return false;
-        if (activeSelection.subOption === 'celebrar' && post.emotionalIntention !== 'celebrar') return false;
-        if (activeSelection.subOption === 'desabafar' && post.emotionalIntention !== 'desabafar') return false;
+        const postJourneyId = post.journeyId || (post as any).journey_id;
+        const postIntention = post.emotionalIntention || (post as any).emotional_intention;
+        if (postJourneyId !== activeSelection.journeyId) return false;
+        if (activeSelection.subOption && postIntention !== activeSelection.subOption) return false;
       } else if (activeSelection.type === 'geral') {
-        if (post.transversalRoomId !== activeSelection.roomId) return false;
+        const postRoomId = post.transversalRoomId || (post as any).transversal_room_id;
+        if (normalizeRoom(postRoomId) !== normalizeRoom(activeSelection.roomId)) return false;
       } else if (activeSelection.type === 'idade') {
-        if (post.ageBracketId !== activeSelection.ageId) return false;
+        const postAgeId = post.ageBracketId || (post as any).age_bracket_id;
+        if (normalizeAge(postAgeId) !== normalizeAge(activeSelection.ageId)) return false;
       }
     }
 
@@ -1087,14 +1106,11 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
     return true;
   }), [safePosts, activeSelection, selectedEmotionId, searchQuery, user?.id, user?.role]);
 
-  // 🚀 Busca direcionada por sala: se o usuário clicar em uma sala específica e ela tiver < 10 tópicos em memória,
-  // busca diretamente os 10 primeiros tópicos daquela sala no Supabase.
+  // 🚀 Busca direcionada por sala ao selecionar
   useEffect(() => {
     if (!activeSelection) return;
-    if (filteredPosts.length < 15) {
-      fetchPostsForRoom(activeSelection);
-    }
-  }, [activeSelection, filteredPosts.length, user?.id]);
+    fetchPostsForRoom(activeSelection);
+  }, [activeSelection, user?.id]);
 
   // Paginating visible posts (15 per page)
   const visiblePosts = useMemo(() => filteredPosts.slice(0, visibleCount), [filteredPosts, visibleCount]);
@@ -1151,9 +1167,12 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
         celebrar: 'Vamos Celebrar',
         desabafar: 'Preciso Desabafar'
       };
+      const mainTitle = activeSelection.subOption && subLabels[activeSelection.subOption]
+        ? subLabels[activeSelection.subOption]
+        : (j?.title || 'Jornada');
       return {
         categoryLabel: j?.title || 'Jornada',
-        mainTitle: subLabels[activeSelection.subOption],
+        mainTitle,
         themeColor: j?.themeColor || '#FF7F5B'
       };
     }
@@ -1486,7 +1505,9 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
                       const next = mobilePillJourneyId === j.id ? null : j.id;
                       setMobilePillJourneyId(next);
                       if (next) {
-                        setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'ajuda' });
+                        setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: null });
+                      } else {
+                        setActiveSelection(null);
                       }
                     }}
                     className={`shrink-0 snap-start px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
@@ -1505,6 +1526,17 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
             {/* Sub-option pills for selected journey */}
             {mobilePillJourneyId && (
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in bg-white/5 p-1.5 rounded-xl pe-4">
+                <button
+                  onClick={() => setActiveSelection({ type: 'jornada', journeyId: mobilePillJourneyId, subOption: null })}
+                  className={`shrink-0 snap-start px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer min-h-[38px] ${
+                    activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId && !activeSelection.subOption
+                      ? 'text-white border-transparent shadow-md'
+                      : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
+                  }`}
+                  style={activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId && !activeSelection.subOption && availableJourneys.find(j => j.id === mobilePillJourneyId) ? { backgroundColor: availableJourneys.find(j => j.id === mobilePillJourneyId)!.themeColor, borderColor: availableJourneys.find(j => j.id === mobilePillJourneyId)!.themeColor } : {}}
+                >
+                  <span>Todos</span>
+                </button>
                 {[
                   { id: 'ajuda' as const,   label: 'Preciso de Ajuda' },
                   { id: 'celebrar' as const, label: 'Celebrar' },
@@ -1515,7 +1547,11 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
                   return (
                     <button
                       key={sub.id}
-                      onClick={() => setActiveSelection({ type: 'jornada', journeyId: mobilePillJourneyId, subOption: sub.id })}
+                      onClick={() => setActiveSelection({ 
+                        type: 'jornada', 
+                        journeyId: mobilePillJourneyId, 
+                        subOption: activeSelection?.subOption === sub.id ? null : sub.id 
+                      })}
                       className={`shrink-0 snap-start px-3.5 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer min-h-[38px] ${
                         isSelected
                           ? 'text-white border-transparent shadow-md'
@@ -1649,7 +1685,9 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
                           const willExpand = !isExpanded;
                           setExpandedJourneyId(willExpand ? j.id : null);
                           if (willExpand) {
-                            setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'ajuda' });
+                            setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: null });
+                          } else if (activeSelection?.type === 'jornada' && activeSelection.journeyId === j.id) {
+                            setActiveSelection(null);
                           }
                         }}
                         className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${
@@ -1666,9 +1704,24 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
                       {isExpanded && (
                         <div className="pl-2 space-y-1 border-l-2 border-[#FF7F5B]/30 ml-2.5 animate-fade-in pt-0.5">
                           <button
-                            onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'ajuda' })}
-                            className={`w-full min-h-[44px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
-                              isSelectedJourney && activeSelection.subOption === 'ajuda'
+                            onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: null })}
+                            className={`w-full min-h-[38px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                              isSelectedJourney && !activeSelection?.subOption
+                                ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            }`}
+                          >
+                            <span>Todos os Conteúdos</span>
+                          </button>
+
+                          <button
+                            onClick={() => setActiveSelection({ 
+                              type: 'jornada', 
+                              journeyId: j.id, 
+                              subOption: activeSelection?.subOption === 'ajuda' ? null : 'ajuda' 
+                            })}
+                            className={`w-full min-h-[38px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                              isSelectedJourney && activeSelection?.subOption === 'ajuda'
                                 ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
@@ -1677,9 +1730,13 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
                           </button>
 
                           <button
-                            onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'celebrar' })}
-                            className={`w-full min-h-[44px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
-                              isSelectedJourney && activeSelection.subOption === 'celebrar'
+                            onClick={() => setActiveSelection({ 
+                              type: 'jornada', 
+                              journeyId: j.id, 
+                              subOption: activeSelection?.subOption === 'celebrar' ? null : 'celebrar' 
+                            })}
+                            className={`w-full min-h-[38px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                              isSelectedJourney && activeSelection?.subOption === 'celebrar'
                                 ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
@@ -1688,9 +1745,13 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
                           </button>
 
                           <button
-                            onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: 'desabafar' })}
-                            className={`w-full min-h-[44px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
-                              isSelectedJourney && activeSelection.subOption === 'desabafar'
+                            onClick={() => setActiveSelection({ 
+                              type: 'jornada', 
+                              journeyId: j.id, 
+                              subOption: activeSelection?.subOption === 'desabafar' ? null : 'desabafar' 
+                            })}
+                            className={`w-full min-h-[38px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                              isSelectedJourney && activeSelection?.subOption === 'desabafar'
                                 ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
                                 : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
