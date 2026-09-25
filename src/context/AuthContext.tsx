@@ -1442,6 +1442,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  const awardBadge = async (badgeId: string) => {
+    const currentUser = userRef.current || user;
+    if (!currentUser) return;
+    const currentBadgeIds = new Set(currentUser.badges.map(b => b.id));
+    if (currentBadgeIds.has(badgeId)) return; // Already has it
+    const badgeToAward = ALL_BADGES.find(b => b.id === badgeId);
+    if (!badgeToAward) return;
+
+    activeBadgeModalRef.current = badgeToAward;
+
+    const previousLevel = currentUser.level || getLevelFromXP(currentUser.xp).level;
+    const nextBadges = [...currentUser.badges, badgeToAward];
+    const badgeXpSum = nextBadges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
+    const newXP = badgeXpSum;
+    const levelInfo = getLevelFromXP(newXP);
+
+    if (levelInfo.level > previousLevel && previousLevel >= 1) {
+      const levelUpPayload = {
+        levelInfo,
+        previousLevel
+      };
+      pendingLevelUpRef.current = levelUpPayload;
+      setPendingLevelUp(levelUpPayload);
+    }
+
+    await updateUser({
+      badges: nextBadges,
+      xp: newXP,
+      level: levelInfo.level,
+      levelTitle: levelInfo.title
+    });
+
+    // Gravar badge no Supabase
+    try {
+      await supabase.from('user_badges').upsert({
+        profile_id: currentUser.id,
+        badge_id: badgeId
+      }, { onConflict: 'profile_id, badge_id' });
+    } catch (e) {
+      console.error('Error saving user badge to Supabase:', e);
+    }
+
+    activeBadgeModalRef.current = badgeToAward;
+    setUnlockedBadgeModal(badgeToAward);
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  };
+
   const completeLesson = async (lessonId: string) => {
     const currentUser = userRef.current || user;
     if (!currentUser) return;
@@ -1531,57 +1582,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       await completeLesson(lessonId);
     }
-  };
-
-  const awardBadge = async (badgeId: string) => {
-    const currentUser = userRef.current || user;
-    if (!currentUser) return;
-    const currentBadgeIds = new Set(currentUser.badges.map(b => b.id));
-    if (currentBadgeIds.has(badgeId)) return; // Already has it
-    const badgeToAward = ALL_BADGES.find(b => b.id === badgeId);
-    if (!badgeToAward) return;
-
-    activeBadgeModalRef.current = badgeToAward;
-
-    const previousLevel = currentUser.level || getLevelFromXP(currentUser.xp).level;
-    const nextBadges = [...currentUser.badges, badgeToAward];
-    const badgeXpSum = nextBadges.reduce((acc, b) => acc + (b.rewardXp || 0), 0);
-    const newXP = badgeXpSum;
-    const levelInfo = getLevelFromXP(newXP);
-
-    if (levelInfo.level > previousLevel && previousLevel >= 1) {
-      const levelUpPayload = {
-        levelInfo,
-        previousLevel
-      };
-      pendingLevelUpRef.current = levelUpPayload;
-      setPendingLevelUp(levelUpPayload);
-    }
-
-    await updateUser({
-      badges: nextBadges,
-      xp: newXP,
-      level: levelInfo.level,
-      levelTitle: levelInfo.title
-    });
-
-    // Gravar badge no Supabase
-    try {
-      await supabase.from('user_badges').upsert({
-        profile_id: currentUser.id,
-        badge_id: badgeId
-      }, { onConflict: 'profile_id, badge_id' });
-    } catch (e) {
-      console.error('Error saving user badge to Supabase:', e);
-    }
-
-    activeBadgeModalRef.current = badgeToAward;
-    setUnlockedBadgeModal(badgeToAward);
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
   };
 
   const saveLessonNote = async (lessonId: string, note: string) => {

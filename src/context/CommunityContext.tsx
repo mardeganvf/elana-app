@@ -624,7 +624,7 @@ export const CommunityProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               if (!p || !p.id || !p.authorId) return false;
               if (deletedIds.has(p.id)) return false;
               if (p.status === 'removido_usuario' || p.status === 'rejeitado') return false;
-              if (p.authorId.length <= 20 || p.authorId.startsWith('u-')) return false;
+              if (!p.isAnonymous && (p.authorId.length <= 20 || p.authorId.startsWith('u-'))) return false;
 
               // Purga IDs temporários antigos (post-*) que não foram sincronizados com o Supabase
               if (p.id.startsWith('post-')) {

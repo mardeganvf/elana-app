@@ -27,6 +27,50 @@ import {
 import { NotebookModal } from '../components/gamification/NotebookModal';
 import { CheckoutModal } from '../components/catalog/CheckoutModal';
 
+// Helper to resolve embed URL (Panda Video, YouTube, Vimeo, iframe code)
+const getEmbedUrl = (url: string): string | null => {
+  if (!url) return null;
+  const cleanUrl = url.trim();
+
+  // If pasted an iframe code snippet: <iframe src="...">
+  if (cleanUrl.startsWith('<iframe')) {
+    const srcMatch = cleanUrl.match(/src=["']([^"']+)["']/);
+    if (srcMatch && srcMatch[1]) return srcMatch[1];
+  }
+
+  // Panda Video
+  if (cleanUrl.includes('pandavideo.com.br') || cleanUrl.includes('b-cdn.net')) {
+    return cleanUrl;
+  }
+
+  // YouTube
+  if (cleanUrl.includes('youtube.com/watch')) {
+    try {
+      const parsed = new URL(cleanUrl);
+      const videoId = parsed.searchParams.get('v');
+      if (videoId) return `https://www.youtube.com/embed/${videoId}?rel=0`;
+    } catch (_) {}
+  }
+  if (cleanUrl.includes('youtu.be/')) {
+    const videoId = cleanUrl.split('youtu.be/')[1]?.split('?')[0];
+    if (videoId) return `https://www.youtube.com/embed/${videoId}?rel=0`;
+  }
+  if (cleanUrl.includes('youtube.com/embed/')) {
+    return cleanUrl;
+  }
+
+  // Vimeo
+  if (cleanUrl.includes('vimeo.com/') && !cleanUrl.includes('player.vimeo.com')) {
+    const vimeoId = cleanUrl.split('vimeo.com/')[1]?.split('?')[0];
+    if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}`;
+  }
+  if (cleanUrl.includes('player.vimeo.com')) {
+    return cleanUrl;
+  }
+
+  return null;
+};
+
 interface ClassroomPageProps {
   journey: Journey;
   initialLessonId?: string;
@@ -435,50 +479,6 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     saveVideoTimestamp(video.currentTime, video.duration);
   };
 
-  // Helper to resolve embed URL (Panda Video, YouTube, Vimeo, iframe code)
-  const getEmbedUrl = (url: string): string | null => {
-    if (!url) return null;
-    const cleanUrl = url.trim();
-
-    // If pasted an iframe code snippet: <iframe src="...">
-    if (cleanUrl.startsWith('<iframe')) {
-      const srcMatch = cleanUrl.match(/src=["']([^"']+)["']/);
-      if (srcMatch && srcMatch[1]) return srcMatch[1];
-    }
-
-    // Panda Video
-    if (cleanUrl.includes('pandavideo.com.br') || cleanUrl.includes('b-cdn.net')) {
-      return cleanUrl;
-    }
-
-    // YouTube
-    if (cleanUrl.includes('youtube.com/watch')) {
-      try {
-        const parsed = new URL(cleanUrl);
-        const videoId = parsed.searchParams.get('v');
-        if (videoId) return `https://www.youtube.com/embed/${videoId}?rel=0`;
-      } catch (_) {}
-    }
-    if (cleanUrl.includes('youtu.be/')) {
-      const videoId = cleanUrl.split('youtu.be/')[1]?.split('?')[0];
-      if (videoId) return `https://www.youtube.com/embed/${videoId}?rel=0`;
-    }
-    if (cleanUrl.includes('youtube.com/embed/')) {
-      return cleanUrl;
-    }
-
-    // Vimeo
-    if (cleanUrl.includes('vimeo.com/') && !cleanUrl.includes('player.vimeo.com')) {
-      const vimeoId = cleanUrl.split('vimeo.com/')[1]?.split('?')[0];
-      if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}`;
-    }
-    if (cleanUrl.includes('player.vimeo.com')) {
-      return cleanUrl;
-    }
-
-    return null;
-  };
-
   // Active Module Dropdown / Accordion Expansion State (Collapsed by default)
   const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -487,6 +487,13 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   const currentIndex = allLessons.findIndex(l => l.id === activeLesson.id);
   const nextLesson = currentIndex >= 0 && currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
   const [autoplayTimer, setAutoplayTimer] = useState<number | null>(null);
+
+  const handleLessonChange = (lesson: Lesson) => {
+    setActiveLessonId(lesson.id);
+    setAutoplayTimer(null);
+    setMobileTab('content');
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  };
 
   // Scroll to top of viewport whenever classroom page opens or lesson changes
   useEffect(() => {
@@ -600,13 +607,6 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
 
   const cancelAutoplay = () => {
     setAutoplayTimer(null);
-  };
-
-  const handleLessonChange = (lesson: Lesson) => {
-    setActiveLessonId(lesson.id);
-    setAutoplayTimer(null);
-    setMobileTab('content');
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
   const handleSaveNote = async (e: React.FormEvent) => {

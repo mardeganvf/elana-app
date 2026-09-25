@@ -392,7 +392,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
           .order('created_at', { ascending: false });
 
         if (data && data.length > 0) {
-          const approvedCount = data.filter(t => t.status === 'approved').length;
+          const approvedCount = data.filter(t => t.status === 'approved' || t.status === 'aprovado').length;
           if (approvedCount >= 1) awardBadge('b57'); // Afeto Recebido
           if (approvedCount >= 5) awardBadge('b71'); // Mural Florido (5)
           if (approvedCount >= 10) awardBadge('b72'); // Avalanche de Carinho (10)
@@ -404,7 +404,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onStartLearning, o
             content: t.content,
             createdAt: new Date(t.created_at).toLocaleDateString('pt-BR'),
             likesCount: t.likes_count || 1,
-            status: t.status === 'approved' ? 'aprovado' : 'pendente'
+            status: (t.status === 'approved' || t.status === 'aprovado') ? 'aprovado' : 'pendente'
           })));
         }
       } catch (err) {

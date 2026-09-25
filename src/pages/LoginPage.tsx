@@ -16,7 +16,7 @@ interface LoginPageProps {
 // Definido como false para ocultar a opção até que a validação de número de celular esteja configurada
 export const ENABLE_PHONE_LOGIN = false;
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess, onBackToHome }) => {
   const { login } = useAuth();
   const [mode, setMode] = useState<'login' | 'register' | 'verify_email' | 'recovery'>('login');
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
@@ -327,6 +327,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             Elana
           </span>
         </div>
+        {onBackToHome && (
+          <button
+            type="button"
+            onClick={onBackToHome}
+            className="flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 px-3.5 py-2 rounded-full border border-white/10 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Voltar para o início</span>
+          </button>
+        )}
       </header>
 
       {/* CENTERED LOGIN / REGISTRATION CARD */}

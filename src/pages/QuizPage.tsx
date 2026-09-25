@@ -175,39 +175,6 @@ export const QuizPage: React.FC<QuizPageProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSelectOption = (optionIndex: number) => {
-    const updated = {
-      ...selectedAnswers,
-      [currentQuestionIdx]: optionIndex
-    };
-    setSelectedAnswers(updated);
-
-    // Auto-avanço fluido com 220ms de delay
-    setTimeout(() => {
-      if (currentQuestionIdx < PARENTAL_QUESTIONS.length - 1) {
-        setCurrentQuestionIdx(prev => prev + 1);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        finishQuiz(updated);
-      }
-    }, 220);
-  };
-
-  const handlePrevQuestion = () => {
-    if (currentQuestionIdx > 0) {
-      setCurrentQuestionIdx(prev => prev - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      // Se estava na primeira pergunta de superpoder, retorna à etapa preliminar correspondente
-      if (parentalStatus === 'sim') {
-        setStage('preliminary-ages');
-      } else {
-        setStage('preliminary-status');
-      }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
   const finishQuiz = (finalAnswers: Record<number, number>) => {
     setStage('calculating');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -263,6 +230,39 @@ export const QuizPage: React.FC<QuizPageProps> = ({
         }
       }
     }, 1800);
+  };
+
+  const handleSelectOption = (optionIndex: number) => {
+    const updated = {
+      ...selectedAnswers,
+      [currentQuestionIdx]: optionIndex
+    };
+    setSelectedAnswers(updated);
+
+    // Auto-avanço fluido com 220ms de delay
+    setTimeout(() => {
+      if (currentQuestionIdx < PARENTAL_QUESTIONS.length - 1) {
+        setCurrentQuestionIdx(prev => prev + 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        finishQuiz(updated);
+      }
+    }, 220);
+  };
+
+  const handlePrevQuestion = () => {
+    if (currentQuestionIdx > 0) {
+      setCurrentQuestionIdx(prev => prev - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Se estava na primeira pergunta de superpoder, retorna à etapa preliminar correspondente
+      if (parentalStatus === 'sim') {
+        setStage('preliminary-ages');
+      } else {
+        setStage('preliminary-status');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleShare = async () => {

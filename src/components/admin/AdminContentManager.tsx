@@ -212,6 +212,26 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
   // Garante que a jornada selecionada seja válida
   const activeJourney = journeys.find(j => j.id === activeJourneyId) || journeys[0];
 
+  const openCreateJourney = () => {
+    setEditingJourney(null);
+    setJourneyFormTitle('');
+    setJourneyFormSubtitle('Jornadas que Começam');
+    setJourneyFormTagline('');
+    setJourneyFormDesc('');
+    setJourneyFormPillar('movimento');
+    setJourneyFormPillarAttr('Evolução');
+    setJourneyFormCategory('comecam');
+    setJourneyFormAudience('Pais de 0 a 3 anos');
+    setJourneyFormThemeColor('#FF7F5B');
+    setJourneyFormPrice(197);
+    setJourneyFormHasModules(false);
+    setJourneyFormModulesList([]);
+    setNewModuleInput('');
+    setJourneyFormStatus('active');
+    setJourneyFormCoverUrl('');
+    setIsJourneyModalOpen(true);
+  };
+
   // Sincroniza abertura do modal disparado pela sidebar lateral
   useEffect(() => {
     if (propIsCreateJourneyModalOpen) {
@@ -263,26 +283,6 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
 
   const handleRemoveModuleFromJourney = (index: number) => {
     setJourneyFormModulesList(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const openCreateJourney = () => {
-    setEditingJourney(null);
-    setJourneyFormTitle('');
-    setJourneyFormSubtitle('Jornadas que Começam');
-    setJourneyFormTagline('');
-    setJourneyFormDesc('');
-    setJourneyFormPillar('movimento');
-    setJourneyFormPillarAttr('Evolução');
-    setJourneyFormCategory('comecam');
-    setJourneyFormAudience('Pais de 0 a 3 anos');
-    setJourneyFormThemeColor('#FF7F5B');
-    setJourneyFormPrice(197);
-    setJourneyFormHasModules(false);
-    setJourneyFormModulesList([]);
-    setNewModuleInput('');
-    setJourneyFormStatus('active');
-    setJourneyFormCoverUrl('');
-    setIsJourneyModalOpen(true);
   };
 
   const openEditJourney = (journey: Journey) => {

@@ -548,12 +548,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       const totalAcolhimentos = totalComments + totalReactions;
 
       // c) Postagens reais e saúde da rede de apoio (relação entre postagens e acolhimentos)
-      const validPosts = (currentPosts || []).filter(p =>
-        p.authorId &&
-        p.authorId.length > 20 &&
-        !p.authorId.startsWith('u-') &&
-        p.status !== 'removido_usuario'
-      );
+      const validPosts = (currentPosts || []).filter(p => {
+        const authorId = p.authorId || (p as any).author_id;
+        return (
+          authorId &&
+          authorId.length > 20 &&
+          !authorId.startsWith('u-') &&
+          p.status !== 'removido_usuario'
+        );
+      });
       const totalPosts = validPosts.length;
       const postsWithoutRepliesCount = validPosts.filter(p => !p.comments || p.comments.length === 0).length;
       const averageAcolhimentosPerPost = totalPosts > 0 ? Number((totalAcolhimentos / totalPosts).toFixed(1)) : 0;
@@ -760,6 +763,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
       }
     } catch (err) {
       console.warn('Erro ao carregar detalhes do ticket selecionado:', err);
+    }
+  };
+
+  const loadLearnedExamples = async () => {
+    setIsLoadingLearned(true);
+    try {
+      const { data, error } = await supabase
+        .from('moderation_rejected_examples')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setLearnedExamples(data);
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar base de aprendizado:', err);
+    } finally {
+      setIsLoadingLearned(false);
     }
   };
 
@@ -1015,23 +1035,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
     setSosTickets(prev => prev.filter(t => t.id !== ticketId));
     if (selectedSosTicket?.id === ticketId) {
       setSelectedSosTicket(null);
-    }
-  };
-
-  const loadLearnedExamples = async () => {
-    setIsLoadingLearned(true);
-    try {
-      const { data, error } = await supabase
-        .from('moderation_rejected_examples')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        setLearnedExamples(data);
-      }
-    } catch (err) {
-      console.warn('Erro ao carregar base de aprendizado:', err);
-    } finally {
-      setIsLoadingLearned(false);
     }
   };
 

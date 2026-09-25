@@ -272,18 +272,33 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
   }
 
   const fullText = `${post.title || ''} ${post.content || ''}`.toLowerCase();
+  const intentionLabels: Record<string, string> = {
+    ajuda: 'Preciso de Ajuda',
+    celebrar: 'Vamos Celebrar',
+    desabafar: 'Preciso Desabafar'
+  };
+  const intentionIcons: Record<string, string> = {
+    ajuda: 'HelpCircle',
+    celebrar: 'Sparkles',
+    desabafar: 'CloudRain'
+  };
+
+  const currentIntention = post.emotionalIntention || (post as any).emotional_intention;
+  const currentSubTopicLabel = currentIntention ? intentionLabels[currentIntention] : undefined;
+  const currentSubTopicIcon = currentIntention ? intentionIcons[currentIntention] : undefined;
+
   if (fullText.includes('sono') || fullText.includes('bebê') || fullText.includes('mamada') || fullText.includes('berço') || fullText.includes('dente') || fullText.includes('puerpério')) {
     return {
       categoryType: 'jornada',
       categoryLabel: 'Jornada',
       roomName: 'Pais Recém-Nascidos',
-      subTopicLabel: 'Preciso de Ajuda',
-      subTopicIconName: 'HelpCircle',
+      subTopicLabel: currentSubTopicLabel,
+      subTopicIconName: currentSubTopicIcon,
       iconName: 'Sunrise',
       badgeBg: 'rgba(255, 127, 91, 0.12)',
       badgeBorder: 'rgba(255, 127, 91, 0.35)',
       badgeText: '#FF7F5B',
-      selectionTarget: { type: 'jornada', journeyId: 'pais-recem-nascidos', subOption: 'ajuda' }
+      selectionTarget: { type: 'jornada', journeyId: 'pais-recem-nascidos', subOption: (currentIntention as any) || null }
     };
   }
   if (fullText.includes('adolescente') || fullText.includes('celular') || fullText.includes('filho de 15') || fullText.includes('monosílabo')) {
@@ -291,13 +306,13 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'jornada',
       categoryLabel: 'Jornada',
       roomName: 'Construindo Pontes',
-      subTopicLabel: 'Preciso de Ajuda',
-      subTopicIconName: 'HelpCircle',
+      subTopicLabel: currentSubTopicLabel,
+      subTopicIconName: currentSubTopicIcon,
       iconName: 'Compass',
       badgeBg: 'rgba(45, 212, 191, 0.12)',
       badgeBorder: 'rgba(45, 212, 191, 0.35)',
       badgeText: '#2DD4BF',
-      selectionTarget: { type: 'jornada', journeyId: 'construindo-pontes', subOption: 'ajuda' }
+      selectionTarget: { type: 'jornada', journeyId: 'construindo-pontes', subOption: (currentIntention as any) || null }
     };
   }
   if (fullText.includes('tea') || fullText.includes('laudo') || fullText.includes('sensorial') || fullText.includes('atípico')) {
@@ -305,13 +320,13 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'jornada',
       categoryLabel: 'Jornada',
       roomName: 'Singular',
-      subTopicLabel: 'Preciso de Ajuda',
-      subTopicIconName: 'HelpCircle',
+      subTopicLabel: currentSubTopicLabel,
+      subTopicIconName: currentSubTopicIcon,
       iconName: 'Sparkles',
       badgeBg: 'rgba(255, 209, 102, 0.12)',
       badgeBorder: 'rgba(255, 209, 102, 0.35)',
       badgeText: '#FFD166',
-      selectionTarget: { type: 'jornada', journeyId: 'singular', subOption: 'ajuda' }
+      selectionTarget: { type: 'jornada', journeyId: 'singular', subOption: (currentIntention as any) || null }
     };
   }
   if (fullText.includes('adoção') || fullText.includes('habilitação') || fullText.includes('fila')) {
@@ -319,13 +334,13 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'jornada',
       categoryLabel: 'Jornada',
       roomName: 'Amor Escolhido',
-      subTopicLabel: 'Preciso de Ajuda',
-      subTopicIconName: 'HelpCircle',
+      subTopicLabel: currentSubTopicLabel,
+      subTopicIconName: currentSubTopicIcon,
       iconName: 'Heart',
       badgeBg: 'rgba(230, 103, 149, 0.12)',
       badgeBorder: 'rgba(230, 103, 149, 0.35)',
       badgeText: '#E66795',
-      selectionTarget: { type: 'jornada', journeyId: 'amor-escolhido', subOption: 'ajuda' }
+      selectionTarget: { type: 'jornada', journeyId: 'amor-escolhido', subOption: (currentIntention as any) || null }
     };
   }
   if (fullText.includes('luto') || fullText.includes('anjo') || fullText.includes('saudade') || fullText.includes('perda')) {
@@ -333,8 +348,8 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'geral',
       categoryLabel: 'Geral',
       roomName: 'Confessionário',
-      subTopicLabel: 'Preciso Desabafar',
-      subTopicIconName: 'CloudRain',
+      subTopicLabel: currentSubTopicLabel,
+      subTopicIconName: currentSubTopicIcon,
       iconName: 'Flame',
       badgeBg: 'rgba(168, 85, 247, 0.12)',
       badgeBorder: 'rgba(168, 85, 247, 0.35)',
@@ -347,13 +362,13 @@ export const getPostRoomDetails = (post: CommunityPost): PostRoomDetails => {
       categoryType: 'jornada',
       categoryLabel: 'Jornada',
       roomName: 'Novos Caminhos',
-      subTopicLabel: 'Preciso Desabafar',
-      subTopicIconName: 'CloudRain',
+      subTopicLabel: currentSubTopicLabel,
+      subTopicIconName: currentSubTopicIcon,
       iconName: 'Leaf',
       badgeBg: 'rgba(138, 154, 91, 0.12)',
       badgeBorder: 'rgba(138, 154, 91, 0.35)',
       badgeText: '#A3B18A',
-      selectionTarget: { type: 'jornada', journeyId: 'novos-caminhos', subOption: 'desabafar' }
+      selectionTarget: { type: 'jornada', journeyId: 'novos-caminhos', subOption: (currentIntention as any) || null }
     };
   }
   if (fullText.includes('casamento') || fullText.includes('marido') || fullText.includes('esposa') || fullText.includes('casal') || fullText.includes('relacionamento')) {
@@ -1090,7 +1105,8 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
     if (selectedEmotionId) {
       const activeEmotion = EMOTIONAL_CHECKINS.find(e => e.id === selectedEmotionId);
       if (activeEmotion && activeEmotion.intention) {
-        if (post.emotionalIntention !== activeEmotion.intention) return false;
+        const postIntention = post.emotionalIntention || (post as any).emotional_intention;
+        if (postIntention !== activeEmotion.intention) return false;
       }
     }
 
