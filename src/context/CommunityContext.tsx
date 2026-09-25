@@ -414,7 +414,7 @@ export const generateUUID = (): string => {
 };
 
 export type RoomSelectionTarget = 
-  | { type: 'jornada'; journeyId: string; subOption?: EmotionalIntention }
+  | { type: 'jornada'; journeyId: string; subOption?: EmotionalIntention | null }
   | { type: 'geral'; roomId: string }
   | { type: 'idade'; ageId: string }
   | { type: 'minhas-publicacoes' };

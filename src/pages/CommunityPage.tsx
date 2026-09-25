@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useCommunity, checkContentSensitivity, checkContentSensitivityAI } from '../context/CommunityContext';
+import { useCommunity, checkContentSensitivity, checkContentSensitivityAI, RoomSelectionTarget } from '../context/CommunityContext';
 import { useAuth, GENERIC_DEFAULT_AVATAR } from '../context/AuthContext';
 import { JOURNEYS_DATA, STRIPE_COMMUNITY_CHECKOUT_URL } from '../data/journeysData';
 import { useJourneys } from '../context/JourneysContext';
@@ -63,12 +63,7 @@ import { ReportModal } from '../components/community/ReportModal';
 import { renderRoomIcon } from '../components/community/CommunityIcons';
 export { renderRoomIcon };
 
-export type ActiveSelection = 
-  | { type: 'jornada'; journeyId: string; subOption?: 'ajuda' | 'celebrar' | 'desabafar' | null }
-  | { type: 'geral'; roomId: string }
-  | { type: 'idade'; ageId: string }
-  | { type: 'minhas-publicacoes' }
-  | null;
+export type ActiveSelection = RoomSelectionTarget | null;
 
 export interface PostRoomDetails {
   categoryType: 'jornada' | 'geral' | 'idade';
@@ -1540,47 +1535,51 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
             </div>
 
             {/* Sub-option pills for selected journey */}
-            {mobilePillJourneyId && (
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in bg-white/5 p-1.5 rounded-xl pe-4">
-                <button
-                  onClick={() => setActiveSelection({ type: 'jornada', journeyId: mobilePillJourneyId, subOption: null })}
-                  className={`shrink-0 snap-start px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer min-h-[38px] ${
-                    activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId && !activeSelection.subOption
-                      ? 'text-white border-transparent shadow-md'
-                      : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
-                  }`}
-                  style={activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId && !activeSelection.subOption && availableJourneys.find(j => j.id === mobilePillJourneyId) ? { backgroundColor: availableJourneys.find(j => j.id === mobilePillJourneyId)!.themeColor, borderColor: availableJourneys.find(j => j.id === mobilePillJourneyId)!.themeColor } : {}}
-                >
-                  <span>Todos</span>
-                </button>
-                {[
-                  { id: 'ajuda' as const,   label: 'Preciso de Ajuda' },
-                  { id: 'celebrar' as const, label: 'Celebrar' },
-                  { id: 'desabafar' as const, label: 'Desabafar' }
-                ].map(sub => {
-                  const isSelected = activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId && activeSelection.subOption === sub.id;
-                  const journey = JOURNEYS_DATA.find(j => j.id === mobilePillJourneyId);
-                  return (
-                    <button
-                      key={sub.id}
-                      onClick={() => setActiveSelection({ 
-                        type: 'jornada', 
-                        journeyId: mobilePillJourneyId, 
-                        subOption: activeSelection?.subOption === sub.id ? null : sub.id 
-                      })}
-                      className={`shrink-0 snap-start px-3.5 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer min-h-[38px] ${
-                        isSelected
-                          ? 'text-white border-transparent shadow-md'
-                          : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
-                      }`}
-                      style={isSelected && journey ? { backgroundColor: journey.themeColor, borderColor: journey.themeColor } : {}}
-                    >
-                      <span>{sub.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            {mobilePillJourneyId && (() => {
+              const mobileSubOption = activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId ? activeSelection.subOption : null;
+              const isAllSelected = activeSelection?.type === 'jornada' && activeSelection.journeyId === mobilePillJourneyId && !mobileSubOption;
+              const journey = availableJourneys.find(j => j.id === mobilePillJourneyId);
+              return (
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory animate-fade-in bg-white/5 p-1.5 rounded-xl pe-4">
+                  <button
+                    onClick={() => setActiveSelection({ type: 'jornada', journeyId: mobilePillJourneyId, subOption: null })}
+                    className={`shrink-0 snap-start px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer min-h-[38px] ${
+                      isAllSelected
+                        ? 'text-white border-transparent shadow-md'
+                        : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
+                    }`}
+                    style={isAllSelected && journey ? { backgroundColor: journey.themeColor, borderColor: journey.themeColor } : {}}
+                  >
+                    <span>Todos</span>
+                  </button>
+                  {[
+                    { id: 'ajuda' as const,   label: 'Preciso de Ajuda' },
+                    { id: 'celebrar' as const, label: 'Celebrar' },
+                    { id: 'desabafar' as const, label: 'Desabafar' }
+                  ].map(sub => {
+                    const isSelected = mobileSubOption === sub.id;
+                    return (
+                      <button
+                        key={sub.id}
+                        onClick={() => setActiveSelection({ 
+                          type: 'jornada', 
+                          journeyId: mobilePillJourneyId, 
+                          subOption: mobileSubOption === sub.id ? null : sub.id 
+                        })}
+                        className={`shrink-0 snap-start px-3.5 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer min-h-[38px] ${
+                          isSelected
+                            ? 'text-white border-transparent shadow-md'
+                            : 'bg-[#070D0F] text-slate-300 border-white/10 hover:border-white/25'
+                        }`}
+                        style={isSelected && journey ? { backgroundColor: journey.themeColor, borderColor: journey.themeColor } : {}}
+                      >
+                        <span>{sub.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -1717,65 +1716,68 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onExploreCatalog, 
                       </button>
 
                       {/* Drill-Down Sub-options */}
-                      {isExpanded && (
-                        <div className="pl-2 space-y-1 border-l-2 border-[#FF7F5B]/30 ml-2.5 animate-fade-in pt-0.5">
-                          <button
-                            onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: null })}
-                            className={`w-full min-h-[38px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
-                              isSelectedJourney && !activeSelection?.subOption
-                                ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
-                            }`}
-                          >
-                            <span>Todos os Conteúdos</span>
-                          </button>
+                      {isExpanded && (() => {
+                        const journeySubOption = activeSelection?.type === 'jornada' && activeSelection.journeyId === j.id ? activeSelection.subOption : null;
+                        return (
+                          <div className="pl-2 space-y-1 border-l-2 border-[#FF7F5B]/30 ml-2.5 animate-fade-in pt-0.5">
+                            <button
+                              onClick={() => setActiveSelection({ type: 'jornada', journeyId: j.id, subOption: null })}
+                              className={`w-full min-h-[38px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                                isSelectedJourney && !journeySubOption
+                                  ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
+                                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                              }`}
+                            >
+                              <span>Todos os Conteúdos</span>
+                            </button>
 
-                          <button
-                            onClick={() => setActiveSelection({ 
-                              type: 'jornada', 
-                              journeyId: j.id, 
-                              subOption: activeSelection?.subOption === 'ajuda' ? null : 'ajuda' 
-                            })}
-                            className={`w-full min-h-[38px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
-                              isSelectedJourney && activeSelection?.subOption === 'ajuda'
-                                ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
-                            }`}
-                          >
-                            <span>Preciso de Ajuda</span>
-                          </button>
+                            <button
+                              onClick={() => setActiveSelection({ 
+                                type: 'jornada', 
+                                journeyId: j.id, 
+                                subOption: journeySubOption === 'ajuda' ? null : 'ajuda' 
+                              })}
+                              className={`w-full min-h-[38px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                                isSelectedJourney && journeySubOption === 'ajuda'
+                                  ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
+                                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                              }`}
+                            >
+                              <span>Preciso de Ajuda</span>
+                            </button>
 
-                          <button
-                            onClick={() => setActiveSelection({ 
-                              type: 'jornada', 
-                              journeyId: j.id, 
-                              subOption: activeSelection?.subOption === 'celebrar' ? null : 'celebrar' 
-                            })}
-                            className={`w-full min-h-[38px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
-                              isSelectedJourney && activeSelection?.subOption === 'celebrar'
-                                ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
-                            }`}
-                          >
-                            <span>Vamos Celebrar</span>
-                          </button>
+                            <button
+                              onClick={() => setActiveSelection({ 
+                                type: 'jornada', 
+                                journeyId: j.id, 
+                                subOption: journeySubOption === 'celebrar' ? null : 'celebrar' 
+                              })}
+                              className={`w-full min-h-[38px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                                isSelectedJourney && journeySubOption === 'celebrar'
+                                  ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
+                                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                              }`}
+                            >
+                              <span>Vamos Celebrar</span>
+                            </button>
 
-                          <button
-                            onClick={() => setActiveSelection({ 
-                              type: 'jornada', 
-                              journeyId: j.id, 
-                              subOption: activeSelection?.subOption === 'desabafar' ? null : 'desabafar' 
-                            })}
-                            className={`w-full min-h-[38px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
-                              isSelectedJourney && activeSelection?.subOption === 'desabafar'
-                                ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
-                            }`}
-                          >
-                            <span>Preciso Desabafar</span>
-                          </button>
-                        </div>
-                      )}
+                            <button
+                              onClick={() => setActiveSelection({ 
+                                type: 'jornada', 
+                                journeyId: j.id, 
+                                subOption: journeySubOption === 'desabafar' ? null : 'desabafar' 
+                              })}
+                              className={`w-full min-h-[38px] flex items-center justify-between py-2 px-3 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                                isSelectedJourney && journeySubOption === 'desabafar'
+                                  ? 'bg-[#FF7F5B] text-slate-950 font-bold shadow-sm'
+                                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                              }`}
+                            >
+                              <span>Preciso Desabafar</span>
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}

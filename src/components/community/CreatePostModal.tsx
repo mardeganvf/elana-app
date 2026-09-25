@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useCommunity, checkContentSensitivityAI } from '../../context/CommunityContext';
+import { useCommunity, checkContentSensitivityAI, RoomSelectionTarget } from '../../context/CommunityContext';
 import { useToast } from '../../context/ToastContext';
 import { JOURNEYS_DATA } from '../../data/journeysData';
 import { TRANSVERSAL_ROOMS, AGE_BRACKET_ROOMS } from '../../data/communityData';
 import { EmotionalIntention } from '../../types';
 import { X } from 'lucide-react';
 
-export type ActiveSelection = 
-  | { type: 'jornada'; journeyId: string; subOption?: EmotionalIntention | null }
-  | { type: 'geral'; roomId: string }
-  | { type: 'idade'; ageId: string }
-  | null;
+export type ActiveSelection = RoomSelectionTarget | null;
 
 interface CreatePostModalProps {
   onClose: () => void;
