@@ -356,9 +356,43 @@ BEGIN
 
   RETURN FALSE;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
--- 🛡️ BLINDAGEM DE SEGURANÇA: Impede auto-promoção a Administrador, auto-desbanimento e auto-ativação de assinatura
+-- 🛡️ RBAC & RLS UNIFICADOS: Valida permissão contra public.role_permissions ou perfil administrativo
+CREATE OR REPLACE FUNCTION public.has_permission(perm_key TEXT)
+RETURNS BOOLEAN AS $$
+DECLARE
+  user_role TEXT;
+BEGIN
+  -- 1. Service role ou superadmin postgres
+  IF public.is_admin() THEN
+    RETURN TRUE;
+  END IF;
+
+  IF auth.uid() IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  -- 2. Consulta o papel do perfil
+  SELECT LOWER(COALESCE(role, 'membro')) INTO user_role FROM public.profiles WHERE id = auth.uid();
+  IF user_role IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  IF user_role = 'admin' OR user_role = 'administrador' THEN
+    RETURN TRUE;
+  END IF;
+
+  -- 3. Verifica se a permissão está habilitada na tabela role_permissions
+  RETURN EXISTS (
+    SELECT 1 FROM public.role_permissions
+    WHERE role = user_role
+    AND (permissions ->> perm_key)::boolean = true
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- 🛡️ BLINDAGEM DE SEGURANÇA: Impede auto-promoção a Administrador, auto-desbanimento, auto-ativação de assinatura e manipulação arbitrária de gamificação
 CREATE OR REPLACE FUNCTION public.protect_profile_role()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -376,6 +410,10 @@ BEGIN
       NEW.community_access_expires_at := NULL;
       NEW.stripe_customer_id := NULL;
       NEW.community_subscription_id := NULL;
+      -- Garante inicialização limpa de gamificação
+      NEW.xp := COALESCE(NEW.xp, 0);
+      NEW.level_number := 1;
+      NEW.streak_days := COALESCE(NEW.streak_days, 1);
     END IF;
   ELSIF TG_OP = 'UPDATE' THEN
     IF NEW.role IS DISTINCT FROM OLD.role AND NOT public.is_admin() THEN
@@ -402,6 +440,36 @@ BEGIN
       NEW.community_access_expires_at := OLD.community_access_expires_at;
       NEW.stripe_customer_id := OLD.stripe_customer_id;
       NEW.community_subscription_id := OLD.community_subscription_id;
+    END IF;
+
+    -- 🛡️ BLINDAGEM DE GAMIFICAÇÃO: Impede saltos arbitrários de XP, dias de streak e níveis no client PostgREST
+    IF NOT public.is_admin() THEN
+      -- Limite de incremento de XP por requisição (máx 150 XP por operação legítima de aula/badge)
+      IF NEW.xp > OLD.xp + 150 THEN
+        NEW.xp := OLD.xp;
+      ELSIF NEW.xp < OLD.xp THEN
+        NEW.xp := OLD.xp; -- Impede decremento fraudulento
+      END IF;
+
+      -- Nível deve ser estritamente consistente com o XP (recalculado pelo banco)
+      IF NEW.level_number IS DISTINCT FROM OLD.level_number THEN
+        IF NEW.xp < 100 THEN NEW.level_number := 1;
+        ELSIF NEW.xp < 300 THEN NEW.level_number := 2;
+        ELSIF NEW.xp < 600 THEN NEW.level_number := 3;
+        ELSIF NEW.xp < 1000 THEN NEW.level_number := 4;
+        ELSIF NEW.xp < 1500 THEN NEW.level_number := 5;
+        ELSIF NEW.xp < 2100 THEN NEW.level_number := 6;
+        ELSIF NEW.xp < 2800 THEN NEW.level_number := 7;
+        ELSIF NEW.xp < 3600 THEN NEW.level_number := 8;
+        ELSIF NEW.xp < 4500 THEN NEW.level_number := 9;
+        ELSE NEW.level_number := 10;
+        END IF;
+      END IF;
+
+      -- Streak days não pode saltar arbitrariamente
+      IF NEW.streak_days > OLD.streak_days + 1 THEN
+        NEW.streak_days := OLD.streak_days;
+      END IF;
     END IF;
   END IF;
   RETURN NEW;
@@ -880,25 +948,116 @@ DROP POLICY IF EXISTS "sos_insert_auth" ON public.sos_tickets;
 DROP POLICY IF EXISTS "sos_update_auth" ON public.sos_tickets;
 DROP POLICY IF EXISTS "sos_delete_auth" ON public.sos_tickets;
 
--- 🛡️ PRIVACIDADE E LGPD: Apenas o autor da crise emocional ou a equipe de acolhimento (admin) podem ver o chamado
+-- 🛡️ PRIVACIDADE E LGPD: Apenas o autor da crise emocional ou a equipe de acolhimento (admin/guia com permissão) podem ver o chamado
 CREATE POLICY "sos_select_auth"
   ON public.sos_tickets FOR SELECT
-  USING (auth.uid() = profile_id OR public.is_admin());
+  USING (auth.uid() = profile_id OR public.has_permission('admin_sos_reply'));
 
 -- Usuário autenticado cria o próprio chamado ou administrador abre chamado
 CREATE POLICY "sos_insert_auth"
   ON public.sos_tickets FOR INSERT
-  WITH CHECK (auth.uid() = profile_id OR public.is_admin());
+  WITH CHECK (auth.uid() = profile_id OR public.has_permission('admin_sos_reply'));
 
--- Apenas o autor ou administrador podem responder e atualizar mensagens
+-- Apenas o autor ou equipe de acolhimento com permissão podem responder e atualizar mensagens
 CREATE POLICY "sos_update_auth"
   ON public.sos_tickets FOR UPDATE
-  USING (auth.uid() = profile_id OR public.is_admin());
+  USING (auth.uid() = profile_id OR public.has_permission('admin_sos_reply'));
 
--- Exclusão de tickets sensíveis restrita exclusivamente para administradores
+-- Exclusão de tickets sensíveis restrita exclusivamente para administradores ou autorizados
 CREATE POLICY "sos_delete_auth"
   ON public.sos_tickets FOR DELETE
-  USING (public.is_admin());
+  USING (public.has_permission('admin_sos_reply'));
+
+-- 🛡️ ATOMICIDADE E ANTI-CONCORRÊNCIA (TOCTOU): Concatena atomicamente nova mensagem em sos_tickets
+CREATE OR REPLACE FUNCTION public.append_sos_message(
+  p_ticket_id UUID,
+  p_message JSONB,
+  p_status TEXT DEFAULT NULL,
+  p_admin_reply TEXT DEFAULT NULL,
+  p_user_message TEXT DEFAULT NULL,
+  p_is_read BOOLEAN DEFAULT FALSE
+)
+RETURNS JSONB AS $$
+DECLARE
+  v_ticket RECORD;
+  v_updated_messages JSONB;
+BEGIN
+  -- Bloqueio pessimista de linha (FOR UPDATE) para garantir atomicidade estrita
+  SELECT * INTO v_ticket 
+  FROM public.sos_tickets 
+  WHERE id = p_ticket_id 
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Ticket % não encontrado', p_ticket_id;
+  END IF;
+
+  -- Validação de autorização: o titular ou usuário com papel/permissão de suporte
+  IF NOT (v_ticket.profile_id = auth.uid() OR public.has_permission('admin_sos_reply')) THEN
+    RAISE EXCEPTION 'Não autorizado a responder a este chamado';
+  END IF;
+
+  UPDATE public.sos_tickets
+  SET 
+    messages = COALESCE(messages, '[]'::jsonb) || p_message,
+    status = COALESCE(p_status, status),
+    admin_reply = COALESCE(p_admin_reply, admin_reply),
+    replied_at = CASE WHEN p_admin_reply IS NOT NULL THEN NOW() ELSE replied_at END,
+    user_message = COALESCE(p_user_message, user_message),
+    message = COALESCE(p_user_message, message),
+    is_read = p_is_read,
+    updated_at = NOW()
+  WHERE id = p_ticket_id
+  RETURNING messages INTO v_updated_messages;
+
+  RETURN v_updated_messages;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 🛡️ VERIFICAÇÃO DE PAYWALL SERVER-SIDE: Valida se o usuário tem direito à aula antes da liberação
+CREATE OR REPLACE FUNCTION public.verify_lesson_access(
+  p_journey_id TEXT,
+  p_lesson_id TEXT
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_is_purchased BOOLEAN;
+  v_has_active_subscription BOOLEAN;
+BEGIN
+  -- Aulas de demonstração gratuitas são públicas por definição
+  IF p_lesson_id ~* '(-1|-01)$' OR p_lesson_id IN ('prn-1-1', 'cp-1-1', 'sing-1-1', 'ae-1-1', 'nc-1-1', 'ds-1-1') THEN
+    RETURN TRUE;
+  END IF;
+
+  -- Se não autenticado, aulas fechadas são estritamente bloqueadas
+  IF auth.uid() IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  -- Administradores têm acesso total de visualização/auditoria
+  IF public.is_admin() THEN
+    RETURN TRUE;
+  END IF;
+
+  -- Verifica compra individual da jornada
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_purchased_journeys
+    WHERE profile_id = auth.uid()
+    AND journey_id = p_journey_id
+  ) INTO v_is_purchased;
+
+  IF v_is_purchased THEN
+    RETURN TRUE;
+  END IF;
+
+  -- Verifica assinatura ativa com acesso liberado
+  SELECT (community_subscription_status = 'active') INTO v_has_active_subscription
+  FROM public.profiles
+  WHERE id = auth.uid();
+
+  RETURN COALESCE(v_has_active_subscription, false);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
 -- ========================================================
 -- STORAGE: BUCKET user-media — uploads apenas autenticados,
@@ -1354,22 +1513,39 @@ CREATE TABLE IF NOT EXISTS public.journey_interests (
   user_email TEXT,
   user_name TEXT,
   user_phone TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT chk_lead_email CHECK (user_email IS NULL OR user_email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+  CONSTRAINT chk_lead_name_len CHECK (user_name IS NULL OR char_length(user_name) <= 150),
+  CONSTRAINT chk_lead_phone_len CHECK (user_phone IS NULL OR char_length(user_phone) <= 35),
+  CONSTRAINT chk_lead_journey_len CHECK (char_length(journey_id) <= 100)
 );
 
 ALTER TABLE public.journey_interests ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow public insert on journey_interests" ON public.journey_interests;
+-- 🛡️ BLINDAGEM ANTI-SPAM & SPOOFING: Impede spoofing de user_id e exige formato válido de contato
 CREATE POLICY "Allow public insert on journey_interests" 
-  ON public.journey_interests FOR INSERT WITH CHECK (true);
+  ON public.journey_interests FOR INSERT 
+  WITH CHECK (
+    (auth.uid() IS NULL OR user_id IS NULL OR user_id = auth.uid())
+    AND (
+      (user_email IS NOT NULL AND user_email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+      OR (user_phone IS NOT NULL AND char_length(user_phone) >= 8)
+    )
+  );
 
 DROP POLICY IF EXISTS "Allow public select on journey_interests" ON public.journey_interests;
 DROP POLICY IF EXISTS "interests_select_admin" ON public.journey_interests;
 
--- 🛡️ BLINDAGEM LGPD: Somente administradores ou o próprio titular podem consultar os dados de lead
+-- 🛡️ BLINDAGEM LGPD: Apenas administradores/gestores de conteúdo ou o próprio titular podem consultar os dados de lead
 CREATE POLICY "interests_select_admin" 
   ON public.journey_interests FOR SELECT 
-  USING (public.is_admin() OR (auth.uid() IS NOT NULL AND auth.uid() = user_id));
+  USING (public.has_permission('admin_content_mgmt') OR (auth.uid() IS NOT NULL AND auth.uid() = user_id));
+
+DROP POLICY IF EXISTS "interests_delete_admin" ON public.journey_interests;
+CREATE POLICY "interests_delete_admin" 
+  ON public.journey_interests FOR DELETE 
+  USING (public.has_permission('admin_content_mgmt') OR (auth.uid() IS NOT NULL AND auth.uid() = user_id));
 
 -- --------------------------------------------------------
 -- AUTO-APRENDIZADO DA MODERAÇÃO (HUMAN-IN-THE-LOOP / PGVECTOR)
@@ -1428,10 +1604,10 @@ DROP POLICY IF EXISTS "moderation_examples_select" ON public.moderation_rejected
 DROP POLICY IF EXISTS "moderation_examples_admin" ON public.moderation_rejected_examples;
 
 CREATE POLICY "moderation_examples_select" ON public.moderation_rejected_examples
-  FOR SELECT USING (public.is_admin());
+  FOR SELECT USING (public.has_permission('admin_moderation'));
 
 CREATE POLICY "moderation_examples_admin" ON public.moderation_rejected_examples
-  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+  FOR ALL USING (public.has_permission('admin_moderation')) WITH CHECK (public.has_permission('admin_moderation'));
 
 -- --------------------------------------------------------
 -- 35. PURGE DUMMY DATA & REAL EMOTIONAL THERMOMETER ACCESS

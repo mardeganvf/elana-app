@@ -175,6 +175,16 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
     }
   };
 
+  const sanitizeCsvField = (val: string | number | null | undefined): string => {
+    if (val === null || val === undefined) return '""';
+    let str = String(val).replace(/"/g, '""');
+    // 🛡️ MITIGAÇÃO CSV INJECTION (DDE): Neutraliza fórmulas iniciadas com =, +, -, @, tabulação ou carriage return
+    if (/^[=\+\-@\t\r]/.test(str)) {
+      str = `'${str}`;
+    }
+    return `"${str}"`;
+  };
+
   const handleExportInterestsCSV = () => {
     if (interestsList.length === 0) {
       notify('info', 'Não há interessados para exportar.');
@@ -186,14 +196,16 @@ export const AdminContentManager: React.FC<AdminContentManagerProps> = ({
       const phone = item.user_phone || item.profiles?.phone || '-';
       const name = item.user_name || item.profiles?.name || 'Usuário Visitante';
       const email = item.user_email || item.profiles?.email || '-';
+      const journey = interestsJourney?.title || item.journey_id || '-';
+      const date = new Date(item.created_at).toLocaleString('pt-BR');
 
       return [
         idx + 1,
-        `"${interestsJourney?.title || item.journey_id}"`,
-        `"${name}"`,
-        `"${email}"`,
-        `"${phone}"`,
-        `"${new Date(item.created_at).toLocaleString('pt-BR')}"`
+        sanitizeCsvField(journey),
+        sanitizeCsvField(name),
+        sanitizeCsvField(email),
+        sanitizeCsvField(phone),
+        sanitizeCsvField(date)
       ];
     });
 

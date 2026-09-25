@@ -937,39 +937,62 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToHome, onOpenLogin 
         createdAt: formattedTime
       };
 
-      let latestMessages = selectedSosTicket.messages || [];
+      let nextMessages = [...(selectedSosTicket.messages || []), adminMsg];
+
+      // 🛡️ ATOMICIDADE & ANTI-TOCTOU: Gravação atômica via RPC append_sos_message no Postgres
+      let rpcSucceeded = false;
       try {
-        const { data: latestRow } = await supabase
-          .from('sos_tickets')
-          .select('messages')
-          .eq('id', selectedSosTicket.id)
-          .maybeSingle();
-        if (latestRow && Array.isArray(latestRow.messages) && latestRow.messages.length > 0) {
-          latestMessages = latestRow.messages;
+        const { data: rpcMessages, error: rpcErr } = await supabase.rpc('append_sos_message', {
+          p_ticket_id: selectedSosTicket.id,
+          p_message: adminMsg,
+          p_status: 'em_atendimento',
+          p_admin_reply: replyText,
+          p_is_read: false
+        });
+
+        if (!rpcErr && Array.isArray(rpcMessages)) {
+          nextMessages = deduplicateSosMessages(rpcMessages);
+          rpcSucceeded = true;
         }
-      } catch (err) {
-        console.warn('Erro ao ler mensagens mais recentes:', err);
+      } catch (e) {
+        console.warn('RPC append_sos_message falhou, acionando fallback:', e);
       }
 
-      const cleanLatest = deduplicateSosMessages(latestMessages);
-      const lastMsg = cleanLatest[cleanLatest.length - 1];
-      const isAlreadyAdded = lastMsg && lastMsg.sender === 'admin' && lastMsg.text.trim() === replyText;
-      const nextMessages = isAlreadyAdded ? cleanLatest : [...cleanLatest, adminMsg];
+      if (!rpcSucceeded) {
+        let latestMessages = selectedSosTicket.messages || [];
+        try {
+          const { data: latestRow } = await supabase
+            .from('sos_tickets')
+            .select('messages')
+            .eq('id', selectedSosTicket.id)
+            .maybeSingle();
+          if (latestRow && Array.isArray(latestRow.messages) && latestRow.messages.length > 0) {
+            latestMessages = latestRow.messages;
+          }
+        } catch (err) {
+          console.warn('Erro ao ler mensagens mais recentes:', err);
+        }
 
-      if (!isAlreadyAdded) {
-        const { error: updateErr } = await supabase
-          .from('sos_tickets')
-          .update({
-            status: 'em_atendimento',
-            admin_reply: replyText,
-            replied_at: new Date().toISOString(),
-            messages: nextMessages,
-            is_read: false
-          })
-          .eq('id', selectedSosTicket.id);
+        const cleanLatest = deduplicateSosMessages(latestMessages);
+        const lastMsg = cleanLatest[cleanLatest.length - 1];
+        const isAlreadyAdded = lastMsg && lastMsg.sender === 'admin' && lastMsg.text.trim() === replyText;
+        nextMessages = isAlreadyAdded ? cleanLatest : [...cleanLatest, adminMsg];
 
-        if (updateErr) {
-          throw updateErr;
+        if (!isAlreadyAdded) {
+          const { error: updateErr } = await supabase
+            .from('sos_tickets')
+            .update({
+              status: 'em_atendimento',
+              admin_reply: replyText,
+              replied_at: new Date().toISOString(),
+              messages: nextMessages,
+              is_read: false
+            })
+            .eq('id', selectedSosTicket.id);
+
+          if (updateErr) {
+            throw updateErr;
+          }
         }
       }
 

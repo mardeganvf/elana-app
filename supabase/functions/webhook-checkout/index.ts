@@ -107,7 +107,6 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const queryToken = url.searchParams.get('token') || url.searchParams.get('secret');
     const queryJourneyId = url.searchParams.get('journey_id') || url.searchParams.get('journey');
 
     const rawBody = await req.text();
@@ -119,7 +118,18 @@ Deno.serve(async (req) => {
       body = Object.fromEntries(params.entries());
     }
 
-    // ── 1. Validação de Segurança do Webhook ──
+    // ── 1. Validação de Segurança do Webhook (Fail-Closed) ──
+    if (!webhookSecret) {
+      console.error('[CRITICAL SECURITY] Webhook rejeitado: STRIPE_WEBHOOK_SECRET ou WEBHOOK_SECRET não configurado.');
+      return new Response(JSON.stringify({ 
+        error: 'SERVER_MISCONFIGURATION', 
+        message: 'Serviço de webhook temporariamente inoperante por motivo de segurança de autenticação.' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const stripeSignature = req.headers.get('stripe-signature');
     const headerToken = req.headers.get('x-webhook-token') 
       || req.headers.get('x-kiwify-token') 
@@ -128,23 +138,28 @@ Deno.serve(async (req) => {
     const isStripe = Boolean(stripeSignature || body.object === 'event' || body.type?.startsWith('checkout.') || body.type?.startsWith('customer.') || body.type?.startsWith('invoice.'));
 
     if (isStripe) {
-      if (webhookSecret) {
-        const isValid = await verifyStripeSignature(rawBody, stripeSignature, webhookSecret);
-        if (!isValid) {
-          console.warn('⚠️ Stripe Webhook rejeitado: Assinatura stripe-signature inválida ou expirada.');
-          return new Response(JSON.stringify({ error: 'INVALID_STRIPE_SIGNATURE', message: 'Assinatura Stripe inválida' }), {
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-      } else {
-        console.warn('⚠️ AVISO DE SEGURANÇA: STRIPE_WEBHOOK_SECRET não configurado no ambiente Supabase Edge Functions.');
+      if (!stripeSignature) {
+        console.warn('⚠️ Stripe Webhook rejeitado: Cabeçalho stripe-signature ausente.');
+        return new Response(JSON.stringify({ error: 'MISSING_STRIPE_SIGNATURE', message: 'Assinatura Stripe obrigatória' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const isValid = await verifyStripeSignature(rawBody, stripeSignature, webhookSecret);
+      if (!isValid) {
+        console.warn('⚠️ Stripe Webhook rejeitado: Assinatura stripe-signature inválida ou expirada.');
+        return new Response(JSON.stringify({ error: 'INVALID_STRIPE_SIGNATURE', message: 'Assinatura Stripe inválida' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
     } else {
-      const providedToken = queryToken || headerToken || bodyToken;
-      if (webhookSecret && (!providedToken || providedToken !== webhookSecret)) {
-        console.warn('⚠️ Webhook rejeitado: Token inválido ou ausente.');
-        return new Response(JSON.stringify({ error: 'UNAUTHORIZED_WEBHOOK_TOKEN' }), {
+      // Requer token no header ou body (não aceita via query string por segurança de logs/referers)
+      const providedToken = headerToken || bodyToken;
+      if (!providedToken || providedToken !== webhookSecret) {
+        console.warn('⚠️ Webhook rejeitado: Token ausente ou inválido.');
+        return new Response(JSON.stringify({ error: 'UNAUTHORIZED_WEBHOOK_TOKEN', message: 'Token de webhook não autorizado' }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });

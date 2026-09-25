@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { NotebookModal } from '../components/gamification/NotebookModal';
 import { CheckoutModal } from '../components/catalog/CheckoutModal';
+import { supabase } from '../lib/supabase';
 
 // Helper to resolve embed URL (Panda Video, YouTube, Vimeo, iframe code)
 const getEmbedUrl = (url: string): string | null => {
@@ -139,12 +140,67 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     description: 'Comece respirando fundo. Aqui você não está só.'
   };
 
-  // ── ACCESS GATE ────────────────────────────────────────────────────────────
+  // ── ACCESS GATE (Defesa em Profundidade: Client-State + Server-Side RPC) ────
   // A 1ª aula do 1º módulo é sempre a degustação gratuita.
-  // Todas as outras requerem que a jornada tenha sido adquirida.
   const isPurchased = user?.purchasedJourneyIds?.includes(currentJourney.id) ?? false;
   const freePreviewLessonId = currentJourney.modules[0]?.lessons[0]?.id;
-  const isCurrentLessonLocked = !isPurchased && activeLesson.id !== freePreviewLessonId;
+  const isFreePreview = activeLesson.id === freePreviewLessonId;
+
+  // Estado de autorização autoritativa validada pelo servidor
+  const [serverAuthorized, setServerAuthorized] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (isFreePreview) {
+      setServerAuthorized(true);
+      return;
+    }
+
+    if (!user) {
+      setServerAuthorized(false);
+      return;
+    }
+
+    const checkServerAccess = async () => {
+      try {
+        const { data, error } = await supabase.rpc('verify_lesson_access', {
+          p_journey_id: currentJourney.id,
+          p_lesson_id: activeLesson.id,
+        });
+
+        if (!isMounted) return;
+
+        if (!error && typeof data === 'boolean') {
+          setServerAuthorized(data);
+        } else {
+          // Fallback defensivo com base em privilégios caso a RPC retorne nulo ou erro de migração
+          const fallback = user.role === 'admin' || user.role === 'superadmin' || Boolean(user.purchasedJourneyIds?.includes(currentJourney.id));
+          setServerAuthorized(fallback);
+        }
+      } catch (err) {
+        if (isMounted) {
+          const fallback = user.role === 'admin' || user.role === 'superadmin' || Boolean(user.purchasedJourneyIds?.includes(currentJourney.id));
+          setServerAuthorized(fallback);
+        }
+      }
+    };
+
+    checkServerAccess();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeLesson.id, currentJourney.id, user?.id, isFreePreview]);
+
+  // Se o servidor desautorizar ou se ainda não validou e não consta localmente, bloqueia
+  const isCurrentLessonLocked = !isFreePreview && (
+    serverAuthorized === false ||
+    (serverAuthorized === null && !isPurchased && user?.role !== 'admin' && user?.role !== 'superadmin')
+  );
+
+  // URL segura: se bloqueado, a URL de streaming NUNCA é enviada ao DOM ou executada
+  const safeVideoUrl = isCurrentLessonLocked ? '' : (activeLesson.videoUrl || '');
 
   // Helper: Format seconds into MM:SS
   const formatSecondsToTime = (totalSeconds: number): string => {
@@ -347,7 +403,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
 
   const handleToggleAudioPlay = () => {
     if (isCurrentLessonLocked) return;
-    const isPanda = Boolean(getEmbedUrl(activeLesson.videoUrl));
+    const isPanda = Boolean(getEmbedUrl(safeVideoUrl));
     if (isPanda) {
       try {
         if ((window as any).PandaPlayer) {
@@ -372,7 +428,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
 
   const handleSeekAudio = (deltaSeconds: number) => {
     if (isCurrentLessonLocked) return;
-    const isPanda = Boolean(getEmbedUrl(activeLesson.videoUrl));
+    const isPanda = Boolean(getEmbedUrl(safeVideoUrl));
     const target = Math.max(0, audioCurrentTime + deltaSeconds);
     if (isPanda) {
       try {
@@ -392,7 +448,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   };
 
   const resumeToTimestamp = (seconds: number) => {
-    const isPanda = Boolean(getEmbedUrl(activeLesson.videoUrl));
+    const isPanda = Boolean(getEmbedUrl(safeVideoUrl));
     const target = Math.max(0, seconds);
 
     const sendPandaSeekAndPlay = () => {
@@ -444,7 +500,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
   };
 
   const handleSeekToTime = (targetSeconds: number) => {
-    const isPanda = Boolean(getEmbedUrl(activeLesson.videoUrl));
+    const isPanda = Boolean(getEmbedUrl(safeVideoUrl));
     const target = Math.max(0, targetSeconds);
     if (isPanda) {
       try {
@@ -513,7 +569,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
 
   // Monitoramento de Adblock / Falha de Carregamento do Panda Video [MEDIA-ADBK-01]
   useEffect(() => {
-    const embedUrl = getEmbedUrl(activeLesson.videoUrl);
+    const embedUrl = getEmbedUrl(safeVideoUrl);
     if (isCurrentLessonLocked || !embedUrl) {
       setAdblockWarning(false);
       hasReceivedVideoEventRef.current = false;
@@ -533,7 +589,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
     return () => {
       clearTimeout(adblockTimer);
     };
-  }, [activeLesson.id, activeLesson.videoUrl, isCurrentLessonLocked, playerReloadKey]);
+  }, [activeLesson.id, safeVideoUrl, isCurrentLessonLocked, playerReloadKey]);
 
   // Carregar anotação existente da aula se houver
   useEffect(() => {
@@ -870,11 +926,11 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
 
                 {/* Player Container: Iframe do Panda Video ou HTML5 Video */}
                 <div className={`w-full h-full ${mediaMode === 'audio' ? 'opacity-0 pointer-events-none absolute inset-0 -z-10' : 'relative group'}`}>
-                  {getEmbedUrl(activeLesson.videoUrl) ? (
+                  {getEmbedUrl(safeVideoUrl) ? (
                     <iframe
                       id="panda-player"
-                      key={`${activeLesson.id}-${activeLesson.videoUrl}-${playerReloadKey}`}
-                      src={getEmbedUrl(activeLesson.videoUrl)!}
+                      key={`${activeLesson.id}-${safeVideoUrl}-${playerReloadKey}`}
+                      src={getEmbedUrl(safeVideoUrl)!}
                       title={activeLesson.title}
                       className="w-full h-full border-0 rounded-3xl"
                       style={{ border: 'none', position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
@@ -889,7 +945,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                   ) : (
                     <>
 
-                      {!activeLesson.videoUrl || activeLesson.videoUrl === '#' ? (
+                      {!safeVideoUrl || safeVideoUrl === '#' ? (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#101B1E] via-[#0A1215] to-[#070D0F] p-6 text-center space-y-3 relative overflow-hidden">
                           <div className="absolute w-64 h-64 rounded-full bg-[#FF7F5B]/10 blur-3xl pointer-events-none -top-10" />
                           <div className="relative z-10 w-14 h-14 rounded-2xl bg-[#FF7F5B]/15 border border-[#FF7F5B]/30 flex items-center justify-center text-2xl shadow-xl">
@@ -941,7 +997,7 @@ export const ClassroomPage: React.FC<ClassroomPageProps> = ({
                           className="w-full h-full object-cover"
                           poster={activeLesson.thumbnailUrl || "https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=1000&auto=format&fit=crop&q=80"}
                         >
-                          <source src={activeLesson.videoUrl} type="video/mp4" />
+                          <source src={safeVideoUrl} type="video/mp4" />
                           Seu navegador não suporta a execução deste vídeo.
                         </video>
                       )}

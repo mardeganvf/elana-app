@@ -209,13 +209,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   } | null>(null);
 
   const [sosResponse, setSosResponse] = useState<SOSTicketResponse | null>(() => {
-    const savedTicket = localStorage.getItem('elana_sos_ticket_response');
-    if (savedTicket) {
-      try {
-        return JSON.parse(savedTicket);
-      } catch (e) {
-        return null;
+    // 🛡️ LGPD & PRIVACIDADE: Armazenamento efêmero em sessionStorage para evitar persistência indevida de dados de crise
+    try {
+      if (typeof window !== 'undefined') {
+        // Limpeza defensiva de resíduo legado em localStorage
+        const legacy = localStorage.getItem('elana_sos_ticket_response');
+        if (legacy) {
+          localStorage.removeItem('elana_sos_ticket_response');
+          try { sessionStorage.setItem('elana_sos_ticket_response', legacy); } catch {}
+        }
+
+        const savedTicket = sessionStorage.getItem('elana_sos_ticket_response');
+        if (savedTicket) {
+          return JSON.parse(savedTicket);
+        }
       }
+    } catch (e) {
+      return null;
     }
     return null;
   });
@@ -300,7 +310,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (ticketData) {
         // Se o ticket já foi arquivado e o usuário limpou localmente, não reabre
-        const localSaved = localStorage.getItem('elana_sos_ticket_response');
+        const localSaved = typeof window !== 'undefined' ? sessionStorage.getItem('elana_sos_ticket_response') : null;
         if (ticketData.status === 'arquivado' && !localSaved) {
           return;
         }
@@ -345,7 +355,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         setSosResponse(parsed);
-        localStorage.setItem('elana_sos_ticket_response', JSON.stringify(parsed));
+        try {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('elana_sos_ticket_response', JSON.stringify(parsed));
+          }
+        } catch {}
       }
     } catch (err) {
       console.warn('Notice fetching SOS ticket:', err);
@@ -1639,7 +1653,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setSosResponse(newTicket);
-    localStorage.setItem('elana_sos_ticket_response', JSON.stringify(newTicket));
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('elana_sos_ticket_response', JSON.stringify(newTicket));
+      }
+    } catch {}
 
     // Notificação push acolhedora informando sobre a equipe e apoio especializado de urgência
     triggerSosPushNotification(
@@ -1667,7 +1685,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         newTicket.id = data.id;
         newTicket.ticketId = data.id;
         setSosResponse({ ...newTicket, id: data.id, ticketId: data.id });
-        localStorage.setItem('elana_sos_ticket_response', JSON.stringify({ ...newTicket, id: data.id, ticketId: data.id }));
+        try {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('elana_sos_ticket_response', JSON.stringify({ ...newTicket, id: data.id, ticketId: data.id }));
+          }
+        } catch {}
       }
     } catch (e) {
       console.error('Error saving SOS ticket to Supabase:', e);
@@ -1688,21 +1710,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     let baseMessages = sosResponse?.messages || [];
-    if (ticketId && ticketId.length > 20) {
-      try {
-        const { data: latestRow } = await supabase
-          .from('sos_tickets')
-          .select('messages')
-          .eq('id', ticketId)
-          .maybeSingle();
-        if (latestRow && Array.isArray(latestRow.messages) && latestRow.messages.length > 0) {
-          baseMessages = latestRow.messages;
-        }
-      } catch (err) {
-        console.warn('Notice fetching latest SOS messages:', err);
-      }
-    }
-
     const cleanBase = deduplicateSosMessages(baseMessages);
     const last = cleanBase[cleanBase.length - 1];
     const isAlreadyAdded = last && last.sender === 'user' && last.text.trim() === trimmed;
@@ -1717,22 +1724,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setSosResponse(nextTicket);
-    localStorage.setItem('elana_sos_ticket_response', JSON.stringify(nextTicket));
-
     try {
-      if (ticketId && ticketId.length > 20 && !isAlreadyAdded) {
-        await supabase
-          .from('sos_tickets')
-          .update({
-            status: 'pendente',
-            messages: currentMessages,
-            user_message: trimmed,
-            message: trimmed
-          })
-          .eq('id', ticketId);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('elana_sos_ticket_response', JSON.stringify(nextTicket));
       }
-    } catch (err) {
-      console.warn('Erro ao atualizar mensagem de réplica do SOS:', err);
+    } catch {}
+
+    // 🛡️ ATOMICIDADE & ANTI-TOCTOU: Gravação atômica via RPC append_sos_message no Postgres
+    if (ticketId && ticketId.length > 20 && !isAlreadyAdded) {
+      let rpcSuccess = false;
+      try {
+        const { data: rpcMsgs, error: rpcErr } = await supabase.rpc('append_sos_message', {
+          p_ticket_id: ticketId,
+          p_message: newMsg,
+          p_status: 'pendente',
+          p_user_message: trimmed,
+          p_is_read: true
+        });
+
+        if (!rpcErr && Array.isArray(rpcMsgs)) {
+          rpcSuccess = true;
+          setSosResponse(prev => prev ? { ...prev, messages: deduplicateSosMessages(rpcMsgs) } : null);
+        }
+      } catch (err) {
+        console.warn('Notice append_sos_message RPC fallback:', err);
+      }
+
+      if (!rpcSuccess) {
+        try {
+          await supabase
+            .from('sos_tickets')
+            .update({
+              status: 'pendente',
+              messages: currentMessages,
+              user_message: trimmed,
+              message: trimmed
+            })
+            .eq('id', ticketId);
+        } catch (err) {
+          console.warn('Erro ao atualizar mensagem de réplica do SOS:', err);
+        }
+      }
     }
   };
 
@@ -1748,12 +1780,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: formattedTime
     };
 
+    let nextMsgs: SOSMessage[] = [];
     setSosResponse(prev => {
       if (!prev) return null;
       const prevMessages = deduplicateSosMessages(prev.messages || []);
       const last = prevMessages[prevMessages.length - 1];
       const isAlreadyAdded = last && last.sender === 'admin' && last.text.trim() === trimmedReply;
-      const nextMsgs = isAlreadyAdded ? prevMessages : [...prevMessages, adminMsg];
+      nextMsgs = isAlreadyAdded ? prevMessages : [...prevMessages, adminMsg];
 
       const updated: SOSTicketResponse = {
         ...prev,
@@ -1763,37 +1796,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isRead: false,
         messages: nextMsgs
       };
-      localStorage.setItem('elana_sos_ticket_response', JSON.stringify(updated));
+      try {
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('elana_sos_ticket_response', JSON.stringify(updated));
+        }
+      } catch {}
       return updated;
     });
 
-    try {
-      if (ticketId && ticketId.length > 20) {
-        const { data } = await supabase
-          .from('sos_tickets')
-          .select('messages')
-          .eq('id', ticketId)
-          .maybeSingle();
+    if (ticketId && ticketId.length > 20) {
+      let rpcSuccess = false;
+      try {
+        const { data: rpcMsgs, error: rpcErr } = await supabase.rpc('append_sos_message', {
+          p_ticket_id: ticketId,
+          p_message: adminMsg,
+          p_status: 'em_atendimento',
+          p_admin_reply: trimmedReply,
+          p_is_read: false
+        });
 
-        const current = deduplicateSosMessages(Array.isArray(data?.messages) ? data.messages : []);
-        const last = current[current.length - 1];
-        const isAlreadyAdded = last && last.sender === 'admin' && last.text.trim() === trimmedReply;
-        if (!isAlreadyAdded) {
-          const nextMessages = [...current, adminMsg];
-          await supabase
+        if (!rpcErr && Array.isArray(rpcMsgs)) {
+          rpcSuccess = true;
+          setSosResponse(prev => prev ? { ...prev, messages: deduplicateSosMessages(rpcMsgs) } : null);
+        }
+      } catch (err) {
+        console.warn('Notice append_sos_message RPC fallback on admin reply:', err);
+      }
+
+      if (!rpcSuccess) {
+        try {
+          const { data } = await supabase
             .from('sos_tickets')
-            .update({
-              admin_reply: trimmedReply,
-              replied_at: new Date().toISOString(),
-              is_read: false,
-              status: 'em_atendimento',
-              messages: nextMessages
-            })
-            .eq('id', ticketId);
+            .select('messages')
+            .eq('id', ticketId)
+            .maybeSingle();
+
+          const current = deduplicateSosMessages(Array.isArray(data?.messages) ? data.messages : []);
+          const last = current[current.length - 1];
+          const isAlreadyAdded = last && last.sender === 'admin' && last.text.trim() === trimmedReply;
+          if (!isAlreadyAdded) {
+            const fallbackMessages = [...current, adminMsg];
+            await supabase
+              .from('sos_tickets')
+              .update({
+                admin_reply: trimmedReply,
+                replied_at: new Date().toISOString(),
+                is_read: false,
+                status: 'em_atendimento',
+                messages: fallbackMessages
+              })
+              .eq('id', ticketId);
+          }
+        } catch (err) {
+          console.warn('Erro ao responder ticket SOS no Supabase:', err);
         }
       }
-    } catch (err) {
-      console.warn('Erro ao responder ticket SOS no Supabase:', err);
     }
   };
 
@@ -1804,7 +1861,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...prev,
         status: 'arquivado'
       };
-      localStorage.setItem('elana_sos_ticket_response', JSON.stringify(updated));
+      try {
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('elana_sos_ticket_response', JSON.stringify(updated));
+        }
+      } catch {}
       return updated;
     });
 
@@ -1822,14 +1883,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearActiveSosTicket = () => {
     setSosResponse(null);
-    localStorage.removeItem('elana_sos_ticket_response');
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('elana_sos_ticket_response');
+        localStorage.removeItem('elana_sos_ticket_response');
+      }
+    } catch {}
   };
 
   const markSosResponseRead = async () => {
     if (!sosResponse) return;
     const updated = { ...sosResponse, isRead: true };
     setSosResponse(updated);
-    localStorage.setItem('elana_sos_ticket_response', JSON.stringify(updated));
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('elana_sos_ticket_response', JSON.stringify(updated));
+      }
+    } catch {}
     if (user?.id) {
       try {
         await supabase.from('sos_tickets').update({ is_read: true }).eq('profile_id', user.id);

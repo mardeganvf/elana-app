@@ -565,15 +565,33 @@ export async function handleRequest(req: Request): Promise<Response> {
       );
     }
 
-    // Validação de integridade do chamador autenticado
+    // 🛡️ BLINDAGEM DE CUSTO & ANTI-DOS: Exige autenticação válida para consumo da API do Gemini
     const isTesting = Deno.env.get('DENO_TESTING') === 'true';
     const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
-    if (!isTesting && supabase && authHeader) {
+
+    if (!isTesting) {
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'UNAUTHORIZED', message: 'Autenticação obrigatória para submeter conteúdo para moderação.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-      if (token && token.length > 20 && !token.includes('anon')) {
+      if (!token || token.length < 20) {
+        return new Response(
+          JSON.stringify({ error: 'INVALID_TOKEN', message: 'Token de autenticação inválido.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (supabase) {
         const { data: { user }, error: userError } = await supabase.auth.getUser(token);
         if (userError || !user) {
-          console.warn('[Gemini Moderation] Token de autorização não autenticado no Supabase Auth.');
+          return new Response(
+            JSON.stringify({ error: 'SESSION_EXPIRED', message: 'Sessão de usuário inválida ou expirada.' }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
       }
     }
